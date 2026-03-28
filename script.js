@@ -94,7 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add smooth scrolling for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function(e) {
-            e.preventDefault();
+            const href = this.getAttribute('href');
+            
+            // Only prevent default for hash links (same page navigation)
+            if (href.startsWith('#')) {
+                e.preventDefault();
+            }
             
             // Remove active class from all nav items
             document.querySelectorAll('.nav-item').forEach(item => {

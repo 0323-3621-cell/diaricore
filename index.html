@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiariCore - Your Mindful Journal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="logo-section">
+                <h3 class="logo-text">DiariCore</h3>
+                <p class="logo-tagline">Your mindful journal</p>
+            </div>
+            
+            <nav class="navigation-menu">
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-house-door"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-pencil"></i>
+                            <span>Write Entry</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-bar-chart"></i>
+                            <span>Insights</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-search"></i>
+                            <span>Search</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-lightbulb"></i>
+                            <span>Suggestions</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-person"></i>
+                            <span>Profile</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="copyright">
+                <p>© 2026 DiariCore</p>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Header Section -->
+            <div class="header-section">
+                <h1 class="main-title">How are you feeling today?</h1>
+                <p class="subtitle">Take a moment to check in with yourself</p>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3 class="stat-title">Today's Mood</h3>
+                        <p class="stat-value">Peaceful</p>
+                        <p class="stat-description">You're feeling calm today</p>
+                    </div>
+                    <div class="stat-icon">
+                        <span class="mood-emoji">😌</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3 class="stat-title">Current Streak</h3>
+                        <p class="stat-value">12 Days</p>
+                        <p class="stat-description">Keep up the great work!</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3 class="stat-title">Weekly Average</h3>
+                        <p class="stat-value">7.4/10</p>
+                        <p class="stat-description">+0.8 from last week</p>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="action-btn primary">
+                        <i class="bi bi-pencil"></i>
+                        <div class="btn-content">
+                            <span class="btn-title">Write Entry</span>
+                            <span class="btn-description">Express your thoughts in writing</span>
+                        </div>
+                    </button>
+                    
+                    <button class="action-btn primary">
+                        <i class="bi bi-mic"></i>
+                        <div class="btn-content">
+                            <span class="btn-title">Voice Entry</span>
+                            <span class="btn-description">Speak what's on your mind</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Weekly Glance -->
+            <div class="weekly-glance">
+                <h2 class="section-title">Your Week at a Glance</h2>
+                <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

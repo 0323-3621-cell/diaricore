@@ -1,0 +1,352 @@
+/* DiariCore Dashboard Styles */
+
+:root {
+    --primary-color: #4a9d7a; /* Muted green/teal */
+    --primary-hover: #3d8568;
+    --background-color: #f8f9fa; /* Very light gray/off-white */
+    --card-background: #ffffff;
+    --text-dark: #2c3e50; /* Dark gray for main headings */
+    --text-light: #6c757d; /* Lighter gray for subheadings */
+    --text-muted: #adb5bd; /* Muted text for inactive items */
+    --border-color: #e9ecef;
+    --sidebar-width: 280px;
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--card-background);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.logo-section {
+    padding: 0 2rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.25rem;
+}
+
+.logo-tagline {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.navigation-menu {
+    flex: 1;
+    padding: 2rem 0;
+}
+
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 2rem;
+    color: var(--text-light);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.nav-link:hover {
+    color: var(--text-dark);
+    background-color: rgba(74, 157, 122, 0.1);
+}
+
+.nav-link i {
+    font-size: 1.25rem;
+    margin-right: 1rem;
+    width: 1.25rem;
+}
+
+.nav-item.active .nav-link {
+    color: var(--primary-color);
+    background-color: rgba(74, 157, 122, 0.15);
+    border-left-color: var(--primary-color);
+    font-weight: 500;
+}
+
+.copyright {
+    padding: 2rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.copyright p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Main Content Styles */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 2rem 3rem;
+    max-width: calc(100% - var(--sidebar-width));
+}
+
+.header-section {
+    margin-bottom: 3rem;
+}
+
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    font-size: 1.125rem;
+    color: var(--text-light);
+    margin: 0;
+}
+
+/* Stats Cards */
+.stats-cards {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card {
+    flex: 1;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.25rem;
+}
+
+.stat-description {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin: 0;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-left: 1rem;
+}
+
+.mood-emoji {
+    font-size: 2rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.action-btn {
+    flex: 1;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.action-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(74, 157, 122, 0.3);
+}
+
+.action-btn i {
+    font-size: 2rem;
+    margin-right: 1rem;
+}
+
+.btn-content {
+    flex: 1;
+}
+
+.btn-title {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.btn-description {
+    display: block;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+/* Weekly Glance */
+.weekly-glance {
+    background-color: var(--card-background);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-content {
+        padding: 2rem;
+    }
+    
+    .stats-cards {
+        flex-direction: column;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        max-width: 100%;
+        padding: 1rem;
+    }
+    
+    .main-title {
+        font-size: 2rem;
+    }
+    
+    .stats-cards {
+        gap: 1rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 1rem 0.5rem;
+    }
+    
+    .main-title {
+        font-size: 1.75rem;
+    }
+    
+    .action-btn {
+        padding: 1rem;
+    }
+    
+    .action-btn i {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .weekly-glance {
+        padding: 1rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}

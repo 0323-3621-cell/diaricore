@@ -25,13 +25,23 @@ body {
     background-color: var(--background-color);
     color: var(--text-dark);
     line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
 }
 
-/* Login Container - Split Layout */
+/* Login Container - Card Style */
 .login-container {
     display: flex;
-    min-height: 100vh;
     width: 100%;
+    max-width: 900px;
+    min-height: 550px;
+    background-color: var(--card-background);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 /* Left Side - Welcome Section */
@@ -401,18 +411,24 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
     .login-container {
         flex-direction: column;
+        max-width: 100%;
+        min-height: auto;
     }
     
     .login-left {
-        min-height: 300px;
-        padding: 3rem 2rem;
+        min-height: 200px;
+        padding: 2rem;
     }
     
     .login-logo {
-        width: 120px;
-        height: 120px;
+        width: 100px;
+        height: 100px;
     }
     
     .welcome-title {
@@ -447,14 +463,23 @@ body {
 }
 
 @media (max-width: 480px) {
+    body {
+        padding: 0;
+    }
+    
+    .login-container {
+        border-radius: 0;
+        min-height: 100vh;
+    }
+    
     .login-left {
-        min-height: 250px;
-        padding: 2rem 1rem;
+        min-height: 180px;
+        padding: 1.5rem 1rem;
     }
     
     .login-logo {
-        width: 100px;
-        height: 100px;
+        width: 80px;
+        height: 80px;
     }
     
     .welcome-title {

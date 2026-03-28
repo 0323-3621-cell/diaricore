@@ -3,207 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiariCore - Your Mindful Journal</title>
+    <title>Sign In - DiariCore</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="styles.css" rel="stylesheet">
+    <link href="login.css" rel="stylesheet">
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Left Sidebar -->
-        <div class="sidebar">
+    <div class="login-container">
+        <!-- Left Side - Welcome Back -->
+        <div class="login-left">
             <div class="logo-section">
-                <h3 class="logo-text">DiariCore</h3>
-                <p class="logo-tagline">Your mindful journal</p>
+                <img src="dclogo.jfif" alt="DiariCore Logo" class="login-logo">
             </div>
-            
-            <nav class="navigation-menu">
-                <ul class="nav-list">
-                    <li class="nav-item active">
-                        <a href="#" class="nav-link">
-                            <i class="bi bi-house-door"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="write-entry.html" class="nav-link">
-                            <i class="bi bi-pencil"></i>
-                            <span>Write Entry</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="bi bi-bar-chart"></i>
-                            <span>Insights</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="bi bi-search"></i>
-                            <span>Search</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="bi bi-lightbulb"></i>
-                            <span>Suggestions</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="bi bi-person"></i>
-                            <span>Profile</span>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-            
-            <div class="copyright">
-                <p>© 2026 DiariCore</p>
+            <div class="welcome-content">
+                <h1 class="welcome-title">Welcome Back!</h1>
+                <p class="welcome-text">To stay connected with DiariCore, login with your personal info.</p>
+                <button class="btn-signup" id="showSignUpBtn">SIGN UP</button>
             </div>
         </div>
         
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Floating Streak Counter -->
-            <div class="floating-streak">
-                <div class="streak-flame">
-                    <i class="bi bi-fire"></i>
-                </div>
-                <div class="streak-count">12</div>
-            </div>
-            
-            <!-- Header Section -->
-            <div class="header-section">
-                <h1 class="main-title">How are you feeling today?</h1>
-                <p class="subtitle">Take a moment to check in with yourself</p>
-            </div>
-            
-            <!-- Stats Cards -->
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-content">
-                        <h3 class="stat-title">Today's Mood</h3>
-                        <p class="stat-value">Peaceful</p>
-                        <p class="stat-description">You're feeling calm today</p>
-                    </div>
-                    <div class="stat-icon">
-                        <span class="mood-emoji">😌</span>
-                    </div>
+        <!-- Right Side - Sign In Form -->
+        <div class="login-right">
+            <div class="form-container">
+                <!-- Logo Icon -->
+                <div class="form-logo">
+                    <img src="dclogo.jfif" alt="DiariCore" class="form-logo-img">
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-content">
-                        <h3 class="stat-title">Weekly Average</h3>
-                        <p class="stat-value">7.4/10</p>
-                        <p class="stat-description">+0.8 from last week</p>
+                <h2 class="form-title">Sign In to DiariCore</h2>
+                <p class="form-subtitle">Continue your journaling journey with mindful insights.</p>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input 
+                                type="email" 
+                                id="email" 
+                                class="form-input" 
+                                placeholder="Email"
+                                required
+                            >
+                            <i class="bi bi-envelope input-icon"></i>
+                        </div>
                     </div>
-                    <div class="stat-icon">
-                        <i class="bi bi-graph-up"></i>
+                    
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                class="form-input" 
+                                placeholder="Password"
+                                required
+                            >
+                            <i class="bi bi-eye-slash input-icon toggle-password" id="togglePassword"></i>
+                        </div>
                     </div>
+                    
+                    <div class="form-options">
+                        <a href="#" class="forgot-password">Forgot password?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn-signin">SIGN IN</button>
+                </form>
+                
+                <div class="divider">
+                    <span>or continue with</span>
                 </div>
                 
-                <div class="stat-card">
-                    <div class="stat-content">
-                        <h3 class="stat-title">Today's Insight</h3>
-                        <p class="stat-value insight-text">"You tend to feel more focused in the morning."</p>
-                        <p class="stat-description">Based on your recent entries</p>
-                    </div>
-                    <div class="stat-icon">
-                        <i class="bi bi-lightbulb"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h2 class="section-title">Quick Actions</h2>
-                <div class="action-buttons">
-                    <button class="action-btn primary">
-                        <i class="bi bi-pencil"></i>
-                        <div class="btn-content">
-                            <span class="btn-title">Write Entry</span>
-                            <span class="btn-description">Express your thoughts in writing</span>
-                        </div>
-                    </button>
-                    
-                    <button class="action-btn primary">
-                        <i class="bi bi-mic"></i>
-                        <div class="btn-content">
-                            <span class="btn-title">Voice Entry</span>
-                            <span class="btn-description">Speak what's on your mind</span>
-                        </div>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Weekly Glance -->
-            <div class="weekly-glance">
-                <h2 class="section-title">Your Week at a Glance</h2>
-                <div class="chart-container">
-                    <canvas id="weeklyChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- Smart Insights Section -->
-            <div class="smart-insights">
-                <h2 class="section-title">🧠 Smart Insights</h2>
-                <div class="insights-grid">
-                    <div class="insight-card pattern">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-graph-up-arrow"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Emotional Pattern</h3>
-                                <span class="insight-tag pattern-tag">Pattern</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"You feel more stressed during weekdays"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">HOW</span>
-                        </div>
-                    </div>
-                    
-                    <div class="insight-card trigger">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-exclamation-triangle"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Trigger Alert</h3>
-                                <span class="insight-tag trigger-tag">Trigger</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"Deadlines often trigger stress"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">WHY</span>
-                        </div>
-                    </div>
-                    
-                    <div class="insight-card behavior">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-lightbulb"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Behavior Summary</h3>
-                                <span class="insight-tag behavior-tag">Habit</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"Your mood improves when you journal consistently"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">BEHAVIOR</span>
-                        </div>
-                    </div>
-                </div>
+                <button class="btn-google" id="googleSignInBtn">
+                    <img src="https://www.google.com/favicon.ico" alt="Google" class="google-icon">
+                    Continue with Google
+                </button>
+                
+                <p class="signup-link">
+                    Don't have an account? <a href="#" id="switchToSignUp">Sign up</a>
+                </p>
             </div>
         </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
+    <!-- Sign Up Modal -->
+    <div class="modal-overlay" id="signUpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <form id="signUpForm" class="signup-form">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="fullName" 
+                            class="form-input" 
+                            placeholder="Full Name"
+                            required
+                        >
+                        <i class="bi bi-person input-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            id="signUpEmail" 
+                            class="form-input" 
+                            placeholder="Email"
+                            required
+                        >
+                        <i class="bi bi-envelope input-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="signUpPassword" 
+                            class="form-input" 
+                            placeholder="Password"
+                            required
+                        >
+                        <i class="bi bi-eye-slash input-icon toggle-password" id="toggleSignUpPassword"></i>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            class="form-input" 
+                            placeholder="Confirm Password"
+                            required
+                        >
+                        <i class="bi bi-eye-slash input-icon toggle-password" id="toggleConfirmPassword"></i>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-signin">CREATE ACCOUNT</button>
+            </form>
+            
+            <div class="divider">
+                <span>or continue with</span>
+            </div>
+            
+            <button class="btn-google" id="googleSignUpBtn">
+                <img src="https://www.google.com/favicon.ico" alt="Google" class="google-icon">
+                Continue with Google
+            </button>
+        </div>
+    </div>
+    
+    <script src="login.js"></script>
 </body>
 </html>

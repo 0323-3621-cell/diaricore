@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Redirect to dashboard
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = 'dashboard.html';
                     }, 1500);
                 }, 2000);
             }
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showNotification('Account created successfully! Redirecting...', 'success');
                     
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = 'dashboard.html';
                     }, 2000);
                 }, 2000);
             }
@@ -380,8 +380,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (user && user.isLoggedIn) {
             // User is already logged in, redirect to dashboard
             const currentPage = window.location.pathname.split('/').pop();
-            if (currentPage === 'login.html') {
-                window.location.href = 'index.html';
+            if (currentPage === 'index.html') {
+                window.location.href = 'dashboard.html';
             }
         }
     }

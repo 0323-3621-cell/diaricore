@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
         }, 2000);
     });
     
@@ -190,10 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
     cancelBtn.addEventListener('click', function() {
         if (journalText.value.trim() || selectedFeeling || selectedTags.size > 0) {
             if (confirm('Are you sure you want to cancel? Your unsaved changes will be lost.')) {
-                window.location.href = 'index.html';
+                window.location.href = 'dashboard.html';
             }
         } else {
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
         }
     });
     

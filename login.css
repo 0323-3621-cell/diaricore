@@ -416,11 +416,11 @@ body {
 
 /* Sliding Animation States - When signup-mode is active, swap positions */
 .login-container.signup-mode .login-right-panel {
-    order: 1;
+    order: 2;
 }
 
 .login-container.signup-mode .login-left-panel {
-    order: 2;
+    order: 1;
 }
 
 .login-container.signup-mode .signin-welcome {
@@ -554,6 +554,44 @@ body {
     .welcome-title,
     .welcome-text {
         text-align: center;
+    }
+    
+    /* Mobile specific: Keep green panel on top */
+    .login-container.signup-mode .login-right-panel {
+        order: 1;
+    }
+    
+    .login-container.signup-mode .login-left-panel {
+        order: 2;
+    }
+    
+    /* Mobile specific: Show signup welcome text in form header */
+    .login-container.signup-mode .signup-section .form-title {
+        display: none;
+    }
+    
+    .login-container.signup-mode .signup-section .form-subtitle {
+        display: none;
+    }
+    
+    .login-container.signup-mode .signup-section .form-header::before {
+        content: 'Hello, Friend!';
+        display: block;
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        text-align: left;
+    }
+    
+    .login-container.signup-mode .signup-section .form-header::after {
+        content: 'Enter your personal details and start your self-discovery journey.';
+        display: block;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        text-align: left;
     }
 }
 

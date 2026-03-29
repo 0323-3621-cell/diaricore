@@ -152,9 +152,10 @@ body {
 /* Floating Label Animation */
 .input-wrapper.has-content .form-input,
 .input-wrapper:focus-within .form-input {
-    padding-top: 15px;
-    padding-bottom: 7px;
+    padding-top: 24px;
+    padding-bottom: 4px;
     height: 44px;
+    line-height: 16px;
 }
 
 .input-wrapper .floating-label {

@@ -406,4 +406,41 @@ document.addEventListener('DOMContentLoaded', function() {
             clearValidation(this);
         });
     });
+    
+    // Floating Label Animation
+    function initFloatingLabels() {
+        const inputWrappers = document.querySelectorAll('.input-wrapper');
+        
+        inputWrappers.forEach(wrapper => {
+            const input = wrapper.querySelector('.form-input');
+            
+            if (input) {
+                // Check on load if input has value
+                if (input.value.trim() !== '') {
+                    wrapper.classList.add('has-content');
+                }
+                
+                // Add event listeners
+                input.addEventListener('input', function() {
+                    if (this.value.trim() !== '') {
+                        wrapper.classList.add('has-content');
+                    } else {
+                        wrapper.classList.remove('has-content');
+                    }
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        wrapper.classList.remove('has-content');
+                    }
+                });
+                
+                input.addEventListener('focus', function() {
+                    wrapper.classList.add('has-content');
+                });
+            }
+        });
+    }
+    
+    initFloatingLabels();
 });

@@ -109,14 +109,9 @@ body {
     position: relative;
 }
 
-/* Floating Label Input Styles */
-.input-wrapper.floating-label {
-    position: relative;
-}
-
-.input-wrapper.floating-label .form-input {
+.form-input {
     width: 100%;
-    padding: 20px 45px 8px 16px;
+    padding: 14px 45px 14px 16px;
     border: 2px solid var(--border-color);
     border-radius: 10px;
     font-size: 14px;
@@ -127,38 +122,17 @@ body {
     font-family: 'Inter', sans-serif;
 }
 
-.input-wrapper.floating-label .input-label {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--text-muted);
-    pointer-events: none;
-    transition: all 0.2s ease;
-    background-color: transparent;
-    padding: 0 4px;
-}
-
-.input-wrapper.floating-label .form-input:focus,
-.input-wrapper.floating-label .form-input:not(:placeholder-shown) {
+.form-input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.1);
 }
 
-.input-wrapper.floating-label .form-input:focus ~ .input-label,
-.input-wrapper.floating-label .form-input:not(:placeholder-shown) ~ .input-label {
-    top: 0;
-    transform: translateY(-50%);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--primary-color);
-    background-color: var(--card-background);
+.form-input::placeholder {
+    color: var(--text-muted);
 }
 
-.input-wrapper.floating-label .input-icon {
+.input-icon {
     position: absolute;
     right: 16px;
     top: 50%;
@@ -169,9 +143,38 @@ body {
     transition: color 0.3s ease;
 }
 
-.input-wrapper.floating-label .form-input:focus ~ .input-icon,
-.input-wrapper.floating-label .form-input:not(:placeholder-shown) ~ .input-icon {
+.input-icon:hover {
     color: var(--primary-color);
+}
+
+/* Floating Label Animation */
+.input-wrapper.has-content .form-input,
+.input-wrapper:focus-within .form-input {
+    padding-top: 20px;
+    padding-bottom: 8px;
+}
+
+.input-wrapper .floating-label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    background-color: transparent;
+}
+
+.input-wrapper.has-content .floating-label,
+.input-wrapper:focus-within .floating-label {
+    top: 0;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--primary-color);
+    background-color: var(--card-background);
+    padding: 0 4px;
+    font-weight: 500;
 }
 
 .form-options {

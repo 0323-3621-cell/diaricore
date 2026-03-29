@@ -120,6 +120,7 @@ body {
     background-color: var(--card-background);
     transition: all 0.3s ease;
     font-family: 'Inter', sans-serif;
+    text-align: center;
 }
 
 .form-input:focus {
@@ -150,8 +151,8 @@ body {
 /* Floating Label Animation */
 .input-wrapper.has-content .form-input,
 .input-wrapper:focus-within .form-input {
-    padding-top: 20px;
-    padding-bottom: 8px;
+    padding-top: 18px;
+    padding-bottom: 10px;
 }
 
 .input-wrapper .floating-label {

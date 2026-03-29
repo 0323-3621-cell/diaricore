@@ -78,82 +78,28 @@
                     </div>
                 </section>
 
-                <!-- Emotion Breakdown -->
-                <section class="emotion-breakdown-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Emotion Breakdown</h2>
-                    </div>
-                    <div class="emotion-list">
-                        <div class="emotion-item">
-                            <div class="emotion-info">
-                                <h4 class="emotion-name">Happy</h4>
-                                <div class="emotion-stats">
-                                    <span class="emotion-count">45%</span>
-                                    <div class="emotion-bar">
-                                        <div class="emotion-progress" style="width: 45%"></div>
-                                    </div>
-                                </div>
+                <!-- Charts Section -->
+                <section class="charts-section">
+                    <div class="charts-grid">
+                        <!-- Emotion Breakdown -->
+                        <div class="chart-card">
+                            <div class="section-header">
+                                <h2 class="section-title">Emotion Breakdown</h2>
                             </div>
-                            <div class="emotion-icon">😊</div>
-                        </div>
-                        <div class="emotion-item">
-                            <div class="emotion-info">
-                                <h4 class="emotion-name">Sad</h4>
-                                <div class="emotion-stats">
-                                    <span class="emotion-count">20%</span>
-                                    <div class="emotion-bar">
-                                        <div class="emotion-progress" style="width: 20%"></div>
-                                    </div>
-                                </div>
+                            <div class="chart-container">
+                                <canvas id="emotionPieChart"></canvas>
                             </div>
-                            <div class="emotion-icon">😔</div>
                         </div>
-                        <div class="emotion-item">
-                            <div class="emotion-info">
-                                <h4 class="emotion-name">Angry</h4>
-                                <div class="emotion-stats">
-                                    <span class="emotion-count">10%</span>
-                                    <div class="emotion-bar">
-                                        <div class="emotion-progress" style="width: 10%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="emotion-icon">😡</div>
-                        </div>
-                        <div class="emotion-item">
-                            <div class="emotion-info">
-                                <h4 class="emotion-name">Anxious</h4>
-                                <div class="emotion-stats">
-                                    <span class="emotion-count">15%</span>
-                                    <div class="emotion-bar">
-                                        <div class="emotion-progress" style="width: 15%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="emotion-icon">😰</div>
-                        </div>
-                        <div class="emotion-item">
-                            <div class="emotion-info">
-                                <h4 class="emotion-name">Calm</h4>
-                                <div class="emotion-stats">
-                                    <span class="emotion-count">10%</span>
-                                    <div class="emotion-bar">
-                                        <div class="emotion-progress" style="width: 10%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="emotion-icon">😌</div>
-                        </div>
-                    </div>
-                </section>
 
-                <!-- Activity Impact on Mood -->
-                <section class="activity-impact-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Activity Impact on Mood</h2>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="activityImpactChart"></canvas>
+                        <!-- Activity Impact on Mood -->
+                        <div class="chart-card">
+                            <div class="section-header">
+                                <h2 class="section-title">Activity Impact on Mood</h2>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="activityImpactChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </main>

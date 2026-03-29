@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Charts
     initializeWeeklyMoodChart();
+    initializeEmotionPieChart();
     initializeActivityImpactChart();
     
     // Load Data
@@ -89,6 +90,64 @@ function initializeWeeklyMoodChart() {
             interaction: {
                 intersect: false,
                 mode: 'index'
+            }
+        }
+    };
+    
+    new Chart(ctx, config);
+}
+
+// Initialize Emotion Pie Chart
+function initializeEmotionPieChart() {
+    const ctx = document.getElementById('emotionPieChart');
+    if (!ctx) return;
+    
+    const emotionData = {
+        labels: ['Happy', 'Sad', 'Angry', 'Anxious', 'Calm'],
+        datasets: [{
+            data: [45, 20, 10, 15, 10],
+            backgroundColor: [
+                'rgba(111, 143, 127, 0.9)',
+                'rgba(111, 143, 127, 0.7)',
+                'rgba(111, 143, 127, 0.5)',
+                'rgba(111, 143, 127, 0.6)',
+                'rgba(111, 143, 127, 0.4)'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 2
+        }]
+    };
+    
+    const config = {
+        type: 'pie',
+        data: emotionData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#6B7C74',
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        },
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(47, 62, 54, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.parsed}%`;
+                        }
+                    }
+                }
             }
         }
     };
@@ -187,22 +246,8 @@ function initializeActivityImpactChart() {
 function loadInsightsData() {
     // Simulate loading data
     setTimeout(() => {
-        animateEmotionBars();
+        // Charts are already animated by Chart.js
     }, 500);
-}
-
-// Animate Emotion Bars
-function animateEmotionBars() {
-    const emotionBars = document.querySelectorAll('.emotion-progress');
-    
-    emotionBars.forEach((bar, index) => {
-        const targetWidth = bar.style.width;
-        bar.style.width = '0%';
-        
-        setTimeout(() => {
-            bar.style.width = targetWidth;
-        }, 100 * index);
-    });
 }
 
 // Show Notification

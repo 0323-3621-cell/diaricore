@@ -416,11 +416,11 @@ body {
 
 /* Sliding Animation States - When signup-mode is active, swap positions */
 .login-container.signup-mode .login-right-panel {
-    order: 2;
+    order: 1;
 }
 
 .login-container.signup-mode .login-left-panel {
-    order: 1;
+    order: 2;
 }
 
 .login-container.signup-mode .signin-welcome {

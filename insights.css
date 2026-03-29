@@ -198,6 +198,9 @@ body {
     border-radius: 16px;
     border: 1px solid var(--border-color);
     transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .trigger-card:hover {
@@ -205,11 +208,8 @@ body {
     box-shadow: var(--box-shadow-hover);
 }
 
-.trigger-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+.trigger-content {
+    flex: 1;
 }
 
 .trigger-icon {
@@ -221,6 +221,7 @@ body {
     justify-content: center;
     font-size: 1.5rem;
     flex-shrink: 0;
+    margin-left: 1rem;
 }
 
 .stress-trigger .trigger-icon {
@@ -235,9 +236,9 @@ body {
 
 .trigger-title {
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text-dark);
-    margin: 0;
+    margin: 0 0 1rem 0;
 }
 
 .trigger-name {
@@ -303,14 +304,11 @@ body {
         padding: 1.5rem;
     }
     
-    .trigger-header {
-        margin-bottom: 1rem;
-    }
-    
     .trigger-icon {
         width: 40px;
         height: 40px;
         font-size: 1.25rem;
+        margin-left: 0.75rem;
     }
     
     .section-header {
@@ -339,6 +337,10 @@ body {
     
     .trigger-card {
         padding: 1rem;
+    }
+    
+    .trigger-icon {
+        margin-left: 0.5rem;
     }
     
     .trigger-title {

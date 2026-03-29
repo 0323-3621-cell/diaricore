@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insights - DiariCore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="insights.css" rel="stylesheet">
+</head>
+<body>
+    <div class="insights-container">
+        <!-- Header -->
+        <header class="insights-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="back-btn" id="backBtn">
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                    <h1 class="page-title">Insights</h1>
+                </div>
+                <div class="header-right">
+                    <button class="filter-btn" id="filterBtn">
+                        <i class="bi bi-funnel"></i>
+                        Filter
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="insights-main">
+            <!-- Stats Overview -->
+            <section class="stats-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">28</h3>
+                            <p class="stat-label">Total Entries</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="bi bi-fire"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">15</h3>
+                            <p class="stat-label">Current Streak</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">85%</h3>
+                            <p class="stat-label">Positive Mood</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-number">92%</h3>
+                            <p class="stat-label">Growth Score</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mood Chart -->
+            <section class="mood-chart-section">
+                <div class="section-header">
+                    <h2 class="section-title">Mood Trends</h2>
+                    <button class="view-all-btn">View All</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="moodChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Insights Cards -->
+            <section class="insights-cards-section">
+                <div class="section-header">
+                    <h2 class="section-title">Key Insights</h2>
+                    <button class="view-all-btn">View All</button>
+                </div>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <div class="insight-icon">
+                                <i class="bi bi-lightbulb"></i>
+                            </div>
+                            <span class="insight-date">Today</span>
+                        </div>
+                        <h3 class="insight-title">You're most productive in the morning</h3>
+                        <p class="insight-description">Your journal entries show higher energy and creativity levels between 6AM-10AM. Consider scheduling important tasks during this time.</p>
+                        <div class="insight-actions">
+                            <button class="action-btn">Learn More</button>
+                            <button class="action-btn secondary">Dismiss</button>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <div class="insight-icon">
+                                <i class="bi bi-emoji-smile"></i>
+                            </div>
+                            <span class="insight-date">2 days ago</span>
+                        </div>
+                        <h3 class="insight-title">Positive correlation between exercise and mood</h3>
+                        <p class="insight-description">Days you mention physical activity show 23% higher mood scores. Keep up the great work!</p>
+                        <div class="insight-actions">
+                            <button class="action-btn">Learn More</button>
+                            <button class="action-btn secondary">Dismiss</button>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-header">
+                            <div class="insight-icon">
+                                <i class="bi bi-moon"></i>
+                            </div>
+                            <span class="insight-date">5 days ago</span>
+                        </div>
+                        <h3 class="insight-title">Sleep quality affects your next day</h3>
+                        <p class="insight-description">Poor sleep nights consistently lead to lower mood scores the following day. Prioritize 7-8 hours of sleep.</p>
+                        <div class="insight-actions">
+                            <button class="action-btn">Learn More</button>
+                            <button class="action-btn secondary">Dismiss</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Topics Section -->
+            <section class="topics-section">
+                <div class="section-header">
+                    <h2 class="section-title">Top Topics</h2>
+                    <button class="view-all-btn">View All</button>
+                </div>
+                <div class="topics-grid">
+                    <div class="topic-card">
+                        <div class="topic-icon">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4 class="topic-name">Work</h4>
+                            <div class="topic-stats">
+                                <span class="topic-count">12 entries</span>
+                                <div class="topic-bar">
+                                    <div class="topic-progress" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4 class="topic-name">Relationships</h4>
+                            <div class="topic-stats">
+                                <span class="topic-count">8 entries</span>
+                                <div class="topic-bar">
+                                    <div class="topic-progress" style="width: 50%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon">
+                            <i class="bi bi-person"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4 class="topic-name">Personal Growth</h4>
+                            <div class="topic-stats">
+                                <span class="topic-count">6 entries</span>
+                                <div class="topic-bar">
+                                    <div class="topic-progress" style="width: 38%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon">
+                            <i class="bi bi-book"></i>
+                        </div>
+                        <div class="topic-content">
+                            <h4 class="topic-name">Learning</h4>
+                            <div class="topic-stats">
+                                <span class="topic-count">4 entries</span>
+                                <div class="topic-bar">
+                                    <div class="topic-progress" style="width: 25%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="insights.js"></script>
+</body>
+</html>

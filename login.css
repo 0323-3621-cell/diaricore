@@ -310,7 +310,7 @@ body {
     z-index: 1;
     color: white;
     text-align: center;
-    max-width: 300px;
+    max-width: 320px;
     width: 100%;
     transition: all 0.6s ease-in-out;
     margin: 0 auto;
@@ -321,20 +321,24 @@ body {
 }
 
 .welcome-title {
-    font-size: 36px;
+    font-size: 42px;
     font-weight: 700;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
+    letter-spacing: -0.5px;
 }
 
 .welcome-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
     margin-bottom: 2rem;
     opacity: 0.9;
     text-align: center;
+    max-width: 260px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Switch Button */

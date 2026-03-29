@@ -17,10 +17,39 @@
             <!-- Main Content -->
             <main class="insights-content">
                 <!-- Insights Header -->
-                <div class="insights-header-banner">
-                    <h1 class="insights-main-title">Insights & Analytics</h1>
-                    <p class="insights-subtitle">Understand your emotional patterns</p>
+                <div class="header-section">
+                    <h1 class="main-title">Insights & Analytics</h1>
+                    <p class="subtitle">Understand your emotional patterns</p>
                 </div>
+
+                <!-- Triggers Section -->
+                <section class="triggers-section">
+                    <div class="triggers-grid">
+                        <!-- Top Stress Trigger -->
+                        <div class="trigger-card stress-trigger">
+                            <div class="trigger-header">
+                                <div class="trigger-icon">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <h3 class="trigger-title">Top Stress Trigger</h3>
+                            </div>
+                            <h4 class="trigger-name">Approaching Deadlines</h4>
+                            <p class="trigger-description">You tend to feel more stressed when deadlines are near. Consider breaking tasks into smaller steps.</p>
+                        </div>
+
+                        <!-- Top Happiness Trigger -->
+                        <div class="trigger-card happiness-trigger">
+                            <div class="trigger-header">
+                                <div class="trigger-icon">
+                                    <i class="bi bi-heart"></i>
+                                </div>
+                                <h3 class="trigger-title">Top Happiness Trigger</h3>
+                            </div>
+                            <h4 class="trigger-name">Time with Friends</h4>
+                            <p class="trigger-description">Your mood is highest when spending time with friends. Try to schedule regular social activities.</p>
+                        </div>
+                    </div>
+                </section>
 
                 <!-- Weekly Mood Chart -->
                 <section class="weekly-mood-section">
@@ -53,35 +82,6 @@
                             <div class="chart-container">
                                 <canvas id="activityImpactChart"></canvas>
                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Triggers Section -->
-                <section class="triggers-section">
-                    <div class="triggers-grid">
-                        <!-- Top Stress Trigger -->
-                        <div class="trigger-card stress-trigger">
-                            <div class="trigger-header">
-                                <div class="trigger-icon">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                </div>
-                                <h3 class="trigger-title">Top Stress Trigger</h3>
-                            </div>
-                            <h4 class="trigger-name">Approaching Deadlines</h4>
-                            <p class="trigger-description">You tend to feel more stressed when deadlines are near. Consider breaking tasks into smaller steps.</p>
-                        </div>
-
-                        <!-- Top Happiness Trigger -->
-                        <div class="trigger-card happiness-trigger">
-                            <div class="trigger-header">
-                                <div class="trigger-icon">
-                                    <i class="bi bi-heart"></i>
-                                </div>
-                                <h3 class="trigger-title">Top Happiness Trigger</h3>
-                            </div>
-                            <h4 class="trigger-name">Time with Friends</h4>
-                            <p class="trigger-description">Your mood is highest when spending time with friends. Try to schedule regular social activities.</p>
                         </div>
                     </div>
                 </section>

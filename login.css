@@ -45,7 +45,7 @@ body {
     position: relative;
 }
 
-/* Left Panel - Forms */
+/* Left Panel - Forms (Default position) */
 .login-left-panel {
     flex: 1;
     display: flex;
@@ -265,7 +265,7 @@ body {
     display: none;
 }
 
-/* Right Panel - Sliding Panel */
+/* Right Panel - Sliding Panel (Green side - starts on RIGHT) */
 .login-right-panel {
     flex: 1;
     background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
@@ -359,7 +359,7 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Sliding Animation States */
+/* Sliding Animation States - When signup-mode is active, swap positions */
 .login-container.signup-mode .login-right-panel {
     order: 1;
 }

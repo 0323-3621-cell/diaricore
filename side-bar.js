@@ -35,8 +35,9 @@ class SidebarComponent {
             // Insert sidebar into the page
             this.insertSidebar();
             
-            // Set active page AFTER sidebar is loaded
+            // Set active page and setup logout AFTER sidebar is loaded
             this.setActivePage();
+            this.setupLogoutButton();
             
         } catch (error) {
             console.error('Failed to load sidebar:', error);
@@ -105,18 +106,25 @@ class SidebarComponent {
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => this.handleNavClick(e));
             });
-
-            // Logout button
-            const logoutBtn = this.sidebarElement.querySelector('.logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => {
-                    window.location.href = 'index.html';
-                });
-            }
         }
 
         // Handle window resize
         window.addEventListener('resize', () => this.handleResize());
+    }
+
+    // Logout button setup
+    setupLogoutButton() {
+        if (!this.sidebarElement) return;
+        
+        const logoutBtn = this.sidebarElement.querySelector('.logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+            console.log('Logout button event listener attached');
+        } else {
+            console.log('Logout button not found');
+        }
     }
 
     toggleMobileMenu() {

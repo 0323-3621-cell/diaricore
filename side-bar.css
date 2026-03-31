@@ -121,11 +121,15 @@
 .nav-item.active .nav-link {
     background: var(--primary-light);
     border-radius: 8px;
-    color: var(--primary-color);
+    color: white;
     font-weight: 600;
     border-left: 3px solid transparent;
     margin: 0 1rem;
     padding: 0.75rem 1rem;
+}
+
+.nav-item.active .nav-link i {
+    color: white;
 }
 
 .copyright {
@@ -213,19 +217,20 @@
 }
 
 .logout-btn {
-    background: linear-gradient(135deg, rgba(111, 143, 127, 0.1), rgba(111, 143, 127, 0.05));
-    border: 1px solid rgba(111, 143, 127, 0.2);
-    color: var(--primary-color);
+    background: linear-gradient(135deg, var(--background-soft), #E8F0ED);
+    border: 2px solid var(--primary-color);
+    color: var(--text-dark);
     padding: 0.75rem 1.25rem;
     border-radius: 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     width: 100%;
+    box-shadow: 0 2px 8px rgba(111, 143, 127, 0.15);
 }
 
 .logout-btn:hover {
@@ -237,6 +242,11 @@
 
 .logout-btn i {
     font-size: 16px;
+    color: var(--primary-color);
+}
+
+.logout-btn:hover i {
+    color: white;
 }
 
 /* Responsive Design */

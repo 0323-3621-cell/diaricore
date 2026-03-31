@@ -75,16 +75,30 @@ class SidebarComponent {
     }
 
     setActivePage() {
-        if (!this.sidebarElement) return;
+        console.log('Setting active page, current page:', this.currentPage);
+        console.log('Sidebar element exists:', !!this.sidebarElement);
+        
+        if (!this.sidebarElement) {
+            console.log('Sidebar element is null, cannot set active page');
+            return;
+        }
 
         // Remove all active classes
         const navItems = this.sidebarElement.querySelectorAll('.nav-item');
+        console.log('Found nav items:', navItems.length);
         navItems.forEach(item => item.classList.remove('active'));
 
         // Set active class for current page
-        const activeItem = this.sidebarElement.querySelector(`[data-page="${this.currentPage}"]`);
+        const selector = `[data-page="${this.currentPage}"]`;
+        console.log('Looking for element with selector:', selector);
+        const activeItem = this.sidebarElement.querySelector(selector);
+        console.log('Found active item:', activeItem);
+        
         if (activeItem) {
             activeItem.classList.add('active');
+            console.log('Added active class to:', this.currentPage);
+        } else {
+            console.log('Could not find nav item for page:', this.currentPage);
         }
     }
 

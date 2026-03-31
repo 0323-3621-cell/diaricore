@@ -373,6 +373,113 @@ input:checked + .toggle-slider:before {
     box-shadow: 0 2px 12px rgba(99, 102, 241, 0.3);
 }
 
+/* Notifications Section */
+.notifications-section {
+    margin-bottom: 3rem;
+}
+
+.notifications-options {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.notifications-options::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+    border-radius: 16px 16px 0 0;
+}
+
+.notifications-options:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+}
+
+.notifications-header {
+    margin-bottom: 2rem;
+}
+
+.notifications-title-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.notifications-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.notifications-icon:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));
+    transform: scale(1.05);
+}
+
+.notifications-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.notifications-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(99, 102, 241, 0.02));
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.notifications-item:last-child {
+    margin-bottom: 0;
+}
+
+.notifications-item:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.04));
+    border-color: rgba(99, 102, 241, 0.2);
+    transform: translateX(4px);
+}
+
+.notifications-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.3px;
+}
+
+.notifications-info p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
 /* Account Settings Section */
 .account-settings-section {
     margin-bottom: 3rem;
@@ -726,7 +833,7 @@ input:checked + .toggle-slider:before {
         font-size: 1.5rem;
     }
     
-    .appearance-item {
+    .notifications-item {
         flex-direction: column;
         text-align: center;
         gap: 1rem;

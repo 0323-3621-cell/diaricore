@@ -155,8 +155,8 @@
 }
 
 .avatar-img {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
     border: 3px solid var(--primary-color);

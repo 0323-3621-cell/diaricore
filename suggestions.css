@@ -80,6 +80,39 @@ body {
     margin: 0;
 }
 
+/* Emotional Support Notice */
+.emotional-support-notice {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: var(--info-bg);
+    border: 1px solid var(--info-color);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.notice-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: var(--info-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.notice-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+    line-height: 1.4;
+}
+
 /* Section Styles */
 .emotional-support-section,
 .activity-suggestions-section,
@@ -476,8 +509,21 @@ body {
         font-size: 1.75rem;
     }
     
-    .header-section {
-        margin-bottom: 2rem;
+    .emotional-support-notice {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .notice-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    .notice-content h3 {
+        font-size: 14px;
     }
     
     .emotional-support-section,

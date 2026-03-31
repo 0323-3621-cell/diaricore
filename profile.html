@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - DiariCore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="side-bar.css" rel="stylesheet">
+    <link href="profile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="profile-container">
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Main Content -->
+            <main class="profile-content">
+                <!-- Header Section -->
+                <div class="header-section">
+                    <h1 class="main-title">Profile</h1>
+                    <p class="subtitle">Manage your account and preferences</p>
+                </div>
+
+                <!-- Profile Overview -->
+                <section class="profile-overview-section">
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <img src="https://picsum.photos/seed/diari-user/120/120.jpg" alt="Profile Avatar" class="avatar-image">
+                                <button class="avatar-edit-btn">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                            <div class="profile-info">
+                                <h2 class="profile-name">Sarah Johnson</h2>
+                                <p class="profile-email">sarah.johnson@email.com</p>
+                                <p class="profile-member-since">Member since March 2024</p>
+                                <div class="profile-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number">127</span>
+                                        <span class="stat-label">Entries</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">45</span>
+                                        <span class="stat-label">Day Streak</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">89%</span>
+                                        <span class="stat-label">Consistency</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Account Settings -->
+                <section class="account-settings-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Account Settings</h2>
+                        <p class="section-description">Manage your account information and security</p>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Personal Information</h3>
+                                <p class="setting-description">Update your name, email, and profile details</p>
+                            </div>
+                            <div class="setting-action">
+                                <button class="btn-edit">Edit</button>
+                            </div>
+                        </div>
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-lock"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Password & Security</h3>
+                                <p class="setting-description">Change password and enable two-factor authentication</p>
+                            </div>
+                            <div class="setting-action">
+                                <button class="btn-edit">Edit</button>
+                            </div>
+                        </div>
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-bell"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Notifications</h3>
+                                <p class="setting-description">Configure email and push notification preferences</p>
+                            </div>
+                            <div class="setting-action">
+                                <button class="btn-edit">Edit</button>
+                            </div>
+                        </div>
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Privacy</h3>
+                                <p class="setting-description">Control data sharing and privacy settings</p>
+                            </div>
+                            <div class="setting-action">
+                                <button class="btn-edit">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Journal Preferences -->
+                <section class="journal-preferences-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Journal Preferences</h2>
+                        <p class="section-description">Customize your journaling experience</p>
+                    </div>
+                    <div class="preferences-card">
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h3 class="preference-title">Daily Reminders</h3>
+                                <p class="preference-description">Get reminded to write in your journal</p>
+                            </div>
+                            <div class="preference-control">
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h3 class="preference-title">Mood Tracking</h3>
+                                <p class="preference-description">Track your mood with each entry</p>
+                            </div>
+                            <div class="preference-control">
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h3 class="preference-title">Weekly Summary</h3>
+                                <p class="preference-description">Receive weekly insights about your emotional patterns</p>
+                            </div>
+                            <div class="preference-control">
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h3 class="preference-title">Auto-save</h3>
+                                <p class="preference-description">Automatically save your entries while typing</p>
+                            </div>
+                            <div class="preference-control">
+                                <label class="switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data & Storage -->
+                <section class="data-storage-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Data & Storage</h2>
+                        <p class="section-description">Manage your journal data and export options</p>
+                    </div>
+                    <div class="storage-card">
+                        <div class="storage-overview">
+                            <div class="storage-info">
+                                <h3 class="storage-title">Storage Used</h3>
+                                <p class="storage-amount">2.4 GB of 5 GB used</p>
+                                <div class="storage-bar">
+                                    <div class="storage-fill" style="width: 48%"></div>
+                                </div>
+                            </div>
+                            <div class="storage-breakdown">
+                                <div class="storage-item">
+                                    <span class="storage-label">Text Entries</span>
+                                    <span class="storage-size">124 MB</span>
+                                </div>
+                                <div class="storage-item">
+                                    <span class="storage-label">Attachments</span>
+                                    <span class="storage-size">2.1 GB</span>
+                                </div>
+                                <div class="storage-item">
+                                    <span class="storage-label">Backups</span>
+                                    <span class="storage-size">176 MB</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="storage-actions">
+                            <button class="btn-export">
+                                <i class="bi bi-download"></i>
+                                Export Data
+                            </button>
+                            <button class="btn-backup">
+                                <i class="bi bi-cloud-upload"></i>
+                                Create Backup
+                            </button>
+                            <button class="btn-delete">
+                                <i class="bi bi-trash"></i>
+                                Clear Data
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Danger Zone -->
+                <section class="danger-zone-section">
+                    <div class="danger-zone-card">
+                        <div class="danger-zone-header">
+                            <h3 class="danger-zone-title">Danger Zone</h3>
+                            <p class="danger-zone-description">Irreversible actions that affect your account</p>
+                        </div>
+                        <div class="danger-actions">
+                            <button class="btn-deactivate">Deactivate Account</button>
+                            <button class="btn-delete-account">Delete Account Permanently</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="side-bar.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>

@@ -105,6 +105,14 @@ class SidebarComponent {
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => this.handleNavClick(e));
             });
+
+            // Logout button
+            const logoutBtn = this.sidebarElement.querySelector('.logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
         }
 
         // Handle window resize

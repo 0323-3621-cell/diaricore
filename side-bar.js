@@ -78,14 +78,23 @@ class SidebarComponent {
     setActivePage() {
         if (!this.sidebarElement) return;
 
-        // Remove all active classes
+        // Remove all active classes from desktop sidebar
         const navItems = this.sidebarElement.querySelectorAll('.nav-item');
         navItems.forEach(item => item.classList.remove('active'));
 
-        // Set active class for current page
+        // Set active class for current page in desktop sidebar
         const activeItem = this.sidebarElement.querySelector(`[data-page="${this.currentPage}"]`);
         if (activeItem) {
             activeItem.classList.add('active');
+        }
+
+        // Handle mobile bottom navigation
+        const mobileNavLinks = document.querySelectorAll('.mobile-bottom-nav-link');
+        mobileNavLinks.forEach(link => link.classList.remove('active'));
+
+        const activeMobileLink = document.querySelector(`.mobile-bottom-nav-link[data-page="${this.currentPage}"]`);
+        if (activeMobileLink) {
+            activeMobileLink.classList.add('active');
         }
     }
 

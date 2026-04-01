@@ -54,7 +54,7 @@
 }
 
 .logo-tagline {
-    font-size: 12px;
+    font-size: 14px; /* Increased from 12px for better desktop readability */
     font-weight: 500;
     color: var(--text-muted);
     margin: 0;

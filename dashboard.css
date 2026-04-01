@@ -718,7 +718,7 @@ body {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        margin-left: -3.5rem; /* Maximum negative margin to move text further left */
+        margin-left: -4.5rem; /* Extreme negative margin to move text further left */
         margin-top: 0.8rem; /* Normal top position - don't expand container */
         padding-left: 0rem; /* No padding */
     }

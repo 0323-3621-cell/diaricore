@@ -757,6 +757,13 @@ body {
         padding-left: 0rem; /* No padding */
     }
     
+    /* Apply same text positioning to Voice container */
+    .action-btn:last-child .btn-content {
+        margin-left: -4.5rem; /* Same as Write container */
+        margin-top: 0.8rem; /* Same as Write container */
+        padding-left: 0rem; /* Same as Write container */
+    }
+    
     .btn-title {
         font-size: 16px; /* Enlarged from 14px for better visibility */
         margin-bottom: 0.2rem; /* Add margin for subtitle */

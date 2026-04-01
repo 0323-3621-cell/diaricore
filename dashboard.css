@@ -718,7 +718,7 @@ body {
         content: '';
         position: absolute;
         top: 0.8rem;
-        left: 1rem; /* Moved to the right */
+        left: 0.9rem; /* Moved to 0.9rem */
         width: 36px;
         height: 36px;
         background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */
@@ -734,7 +734,7 @@ body {
     .action-btn:last-child i {
         position: absolute;
         top: 0.8rem;
-        left: 1rem; /* Moved to the right */
+        left: 0.9rem; /* Moved to 0.9rem */
         width: 36px;
         height: 36px;
         background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */

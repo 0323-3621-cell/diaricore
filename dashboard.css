@@ -718,8 +718,8 @@ body {
         display: flex;
         flex-direction: column;
         align-items: flex-start; /* Left aligned */
-        margin-left: 2rem; /* Move content more to the right to avoid plus icon overlap */
-        margin-top: 0.5rem; /* Move content down a bit */
+        margin-left: 0.5rem; /* Much smaller margin to move text left */
+        margin-top: 2rem; /* Move content down to be under plus icon */
     }
     
     .btn-title {

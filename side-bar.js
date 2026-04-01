@@ -116,13 +116,32 @@ class SidebarComponent {
     setupLogoutButton() {
         if (!this.sidebarElement) return;
         
-        const logoutBtn = this.sidebarElement.querySelector('.logout-btn');
+        const logoutBtn = this.sidebarElement.querySelector('.logout-btn-dropdown');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 // Clear authentication data
                 localStorage.removeItem('diariCoreUser');
                 // Redirect to login page
                 window.location.href = 'index.html';
+            });
+        }
+
+        // Setup menu toggle
+        const menuToggle = this.sidebarElement.querySelector('#profileMenuToggle');
+        const menuDropdown = this.sidebarElement.querySelector('#profileMenuDropdown');
+        
+        if (menuToggle && menuDropdown) {
+            // Toggle dropdown
+            menuToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menuDropdown.classList.toggle('show');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!menuToggle.contains(e.target) && !menuDropdown.contains(e.target)) {
+                    menuDropdown.classList.remove('show');
+                }
             });
         }
     }

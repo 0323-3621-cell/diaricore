@@ -195,42 +195,84 @@
     margin: 0;
 }
 
-.logout-section {
+.profile-menu {
+    position: relative;
+    margin-left: auto;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
     display: flex;
+    align-items: center;
     justify-content: center;
 }
 
-.logout-btn {
-    background: linear-gradient(135deg, var(--background-soft), #E8F0ED);
-    border: 2px solid var(--primary-color);
+.menu-toggle:hover {
+    background: var(--background-soft);
     color: var(--text-dark);
-    padding: 0.75rem 1.25rem;
+}
+
+.menu-toggle i {
+    font-size: 16px;
+}
+
+.menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+}
+
+.menu-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.logout-btn-dropdown {
+    background: none;
+    border: none;
+    color: var(--text-dark);
+    padding: 0.75rem 1rem;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    box-shadow: 0 2px 8px rgba(111, 143, 127, 0.15);
+    text-align: left;
 }
 
-.logout-btn:hover {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(111, 143, 127, 0.3);
-}
-
-.logout-btn i {
-    font-size: 16px;
+.logout-btn-dropdown:hover {
+    background: var(--background-soft);
     color: var(--primary-color);
 }
 
-.logout-btn:hover i {
-    color: white;
+.logout-btn-dropdown i {
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.logout-btn-dropdown:hover i {
+    color: var(--primary-color);
 }
 
 /* Responsive Design */

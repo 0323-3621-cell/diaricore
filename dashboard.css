@@ -721,7 +721,7 @@ body {
         left: 0.8rem;
         width: 36px;
         height: 36px;
-        background: rgba(111, 143, 127, 0.2); /* Soft sage green background */
+        background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -737,7 +737,7 @@ body {
         left: 0.8rem;
         width: 36px;
         height: 36px;
-        background: rgba(111, 143, 127, 0.2); /* Soft sage green background */
+        background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -785,7 +785,7 @@ body {
     /* Apply same positioning to Voice container text */
     .action-btn:last-child .btn-content {
         margin-left: -3rem; /* Adjust to the right (less negative) */
-        margin-top: 2rem; /* Move further down */
+        margin-top: 4rem; /* Move further down */
         padding-left: 0rem; /* No padding */
     }
     

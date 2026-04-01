@@ -156,17 +156,19 @@ class SidebarComponent {
     closeMobileMenu() {
         if (this.sidebarElement) {
             this.sidebarElement.classList.remove('open');
-            this.overlay.classList.remove('show');
-            document.body.classList.remove('sidebar-open');
         }
+        if (this.overlay) {
+            this.overlay.classList.remove('show');
+        }
+        document.body.classList.remove('sidebar-open');
     }
 
     handleNavClick(e) {
         const link = e.currentTarget;
         const href = link.getAttribute('href');
         
-        // Close mobile menu if open
-        if (window.innerWidth <= 768) {
+        // Close mobile menu if open (only if hamburger menu exists)
+        if (window.innerWidth <= 768 && this.overlay) {
             this.closeMobileMenu();
         }
 

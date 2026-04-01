@@ -547,9 +547,17 @@ body {
     }
     
     .floating-streak {
-        top: 0.5rem;
-        right: 0.5rem;
-        padding: 0.3rem 0.5rem;
+        top: 0.3rem;
+        right: 0.3rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .streak-flame {
+        font-size: 1rem;
+    }
+    
+    .streak-count {
+        font-size: 0.75rem;
     }
     
     .stats-cards {

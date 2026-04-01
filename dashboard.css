@@ -243,7 +243,7 @@ body {
 }
 
 .stat-value.insight-text {
-    font-size: 14px;
+    font-size: 22px; /* Changed from 14px to match other stat values */
     font-style: italic;
     line-height: 1.4;
     color: var(--primary-color);
@@ -598,6 +598,10 @@ body {
         position: relative;
         height: 1.2em; /* Fixed height to prevent layout shift */
         overflow: hidden;
+    }
+    
+    .stat-value.insight-text {
+        font-size: 1rem !important; /* Override desktop size for mobile */
     }
     
     .stat-description {

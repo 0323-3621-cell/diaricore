@@ -49,12 +49,12 @@
 .logo-text {
     font-size: 24px;
     font-weight: 600;
-    color: var(--text-dark);
+    color: var(--primary-color); /* Changed to soft sage color */
     margin-bottom: 0.25rem;
 }
 
 .logo-tagline {
-    font-size: 16px; /* Increased from 14px for better desktop visibility */
+    font-size: 16px !important; /* Added !important to ensure it takes effect */
     font-weight: 500;
     color: var(--text-muted);
     margin: 0;

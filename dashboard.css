@@ -718,7 +718,7 @@ body {
         content: '';
         position: absolute;
         top: 0.8rem;
-        left: 0.8rem;
+        left: 1rem; /* Moved to the right */
         width: 36px;
         height: 36px;
         background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */
@@ -734,7 +734,7 @@ body {
     .action-btn:last-child i {
         position: absolute;
         top: 0.8rem;
-        left: 0.8rem;
+        left: 1rem; /* Moved to the right */
         width: 36px;
         height: 36px;
         background: rgba(111, 143, 127, 0.1); /* Lighter shade for better contrast */
@@ -784,7 +784,7 @@ body {
     
     /* Apply same positioning to Voice container text */
     .action-btn:last-child .btn-content {
-        margin-left: -3rem; /* Adjust to the right (less negative) */
+        margin-left: -2.8rem; /* Moved to the right */
         margin-top: 3.7rem; /* Move further down */
         padding-left: 0rem; /* No padding */
     }

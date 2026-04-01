@@ -718,9 +718,9 @@ body {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        margin-left: 0rem; /* Absolute leftmost corner */
-        margin-top: 0.8rem; /* Normal top position - don't expand container */
-        padding-left: -0.5rem; /* Negative padding to move text further left */
+        margin-left: -0.3rem; /* Negative margin to move text left */
+        margin-top: 3.2rem; /* Position directly under plus icon */
+        padding-left: 0rem; /* No padding */
     }
     
     .btn-title {

@@ -532,12 +532,23 @@ body {
     }
     
     .main-title {
-        font-size: 1.75rem;
-        margin-bottom: 1rem;
+        font-size: 1.1rem; /* Much smaller for mobile */
+        margin-bottom: 0.25rem;
     }
     
     .subtitle {
-        font-size: 13px;
+        font-size: 11px; /* Much smaller for mobile */
+    }
+    
+    .header-section {
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+    
+    .floating-streak {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 0.75rem;
     }
     
     .stats-cards {

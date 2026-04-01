@@ -720,7 +720,7 @@ body {
         align-items: flex-start;
         margin-left: 0rem; /* Absolute leftmost corner */
         margin-top: 0.8rem; /* Normal top position - don't expand container */
-        padding-left: 0.05rem; /* Even closer to left border */
+        padding-left: -0.5rem; /* Negative padding to move text further left */
     }
     
     .btn-title {

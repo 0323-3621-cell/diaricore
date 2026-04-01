@@ -563,17 +563,34 @@ body {
     .stats-cards {
         flex-direction: row; /* Side by side layout */
         flex-wrap: wrap;
-        gap: 0.4rem; /* Further reduced gap */
-        margin-bottom: 0.8rem; /* Further reduced margin */
+        gap: 0.5rem; /* Reduced gap */
+        margin-bottom: 1rem; /* Reduced margin */
     }
     
     .stat-card {
-        flex: 1 1 calc(50% - 0.2rem); /* Two cards side by side */
-        min-width: 130px; /* Further reduced minimum width */
-        padding: 0.6rem; /* Further reduced padding */
-        flex-direction: row; /* Horizontal layout for inline emoji */
+        flex: 1 1 calc(50% - 0.25rem); /* Two cards side by side */
+        min-width: 130px; /* Reduced minimum width */
+        padding: 0.8rem; /* Slightly more padding for better spacing */
+        flex-direction: column; /* Back to column layout for better design */
         align-items: center;
-        justify-content: space-between;
+        text-align: center;
+        background: linear-gradient(135deg, var(--card-background), rgba(111, 143, 127, 0.05));
+        border-radius: 12px; /* More rounded corners */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(111, 143, 127, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        opacity: 0.8;
     }
     
     .stat-content {
@@ -581,50 +598,59 @@ body {
         min-width: 0; /* Allow content to shrink */
         display: flex;
         flex-direction: column;
-        position: relative; /* Added for proper absolute positioning of children */
+        align-items: center;
+        text-align: center;
     }
     
     .stat-title {
-        font-size: 10px; /* Smaller font */
+        font-size: 11px; /* Slightly larger for better readability */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-weight: 600;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.3rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem; /* Larger for better visibility */
+        margin-bottom: 0.2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        line-height: 1.2;
     }
     
     .stat-description {
-        font-size: 9px; /* Back to smaller font for compact display */
+        font-size: 10px; /* Slightly larger for better readability */
         color: var(--text-secondary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        line-height: 1.2;
-        position: static; /* Back to normal positioning */
-        opacity: 1; /* Always visible */
-        margin-bottom: 0.05rem;
-    }
-    
-    .stat-value {
-        font-size: 1rem; /* Smaller font */
-        margin-bottom: 0.05rem;
-        position: static; /* Back to normal positioning */
-        height: auto; /* Back to auto height */
-        overflow: visible; /* Back to visible */
-    }
-    
-    .stat-value.insight-text {
-        font-size: 1rem !important; /* Override desktop size for mobile */
+        line-height: 1.3;
+        font-weight: 500;
     }
     
     .stat-icon {
-        margin-left: 0.3rem;
-        font-size: 1rem; /* Smaller icon */
-        flex-shrink: 0; /* Prevent icon from shrinking */
+        margin-top: 0.5rem;
+        margin-bottom: 0.3rem;
+        font-size: 1.5rem; /* Larger icons */
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, rgba(111, 143, 127, 0.15), rgba(111, 143, 127, 0.05));
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(111, 143, 127, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.8);
     }
     
     .mood-emoji {
-        font-size: 1rem; /* Smaller emoji */
+        font-size: 1.5rem; /* Larger emoji */
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
     }
     
     .action-buttons {

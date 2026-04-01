@@ -547,8 +547,8 @@ body {
     }
     
     .floating-streak {
-        top: 0.3rem;
-        right: 0.3rem;
+        top: 0.8rem; /* Moved down */
+        right: 1rem; /* Moved left (further from right edge) */
         padding: 0.2rem 0.4rem;
     }
     

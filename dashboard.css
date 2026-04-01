@@ -593,18 +593,6 @@ body {
         margin-bottom: 0.1rem;
     }
     
-    .stat-value {
-        font-size: 1rem; /* Smaller font */
-        margin-bottom: 0.05rem;
-        position: relative;
-        height: 1.2em; /* Fixed height to prevent layout shift */
-        overflow: hidden;
-    }
-    
-    .stat-value.insight-text {
-        font-size: 1rem !important; /* Override desktop size for mobile */
-    }
-    
     .stat-description {
         font-size: 9px; /* Very small font */
         color: var(--text-secondary);
@@ -618,6 +606,20 @@ body {
         width: 100%;
         opacity: 0;
         transition: opacity 0.5s ease;
+        z-index: 1; /* Ensure it's positioned above the value */
+    }
+    
+    .stat-value {
+        font-size: 1rem; /* Smaller font */
+        margin-bottom: 0.05rem;
+        position: relative;
+        height: 1.2em; /* Fixed height to prevent layout shift */
+        overflow: hidden;
+        z-index: 0; /* Ensure value is below description when visible */
+    }
+    
+    .stat-value.insight-text {
+        font-size: 1rem !important; /* Override desktop size for mobile */
     }
     
     /* Alternating text animation */

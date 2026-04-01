@@ -665,7 +665,7 @@ body {
         flex-direction: column; /* Column layout for better mobile design */
         text-align: left; /* Left aligned */
         position: relative;
-        border-radius: 20px; /* Much more rounded corners */
+        border-radius: 16px; /* More rounded corners */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         border: 1px solid var(--border-color); /* Subtle border */
     }
@@ -677,11 +677,10 @@ body {
         border-color: var(--primary-color);
     }
     
-    /* Voice Entry button - same design as Write Entry */
+    /* Voice Entry button keeps white background */
     .action-btn:last-child {
-        background: var(--primary-color); /* Same soft sage green background */
-        color: white;
-        border-color: var(--primary-color);
+        background: var(--card-background); /* Clean white background */
+        color: var(--text-dark);
     }
     
     .action-btn i {
@@ -691,10 +690,9 @@ body {
         color: var(--primary-color); /* Sage green icons */
     }
     
-    /* White icons for both buttons */
-    .action-btn:first-child i,
+    /* White Voice Entry icon */
     .action-btn:last-child i {
-        color: white; /* White icons for both */
+        color: var(--primary-color);
     }
     
     /* Plus icon in rounded box for Write Entry - match image exactly */
@@ -712,40 +710,6 @@ body {
         justify-content: center;
         font-size: 24px;
         font-weight: 300;
-        color: white;
-    }
-    
-    /* Mic icon in rounded box for Voice Entry */
-    .action-btn:last-child::before {
-        content: '';
-        position: absolute;
-        top: 0.8rem;
-        left: 0.8rem;
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: 300;
-        color: white;
-    }
-    
-    /* Position mic icon inside the rounded box */
-    .action-btn:last-child i {
-        position: absolute;
-        top: 0.8rem;
-        left: 0.8rem;
-        width: 36px;
-        height: 36px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
         color: white;
     }
     

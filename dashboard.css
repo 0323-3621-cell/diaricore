@@ -665,7 +665,7 @@ body {
         flex-direction: column; /* Column layout for better mobile design */
         text-align: left; /* Left aligned */
         position: relative;
-        border-radius: 16px; /* More rounded corners */
+        border-radius: 28px; /* Much more rounded corners */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         border: 1px solid var(--border-color); /* Subtle border */
     }

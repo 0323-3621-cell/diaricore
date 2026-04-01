@@ -532,12 +532,12 @@ body {
     }
     
     .main-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem; /* Reduced from 1.75rem */
         margin-bottom: 1rem;
     }
     
     .subtitle {
-        font-size: 13px;
+        font-size: 12px; /* Reduced from 13px */
     }
     
     .stats-cards {

@@ -695,20 +695,20 @@ body {
         color: var(--primary-color);
     }
     
-    /* Plus icon in rounded box for Write Entry - moved to top left and bigger */
+    /* Plus icon in rounded box for Write Entry - match image exactly */
     .action-btn:first-child::before {
         content: '+';
         position: absolute;
         top: 0.8rem;
-        left: 0.8rem; /* Changed from right to left */
-        width: 36px; /* Even bigger - changed from 32px */
-        height: 36px; /* Even bigger - changed from 32px */
+        left: 0.8rem;
+        width: 36px;
+        height: 36px;
         background: rgba(255, 255, 255, 0.2);
-        border-radius: 10px; /* More rounded - changed from 8px */
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px; /* Even bigger font - changed from 20px */
+        font-size: 24px;
         font-weight: 300;
         color: white;
     }
@@ -717,10 +717,10 @@ body {
         flex: 1;
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* Left aligned */
-        margin-left: 0rem; /* NO margin - absolute leftmost corner */
-        margin-top: 1.2rem; /* Further reduced to be much closer to plus icon */
-        padding-left: 0.5rem; /* Minimal padding from left border */
+        align-items: flex-start;
+        margin-left: 0rem; /* Absolute left */
+        margin-top: 0.8rem; /* Same as plus icon top - directly under */
+        padding-left: 0.8rem; /* Same as plus icon left - aligned */
     }
     
     .btn-title {

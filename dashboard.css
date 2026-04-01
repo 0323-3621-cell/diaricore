@@ -563,14 +563,14 @@ body {
     .stats-cards {
         flex-direction: row; /* Side by side layout */
         flex-wrap: wrap;
-        gap: 0.5rem; /* Reduced gap */
-        margin-bottom: 1rem; /* Reduced margin */
+        gap: 0.4rem; /* Further reduced gap */
+        margin-bottom: 0.8rem; /* Further reduced margin */
     }
     
     .stat-card {
-        flex: 1 1 calc(50% - 0.25rem); /* Two cards side by side */
-        min-width: 140px; /* Reduced minimum width */
-        padding: 0.75rem; /* Reduced padding */
+        flex: 1 1 calc(50% - 0.2rem); /* Two cards side by side */
+        min-width: 130px; /* Further reduced minimum width */
+        padding: 0.6rem; /* Further reduced padding */
         flex-direction: row; /* Horizontal layout for inline emoji */
         align-items: center;
         justify-content: space-between;
@@ -579,35 +579,41 @@ body {
     .stat-content {
         flex: 1;
         min-width: 0; /* Allow content to shrink */
+        display: flex;
+        flex-direction: column;
     }
     
     .stat-title {
-        font-size: 11px; /* Smaller font */
+        font-size: 10px; /* Smaller font */
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         font-weight: 600;
-        margin-bottom: 0.2rem;
-    }
-    
-    .stat-value {
-        font-size: 1.1rem; /* Slightly smaller */
         margin-bottom: 0.1rem;
     }
     
+    .stat-value {
+        font-size: 1rem; /* Smaller font */
+        margin-bottom: 0.05rem;
+    }
+    
     .stat-description {
-        font-size: 10px; /* Smaller font */
-        display: none; /* Hide description to save space */
+        font-size: 9px; /* Very small font */
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
     }
     
     .stat-icon {
-        margin-left: 0.5rem;
-        font-size: 1.2rem; /* Smaller icon */
+        margin-left: 0.3rem;
+        font-size: 1rem; /* Smaller icon */
         flex-shrink: 0; /* Prevent icon from shrinking */
     }
     
     .mood-emoji {
-        font-size: 1.2rem; /* Smaller emoji */
+        font-size: 1rem; /* Smaller emoji */
     }
     
     .action-buttons {

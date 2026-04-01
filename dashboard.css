@@ -532,7 +532,7 @@ body {
     }
     
     .main-title {
-        font-size: 1px !important; /* As requested */
+        font-size: 10px !important; /* As requested */
         margin-bottom: 0.1rem;
     }
     

@@ -663,12 +663,24 @@ body {
         flex: 1; /* Equal width for side by side */
         padding: 1rem; /* More padding for better spacing */
         flex-direction: column; /* Column layout for better mobile design */
-        text-align: center;
-        background: var(--card-background); /* Clean white background */
+        text-align: left; /* Left aligned */
+        position: relative;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         border: 1px solid var(--border-color); /* Subtle border */
-        color: var(--text-dark); /* Dark text color */
+    }
+    
+    /* Specific styling for Write Entry button */
+    .action-btn:first-child {
+        background: var(--primary-color); /* Soft sage green background */
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    /* Voice Entry button keeps white background */
+    .action-btn:last-child {
+        background: var(--card-background); /* Clean white background */
+        color: var(--text-dark);
     }
     
     .action-btn i {
@@ -678,22 +690,54 @@ body {
         color: var(--primary-color); /* Sage green icons */
     }
     
+    /* White Voice Entry icon */
+    .action-btn:last-child i {
+        color: var(--primary-color);
+    }
+    
+    /* Plus icon in rounded box for Write Entry */
+    .action-btn:first-child::before {
+        content: '+';
+        position: absolute;
+        top: 0.8rem;
+        right: 0.8rem;
+        width: 24px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 300;
+        color: white;
+    }
+    
     .btn-content {
         flex: 1;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start; /* Left aligned */
     }
     
     .btn-title {
         font-size: 14px; /* Slightly smaller for mobile */
         margin-bottom: 0; /* No margin since no description */
         font-weight: 600;
-        color: var(--text-dark);
+        color: inherit; /* Inherit color from parent */
     }
     
     .btn-description {
-        display: none; /* Hide descriptions to match the image */
+        font-size: 11px; /* Smaller for "Write" text */
+        font-weight: 400;
+        opacity: 0.9;
+        margin-bottom: 0.2rem;
+        color: inherit; /* Inherit color from parent */
+    }
+    
+    /* Hide Voice Entry description */
+    .action-btn:last-child .btn-description {
+        display: none;
     }
     
     .subtitle {

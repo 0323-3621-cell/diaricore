@@ -713,6 +713,40 @@ body {
         color: white;
     }
     
+    /* Mic icon in rounded box for Voice Entry */
+    .action-btn:last-child::before {
+        content: '';
+        position: absolute;
+        top: 0.8rem;
+        left: 0.8rem;
+        width: 36px;
+        height: 36px;
+        background: rgba(111, 143, 127, 0.2); /* Soft sage green background */
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--primary-color); /* Soft sage green color */
+    }
+    
+    /* Position mic icon inside the rounded box */
+    .action-btn:last-child i {
+        position: absolute;
+        top: 0.8rem;
+        left: 0.8rem;
+        width: 36px;
+        height: 36px;
+        background: rgba(111, 143, 127, 0.2); /* Soft sage green background */
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--primary-color); /* Soft sage green color */
+        z-index: 1;
+    }
+    
     .btn-content {
         flex: 1;
         display: flex;
@@ -738,9 +772,14 @@ body {
         color: inherit; /* Inherit color from parent */
     }
     
-    /* Hide Voice Entry description */
+    /* Hide Voice Entry description - show Record Journal instead */
     .action-btn:last-child .btn-description {
-        display: none;
+        display: block; /* Show Record Journal text */
+        font-size: 12px; /* Same size as New Entry */
+        font-weight: 400;
+        opacity: 0.9;
+        margin-bottom: 0;
+        color: inherit;
     }
     
     .subtitle {

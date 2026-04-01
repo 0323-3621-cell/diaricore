@@ -131,6 +131,13 @@ class SidebarComponent {
         if (this.sidebarElement) {
             this.sidebarElement.classList.toggle('open');
             this.overlay.classList.toggle('show');
+            
+            // Prevent body scroll when sidebar is open
+            if (this.sidebarElement.classList.contains('open')) {
+                document.body.classList.add('sidebar-open');
+            } else {
+                document.body.classList.remove('sidebar-open');
+            }
         }
     }
 
@@ -138,6 +145,7 @@ class SidebarComponent {
         if (this.sidebarElement) {
             this.sidebarElement.classList.remove('open');
             this.overlay.classList.remove('show');
+            document.body.classList.remove('sidebar-open');
         }
     }
 

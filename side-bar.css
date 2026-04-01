@@ -146,6 +146,17 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 1.25rem;
+    box-shadow: 0 2px 8px rgba(111, 143, 127, 0.3);
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.mobile-menu-toggle:active {
+    transform: scale(0.95);
 }
 
 /* User Profile Section */
@@ -238,6 +249,7 @@
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
     
     .sidebar.open {
@@ -245,11 +257,26 @@
     }
     
     .mobile-menu-toggle {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .main-content {
         margin-left: 0 !important;
+        padding: 1rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Ensure main content takes full width when sidebar is hidden */
+    .dashboard-container {
+        margin-left: 0 !important;
+    }
+    
+    /* Add some top padding to account for hamburger menu */
+    .main-content > *:first-child {
+        padding-top: 3rem;
     }
 }
 
@@ -263,10 +290,18 @@
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 @media (max-width: 768px) {
     .sidebar-overlay.show {
         display: block;
+        opacity: 1;
+    }
+    
+    /* Prevent body scroll when sidebar is open */
+    body.sidebar-open {
+        overflow: hidden;
     }
 }

@@ -856,11 +856,11 @@ body {
     }
     
     .insight-shortcut {
-        background: var(--primary-color);
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
+        background: transparent;
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -869,13 +869,18 @@ body {
     }
     
     .insight-shortcut:hover {
-        background: var(--primary-hover);
+        background: var(--primary-color);
         transform: translateX(2px);
     }
     
     .insight-shortcut i {
+        color: var(--primary-color);
+        font-size: 12px;
+        transition: color 0.3s ease;
+    }
+    
+    .insight-shortcut:hover i {
         color: white;
-        font-size: 14px;
     }
     
     .insight-description {

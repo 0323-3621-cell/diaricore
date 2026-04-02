@@ -324,31 +324,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Voice input functionality (placeholder)
-    const voiceInputBtn = document.getElementById('voiceInputBtn');
-    let isRecording = false;
-    
-    voiceInputBtn.addEventListener('click', function() {
-        if (!isRecording) {
-            // Start recording
-            this.innerHTML = '<i class="bi bi-stop-circle"></i> Stop Recording';
-            this.style.backgroundColor = 'var(--warning-color)';
-            isRecording = true;
-            
-            // Simulate voice recording
-            console.log('Voice recording started...');
-            
-            // Simulate recording for 3 seconds
-            setTimeout(() => {
-                if (isRecording) {
-                    stopRecording();
-                }
-            }, 3000);
-        } else {
-            stopRecording();
-        }
-    });
-    
     function stopRecording() {
         voiceInputBtn.innerHTML = '<i class="bi bi-mic"></i> Voice Input';
         voiceInputBtn.style.backgroundColor = 'var(--info-color)';
@@ -360,6 +335,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const simulatedText = "Today was a good day. I felt productive and accomplished many tasks.";
         journalText.value = simulatedText;
         journalText.dispatchEvent(new Event('input'));
+    }
+    
+    // Voice input button functionality
+    const voiceInputBtn = document.getElementById('voiceInputBtn');
+    let isRecording = false;
+    
+    if (voiceInputBtn) {
+        voiceInputBtn.addEventListener('click', function() {
+            // Check if mobile and redirect to voice-entry.html
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                window.location.href = 'voice-entry.html';
+                return;
+            }
+            
+            // Desktop functionality remains unchanged
+            if (!isRecording) {
+                // Start recording
+                this.innerHTML = '<i class="bi bi-stop-circle"></i> Stop Recording';
+                this.style.backgroundColor = 'var(--warning-color)';
+                isRecording = true;
+                
+                // Simulate voice recording
+                console.log('Voice recording started...');
+                
+                // Simulate recording for 3 seconds
+                setTimeout(() => {
+                    stopRecording();
+                }, 3000);
+            } else {
+                stopRecording();
+            }
+        });
     }
     
     // Save entry functionality

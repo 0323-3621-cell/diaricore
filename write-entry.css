@@ -333,7 +333,7 @@
     }
     
     .feelings-grid {
-        grid-template-columns: 1fr; /* Single column for vertical line */
+        grid-template-columns: repeat(4, 1fr); /* 4 columns for side by side */
         gap: 0.5rem;
         margin: 0;
         padding: 0;

@@ -358,6 +358,17 @@
     color: white;
 }
 
+.mobile-retry-btn:focus {
+    background-color: var(--primary-color);
+    color: white;
+    outline: none;
+}
+
+.mobile-retry-btn:active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
 .transcript-preview {
     background-color: var(--background-soft);
     border: 1px solid var(--border-color);

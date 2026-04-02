@@ -41,6 +41,32 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // More tags functionality
+    const moreTagsBtn = document.getElementById('moreTagsBtn');
+    const hiddenTags = document.querySelectorAll('.hidden-tag');
+    let tagsExpanded = false;
+    
+    moreTagsBtn.addEventListener('click', function() {
+        tagsExpanded = !tagsExpanded;
+        
+        hiddenTags.forEach(tag => {
+            if (tagsExpanded) {
+                tag.style.display = 'flex';
+            } else {
+                tag.style.display = 'none';
+            }
+        });
+        
+        // Update button state
+        if (tagsExpanded) {
+            moreTagsBtn.classList.add('expanded');
+            moreTagsBtn.querySelector('span').textContent = 'less';
+        } else {
+            moreTagsBtn.classList.remove('expanded');
+            moreTagsBtn.querySelector('span').textContent = 'more';
+        }
+    });
+    
     // Tag selection functionality
     const tagButtons = document.querySelectorAll('.tag-btn:not(.add-tag)');
     tagButtons.forEach(button => {

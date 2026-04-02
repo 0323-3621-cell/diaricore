@@ -408,7 +408,7 @@
     }
     
     .tag-btn {
-        padding: 0.4rem 0.25rem; /* Even smaller padding */
+        padding: 0.3rem 0.2rem; /* Minimal padding */
         font-size: 0.65rem; /* Even smaller font */
         border-radius: 8px; /* Keep same shape */
         gap: 0.15rem;

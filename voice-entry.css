@@ -33,35 +33,15 @@
 }
 
 /* Voice Entry Specific Styles */
-.voice-main-content {
-    margin-left: 280px;
+.voice-content {
     padding: 2rem;
-    min-height: 100vh;
-    background-color: var(--background-color);
-    transition: margin-left 0.3s ease;
-}
-
-.voice-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.voice-header h1 {
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: 0.5rem;
-}
-
-.voice-header p {
-    font-size: 1.1rem;
-    color: var(--text-muted);
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .voice-container {
-    max-width: 600px;
-    margin: 0 auto;
     text-align: center;
+    margin-top: 2rem;
 }
 
 .voice-circle {
@@ -208,13 +188,9 @@
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-    .voice-main-content {
-        margin-left: 0;
+    .voice-content {
         padding: 1rem;
-    }
-    
-    .voice-header h1 {
-        font-size: 2rem;
+        margin-top: 1rem;
     }
     
     .voice-circle {
@@ -240,9 +216,4 @@
         max-width: 300px;
         justify-content: center;
     }
-}
-
-/* Sidebar collapsed state */
-.sidebar.collapsed + .voice-main-content {
-    margin-left: 0;
 }

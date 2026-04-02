@@ -28,20 +28,65 @@
             <div class="voice-entry-container">
                 <!-- Voice Recording Container -->
                 <div class="voice-recording-container">
-                    <div class="voice-circle">
-                        <i class="bi bi-mic"></i>
+                    <div class="voice-circle" id="voiceCircle">
+                        <i class="bi bi-mic" id="micIcon"></i>
                     </div>
                 </div>
                 
                 <!-- Voice Status -->
                 <div class="voice-status">
-                    <h2>Tap to start recording</h2>
+                    <h2 id="statusText">Tap to start recording</h2>
+                </div>
+                
+                <!-- Recording State (Hidden by default) -->
+                <div class="recording-state" id="recordingState" style="display: none;">
+                    <div class="recording-animation">
+                        <div class="pulse-wave"></div>
+                        <div class="pulse-wave"></div>
+                        <div class="pulse-wave"></div>
+                    </div>
+                    <div class="recording-text">
+                        <h3>Recording in progress...</h3>
+                        <p>Speak clearly and naturally</p>
+                    </div>
                 </div>
                 
                 <!-- Voice Transcript -->
                 <div class="voice-transcript">
                     <h3>Transcript</h3>
-                    <p>Your speech will appear here as you speak...</p>
+                    <p id="transcriptText">Your speech will appear here as you speak...</p>
+                </div>
+            </div>
+            
+            <!-- Post-Recording Container (Hidden by default) -->
+            <div class="post-recording-container" id="postRecordingContainer" style="display: none;">
+                <div class="recording-summary">
+                    <div class="summary-header">
+                        <i class="bi bi-check-circle"></i>
+                        <h3>Recording Complete</h3>
+                    </div>
+                    <div class="summary-content">
+                        <div class="recording-stats">
+                            <div class="stat">
+                                <span class="stat-label">Duration</span>
+                                <span class="stat-value" id="recordingDuration">00:00</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Words</span>
+                                <span class="stat-value" id="wordCount">0</span>
+                            </div>
+                        </div>
+                        <div class="summary-actions">
+                            <button class="action-btn secondary" id="retryBtn">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                Retry
+                            </button>
+                            <button class="action-btn primary" id="saveBtn">
+                                <i class="bi bi-save"></i>
+                                Save Entry
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             

@@ -6,23 +6,27 @@ document.addEventListener('DOMContentLoaded', function() {
     let startTime;
     let timerInterval;
     
+    // Get DOM elements
     const voiceCircle = document.getElementById('voiceCircle');
     const micIcon = document.getElementById('micIcon');
     const statusText = document.getElementById('statusText');
-    const instructionText = document.getElementById('instructionText');
-    const voiceTimer = document.getElementById('voiceTimer');
-    const voiceTranscript = document.getElementById('voiceTranscript');
     const transcriptText = document.getElementById('transcriptText');
-    const clearBtn = document.getElementById('clearBtn');
+    const recordingState = document.getElementById('recordingState');
+    const postRecordingContainer = document.getElementById('postRecordingContainer');
+    const recordingDuration = document.getElementById('recordingDuration');
+    const wordCount = document.getElementById('wordCount');
+    const retryBtn = document.getElementById('retryBtn');
     const saveBtn = document.getElementById('saveBtn');
     
     // Sidebar functionality
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     
-    sidebarToggle.addEventListener('click', function() {
-        sidebar.classList.toggle('collapsed');
-    });
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+        });
+    }
     
     // Voice recording functionality
     voiceCircle.addEventListener('click', function() {
@@ -52,12 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
             isRecording = true;
             startTime = Date.now();
             
-            // Update UI
-            voiceCircle.classList.add('recording');
+            // Update UI for recording state
             micIcon.className = 'bi bi-stop-fill';
-            statusText.textContent = 'Recording...';
-            instructionText.textContent = 'Click the button to stop recording';
-            voiceTranscript.classList.add('active');
+            voiceCircle.style.background = '#ef4444';
+            recordingState.style.display = 'block';
             
             // Start timer
             timerInterval = setInterval(updateTimer, 100);
@@ -65,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error accessing microphone:', error);
             statusText.textContent = 'Microphone access denied';
-            instructionText.textContent = 'Please allow microphone access to use voice entry';
         }
     }
     
@@ -78,26 +79,29 @@ document.addEventListener('DOMContentLoaded', function() {
         isRecording = false;
         clearInterval(timerInterval);
         
-        // Update UI
-        voiceCircle.classList.remove('recording');
+        // Update UI for stopped recording
         micIcon.className = 'bi bi-mic';
-        statusText.textContent = 'Processing...';
-        instructionText.textContent = 'Converting speech to text...';
+        voiceCircle.style.background = 'var(--primary-color)';
+        recordingState.style.display = 'none';
+        statusText.textContent = 'Recording complete';
         
-        // Enable buttons
+        // Calculate final duration
+        const elapsed = Date.now() - startTime;
+        const minutes = Math.floor(elapsed / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        recordingDuration.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Show post-recording container after a short delay
         setTimeout(() => {
-            clearBtn.disabled = false;
-            saveBtn.disabled = false;
-            statusText.textContent = 'Recording complete';
-            instructionText.textContent = 'You can save this entry or record again';
-        }, 2000);
+            postRecordingContainer.style.display = 'block';
+        }, 500);
     }
     
     function updateTimer() {
         const elapsed = Date.now() - startTime;
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
-        voiceTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        recordingDuration.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
     function processAudio(audioBlob) {
@@ -106,18 +110,24 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const simulatedTranscript = "This is a sample transcript of your voice entry. In a real implementation, this would be the actual text converted from your speech using a speech-to-text service like Google Speech-to-Text or Azure Speech Services.";
             transcriptText.textContent = simulatedTranscript;
+            
+            // Update word count
+            const words = simulatedTranscript.split(/\s+/).filter(word => word.length > 0).length;
+            wordCount.textContent = words;
         }, 1500);
     }
     
-    // Clear button functionality
-    clearBtn.addEventListener('click', function() {
+    // Retry button functionality
+    retryBtn.addEventListener('click', function() {
+        // Reset UI
+        postRecordingContainer.style.display = 'none';
         transcriptText.textContent = 'Your speech will appear here as you speak...';
-        voiceTimer.textContent = '00:00';
         statusText.textContent = 'Tap to start recording';
-        instructionText.textContent = 'Click the microphone button to begin voice recording';
-        clearBtn.disabled = true;
-        saveBtn.disabled = true;
-        voiceTranscript.classList.remove('active');
+        recordingDuration.textContent = '00:00';
+        wordCount.textContent = '0';
+        
+        // Clear any existing recording data
+        audioChunks = [];
     });
     
     // Save button functionality
@@ -131,6 +141,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'voice',
                 text: transcript,
                 date: new Date().toISOString(),
+                duration: recordingDuration.textContent,
+                wordCount: wordCount.textContent,
                 characterCount: transcript.length,
                 audioData: 'audio_blob_data_placeholder' // In real implementation, you'd store the audio
             };
@@ -139,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Show success message
             statusText.textContent = 'Entry saved successfully!';
-            instructionText.textContent = 'Your voice entry has been saved to your journal';
             
             // Redirect after delay
             setTimeout(() => {

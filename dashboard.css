@@ -813,6 +813,13 @@ body {
     .weekly-glance {
         padding: 1rem !important; /* Reduced section padding */
     }
+    
+    /* Style calendar icon in Weekly Mood title */
+    .weekly-glance .section-title i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
 }
 
 @media (max-width: 480px) {

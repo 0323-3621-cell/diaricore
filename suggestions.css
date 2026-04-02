@@ -649,7 +649,7 @@ body {
         font-weight: 600;
         color: var(--text-dark);
         margin: 0;
-        margin-left: 2rem;
+        margin-left: 0.5rem;
     }
     
     .header-spacer {

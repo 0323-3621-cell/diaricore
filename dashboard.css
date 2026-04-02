@@ -792,6 +792,11 @@ body {
     .subtitle {
         font-size: 12px !important; /* Override desktop size for mobile */
     }
+    
+    /* Hide Weekly Glance section on mobile */
+    .weekly-glance {
+        display: none !important;
+    }
 }
 
 @media (max-width: 480px) {

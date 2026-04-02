@@ -37,9 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', () => {
             setTimeout(() => {
                 mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-                // Apply permanent white color immediately
+                // Apply permanent WHITE icon on soft sage background
                 mobileRetryBtn.style.color = 'white';
-                mobileRetryBtn.style.backgroundColor = 'var(--primary-color)';
+                mobileRetryBtn.style.backgroundColor = 'var(--primary-bg)';
             }, 50);
         });
     }
@@ -166,9 +166,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mobileRetryBtn) {
         mobileRetryBtn.addEventListener('click', function() {
             resetRecording();
-            // Make icon permanently white after click
+            // Make icon permanently WHITE on soft sage background
             mobileRetryBtn.style.color = 'white';
-            mobileRetryBtn.style.backgroundColor = 'var(--primary-color)';
+            mobileRetryBtn.style.backgroundColor = 'var(--primary-bg)';
         });
     }
     

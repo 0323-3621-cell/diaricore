@@ -71,6 +71,11 @@ document.addEventListener('DOMContentLoaded', function() {
             recordingState.style.display = 'block';
             statusText.style.display = 'none';
             
+            // Hide mobile retry button during recording
+            if (isMobile && mobileRetryBtn) {
+                mobileRetryBtn.style.display = 'none';
+            }
+            
             // Start timer
             timerInterval = setInterval(updateRecordingTimer, 100);
             
@@ -95,6 +100,11 @@ document.addEventListener('DOMContentLoaded', function() {
         recordingState.style.display = 'none';
         statusText.style.display = 'block';
         statusText.textContent = 'Recording complete';
+        
+        // Show mobile retry button after recording stops
+        if (isMobile && mobileRetryBtn) {
+            mobileRetryBtn.style.display = 'flex';
+        }
         
         // Calculate final duration
         const elapsed = Date.now() - startTime;

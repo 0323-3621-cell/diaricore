@@ -389,6 +389,46 @@
         font-size: 0.75rem;
     }
     
+    /* Mobile tags title styling */
+    .tags-section .section-title {
+        text-transform: uppercase; /* All caps */
+        margin-left: -0.5rem; /* Move text more to the left */
+        opacity: 0.7; /* Lower opacity */
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    /* Mobile tags container - 5 columns */
+    .tags-container {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr); /* 5 columns */
+        gap: 0.25rem;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .tag-btn {
+        padding: 0.4rem 0.2rem; /* Very small padding */
+        font-size: 0.65rem; /* Smaller font */
+        margin: 0;
+        border-radius: 4px; /* Smaller border radius */
+        min-height: 50px; /* Small height */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+    }
+    
+    .tag-btn i {
+        font-size: 0.9rem; /* Smaller icon */
+    }
+    
+    .tag-btn span {
+        font-size: 0.6rem; /* Very small text */
+        line-height: 1;
+    }
+    
     .feelings-grid.category-grid {
         grid-template-columns: repeat(4, 1fr); /* 4 columns */
         gap: 0.5rem;

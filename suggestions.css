@@ -982,4 +982,73 @@ body {
         transform: none;
         box-shadow: none;
     }
+    
+    /* Remove hover effects from content recommendations section on mobile */
+    .content-recommendations-section:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    /* Remove container background for mobile */
+    .content-recommendations-section {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+    
+    /* Style Mobile Content Cards */
+    .mobile-content-cards {
+        display: block;
+    }
+    
+    .mobile-content-cards .content-item {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-align: left;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-content-cards .content-item:hover {
+        /* Remove hover effects for mobile cards */
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .mobile-content-cards .content-thumbnail {
+        flex-shrink: 0;
+        margin-right: 0;
+    }
+    
+    .mobile-content-cards .content-info {
+        flex: 1;
+    }
+    
+    .mobile-content-cards .content-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .mobile-content-cards .content-type {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.9rem;
+        color: var(--primary-color);
+    }
+    
+    .mobile-content-cards .content-description {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    /* Hide desktop content list on mobile */
+    .content-list {
+        display: none;
+    }
 }

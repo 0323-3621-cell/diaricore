@@ -820,6 +820,60 @@ body {
         color: var(--primary-color);
         font-size: 1.2rem;
     }
+    
+    /* Mobile Smart Insights Section */
+    .mobile-smart-insights {
+        background: var(--card-background);
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+    }
+    
+    .insight-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .insight-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0;
+    }
+    
+    .insight-shortcut {
+        background: var(--primary-color);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .insight-shortcut:hover {
+        background: var(--primary-hover);
+        transform: translateX(2px);
+    }
+    
+    .insight-shortcut i {
+        color: white;
+        font-size: 14px;
+    }
+    
+    .insight-description {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.4;
+    }
 }
 
 @media (max-width: 480px) {

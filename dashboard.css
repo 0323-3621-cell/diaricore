@@ -341,6 +341,11 @@ body {
     margin-top: 1rem;
 }
 
+/* Hide mobile Smart Insights on desktop */
+.mobile-smart-insights {
+    display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
     .main-content {
@@ -654,11 +659,6 @@ body {
     
     .subtitle {
         font-size: 12px !important; /* Override desktop size for mobile */
-    }
-    
-    /* Hide Smart Insights section on mobile */
-    .smart-insights {
-        display: none !important;
     }
     
     /* Show mobile Smart Insights section */

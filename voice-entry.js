@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show mobile retry button after recording stops
         if (isMobile && mobileRetryBtn) {
-            mobileRetryBtn.style.display = 'flex';
+            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
         }
         
         // Calculate final duration
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Keep mobile retry button visible after reset
         if (isMobile && mobileRetryBtn) {
-            mobileRetryBtn.style.display = 'flex';
+            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
         }
         
         // Clear any existing recording data

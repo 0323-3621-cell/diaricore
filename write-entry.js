@@ -475,8 +475,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     });
     
-    // Load draft on page load
+    // Load draft on page load - DISABLED to prevent default selections
     function loadDraft() {
+        // Disabled - do not load drafts to prevent automatic selections
+        console.log('Draft loading disabled - no default selections');
+        return;
+        
+        // Original code commented out:
+        /*
         const draft = JSON.parse(localStorage.getItem('diariCoreDraft') || 'null');
         if (draft) {
             // Restore feeling
@@ -490,9 +496,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Restore tags
             if (draft.tags && draft.tags.length > 0) {
                 draft.tags.forEach(tag => {
-                    const tagBtn = document.querySelector(`[data-tag="${tag}"]`);
-                    if (tagBtn) {
-                        tagBtn.click();
+                    const tagButton = document.querySelector(`[data-tag="${tag}"]`);
+                    if (tagButton) {
+                        tagButton.click();
                     }
                 });
             }
@@ -502,9 +508,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 journalText.value = draft.text;
                 journalText.dispatchEvent(new Event('input'));
             }
-            
-            console.log('Draft loaded');
         }
+        */
     }
     
     // Load draft on page load

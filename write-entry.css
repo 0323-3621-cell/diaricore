@@ -403,11 +403,6 @@
         display: flex !important;
     }
     
-    /* Hide more button on mobile */
-    .more-btn {
-        display: none !important;
-    }
-    
     /* Mobile tags container - 4 columns */
     .tags-container {
         display: grid;

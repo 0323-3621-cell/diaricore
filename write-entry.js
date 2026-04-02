@@ -41,10 +41,61 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Mobile more tags functionality (show first 4, hide rest)
+    function setupMobileMoreButton() {
+        const isMobile = window.innerWidth <= 768;
+        if (!isMobile) return;
+        
+        const allTags = document.querySelectorAll('.tags-container .tag-btn');
+        const moreBtn = document.getElementById('moreTagsBtn');
+        let mobileTagsExpanded = false;
+        
+        // Show first 4 tags, hide rest on mobile
+        allTags.forEach((tag, index) => {
+            if (index < 4) {
+                tag.style.display = 'flex';
+            } else {
+                tag.style.display = 'none';
+            }
+        });
+        
+        // Always show more button on mobile (if there are more than 4 tags)
+        if (allTags.length > 4) {
+            moreBtn.style.display = 'flex';
+        }
+        
+        // Mobile more button click handler
+        moreBtn.onclick = function() {
+            mobileTagsExpanded = !mobileTagsExpanded;
+            
+            allTags.forEach((tag, index) => {
+                if (index >= 4) {
+                    if (mobileTagsExpanded) {
+                        tag.style.display = 'flex';
+                    } else {
+                        tag.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Update button state
+            if (mobileTagsExpanded) {
+                moreBtn.classList.add('expanded');
+                moreBtn.querySelector('span').textContent = 'less';
+            } else {
+                moreBtn.classList.remove('expanded');
+                moreBtn.querySelector('span').textContent = 'more';
+            }
+        };
+    }
+    
     // Dynamic tag hiding functionality (desktop only)
     function updateTagVisibility() {
         const isMobile = window.innerWidth <= 768;
-        if (isMobile) return; // Skip on mobile
+        if (isMobile) {
+            setupMobileMoreButton();
+            return;
+        }
         
         const allTags = document.querySelectorAll('.tags-container .tag-btn');
         const moreBtn = document.getElementById('moreTagsBtn');
@@ -65,39 +116,32 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             moreBtn.style.display = 'none';
         }
-    }
-    
-    // More tags functionality (desktop only)
-    const moreTagsBtn = document.getElementById('moreTagsBtn');
-    let tagsExpanded = false;
-    
-    moreTagsBtn.addEventListener('click', function() {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) return; // Skip on mobile
         
-        tagsExpanded = !tagsExpanded;
-        const allTags = document.querySelectorAll('.tags-container .tag-btn');
-        
-        // Show/hide tags beyond first 7
-        allTags.forEach((tag, index) => {
-            if (index >= 7) {
-                if (tagsExpanded) {
-                    tag.style.display = 'flex';
-                } else {
-                    tag.style.display = 'none';
+        // Reset desktop more button handler
+        let tagsExpanded = false;
+        moreBtn.onclick = function() {
+            tagsExpanded = !tagsExpanded;
+            
+            allTags.forEach((tag, index) => {
+                if (index >= 7) {
+                    if (tagsExpanded) {
+                        tag.style.display = 'flex';
+                    } else {
+                        tag.style.display = 'none';
+                    }
                 }
+            });
+            
+            // Update button state
+            if (tagsExpanded) {
+                moreBtn.classList.add('expanded');
+                moreBtn.querySelector('span').textContent = 'less';
+            } else {
+                moreBtn.classList.remove('expanded');
+                moreBtn.querySelector('span').textContent = 'more';
             }
-        });
-        
-        // Update button state
-        if (tagsExpanded) {
-            moreTagsBtn.classList.add('expanded');
-            moreTagsBtn.querySelector('span').textContent = 'less';
-        } else {
-            moreTagsBtn.classList.remove('expanded');
-            moreTagsBtn.querySelector('span').textContent = 'more';
-        }
-    });
+        };
+    }
     
     // Initialize tag visibility on load
     updateTagVisibility();

@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveBtn = document.getElementById('saveBtn');
     const mobileSaveBtn = document.getElementById('saveEntryBtn');
     
+    // Check if mobile and update text accordingly
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile && statusText) {
+        statusText.textContent = 'Tap to record';
+    }
+    
     // Sidebar functionality
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
@@ -130,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         transcriptText.textContent = 'Your speech will appear here as you speak...';
         finalTranscript.textContent = 'Your speech will appear here as you speak...';
         statusText.style.display = 'block';
-        statusText.textContent = 'Tap to start recording';
+        statusText.textContent = isMobile ? 'Tap to record' : 'Tap to start recording';
         recordingDuration.textContent = '00:00';
         wordCount.textContent = '0';
         

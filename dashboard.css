@@ -801,11 +801,17 @@ body {
     /* Make Weekly Glance chart smaller on mobile */
     .weekly-glance .chart-container {
         height: 200px !important; /* Smaller height for mobile */
-        margin: 1rem 0 !important;
+        margin: 0.5rem 0 !important; /* Reduced margin */
+        padding: 0.5rem !important; /* Reduced padding */
     }
     
     .weekly-glance canvas {
         max-height: 180px !important; /* Constrain canvas height */
+    }
+    
+    /* Reduce Weekly Glance section padding on mobile */
+    .weekly-glance {
+        padding: 1rem !important; /* Reduced section padding */
     }
 }
 

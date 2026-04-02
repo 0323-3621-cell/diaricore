@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeQuickActions();
     initializeInteractiveElements();
     animateProgressBars();
+    initializeMobileCarousel();
 });
 
 // Initialize Suggestions
@@ -474,4 +475,72 @@ function getNotificationColor(type) {
         'info': '#7FA7BF'
     };
     return colors[type] || '#7FA7BF';
+}
+
+// Initialize Mobile Activity Carousel
+function initializeMobileCarousel() {
+    // Only initialize on mobile devices
+    if (window.innerWidth > 768) return;
+    
+    const carousel = document.querySelector('.mobile-activity-carousel');
+    if (!carousel) return;
+    
+    const slides = carousel.querySelectorAll('.carousel-slide');
+    const dots = carousel.querySelectorAll('.dot');
+    let currentSlide = 0;
+    
+    // Function to show specific slide
+    function showSlide(index) {
+        // Hide all slides
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+        
+        // Show current slide
+        slides[index].classList.add('active');
+        dots[index].classList.add('active');
+        currentSlide = index;
+    }
+    
+    // Add click handlers to dots
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            showSlide(index);
+        });
+    });
+    
+    // Auto-advance carousel
+    setInterval(() => {
+        const nextSlide = (currentSlide + 1) % slides.length;
+        showSlide(nextSlide);
+    }, 5000); // Change slide every 5 seconds
+    
+    // Add touch/swipe support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    carousel.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    carousel.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+    
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                // Swipe left - next slide
+                const nextSlide = (currentSlide + 1) % slides.length;
+                showSlide(nextSlide);
+            } else {
+                // Swipe right - previous slide
+                const prevSlide = (currentSlide - 1 + slides.length) % slides.length;
+                showSlide(prevSlide);
+            }
+        }
+    }
 }

@@ -133,6 +133,56 @@ body {
     transition: all 0.2s ease;
 }
 
+/* Mobile Activity Carousel - Hidden on Desktop */
+.mobile-activity-carousel {
+    display: none;
+}
+
+.carousel-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.carousel-slide {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.carousel-slide.active {
+    display: block;
+    opacity: 1;
+}
+
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dot.active {
+    background-color: var(--primary-color);
+    transform: scale(1.2);
+}
+
+/* Desktop Activity Grid - Hidden on Mobile */
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
 .emotional-support-section:hover,
 .activity-suggestions-section:hover,
 .content-recommendations-section:hover,
@@ -851,5 +901,38 @@ body {
     
     .daily-wellness-header .section-title {
         font-size: 1.25rem;
+    }
+    
+    /* Show Mobile Carousel */
+    .mobile-activity-carousel {
+        display: block;
+    }
+    
+    /* Hide Desktop Grid */
+    .activity-grid {
+        display: none;
+    }
+    
+    /* Remove Container Background for Mobile */
+    .activity-suggestions-section {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        margin-bottom: 2rem;
+    }
+    
+    /* Style Individual Activity Items for Mobile */
+    .carousel-slide .activity-item {
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+    
+    .carousel-slide .activity-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--box-shadow-hover);
     }
 }

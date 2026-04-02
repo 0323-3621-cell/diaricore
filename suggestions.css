@@ -533,6 +533,7 @@ body {
     
     .emotional-support-phrase {
         padding: 0.25rem 0.5rem;
+        text-align: left;
     }
     
     .support-text {

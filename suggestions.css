@@ -1018,11 +1018,12 @@ body {
         border-radius: 16px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
+        display: flex !important; /* Override column layout */
+        align-items: center !important; /* Override centering */
         gap: 1rem;
-        text-align: left;
+        text-align: left !important; /* Override center text */
         transition: all 0.2s ease;
+        flex-direction: row !important; /* Force row layout */
     }
     
     .mobile-content-cards .content-item:hover {

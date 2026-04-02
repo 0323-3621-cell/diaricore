@@ -692,6 +692,7 @@
     
     .voice-transcript {
         padding: 1.5rem;
+        display: block !important;
     }
     
     .recording-state {

@@ -139,47 +139,56 @@
             <div class="tags-section">
                 <h2 class="section-title"># TAGS</h2>
                 <div class="tags-container">
-                    <button class="tag-btn" data-tag="School">
+                    <!-- First row (always visible) -->
+                    <button class="tag-btn first-row" data-tag="School">
                         <i class="bi bi-book"></i>
                         <span>School</span>
                     </button>
-                    <button class="tag-btn" data-tag="Home">
+                    <button class="tag-btn first-row" data-tag="Home">
                         <i class="bi bi-house"></i>
                         <span>Home</span>
                     </button>
-                    <button class="tag-btn" data-tag="Friends">
+                    <button class="tag-btn first-row" data-tag="Friends">
                         <i class="bi bi-people"></i>
                         <span>Friends</span>
                     </button>
-                    <button class="tag-btn" data-tag="Work">
+                    <button class="tag-btn first-row" data-tag="Work">
                         <i class="bi bi-briefcase"></i>
                         <span>Work</span>
                     </button>
-                    <button class="tag-btn" data-tag="Family">
+                    <button class="tag-btn first-row" data-tag="Family">
                         <i class="bi bi-heart"></i>
                         <span>Family</span>
                     </button>
-                    <button class="tag-btn" data-tag="Health">
+                    <button class="tag-btn first-row" data-tag="Health">
                         <i class="bi bi-heart-pulse"></i>
                         <span>Health</span>
                     </button>
-                    <button class="tag-btn" data-tag="Money">
+                    <button class="tag-btn first-row" data-tag="Money">
                         <i class="bi bi-currency-dollar"></i>
                         <span>Money</span>
                     </button>
-                    <button class="tag-btn" data-tag="GF Home">
+                    
+                    <!-- Second row (hidden by default) -->
+                    <button class="tag-btn second-row" data-tag="GF Home" style="display: none;">
                         <i class="bi bi-house-heart"></i>
                         <span>GF Home</span>
                     </button>
-                    <button class="tag-btn" data-tag="New Tag">
+                    <button class="tag-btn second-row" data-tag="New Tag" style="display: none;">
                         <i class="bi bi-star"></i>
                         <span>New Tag</span>
                     </button>
-                    <button class="tag-btn add-tag">
+                    <button class="tag-btn add-tag second-row" style="display: none;">
                         <i class="bi bi-plus"></i>
                         <span>Add Tag</span>
                     </button>
                 </div>
+                
+                <!-- More button -->
+                <button class="more-btn" id="moreTagsBtn">
+                    <i class="bi bi-chevron-down"></i>
+                    <span>more</span>
+                </button>
             </div>
             
             <!-- Journal Input Section -->

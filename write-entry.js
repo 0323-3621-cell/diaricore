@@ -41,6 +41,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Desktop more button functionality - show/hide second row
+    function setupDesktopMoreButton() {
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) return;
+        
+        const moreBtn = document.getElementById('moreTagsBtn');
+        const secondRowTags = document.querySelectorAll('.second-row');
+        let expanded = false;
+        
+        // Show more button if there are second row tags
+        if (secondRowTags.length > 0) {
+            moreBtn.style.display = 'flex';
+        }
+        
+        moreBtn.addEventListener('click', function() {
+            expanded = !expanded;
+            
+            secondRowTags.forEach(tag => {
+                if (expanded) {
+                    tag.style.display = 'flex';
+                } else {
+                    tag.style.display = 'none';
+                }
+            });
+            
+            // Update button state
+            if (expanded) {
+                moreBtn.classList.add('expanded');
+                moreBtn.querySelector('span').textContent = 'less';
+            } else {
+                moreBtn.classList.remove('expanded');
+                moreBtn.querySelector('span').textContent = 'more';
+            }
+        });
+    }
+    
     // Mobile more tags functionality (show first 4, hide rest)
     function setupMobileMoreButton() {
         const isMobile = window.innerWidth <= 768;
@@ -65,11 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isMobile) {
             setupMobileMoreButton();
         } else {
-            // Desktop: Show all tags, let them wrap in rows of 7
-            const allTags = document.querySelectorAll('.tags-container .tag-btn');
-            allTags.forEach(tag => {
-                tag.style.display = 'flex';
-            });
+            setupDesktopMoreButton();
         }
     }
     

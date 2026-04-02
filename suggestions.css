@@ -141,7 +141,14 @@ body {
     box-shadow: var(--box-shadow-hover);
 }
 
-/* Section Headers */
+/* Mobile Header - Hidden on Desktop */
+.mobile-header {
+    display: none;
+}
+
+.emotional-support-header {
+    display: none;
+}
 .section-header {
     display: flex;
     align-items: center;

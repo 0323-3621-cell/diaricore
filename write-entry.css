@@ -408,20 +408,20 @@
     }
     
     .tag-btn {
-        padding: 0.3rem 0.05rem; /* Almost no horizontal padding */
-        font-size: 0.65rem; /* Even smaller font */
-        border-radius: 8px; /* Keep same shape */
-        gap: 0.1rem; /* Reduce gap between icon and text */
-        justify-content: center; /* Center content to reduce edge spaces */
-        align-items: center;
+        padding: 0.3rem 0.05rem !important; /* Almost no horizontal padding */
+        font-size: 0.65rem !important; /* Even smaller font */
+        border-radius: 8px !important; /* Keep same shape */
+        gap: 0.1rem !important; /* Reduce gap between icon and text */
+        justify-content: center !important; /* Center content to reduce edge spaces */
+        align-items: center !important;
     }
     
     .tag-btn i {
-        font-size: 0.8rem; /* Even smaller icon */
+        font-size: 0.8rem !important; /* Even smaller icon */
     }
     
     .tag-btn span {
-        font-size: 0.6rem; /* Even smaller text */
+        font-size: 0.6rem !important; /* Even smaller text */
     }
     
     /* More button styling */

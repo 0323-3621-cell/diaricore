@@ -454,6 +454,15 @@
         font-weight: 500;
     }
     
+    /* Mobile journal input title styling - "Your Thoughts" */
+    .journal-input-section .section-title {
+        text-transform: uppercase; /* All caps */
+        margin-left: -0.5rem; /* Move text more to the left */
+        opacity: 0.7; /* Lower opacity - same as feelings */
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
     /* Override desktop tag hiding on mobile - show all tags by default, but allow JS to hide */
     .tags-container .tag-btn {
         display: flex !important;

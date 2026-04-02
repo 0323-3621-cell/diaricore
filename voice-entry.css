@@ -84,6 +84,7 @@
     font-weight: 400;
     color: var(--text-dark);
     margin-bottom: 0.5rem;
+    opacity: 0.6;
 }
 
 .voice-status p {

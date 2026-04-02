@@ -343,7 +343,7 @@ body {
 
 /* Hide mobile Smart Insights on desktop */
 .mobile-smart-insights {
-    display: none;
+    display: none !important;
 }
 
 /* Responsive Design */

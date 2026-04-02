@@ -798,6 +798,11 @@ body {
         font-size: 12px !important; /* Override desktop size for mobile */
     }
     
+    /* Hide desktop Smart Insights section on mobile */
+    .smart-insights {
+        display: none !important;
+    }
+    
     /* Show mobile Smart Insights section */
     .mobile-smart-insights {
         display: block !important;

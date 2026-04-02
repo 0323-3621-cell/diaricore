@@ -179,7 +179,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             setupMobileMoreButton();
         } else {
-            setupDesktopMoreButton();
+            // Desktop: Run after a small delay to ensure mobile doesn't override
+            setTimeout(() => {
+                setupDesktopMoreButton();
+            }, 10);
         }
     }
     

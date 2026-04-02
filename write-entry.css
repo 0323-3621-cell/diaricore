@@ -102,15 +102,16 @@
 }
 
 /* Category Grids */
-.category-grid {
+.feelings-grid.category-grid {
     display: none;
 }
 
-.category-grid.active {
+.feelings-grid.category-grid.active {
     display: grid;
 }
 
-.feelings-grid {
+/* Base feelings grid (for desktop) */
+.feelings-grid:not(.category-grid) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
@@ -382,7 +383,7 @@
         font-size: 0.75rem;
     }
     
-    .feelings-grid {
+    .feelings-grid.category-grid {
         grid-template-columns: repeat(4, 1fr); /* 4 columns */
         gap: 0.5rem;
         margin: 0;
@@ -435,7 +436,7 @@
         padding: 1rem 0.5rem;
     }
     
-    .feelings-grid {
+    .feelings-grid.category-grid {
         grid-template-columns: repeat(4, 1fr); /* 4 columns */
     }
     

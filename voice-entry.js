@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const wordCount = document.getElementById('wordCount');
     const retryBtn = document.getElementById('retryBtn');
     const saveBtn = document.getElementById('saveBtn');
+    const mobileSaveBtn = document.getElementById('saveEntryBtn');
     
     // Sidebar functionality
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -139,6 +140,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Save button functionality
     saveBtn.addEventListener('click', function() {
+        saveEntry();
+    });
+    
+    // Mobile save button functionality
+    if (mobileSaveBtn) {
+        mobileSaveBtn.addEventListener('click', function() {
+            saveEntry();
+        });
+    }
+    
+    function saveEntry() {
         const transcript = transcriptText.textContent;
         if (transcript && transcript !== 'Your speech will appear here as you speak...') {
             // Save to localStorage (placeholder)
@@ -164,5 +176,5 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = 'dashboard.html';
             }, 2000);
         }
-    });
+    }
 });

@@ -223,6 +223,34 @@
     font-size: 16px;
 }
 
+/* More button styling - unified for both platforms */
+.more-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+}
+
+.more-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.more-btn.expanded i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+}
+
 /* Journal Input Section */
 .journal-input-section {
     margin-bottom: 2.5rem;
@@ -427,33 +455,6 @@
     
     .tag-btn span {
         font-size: 0.6rem !important; /* Even smaller text */
-    }
-    
-    /* More button styling */
-    .more-btn {
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--text-muted);
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        margin-top: 0.5rem;
-        justify-content: center;
-    }
-    
-    .more-btn:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-    }
-    
-    .more-btn.expanded i {
-        transform: rotate(180deg);
     }
     
     .feelings-grid.category-grid {

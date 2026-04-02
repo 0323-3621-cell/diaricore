@@ -222,6 +222,31 @@
     text-align: center;
 }
 
+.transcript-preview {
+    background-color: var(--background-soft);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.transcript-preview h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+}
+
+.transcript-preview p {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin: 0;
+    min-height: 80px;
+}
+
 .summary-header {
     display: flex;
     align-items: center;
@@ -570,6 +595,20 @@
     
     .recording-text p {
         font-size: 1rem;
+    }
+    
+    .transcript-preview {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .transcript-preview h3 {
+        font-size: 1.1rem;
+    }
+    
+    .transcript-preview p {
+        font-size: 1rem;
+        min-height: 60px;
     }
     
     .post-recording-container {

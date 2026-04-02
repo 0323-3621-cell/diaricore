@@ -21,7 +21,7 @@
     font-size: 1rem;
     cursor: pointer;
     padding: 0.5rem;
-    border-radius: 10px; /* Updated to 10px */
+    border-radius: 12px; /* Updated to 12px */
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
@@ -40,7 +40,7 @@
     font-weight: 600;
     color: var(--text-dark);
     margin: 0;
-    margin-left: 1rem; /* Move text more to the right */
+    margin-left: 2rem; /* Move text more to the right */
 }
 
 .save-btn {
@@ -50,7 +50,7 @@
     font-size: 0.85rem;
     cursor: pointer;
     padding: 0.4rem 0.6rem; /* Smaller padding for proportion */
-    border-radius: 10px; /* Updated to 10px */
+    border-radius: 12px; /* Updated to 12px */
     transition: background-color 0.3s ease;
     display: flex;
     align-items: center;

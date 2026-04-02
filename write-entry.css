@@ -177,7 +177,7 @@
     margin-bottom: 2.5rem;
 }
 
-/* Tags container - flexbox with wrapping for desktop */
+/* Tags container - 7 per row layout for desktop */
 .tags-container {
     display: flex;
     flex-wrap: wrap;
@@ -185,10 +185,12 @@
     align-items: flex-start;
 }
 
-/* Desktop tag buttons - maintain original size */
-.tags-container .tag-btn {
-    flex: 0 0 auto;
-    min-width: fit-content;
+/* Force 7 tags per row on desktop */
+@media (min-width: 769px) {
+    .tags-container .tag-btn {
+        flex: 0 0 calc((100% - (6 * 0.75rem)) / 7); /* 7 tags per row */
+        max-width: calc((100% - (6 * 0.75rem)) / 7);
+    }
 }
 
 .tag-btn {
@@ -229,34 +231,6 @@
 
 .tag-btn i {
     font-size: 16px;
-}
-
-/* More button styling - unified for both platforms */
-.more-btn {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    margin-top: 0.5rem;
-    justify-content: center;
-}
-
-.more-btn:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-}
-
-.more-btn.expanded i {
-    transform: rotate(180deg);
-    transition: transform 0.3s ease;
 }
 
 /* Journal Input Section */

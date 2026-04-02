@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isMobile) return;
         
         const allTags = document.querySelectorAll('.tags-container .tag-btn');
-        const moreBtn = document.getElementById('moreTagsBtn');
         let mobileTagsExpanded = false;
         
         // Show first 4 tags, hide rest on mobile
@@ -58,55 +57,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 tag.style.display = 'none';
             }
         });
-        
-        // Always show more button on mobile (if there are more than 4 tags)
-        if (allTags.length > 4) {
-            moreBtn.style.display = 'flex';
-        }
-        
-        // Mobile more button click handler
-        moreBtn.onclick = function() {
-            mobileTagsExpanded = !mobileTagsExpanded;
-            
-            allTags.forEach((tag, index) => {
-                if (index >= 4) {
-                    if (mobileTagsExpanded) {
-                        tag.style.display = 'flex';
-                    } else {
-                        tag.style.display = 'none';
-                    }
-                }
-            });
-            
-            // Update button state
-            if (mobileTagsExpanded) {
-                moreBtn.classList.add('expanded');
-                moreBtn.querySelector('span').textContent = 'less';
-            } else {
-                moreBtn.classList.remove('expanded');
-                moreBtn.querySelector('span').textContent = 'more';
-            }
-        };
     }
     
-    // Desktop functionality - show all tags, let them wrap naturally
+    // Update tag visibility based on platform
     function updateTagVisibility() {
         const isMobile = window.innerWidth <= 768;
         if (isMobile) {
             setupMobileMoreButton();
-            return;
+        } else {
+            // Desktop: Show all tags, let them wrap in rows of 7
+            const allTags = document.querySelectorAll('.tags-container .tag-btn');
+            allTags.forEach(tag => {
+                tag.style.display = 'flex';
+            });
         }
-        
-        // Desktop: Show all tags and let them wrap naturally
-        const allTags = document.querySelectorAll('.tags-container .tag-btn');
-        const moreBtn = document.getElementById('moreTagsBtn');
-        
-        allTags.forEach(tag => {
-            tag.style.display = 'flex';
-        });
-        
-        // Hide more button on desktop since tags wrap naturally
-        moreBtn.style.display = 'none';
     }
     
     // Initialize tag visibility on load

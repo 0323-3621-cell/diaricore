@@ -36,13 +36,44 @@
             <!-- Feelings Selection Section -->
             <div class="feelings-section">
                 <h2 class="section-title">How are you feeling?</h2>
-                <div class="feelings-grid">
+                
+                <!-- Category Selection -->
+                <div class="feelings-categories">
+                    <button class="category-btn active" data-category="positive">Positive</button>
+                    <button class="category-btn" data-category="negative">Negative</button>
+                    <button class="category-btn" data-category="neutral">Neutral</button>
+                </div>
+                
+                <!-- Positive Feelings -->
+                <div class="feelings-grid category-grid active" data-category="positive">
                     <div class="feeling-card" data-feeling="happy">
                         <div class="feeling-icon">
                             <i class="bi bi-emoji-smile"></i>
                         </div>
                         <span class="feeling-label">Happy</span>
                     </div>
+                    <div class="feeling-card" data-feeling="excited">
+                        <div class="feeling-icon">
+                            <i class="bi bi-emoji-laughing"></i>
+                        </div>
+                        <span class="feeling-label">Excited</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="grateful">
+                        <div class="feeling-icon">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <span class="feeling-label">Grateful</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="calm">
+                        <div class="feeling-icon">
+                            <i class="bi bi-emoji-neutral"></i>
+                        </div>
+                        <span class="feeling-label">Calm</span>
+                    </div>
+                </div>
+                
+                <!-- Negative Feelings -->
+                <div class="feelings-grid category-grid" data-category="negative">
                     <div class="feeling-card" data-feeling="sad">
                         <div class="feeling-icon">
                             <i class="bi bi-emoji-frown"></i>
@@ -55,11 +86,51 @@
                         </div>
                         <span class="feeling-label">Stressed</span>
                     </div>
+                    <div class="feeling-card" data-feeling="angry">
+                        <div class="feeling-icon">
+                            <i class="bi bi-emoji-angry"></i>
+                        </div>
+                        <span class="feeling-label">Angry</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="anxious">
+                        <div class="feeling-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <span class="feeling-label">Anxious</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="lonely">
+                        <div class="feeling-icon">
+                            <i class="bi bi-person-x"></i>
+                        </div>
+                        <span class="feeling-label">Lonely</span>
+                    </div>
+                </div>
+                
+                <!-- Neutral Feelings -->
+                <div class="feelings-grid category-grid" data-category="neutral">
                     <div class="feeling-card" data-feeling="neutral">
                         <div class="feeling-icon">
                             <i class="bi bi-emoji-neutral"></i>
                         </div>
                         <span class="feeling-label">Neutral</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="bored">
+                        <div class="feeling-icon">
+                            <i class="bi bi-moon"></i>
+                        </div>
+                        <span class="feeling-label">Bored</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="tired">
+                        <div class="feeling-icon">
+                            <i class="bi bi-battery-half"></i>
+                        </div>
+                        <span class="feeling-label">Tired</span>
+                    </div>
+                    <div class="feeling-card" data-feeling="confused">
+                        <div class="feeling-icon">
+                            <i class="bi bi-question-circle"></i>
+                        </div>
+                        <span class="feeling-label">Confused</span>
                     </div>
                 </div>
             </div>

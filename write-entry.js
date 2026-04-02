@@ -5,6 +5,27 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFeeling = null;
     let selectedTags = new Set();
     
+    // Category switching functionality
+    const categoryButtons = document.querySelectorAll('.category-btn');
+    const categoryGrids = document.querySelectorAll('.category-grid');
+    
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const category = this.dataset.category;
+            
+            // Remove active class from all buttons and grids
+            categoryButtons.forEach(btn => btn.classList.remove('active'));
+            categoryGrids.forEach(grid => grid.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding grid
+            this.classList.add('active');
+            const targetGrid = document.querySelector(`.category-grid[data-category="${category}"]`);
+            if (targetGrid) {
+                targetGrid.classList.add('active');
+            }
+        });
+    });
+    
     // Feeling selection functionality
     const feelingCards = document.querySelectorAll('.feeling-card');
     feelingCards.forEach(card => {

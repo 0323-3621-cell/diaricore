@@ -60,6 +60,57 @@
                 <section class="activity-suggestions-section">
                     <div class="section-content">
                         <p class="section-description">Activities that match your mood and energy levels:</p>
+                        
+                        <!-- Mobile Hero Carousel -->
+                        <div class="mobile-activity-carousel">
+                            <div class="carousel-inner">
+                                <div class="carousel-item active">
+                                    <div class="activity-item">
+                                        <div class="activity-icon">
+                                            <i class="bi bi-tree"></i>
+                                        </div>
+                                        <h3 class="activity-title">Nature Walk</h3>
+                                        <p class="activity-duration">30 mins</p>
+                                        <p class="activity-description">Fresh air and gentle exercise</p>
+                                    </div>
+                                </div>
+                                <div class="carousel-item">
+                                    <div class="activity-item">
+                                        <div class="activity-icon">
+                                            <i class="bi bi-palette"></i>
+                                        </div>
+                                        <h3 class="activity-title">Creative Time</h3>
+                                        <p class="activity-duration">45 mins</p>
+                                        <p class="activity-description">Express yourself through art</p>
+                                    </div>
+                                </div>
+                                <div class="carousel-item">
+                                    <div class="activity-item">
+                                        <div class="activity-icon">
+                                            <i class="bi bi-cup-hot"></i>
+                                        </div>
+                                        <h3 class="activity-title">Tea Meditation</h3>
+                                        <p class="activity-duration">15 mins</p>
+                                        <p class="activity-description">Mindful tea drinking practice</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="carousel-controls">
+                                <button class="carousel-prev" onclick="prevActivitySlide()">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button class="carousel-next" onclick="nextActivitySlide()">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="carousel-indicators">
+                                <span class="indicator active" onclick="goToActivitySlide(0)"></span>
+                                <span class="indicator" onclick="goToActivitySlide(1)"></span>
+                                <span class="indicator" onclick="goToActivitySlide(2)"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Desktop Grid (Hidden on Mobile) -->
                         <div class="activity-grid">
                             <div class="activity-item">
                                 <div class="activity-icon">

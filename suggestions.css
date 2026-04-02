@@ -124,13 +124,95 @@ body {
 .emotional-support-section,
 .activity-suggestions-section,
 .content-recommendations-section,
-.daily-wellness-section {
+.activity-suggestions-section {
     margin-bottom: 3rem;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 2rem;
     transition: all 0.2s ease;
+}
+
+/* Mobile Activity Carousel */
+.mobile-activity-carousel {
+    display: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.carousel-inner {
+    display: flex;
+    transition: transform 0.3s ease;
+}
+
+.carousel-item {
+    min-width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.carousel-item .activity-item {
+    width: 100%;
+    max-width: 300px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-shadow: var(--box-shadow);
+}
+
+.carousel-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    position: relative;
+}
+
+.carousel-prev,
+.carousel-next {
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--primary-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.carousel-prev:hover,
+.carousel-next:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.indicator.active {
+    background: var(--primary-color);
+    width: 24px;
+    border-radius: 4px;
 }
 
 .emotional-support-section:hover,
@@ -788,6 +870,10 @@ body {
     
     .header-section {
         display: none;
+    }
+    
+    .emotional-support-section {
+        margin-bottom: -2rem;
     }
     
     .emotional-support-header {

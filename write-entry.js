@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
             moreBtn.style.display = 'flex';
         }
         
+        // Remove any existing mobile event listeners
+        moreBtn.removeEventListener('click', arguments.callee);
+        
         moreBtn.addEventListener('click', function() {
             expanded = !expanded;
             
@@ -83,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isMobile) return;
         
         const allTags = document.querySelectorAll('.tags-container .tag-btn');
+        const moreBtn = document.getElementById('moreTagsBtn');
         let mobileTagsExpanded = false;
         
         // Show first 4 tags, hide rest on mobile
@@ -93,6 +97,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 tag.style.display = 'none';
             }
         });
+        
+        // Always show more button on mobile (if there are more than 4 tags)
+        if (allTags.length > 4) {
+            moreBtn.style.display = 'flex';
+        }
+        
+        // Mobile more button click handler
+        moreBtn.onclick = function() {
+            mobileTagsExpanded = !mobileTagsExpanded;
+            
+            allTags.forEach((tag, index) => {
+                if (index >= 4) {
+                    if (mobileTagsExpanded) {
+                        tag.style.display = 'flex';
+                    } else {
+                        tag.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Update button state
+            if (mobileTagsExpanded) {
+                moreBtn.classList.add('expanded');
+                moreBtn.querySelector('span').textContent = 'less';
+            } else {
+                moreBtn.classList.remove('expanded');
+                moreBtn.querySelector('span').textContent = 'more';
+            }
+        };
     }
     
     // Update tag visibility based on platform

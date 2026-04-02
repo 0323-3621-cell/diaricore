@@ -15,22 +15,28 @@
 }
 
 .back-btn {
-    background: transparent;
-    border: none;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
     color: var(--primary-color);
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 8px;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
 }
 
 .back-btn:hover {
-    background-color: var(--primary-bg);
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .mobile-title {
-    font-size: 1.1rem;
+    font-size: 0.95rem; /* Reduced font size */
     font-weight: 600;
     color: var(--text-dark);
     margin: 0;
@@ -40,11 +46,14 @@
     background: var(--primary-color);
     border: none;
     color: white;
-    font-size: 1rem;
+    font-size: 0.85rem;
     cursor: pointer;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem; /* Smaller padding for proportion */
     border-radius: 8px;
     transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
 }
 
 .save-btn:hover {

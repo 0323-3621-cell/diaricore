@@ -100,45 +100,47 @@ document.addEventListener('DOMContentLoaded', function() {
         window.updateDesktopTags = updateSecondRowTags;
     }
     
-    // Mobile more tags functionality (show first 4, hide rest)
+    // Mobile more tags functionality (show first row of 4, hide rest)
     function setupMobileMoreButton() {
         const isMobile = window.innerWidth <= 768;
         if (!isMobile) return;
         
-        const allTags = document.querySelectorAll('.tags-container .tag-btn');
         const moreBtn = document.getElementById('moreTagsBtn');
-        let mobileTagsExpanded = false;
+        let mobileExpanded = false;
         
-        // Show first 4 tags, hide rest on mobile
-        allTags.forEach((tag, index) => {
-            if (index < 4) {
-                tag.style.display = 'flex';
+        // Function to update mobile tag rows
+        function updateMobileTagRows() {
+            const allTags = document.querySelectorAll('.tags-container .tag-btn');
+            const firstRowTags = allTags.slice(0, 4); // First 4 tags
+            const otherRowsTags = allTags.slice(4); // All tags after 4
+            
+            // Show more button if there are tags beyond first 4
+            if (otherRowsTags.length > 0) {
+                moreBtn.style.display = 'flex';
             } else {
-                tag.style.display = 'none';
+                moreBtn.style.display = 'none';
             }
-        });
-        
-        // Always show more button on mobile (if there are more than 4 tags)
-        if (allTags.length > 4) {
-            moreBtn.style.display = 'flex';
+            
+            // Set visibility based on expanded state
+            firstRowTags.forEach(tag => {
+                tag.style.display = 'flex';
+            });
+            
+            otherRowsTags.forEach(tag => {
+                tag.style.display = mobileExpanded ? 'flex' : 'none';
+            });
         }
+        
+        // Initial setup
+        updateMobileTagRows();
         
         // Mobile more button click handler
         moreBtn.onclick = function() {
-            mobileTagsExpanded = !mobileTagsExpanded;
-            
-            allTags.forEach((tag, index) => {
-                if (index >= 4) {
-                    if (mobileTagsExpanded) {
-                        tag.style.display = 'flex';
-                    } else {
-                        tag.style.display = 'none';
-                    }
-                }
-            });
+            mobileExpanded = !mobileExpanded;
+            updateMobileTagRows();
             
             // Update button state
-            if (mobileTagsExpanded) {
+            if (mobileExpanded) {
                 moreBtn.classList.add('expanded');
                 moreBtn.querySelector('span').textContent = 'less';
             } else {
@@ -222,6 +224,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Insert new tag before add button
         tagsContainer.insertBefore(newTagBtn, addTagBtn);
+        
+        // Update tag layout based on platform
+        if (window.innerWidth > 768 && window.updateDesktopTags) {
+            window.updateDesktopTags();
+        } else if (window.innerWidth <= 768) {
+            // Trigger mobile update
+            setupMobileMoreButton();
+        }
         
         // Animate new tag
         newTagBtn.style.opacity = '0';

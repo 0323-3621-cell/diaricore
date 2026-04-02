@@ -117,10 +117,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Function to update mobile tag rows
         function updateMobileTagRows() {
             const allTags = document.querySelectorAll('.tags-container .tag-btn');
-            const firstRowTags = allTags.slice(0, 4); // First 4 tags
-            const otherRowsTags = allTags.slice(4); // All tags after 4
+            const allTagsArray = Array.from(allTags); // Convert NodeList to array
+            const firstRowTags = allTagsArray.slice(0, 4); // First 4 tags
+            const otherRowsTags = allTagsArray.slice(4); // All tags after 4
             
-            console.log('Mobile - Total tags:', allTags.length, 'First row:', firstRowTags.length, 'Other rows:', otherRowsTags.length, 'Expanded:', mobileExpanded);
+            console.log('Mobile - Total tags:', allTagsArray.length, 'First row:', firstRowTags.length, 'Other rows:', otherRowsTags.length, 'Expanded:', mobileExpanded);
             
             // Show more button if there are tags beyond first 4
             if (otherRowsTags.length > 0) {

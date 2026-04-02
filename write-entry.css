@@ -319,7 +319,7 @@
     .feelings-section,
     .tags-section,
     .journal-input-section {
-        padding: 0 1rem;
+        padding: 0; /* Remove all padding */
         margin-bottom: 1.5rem;
     }
     
@@ -340,8 +340,9 @@
     }
     
     .feeling-card {
-        padding: 0.5rem; /* Very compact padding */
-        margin: 0; /* Remove margins */
+        padding: 0.5rem 0.25rem; /* Very minimal padding, less left/right */
+        margin: 0;
+        border-radius: 8px; /* Slightly smaller radius */
     }
     
     .feeling-icon {

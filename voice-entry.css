@@ -62,33 +62,92 @@
     font-size: 3rem;
     color: white;
 }
-.voice-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 80px);
-    padding: 2rem;
+
+.voice-status {
     text-align: center;
+    margin: 2rem 0;
 }
 
-.voice-container {
-    max-width: 600px;
-    width: 100%;
+.voice-status h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
 }
 
-.voice-circle {
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 3rem;
-    background: linear-gradient(135deg, var(--primary-color), #6366f1);
-    border-radius: 50%;
+.voice-status p {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.voice-timer {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--primary-color);
+    margin: 2rem 0;
+    font-family: 'Courier New', monospace;
+}
+
+.voice-transcript {
+    background-color: var(--card-background);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: left;
+}
+
+.voice-transcript h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+}
+
+.voice-transcript p {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.voice-actions {
     display: flex;
-    align-items: center;
+    gap: 1rem;
     justify-content: center;
+    margin: 2rem 0;
+}
+
+.voice-btn {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.voice-btn.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.voice-btn.primary:hover {
+    background-color: #4f46e5;
+    transform: translateY(-2px);
+}
+
+.voice-btn.secondary {
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 2px solid var(--border-color);
     position: relative;
     overflow: hidden;
 }
@@ -121,7 +180,8 @@
 }
 
 .voice-status {
-    margin-bottom: 2rem;
+    text-align: center;
+    margin: 2rem 0;
 }
 
 .voice-status h2 {
@@ -134,13 +194,15 @@
 .voice-status p {
     font-size: 1.1rem;
     color: var(--text-muted);
+    margin: 0;
 }
 
 .voice-timer {
+    text-align: center;
     font-size: 2.5rem;
     font-weight: 300;
     color: var(--primary-color);
-    margin-bottom: 3rem;
+    margin: 2rem 0;
     font-family: 'Courier New', monospace;
 }
 
@@ -149,8 +211,7 @@
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
-    margin-bottom: 3rem;
-    min-height: 150px;
+    margin: 2rem 0;
     text-align: left;
     display: none;
 }
@@ -171,13 +232,14 @@
     color: var(--text-dark);
     line-height: 1.6;
     white-space: pre-wrap;
+    margin: 0;
 }
 
 .voice-actions {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    margin-top: 2rem;
+    margin: 2rem 0;
 }
 
 .voice-btn {
@@ -219,17 +281,30 @@
     cursor: not-allowed;
 }
 
+.voice-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 2rem;
+    text-align: center;
+}
+
+.voice-container {
+    max-width: 600px;
+    width: 100%;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
-    .voice-content {
-        padding: 1rem;
-        min-height: calc(100vh - 60px);
+    .voice-recording-container {
+        margin: 2rem 0;
     }
     
     .voice-circle {
         width: 150px;
         height: 150px;
-        margin-bottom: 2rem;
     }
     
     .voice-circle i {
@@ -246,12 +321,10 @@
     
     .voice-timer {
         font-size: 2rem;
-        margin-bottom: 2rem;
     }
     
     .voice-transcript {
         padding: 1.5rem;
-        margin-bottom: 2rem;
     }
     
     .voice-actions {

@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
         statusText.textContent = 'Tap to record';
     }
     
+    // Ensure mobile retry button is always visible after page load
+    if (isMobile && mobileRetryBtn) {
+        mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+    }
+    
     // Sidebar functionality
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');

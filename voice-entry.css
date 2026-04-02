@@ -690,6 +690,14 @@
         display: none;
     }
     
+    .post-recording-container {
+        display: block !important;
+        padding: 2rem 1.5rem;
+        margin: 1rem 0 0 0;
+        border-radius: 12px;
+        width: 100%;
+    }
+    
     .recording-state {
         padding: 1.5rem;
         margin: 1.5rem 0;
@@ -715,13 +723,6 @@
     .transcript-preview p {
         font-size: 1rem;
         min-height: 60px;
-    }
-    
-    .post-recording-container {
-        padding: 2rem 1.5rem;
-        margin: 1rem 0 0 0;
-        border-radius: 12px;
-        width: 100%;
     }
     
     .summary-header i {

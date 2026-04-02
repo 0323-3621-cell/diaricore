@@ -101,10 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const seconds = Math.floor((elapsed % 60000) / 1000);
         recordingDuration.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        // Show post-recording container after a short delay
-        setTimeout(() => {
-            postRecordingContainer.style.display = 'block';
-        }, 500);
+        // Show post-recording container after a short delay (only on desktop)
+        if (!isMobile) {
+            setTimeout(() => {
+                postRecordingContainer.style.display = 'block';
+            }, 500);
+        }
     }
     
     function updateRecordingTimer() {
@@ -130,7 +132,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Retry button functionality
     retryBtn.addEventListener('click', function() {
         // Reset UI
-        postRecordingContainer.style.display = 'none';
+        if (!isMobile) {
+            postRecordingContainer.style.display = 'none';
+        }
         finalTranscript.textContent = 'Your speech will appear here as you speak...';
         statusText.style.display = 'block';
         statusText.textContent = isMobile ? 'Tap to record' : 'Tap to start recording';

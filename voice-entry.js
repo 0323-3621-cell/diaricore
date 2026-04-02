@@ -27,9 +27,18 @@ document.addEventListener('DOMContentLoaded', function() {
         statusText.textContent = 'Tap to record';
     }
     
-    // Ensure mobile retry button is always visible after page load
+    // Ensure mobile retry button is always visible after page load with delay
     if (isMobile && mobileRetryBtn) {
-        mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+        setTimeout(() => {
+            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+        }, 100);
+        
+        // Also ensure it's visible after window fully loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+            }, 50);
+        });
     }
     
     // Sidebar functionality

@@ -386,7 +386,7 @@
     }
     
     .feelings-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(4, 1fr); /* 4 columns */
     }
     
     .journal-textarea {

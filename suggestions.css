@@ -1113,21 +1113,29 @@ body {
     .mobile-wellness-carousel .tip-time {
         flex-shrink: 0;
         display: flex;
-        flex-direction: column;
         align-items: center;
         gap: 0.5rem;
-        min-width: 60px;
+        margin-right: 0;
+        min-width: auto;
     }
     
     .mobile-wellness-carousel .tip-time i {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
         font-size: 1.5rem;
-        color: var(--primary-color);
     }
     
     .mobile-wellness-carousel .tip-time span {
-        font-size: 0.8rem;
+        font-size: 1rem;
         font-weight: 600;
-        color: var(--text-secondary);
+        color: var(--text-dark);
+        white-space: nowrap;
     }
     
     .mobile-wellness-carousel .tip-content {

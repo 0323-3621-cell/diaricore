@@ -408,10 +408,12 @@
     }
     
     .tag-btn {
-        padding: 0.3rem 0.1rem; /* Minimal horizontal padding */
+        padding: 0.3rem 0.05rem; /* Almost no horizontal padding */
         font-size: 0.65rem; /* Even smaller font */
         border-radius: 8px; /* Keep same shape */
-        gap: 0.15rem;
+        gap: 0.1rem; /* Reduce gap between icon and text */
+        justify-content: center; /* Center content to reduce edge spaces */
+        align-items: center;
     }
     
     .tag-btn i {

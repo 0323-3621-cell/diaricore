@@ -970,4 +970,10 @@ body {
         font-size: 0.9rem;
         color: var(--text-secondary);
     }
+    
+    /* Hide desktop-only elements on mobile */
+    .section-description,
+    .section-footer {
+        display: none;
+    }
 }

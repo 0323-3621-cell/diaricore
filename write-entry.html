@@ -15,7 +15,18 @@
     <div class="dashboard-container">
         <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Header Section -->
+            <!-- Mobile Header Section -->
+            <div class="mobile-header">
+                <button class="back-btn" onclick="window.location.href='dashboard.html'">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <h1 class="mobile-title">New Entry</h1>
+                <button class="save-btn" id="saveEntryBtn">
+                    <i class="bi bi-check"></i>
+                </button>
+            </div>
+            
+            <!-- Desktop Header Section (hidden on mobile) -->
             <div class="header-section">
                 <h1 class="main-title">Write Your Entry</h1>
                 <p class="subtitle">Express your thoughts and feelings</p>

@@ -1,5 +1,56 @@
 /* Write Entry Page Styles */
 
+/* Mobile Header Styles */
+.mobile-header {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--card-background);
+    border-bottom: 1px solid var(--border-color);
+    margin: -1rem -1rem 1rem -1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: var(--primary-bg);
+}
+
+.mobile-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+}
+
+.save-btn {
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.save-btn:hover {
+    background: var(--primary-hover);
+}
+
 /* Feelings Section */
 .feelings-section {
     margin-bottom: 2.5rem;
@@ -225,6 +276,25 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .mobile-header {
+        display: flex;
+    }
+    
+    .header-section {
+        display: none;
+    }
+    
+    .main-content {
+        padding: 0;
+    }
+    
+    .feelings-section,
+    .tags-section,
+    .journal-input-section {
+        padding: 0 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
     .feelings-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
@@ -254,8 +324,7 @@
     }
     
     .action-buttons-section {
-        flex-direction: column;
-        gap: 0.75rem;
+        display: none; /* Hide desktop action buttons on mobile */
     }
     
     .btn-save-entry,

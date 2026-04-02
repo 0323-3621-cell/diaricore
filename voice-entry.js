@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', () => {
             setTimeout(() => {
                 mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                // Apply permanent white color immediately
+                mobileRetryBtn.style.color = 'white';
+                mobileRetryBtn.style.backgroundColor = 'var(--primary-color)';
             }, 50);
         });
     }

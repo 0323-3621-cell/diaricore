@@ -873,6 +873,12 @@ body {
         margin-top: 0.5rem !important;
     }
     
+    /* Ensure "nothing to show" message is fully visible on mobile */
+    .nothing-to-show-mobile {
+        padding-bottom: 3rem !important;
+        margin-top: 1rem !important;
+    }
+    
     /* Mobile font size overrides to match dashboard */
     .main-title {
         font-size: 20px !important; /* Match dashboard main-title */

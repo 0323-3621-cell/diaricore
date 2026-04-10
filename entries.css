@@ -308,6 +308,15 @@ body {
     box-shadow: var(--box-shadow-hover);
 }
 
+/* Desktop-specific title positioning */
+.entry-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+}
+
 .entry-header {
     display: flex;
     justify-content: space-between;

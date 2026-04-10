@@ -64,6 +64,16 @@ body {
     margin-bottom: 3rem;
 }
 
+/* Hide mobile layout on desktop */
+.mobile-search-layout {
+    display: none;
+}
+
+/* Show desktop layout on desktop */
+.desktop-layout {
+    display: flex;
+}
+
 .main-title {
     font-size: 28px;
     font-weight: 600;
@@ -476,6 +486,51 @@ body {
         width: 100% !important; /* Full width on mobile */
         border-radius: 25px !important; /* More rounded corners */
         padding: 0.875rem 1rem !important; /* Slightly larger padding */
+    }
+    
+    /* Hide desktop layout on mobile */
+    .desktop-layout {
+        display: none !important;
+    }
+    
+    /* Show mobile layout */
+    .mobile-search-layout {
+        display: block !important;
+    }
+    
+    /* Mobile filter button inside search bar */
+    .mobile-filter-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.125rem;
+        padding: 0.25rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-filter-btn:hover {
+        color: var(--primary-color);
+        background-color: var(--background-soft);
+    }
+    
+    /* Position filter dropdown inside search bar */
+    .mobile-search-layout .filter-dropdown {
+        position: static;
+        margin-left: auto;
+    }
+    
+    .mobile-search-layout .filter-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: auto;
+        min-width: 250px;
+        z-index: 1000;
     }
     
     /* Mobile font size overrides to match dashboard */

@@ -260,7 +260,7 @@ function loadMoreEntries() {
         
         // If no more March entries, show April section
         if (remainingCount === 0) {
-            const aprilSection = document.querySelector('.entries-section:nth-of-type(2)');
+            const aprilSection = document.querySelector('.april-section');
             if (aprilSection) {
                 aprilSection.style.setProperty('display', 'block', 'important');
                 

@@ -807,13 +807,13 @@ body {
         display: none !important;
     }
     
-    /* Hide entire April section by default on mobile */
-    .entries-section:nth-of-type(2) {
+    /* Hide April section specifically on mobile */
+    .april-section {
         display: none !important;
     }
     
-    /* But keep March section visible */
-    .entries-section:nth-of-type(1) {
+    /* Ensure March section is visible on mobile */
+    .entries-section:not(.april-section) {
         display: block !important;
     }
     

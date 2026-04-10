@@ -802,8 +802,8 @@ body {
         font-weight: 500;
     }
     
-    /* Hide extra entries beyond first 5 on mobile (accounting for month header) */
-    .entries-grid > .entry-card:nth-child(n+6) {
+    /* Hide extra entries beyond first 5 on mobile (March 15-11 visible, March 10-9 hidden) */
+    .entries-grid > .entry-card:nth-child(n+7) {
         display: none !important;
     }
     

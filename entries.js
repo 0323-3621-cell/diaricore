@@ -236,7 +236,7 @@ function loadMoreEntries() {
     
     if (isMobile) {
         // Mobile: Show 2 more hidden entries
-        const hiddenEntries = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+6)');
+        const hiddenEntries = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
         let shownCount = 0;
         
         hiddenEntries.forEach(entry => {
@@ -247,7 +247,7 @@ function loadMoreEntries() {
         });
         
         // Hide button if no more entries to show
-        const remainingHidden = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+6)[style="display: none;"]').length;
+        const remainingHidden = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)[style="display: none;"]').length;
         if (remainingHidden === 0) {
             loadMoreBtn.style.display = 'none';
         }

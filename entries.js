@@ -226,7 +226,7 @@ function initializeLoadMore() {
     }
 }
 
-// Load More Entries (Mobile-specific functionality)
+// Load More Entries (Works on both mobile and desktop)
 function loadMoreEntries() {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     const entriesGrid = document.querySelector('.entries-grid');
@@ -254,22 +254,24 @@ function loadMoreEntries() {
         
         showNotification(`${shownCount} more entries loaded`, 'success');
     } else {
-        // Desktop: Original functionality
-        loadMoreBtn.textContent = 'Loading...';
-        loadMoreBtn.disabled = true;
-
-        setTimeout(() => {
-            const newEntries = generateMockEntries(3);
-            newEntries.forEach(entry => {
-                entriesGrid.appendChild(entry);
-            });
-
-            loadMoreBtn.textContent = 'Load More Entries';
-            loadMoreBtn.disabled = false;
-
-            showNotification('3 more entries loaded', 'success');
-            initializeEntryCards();
-        }, 1000);
+        // Desktop: Show 2 more hidden entries (same as mobile for consistency)
+        const hiddenEntries = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
+        let shownCount = 0;
+        
+        hiddenEntries.forEach(entry => {
+            if (shownCount < 2 && entry.style.display === 'none') {
+                entry.style.display = 'block';
+                shownCount++;
+            }
+        });
+        
+        // Hide button if no more entries to show
+        const remainingHidden = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)[style="display: none;"]').length;
+        if (remainingHidden === 0) {
+            loadMoreBtn.style.display = 'none';
+        }
+        
+        showNotification(`${shownCount} more entries loaded`, 'success');
     }
 }
 

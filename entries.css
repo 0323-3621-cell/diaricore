@@ -855,7 +855,7 @@ body {
         overflow: visible !important;
     }
     
-    /* Copy ALL mobile styling from March to April entries - exact match */
+    /* Force April entries to match March exactly - override everything */
     .april-section .entry-card {
         display: flex !important;
         flex-direction: column !important;
@@ -866,6 +866,7 @@ body {
         border-radius: 16px !important;
         transition: all 0.2s ease !important;
         overflow: visible !important;
+        margin-bottom: 0 !important;
     }
     
     .april-section .entry-header {
@@ -963,6 +964,7 @@ body {
         gap: 0.5rem !important;
         margin-top: 0.5rem !important;
         margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
     }
     
     .april-section .tag {

@@ -240,15 +240,23 @@ function loadMoreEntries() {
         let shownCount = 0;
         
         hiddenEntries.forEach(entry => {
-            if (shownCount < 2 && entry.style.display === 'none') {
-                entry.style.display = 'block';
+            if (shownCount < 2) {
+                // Force display to block to override CSS
+                entry.style.setProperty('display', 'block', 'important');
                 shownCount++;
             }
         });
         
         // Hide button if no more entries to show
-        const remainingHidden = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)[style="display: none;"]').length;
-        if (remainingHidden === 0) {
+        const remainingHidden = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
+        let remainingCount = 0;
+        remainingHidden.forEach(entry => {
+            if (entry.style.display !== 'block' || entry.style.display === 'none') {
+                remainingCount++;
+            }
+        });
+        
+        if (remainingCount === 0) {
             loadMoreBtn.style.display = 'none';
         }
         

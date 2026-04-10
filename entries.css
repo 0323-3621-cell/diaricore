@@ -855,9 +855,8 @@ body {
         overflow: visible !important;
     }
     
-    /* Force April entries to use exact same styles as March entries */
+    /* Simple direct styling for April entries to match March */
     .april-section .entry-card {
-        all: inherit !important;
         display: flex !important;
         flex-direction: column !important;
         gap: 0.25rem !important;
@@ -873,12 +872,6 @@ body {
         box-sizing: border-box !important;
     }
     
-    /* Make all April child elements identical to March */
-    .april-section * {
-        all: inherit !important;
-    }
-    
-    /* Re-apply mobile-specific styles to April */
     .april-section .entry-header {
         display: flex !important;
         justify-content: space-between !important;

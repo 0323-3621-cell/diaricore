@@ -518,6 +518,99 @@ body {
         z-index: 1000;
     }
     
+    /* Mobile entry card styling - horizontal layout */
+    .entry-card {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 1rem !important;
+        padding: 1rem !important;
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        transition: all 0.2s ease;
+    }
+    
+    .entry-image {
+        flex-shrink: 0;
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .entry-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .entry-content-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .entry-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+    }
+    
+    .entry-date {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    
+    .entry-mood {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+    
+    .entry-mood .mood-emoji {
+        font-size: 1rem;
+    }
+    
+    .entry-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .entry-excerpt {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .entry-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .tag {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        background-color: var(--background-soft);
+        color: var(--text-secondary);
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    
     /* Mobile font size overrides to match dashboard */
     .main-title {
         font-size: 20px !important; /* Match dashboard main-title */

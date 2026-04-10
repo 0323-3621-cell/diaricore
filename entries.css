@@ -802,8 +802,8 @@ body {
         font-weight: 500;
     }
     
-    /* Hide extra entries beyond first 5 on mobile */
-    .entry-card:nth-child(n+7) {
+    /* Hide extra entries beyond first 5 on mobile (accounting for month header) */
+    .entries-grid > .entry-card:nth-child(n+6) {
         display: none !important;
     }
     

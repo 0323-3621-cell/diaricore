@@ -632,7 +632,7 @@ body {
         display: flex !important;
         align-items: center !important;
         gap: 0.5rem !important;
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.5rem !important;
         padding: 0.75rem 0 !important;
         border-bottom: none !important;
         border-right: none !important;
@@ -643,12 +643,13 @@ body {
     .month-header::after {
         content: '' !important;
         position: absolute !important;
-        left: -20px !important;
+        left: 100% !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
-        width: calc(100vw + 40px) !important;
+        width: calc(100vw - 100%) !important;
         height: 1px !important;
         background-color: #999 !important;
+        margin-left: 0.5rem !important;
     }
     
     .month-header i {

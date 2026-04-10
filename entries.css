@@ -80,7 +80,7 @@ body {
 
 /* Search and Filter Section */
 .search-filter-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .search-filter-container {
@@ -573,6 +573,11 @@ body {
         width: 100% !important; /* Full width on mobile */
         border-radius: 25px !important; /* More rounded corners */
         padding: 0.875rem 1rem !important; /* Slightly larger padding */
+    }
+    
+    /* Reduce space between search bar and month header on mobile */
+    .search-filter-section {
+        margin-bottom: 0.5rem !important;
     }
     
     /* Hide filter text on mobile, show only icon */

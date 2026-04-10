@@ -624,11 +624,17 @@ body {
         gap: 0.5rem;
     }
     
-    .entry-meta {
+    .entry-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         margin-bottom: 0.25rem;
+    }
+    
+    .entry-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
     }
     
     .entry-date {
@@ -639,14 +645,22 @@ body {
     
     .entry-mood {
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-end;
         gap: 0.25rem;
         font-size: 0.8rem;
         color: var(--text-secondary);
+        flex-shrink: 0;
     }
     
-    .entry-mood .mood-emoji {
-        font-size: 1rem;
+    .entry-mood i {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+    }
+    
+    .entry-mood .mood-label {
+        font-size: 0.75rem;
+        font-weight: 500;
     }
     
     .entry-title {

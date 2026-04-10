@@ -982,6 +982,7 @@ body {
     /* Reduce space between load more button and last entry on mobile */
     .load-more-section {
         margin-top: -2rem !important;
+        padding-bottom: 3rem !important;
     }
     
     /* Ensure "nothing to show" message is fully visible on mobile */

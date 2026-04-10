@@ -235,7 +235,7 @@ function loadMoreEntries() {
     const isMobile = window.innerWidth <= 768;
     
     if (isMobile) {
-        // Mobile: Show 2 more hidden entries
+        // Mobile: Show 2 more hidden entries or April section
         const hiddenEntries = document.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
         let shownCount = 0;
         
@@ -258,22 +258,52 @@ function loadMoreEntries() {
             }
         });
         
-        // Hide button and show "nothing to show" message if no more entries
+        // If no more March entries, show April section
         if (remainingCount === 0) {
-            loadMoreBtn.style.display = 'none';
-            
-            // Add "nothing to show" message
-            const nothingToShow = document.createElement('div');
-            nothingToShow.className = 'nothing-to-show-mobile';
-            nothingToShow.innerHTML = `
-                <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 1rem 0; font-style: italic;">
-                    Nothing more to show for this month
-                </p>
-            `;
-            
-            // Insert after load more button container
-            const loadMoreContainer = loadMoreBtn.parentElement;
-            loadMoreContainer.parentNode.insertBefore(nothingToShow, loadMoreContainer.nextSibling);
+            const aprilSection = document.querySelector('.entries-section:nth-of-type(2)');
+            if (aprilSection) {
+                aprilSection.style.setProperty('display', 'block', 'important');
+                
+                // Show first 2 April entries
+                const aprilEntries = aprilSection.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
+                let aprilShownCount = 0;
+                
+                aprilEntries.forEach(entry => {
+                    if (aprilShownCount < 2) {
+                        entry.style.setProperty('display', 'block', 'important');
+                        aprilShownCount++;
+                    }
+                });
+                
+                // Check if there are still more April entries to show
+                const remainingAprilEntries = aprilSection.querySelectorAll('.entries-grid > .entry-card:nth-child(n+7)');
+                let remainingAprilCount = 0;
+                
+                remainingAprilEntries.forEach(entry => {
+                    const computedStyle = window.getComputedStyle(entry);
+                    if (computedStyle.display === 'none') {
+                        remainingAprilCount++;
+                    }
+                });
+                
+                // Hide button and show message if no more entries at all
+                if (remainingAprilCount === 0) {
+                    loadMoreBtn.style.display = 'none';
+                    
+                    // Add "nothing to show" message
+                    const nothingToShow = document.createElement('div');
+                    nothingToShow.className = 'nothing-to-show-mobile';
+                    nothingToShow.innerHTML = `
+                        <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 1rem 0; font-style: italic;">
+                            Nothing more to show for this month
+                        </p>
+                    `;
+                    
+                    // Insert after load more button container
+                    const loadMoreContainer = loadMoreBtn.parentElement;
+                    loadMoreContainer.parentNode.insertBefore(nothingToShow, loadMoreContainer.nextSibling);
+                }
+            }
         }
         
         showNotification(`${shownCount} more entries loaded`, 'success');

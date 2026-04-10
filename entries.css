@@ -807,6 +807,11 @@ body {
         display: none !important;
     }
     
+    /* Hide entire April section by default on mobile */
+    .entries-section:nth-of-type(2) {
+        display: none !important;
+    }
+    
     /* Reduce space between load more button and last entry on mobile */
     .load-more-section {
         margin-top: 0.5rem !important;

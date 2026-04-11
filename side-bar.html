@@ -65,7 +65,7 @@
     </div>
 </div>
 
-<!-- Mobile Bottom Navigation -->
+<!-- Mobile Bottom Navigation (Home — Entries — + — Insights — Suggestions) -->
 <nav class="mobile-bottom-nav">
     <ul class="mobile-bottom-nav-items">
         <li class="mobile-bottom-nav-item">
@@ -80,6 +80,18 @@
                 <span>Entries</span>
             </a>
         </li>
+        <li class="mobile-bottom-nav-item mobile-bottom-nav-item--write">
+            <div class="mobile-write-fab">
+                <a href="#" class="mobile-bottom-nav-link mobile-bottom-nav-link--write-fab" data-page="write-entry" role="button" aria-expanded="false" aria-haspopup="true" aria-label="New entry">
+                    <i class="bi bi-plus-lg mobile-write-fab__icon-plus" aria-hidden="true"></i>
+                    <i class="bi bi-x-lg mobile-write-fab__icon-close is-hidden" aria-hidden="true"></i>
+                </a>
+                <div class="mobile-write-fab__radial" id="mobileWriteFabRadial" hidden>
+                    <a href="write-entry.html" class="mobile-write-fab__sat mobile-write-fab__sat--write" aria-label="Writing"><i class="bi bi-pencil"></i></a>
+                    <a href="voice-entry.html" class="mobile-write-fab__sat mobile-write-fab__sat--voice" aria-label="Voice"><i class="bi bi-mic"></i></a>
+                </div>
+            </div>
+        </li>
         <li class="mobile-bottom-nav-item">
             <a href="insights.html" class="mobile-bottom-nav-link" data-page="insights">
                 <i class="bi bi-bar-chart"></i>
@@ -87,15 +99,9 @@
             </a>
         </li>
         <li class="mobile-bottom-nav-item">
-            <a href="write-entry.html" class="mobile-bottom-nav-link" data-page="write-entry">
-                <i class="bi bi-lightbulb"></i>
-                <span>Triggers</span>
-            </a>
-        </li>
-        <li class="mobile-bottom-nav-item">
-            <a href="profile.html" class="mobile-bottom-nav-link" data-page="profile">
-                <i class="bi bi-person"></i>
-                <span>Profile</span>
+            <a href="suggestions.html" class="mobile-bottom-nav-link" data-page="suggestions">
+                <i class="bi bi-stars"></i>
+                <span>Suggestions</span>
             </a>
         </li>
     </ul>

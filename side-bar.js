@@ -36,11 +36,10 @@ class SidebarComponent {
             // Insert sidebar and mobile nav into the page
             this.insertSidebar();
             
-            this.applyDashboardMobileBottomNav();
-            
             // Set active page and setup logout AFTER sidebar is loaded
             this.setActivePage();
             this.setupLogoutButton();
+            this.initMobileWriteFab();
             
         } catch (error) {
             console.error('Failed to load sidebar:', error);
@@ -68,43 +67,77 @@ class SidebarComponent {
     }
 
     /**
-     * Dashboard only (mobile nav is hidden on desktop via CSS): Home — Entries — Writing — Insights — Suggestions.
+     * Mobile: center + opens radial Write/Voice icon circles (no dim overlay).
      */
-    applyDashboardMobileBottomNav() {
-        if (this.currentPage !== 'dashboard') return;
-        const ul = document.querySelector('.mobile-bottom-nav .mobile-bottom-nav-items');
-        if (!ul) return;
-        ul.innerHTML = `
-        <li class="mobile-bottom-nav-item">
-            <a href="dashboard.html" class="mobile-bottom-nav-link" data-page="dashboard">
-                <i class="bi bi-house-door"></i>
-                <span>Home</span>
-            </a>
-        </li>
-        <li class="mobile-bottom-nav-item">
-            <a href="entries.html" class="mobile-bottom-nav-link" data-page="entries">
-                <i class="bi bi-journal-text"></i>
-                <span>Entries</span>
-            </a>
-        </li>
-        <li class="mobile-bottom-nav-item">
-            <a href="#" class="mobile-bottom-nav-link mobile-bottom-nav-link--write-fab" data-page="write-entry" id="mobileWriteNavTrigger" role="button" aria-haspopup="true" aria-expanded="false" aria-controls="writeNavPopup">
-                <i class="bi bi-pencil"></i>
-                <span>Writing</span>
-            </a>
-        </li>
-        <li class="mobile-bottom-nav-item">
-            <a href="insights.html" class="mobile-bottom-nav-link" data-page="insights">
-                <i class="bi bi-bar-chart"></i>
-                <span>Insights</span>
-            </a>
-        </li>
-        <li class="mobile-bottom-nav-item">
-            <a href="suggestions.html" class="mobile-bottom-nav-link" data-page="suggestions">
-                <i class="bi bi-stars"></i>
-                <span>Suggestions</span>
-            </a>
-        </li>`;
+    initMobileWriteFab() {
+        const fab = document.querySelector('.mobile-write-fab');
+        if (!fab || fab.dataset.writeFabBound === '1') return;
+        fab.dataset.writeFabBound = '1';
+
+        const trigger = fab.querySelector('.mobile-bottom-nav-link--write-fab');
+        const radial = fab.querySelector('.mobile-write-fab__radial');
+        const iconPlus = fab.querySelector('.mobile-write-fab__icon-plus');
+        const iconClose = fab.querySelector('.mobile-write-fab__icon-close');
+        if (!trigger || !radial) return;
+
+        const setIconsClosed = () => {
+            if (iconPlus) iconPlus.classList.remove('is-hidden');
+            if (iconClose) iconClose.classList.add('is-hidden');
+        };
+
+        const setIconsOpen = () => {
+            if (iconPlus) iconPlus.classList.add('is-hidden');
+            if (iconClose) iconClose.classList.remove('is-hidden');
+        };
+
+        const closeRadial = () => {
+            radial.setAttribute('hidden', '');
+            trigger.classList.remove('is-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            setIconsClosed();
+            document.removeEventListener('click', docClose, true);
+        };
+
+        const docClose = (e) => {
+            if (!fab.contains(e.target)) {
+                closeRadial();
+            }
+        };
+
+        const openRadial = () => {
+            if (window.innerWidth > 768) return;
+            radial.removeAttribute('hidden');
+            trigger.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+            setIconsOpen();
+            setTimeout(() => document.addEventListener('click', docClose, true), 0);
+        };
+
+        trigger.addEventListener('click', (e) => {
+            if (window.innerWidth > 768) return;
+            e.preventDefault();
+            if (radial.hasAttribute('hidden')) {
+                openRadial();
+            } else {
+                closeRadial();
+            }
+        });
+
+        fab.querySelectorAll('.mobile-write-fab__sat').forEach((link) => {
+            link.addEventListener('click', () => closeRadial());
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeRadial();
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !radial.hasAttribute('hidden')) {
+                closeRadial();
+            }
+        });
     }
 
     setupMobileToggle() {
@@ -146,6 +179,11 @@ class SidebarComponent {
         const activeMobileLink = document.querySelector(`.mobile-bottom-nav-link[data-page="${this.currentPage}"]`);
         if (activeMobileLink) {
             activeMobileLink.classList.add('active');
+        } else if (this.currentPage === 'voice-entry') {
+            const writeTrigger = document.querySelector('.mobile-bottom-nav-link--write-fab');
+            if (writeTrigger) {
+                writeTrigger.classList.add('active');
+            }
         }
     }
 

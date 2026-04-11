@@ -164,30 +164,6 @@ body {
         margin-bottom: 1rem; /* Match entries.html spacing */
     }
     
-    /* Reorder sections on mobile - weekly mood first at very top, then triggers, then charts */
-    .main-content {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    
-    .header-section {
-        order: 0 !important;
-    }
-    
-    .weekly-glance {
-        order: 1 !important;
-        margin-top: 0 !important;
-        margin-bottom: 2rem !important;
-    }
-    
-    .triggers-section {
-        order: 2 !important;
-    }
-    
-    .charts-section {
-        order: 3 !important;
-    }
-    
     /* Make stress and happiness triggers display side by side on mobile with hidden details */
     .triggers-grid {
         display: flex !important;
@@ -419,14 +395,39 @@ body {
         display: none !important;
     }
     
-    /* Hide desktop weekly mood chart from charts-grid on mobile */
-    .charts-grid .chart-card:first-child {
+    /* Show original weekly mood chart on mobile */
+    .weekly-glance {
+        display: block !important;
+    }
+    
+    /* Show original chart containers on mobile */
+    .chart-card .chart-container {
+        display: block !important;
+    }
+    
+    /* Hide mobile custom layouts */
+    .emotion-breakdown-mobile {
         display: none !important;
     }
     
-    /* Show mobile weekly glance on mobile */
-    .weekly-glance {
+    .activity-impact-mobile {
+        display: none !important;
+    }
+    
+    /* Show original charts-grid layout on mobile */
+    .charts-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    
+    /* Show all chart cards on mobile */
+    .charts-grid .chart-card {
         display: block !important;
+        background: var(--card-background) !important;
+        border: 1px solid var(--border-color) !important;
+        padding: 1rem !important;
+        border-radius: 16px !important;
     }
     
     /* Activity impact mobile styling */

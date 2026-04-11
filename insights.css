@@ -169,6 +169,15 @@ body {
     .happiness-trigger {
         display: none !important;
     }
+    
+    /* Ensure proper spacing for mobile bottom navigation */
+    .main-content {
+        padding-bottom: 4rem !important; /* Space for bottom nav */
+    }
+    
+    .insights-content {
+        padding-bottom: 4rem !important; /* Additional padding for content */
+    }
 }
 
 /* Weekly Mood Chart Section */

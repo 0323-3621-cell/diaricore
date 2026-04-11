@@ -263,10 +263,17 @@ body {
         height: 24px !important;
         align-items: center !important;
         justify-content: center !important;
-        background-color: transparent !important;
         border-radius: 50% !important;
         flex-shrink: 0 !important;
         order: -1 !important; /* Ensure icon comes first */
+    }
+    
+    .stress-trigger .trigger-icon {
+        background-color: #fee2e2 !important; /* Light red for stress */
+    }
+    
+    .happiness-trigger .trigger-icon {
+        background-color: #dcfce7 !important; /* Light green for happiness */
     }
     
     /* Show details when clicked */

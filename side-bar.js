@@ -36,6 +36,8 @@ class SidebarComponent {
             // Insert sidebar and mobile nav into the page
             this.insertSidebar();
             
+            this.applyDashboardMobileBottomNav();
+            
             // Set active page and setup logout AFTER sidebar is loaded
             this.setActivePage();
             this.setupLogoutButton();
@@ -63,6 +65,46 @@ class SidebarComponent {
         if (this.mobileBottomNav) {
             document.body.appendChild(this.mobileBottomNav);
         }
+    }
+
+    /**
+     * Dashboard only (mobile nav is hidden on desktop via CSS): Home — Entries — Writing — Insights — Suggestions.
+     */
+    applyDashboardMobileBottomNav() {
+        if (this.currentPage !== 'dashboard') return;
+        const ul = document.querySelector('.mobile-bottom-nav .mobile-bottom-nav-items');
+        if (!ul) return;
+        ul.innerHTML = `
+        <li class="mobile-bottom-nav-item">
+            <a href="dashboard.html" class="mobile-bottom-nav-link" data-page="dashboard">
+                <i class="bi bi-house-door"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li class="mobile-bottom-nav-item">
+            <a href="entries.html" class="mobile-bottom-nav-link" data-page="entries">
+                <i class="bi bi-journal-text"></i>
+                <span>Entries</span>
+            </a>
+        </li>
+        <li class="mobile-bottom-nav-item">
+            <a href="write-entry.html" class="mobile-bottom-nav-link" data-page="write-entry">
+                <i class="bi bi-pencil-square"></i>
+                <span>Writing</span>
+            </a>
+        </li>
+        <li class="mobile-bottom-nav-item">
+            <a href="insights.html" class="mobile-bottom-nav-link" data-page="insights">
+                <i class="bi bi-bar-chart"></i>
+                <span>Insights</span>
+            </a>
+        </li>
+        <li class="mobile-bottom-nav-item">
+            <a href="suggestions.html" class="mobile-bottom-nav-link" data-page="suggestions">
+                <i class="bi bi-stars"></i>
+                <span>Suggestions</span>
+            </a>
+        </li>`;
     }
 
     setupMobileToggle() {

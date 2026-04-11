@@ -163,12 +163,6 @@ body {
     .header-section {
         margin-bottom: 1rem; /* Match entries.html spacing */
     }
-    
-    /* Hide top stress trigger and top happiness trigger on mobile */
-    .stress-trigger,
-    .happiness-trigger {
-        display: none !important;
-    }
 }
 
 /* Weekly Mood Chart Section */

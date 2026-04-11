@@ -978,6 +978,7 @@ body {
             -webkit-box-orient: vertical !important;
             overflow: hidden !important;
             flex-grow: 1 !important;
+            max-height: 2.8em !important;
         }
         
         .entries-section.april-section .entry-tags {

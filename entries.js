@@ -173,11 +173,7 @@ function updateResultsMessage(visibleCount, totalCount) {
     if (visibleCount < totalCount) {
         const message = document.createElement('div');
         message.className = 'results-message';
-        let inner = `<p>Showing ${visibleCount} of ${totalCount} entries</p>`;
-        if (isDesktopEntriesLayout() && visibleCount === 0 && hasActiveSearchOrFilters()) {
-            inner += `<p class="results-message__empty-hint">No entries match what you typed or your filters. Try new keywords, clear the search box, or reset filters to see all entries.</p>`;
-        }
-        message.innerHTML = inner;
+        message.innerHTML = `<p>Showing ${visibleCount} of ${totalCount} entries</p>`;
         if (isDesktopEntriesLayout()) {
             searchSection.insertAdjacentElement('afterend', message);
         } else {

@@ -547,14 +547,6 @@ body {
         margin: 0 auto;
         max-width: 28rem;
     }
-    
-    .entries-content .results-message .results-message__empty-hint {
-        margin: 0.75rem 0 0;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        line-height: 1.5;
-        max-width: 36rem;
-    }
 }
 
 /* Empty-state panel markup (hidden until desktop .entries-content--empty-results) */

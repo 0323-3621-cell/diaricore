@@ -350,6 +350,63 @@ body {
     .emotion-breakdown-mobile {
         display: flex !important;
     }
+    
+    /* Activity impact mobile styling */
+    .activity-impact-mobile {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    .activity-bar-item {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .activity-bar-wrapper {
+        width: 100% !important;
+        height: 8px !important;
+        background-color: #f0f0f0 !important;
+        border-radius: 4px !important;
+        overflow: hidden !important;
+    }
+    
+    .activity-bar {
+        height: 100% !important;
+        border-radius: 4px !important;
+        background-color: var(--primary-color) !important;
+        transition: width 0.3s ease !important;
+    }
+    
+    .activity-bar-info {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+    }
+    
+    .activity-bar-name {
+        font-size: 0.85rem !important;
+        color: var(--text-dark) !important;
+        font-weight: 500 !important;
+    }
+    
+    .activity-bar-percentage {
+        font-size: 0.85rem !important;
+        color: var(--text-secondary) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Hide desktop activity chart on mobile */
+    .chart-card:nth-child(2) .chart-container {
+        display: none !important;
+    }
+    
+    /* Show mobile activity impact on mobile */
+    .activity-impact-mobile {
+        display: flex !important;
+    }
 }
 
 /* Weekly Mood Chart Section */
@@ -569,6 +626,10 @@ body {
 /* Desktop overrides - restore original emotion breakdown pie chart */
 @media (min-width: 769px) {
     .emotion-breakdown-mobile {
+        display: none !important;
+    }
+    
+    .activity-impact-mobile {
         display: none !important;
     }
     

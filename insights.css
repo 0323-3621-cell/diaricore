@@ -177,7 +177,7 @@ body {
     .weekly-glance {
         order: 1 !important;
         margin-top: 0 !important;
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.125rem !important;
         display: block !important;
     }
     
@@ -188,14 +188,14 @@ body {
     
     .charts-section {
         order: 3 !important;
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.125rem !important;
     }
     
     /* Ensure emotion breakdown and activity impact maintain their order within charts-section */
     .charts-grid {
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.5rem !important;
+        gap: 1rem !important;
     }
     
     .charts-grid .chart-card:nth-child(1) {
@@ -213,7 +213,7 @@ body {
         justify-content: space-between !important;
         align-items: flex-start !important;
         gap: 0.75rem !important;
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.125rem !important;
         padding: 0 0.25rem !important;
     }
     
@@ -364,7 +364,7 @@ body {
     
     /* Weekly glance mobile styling */
     .weekly-glance {
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.125rem !important;
         padding: 1rem !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
@@ -373,7 +373,7 @@ body {
     
     .weekly-glance .section-title {
         font-size: 1rem !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0.85rem !important;
         color: var(--text-dark) !important;
         display: flex !important;
         align-items: center !important;
@@ -389,8 +389,8 @@ body {
     .emotion-breakdown-mobile {
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.75rem !important;
-        padding: 0.875rem 1rem !important;
+        gap: 0.875rem !important;
+        padding: 1rem !important;
         margin-bottom: 0 !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
@@ -399,7 +399,7 @@ body {
     
     .mobile-section-header {
         font-size: 1rem !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0.85rem !important;
         color: var(--text-dark) !important;
         display: flex !important;
         align-items: center !important;
@@ -429,7 +429,7 @@ body {
         flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.6rem !important;
+        gap: 0.7rem !important;
     }
     
     .emotion-legend-item {
@@ -511,7 +511,7 @@ body {
     /* Show mobile weekly glance on mobile */
     .weekly-glance {
         display: block !important;
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.125rem !important;
         padding: 1rem !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
@@ -520,7 +520,7 @@ body {
     
     .weekly-glance .section-title {
         font-size: 1rem !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0.85rem !important;
         color: var(--text-dark) !important;
         display: flex !important;
         align-items: center !important;
@@ -541,8 +541,8 @@ body {
     .emotion-breakdown-mobile {
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.75rem !important;
-        padding: 0.875rem 1rem !important;
+        gap: 0.875rem !important;
+        padding: 1rem !important;
         margin-bottom: 0 !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
@@ -552,9 +552,9 @@ body {
     .activity-impact-mobile {
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.55rem !important;
-        padding: 0.875rem 1rem !important;
-        margin-bottom: 0.5rem !important;
+        gap: 0.7rem !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
         border: 1px solid var(--border-color) !important;
@@ -569,7 +569,7 @@ body {
     
     .mobile-section-header {
         font-size: 1rem !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0.85rem !important;
         color: var(--text-dark) !important;
         display: flex !important;
         align-items: center !important;
@@ -599,7 +599,7 @@ body {
         flex: 1 !important;
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.6rem !important;
+        gap: 0.7rem !important;
     }
     
     .emotion-legend-item {
@@ -648,9 +648,9 @@ body {
     .activity-impact-mobile {
         display: flex !important;
         flex-direction: column !important;
-        gap: 0.55rem !important;
-        padding: 0.875rem 1rem !important;
-        margin-bottom: 0.5rem !important;
+        gap: 0.7rem !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
         background-color: var(--card-background) !important;
         border-radius: 16px !important;
         border: 1px solid var(--border-color) !important;
@@ -703,9 +703,9 @@ body {
         display: none !important;
     }
     
-    /* Insights page: less empty space above fixed bottom nav (mobile) */
+    /* Insights mobile: extra scroll past fixed bottom nav so Activity card clears */
     .insights-container .main-content {
-        padding-bottom: 3rem !important;
+        padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
 

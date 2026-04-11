@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Charts
     initializeWeeklyMoodChart();
+    initializeWeeklyMoodChartDesktop();
     initializeEmotionPieChart();
     initializeEmotionPieChartMobile();
     initializeActivityImpactChart();
@@ -119,6 +120,91 @@ function initializeWeeklyMoodChart() {
                             weight: '500'
                         },
                         stepSize: 2
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    };
+    
+    new Chart(ctx, config);
+}
+
+// Initialize Desktop Weekly Mood Chart
+function initializeWeeklyMoodChartDesktop() {
+    const ctx = document.getElementById('weeklyChartDesktop');
+    if (!ctx) return;
+    
+    const weeklyData = {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+            label: 'Mood Score',
+            data: [7, 8, 6, 9, 8, 9, 8],
+            borderColor: '#6F8F7F',
+            backgroundColor: 'rgba(111, 143, 127, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#6F8F7F',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }]
+    };
+    
+    const config = {
+        type: 'line',
+        data: weeklyData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#6F8F7F',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return 'Mood Score: ' + context.parsed.y;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#666',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#666',
+                        font: {
+                            size: 12
+                        }
                     }
                 }
             },

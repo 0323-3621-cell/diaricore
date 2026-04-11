@@ -412,6 +412,16 @@ body {
         display: none !important;
     }
     
+    /* Hide desktop weekly mood chart on mobile */
+    .charts-grid .chart-card:first-child {
+        display: none !important;
+    }
+    
+    /* Show mobile weekly glance on mobile */
+    .weekly-glance {
+        display: block !important;
+    }
+    
     /* Activity impact mobile styling */
     .activity-impact-mobile {
         display: flex !important;
@@ -709,6 +719,16 @@ body {
     }
     
     .chart-card .chart-container canvas {
+        display: block !important;
+    }
+    
+    /* Hide mobile weekly glance on desktop */
+    .weekly-glance {
+        display: none !important;
+    }
+    
+    /* Show desktop weekly mood chart */
+    .charts-grid .chart-card:first-child {
         display: block !important;
     }
 }

@@ -241,7 +241,7 @@ body {
     /* Show only title and icon by default */
     .stress-trigger .trigger-title,
     .happiness-trigger .trigger-title {
-        font-size: 0.5rem !important;
+        font-size: 0.75rem !important;
         margin-bottom: 0.25rem !important;
         text-align: left !important;
         display: flex !important;

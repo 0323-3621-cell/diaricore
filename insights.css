@@ -204,7 +204,7 @@ body {
         order: 2 !important;
     }
     
-    /* Mobile trigger cards: side-by-side, reference layout (icon circle → label → value) */
+    /* Mobile trigger cards: icon + text in one row (like Weekly Mood header); two cards side by side */
     .triggers-grid {
         display: flex !important;
         flex-direction: row !important;
@@ -222,21 +222,21 @@ body {
         cursor: pointer !important;
         position: relative !important;
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: flex-start !important;
-        gap: 0 !important;
+        gap: 0.65rem !important;
         background-color: var(--card-background) !important;
         border-radius: 14px !important;
         border: 1px solid var(--border-color) !important;
         box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06) !important;
     }
     
-    /* Icon first (top-left circle) */
+    /* Icon left (DOM: content then icon — pull icon to start of row) */
     .stress-trigger .trigger-icon,
     .happiness-trigger .trigger-icon {
         order: -1 !important;
         margin-left: 0 !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0 !important;
         width: 40px !important;
         height: 40px !important;
         min-width: 40px !important;
@@ -247,6 +247,7 @@ body {
         justify-content: center !important;
         font-size: 1.1rem !important;
         flex-shrink: 0 !important;
+        align-self: center !important;
     }
     
     .stress-trigger .trigger-icon {
@@ -262,7 +263,9 @@ body {
     .stress-trigger .trigger-content,
     .happiness-trigger .trigger-content {
         order: 0 !important;
-        width: 100% !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: flex-start !important;

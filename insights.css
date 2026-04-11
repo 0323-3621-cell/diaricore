@@ -147,6 +147,24 @@ body {
     margin: 0;
 }
 
+/* Mobile font size overrides to match entries.html */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 20px !important; /* Match entries.html main-title */
+        margin-bottom: 0.1rem; /* Match entries.html spacing */
+    }
+    
+    .subtitle {
+        font-size: 14px !important; /* Match entries.html subtitle */
+        font-weight: 400 !important; /* Match entries.html font weight */
+        color: var(--text-secondary) !important; /* Match entries.html color */
+    }
+    
+    .header-section {
+        margin-bottom: 1rem; /* Match entries.html spacing */
+    }
+}
+
 /* Weekly Mood Chart Section */
 .weekly-mood-section {
     margin-bottom: 3rem;

@@ -573,16 +573,23 @@ body {
     }
     
     /* Compact stat row: icon badge (left) + stacked copy (right), reference-style */
+    /* Beat max-width:1200px .stats-cards { flex-direction: column } on phones */
     .stats-cards {
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
         gap: 0.65rem;
         margin-bottom: 1rem;
     }
     
+    .stat-card-mood,
+    .stat-card-average {
+        flex: 1 1 calc(50% - 0.325rem) !important;
+        max-width: calc(50% - 0.325rem) !important;
+    }
+    
     .stat-card {
-        flex: 1 1 calc(50% - 0.25rem);
-        max-width: calc(50% - 0.25rem);
+        flex: 1 1 calc(50% - 0.325rem);
+        max-width: calc(50% - 0.325rem);
         min-width: 0;
         padding: 0.5rem 0.55rem 0.55rem 0.45rem;
         flex-direction: row;
@@ -613,8 +620,8 @@ body {
     }
     
     .stat-card-insight {
-        flex: 1 1 100%;
-        max-width: 100%;
+        flex: 1 1 100% !important;
+        max-width: 100% !important;
         width: 100%;
         padding: 0.55rem 0.65rem 0.6rem 0.5rem;
         border-color: rgba(212, 180, 140, 0.45);

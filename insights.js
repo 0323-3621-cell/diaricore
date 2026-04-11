@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Charts
     initializeWeeklyMoodChart();
     initializeEmotionPieChart();
+    initializeEmotionPieChartMobile();
     initializeActivityImpactChart();
     
     // Load Data
@@ -179,6 +180,50 @@ function initializeEmotionPieChart() {
                     callbacks: {
                         label: function(context) {
                             return `${context.label}: ${context.parsed}%`;
+                        }
+                    }
+                }
+            }
+        }
+    };
+    
+    new Chart(ctx, config);
+}
+
+// Initialize Mobile Emotion Pie Chart
+function initializeEmotionPieChartMobile() {
+    const ctx = document.getElementById('emotionPieChartMobile');
+    if (!ctx) return;
+    
+    const emotionData = {
+        labels: ['Happy', 'Neutral', 'Sad', 'Anxious'],
+        datasets: [{
+            data: [40, 30, 20, 10],
+            backgroundColor: [
+                '#7FBF9F',
+                '#F4A261',
+                '#7FA7BF',
+                '#E76F51'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 2
+        }]
+    };
+    
+    const config = {
+        type: 'pie',
+        data: emotionData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + '%';
                         }
                     }
                 }

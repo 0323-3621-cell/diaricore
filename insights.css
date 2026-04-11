@@ -273,63 +273,70 @@ body {
     }
     
     /* Emotion breakdown mobile styling */
-    .emotion-breakdown-bars {
+    .emotion-breakdown-mobile {
         display: flex !important;
-        flex-direction: column !important;
-        gap: 1rem !important;
-        padding: 0.5rem !important;
-    }
-    
-    .emotion-bar-item {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-    }
-    
-    .emotion-bar-wrapper {
-        width: 100% !important;
-        height: 8px !important;
-        background-color: #f0f0f0 !important;
-        border-radius: 4px !important;
-        overflow: hidden !important;
-    }
-    
-    .emotion-bar {
-        height: 100% !important;
-        border-radius: 4px !important;
-        transition: width 0.3s ease !important;
-    }
-    
-    .emotion-bar.happy {
-        background-color: #7FBF9F !important;
-    }
-    
-    .emotion-bar.neutral {
-        background-color: #F4A261 !important;
-    }
-    
-    .emotion-bar.sad {
-        background-color: #7FA7BF !important;
-    }
-    
-    .emotion-bar.anxious {
-        background-color: #E76F51 !important;
-    }
-    
-    .emotion-bar-info {
-        display: flex !important;
-        justify-content: space-between !important;
+        flex-direction: row !important;
+        gap: 1.5rem !important;
+        padding: 1rem !important;
         align-items: center !important;
     }
     
-    .emotion-bar-name {
-        font-size: 0.85rem !important;
+    .emotion-pie-chart {
+        flex: 0 0 120px !important;
+        height: 120px !important;
+        position: relative !important;
+    }
+    
+    .emotion-pie-chart canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    .emotion-legend {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    
+    .emotion-legend-item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+    }
+    
+    .emotion-legend-dot {
+        width: 12px !important;
+        height: 12px !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .emotion-legend-dot.happy {
+        background-color: #7FBF9F !important;
+    }
+    
+    .emotion-legend-dot.neutral {
+        background-color: #F4A261 !important;
+    }
+    
+    .emotion-legend-dot.sad {
+        background-color: #7FA7BF !important;
+    }
+    
+    .emotion-legend-dot.anxious {
+        background-color: #E76F51 !important;
+    }
+    
+    .emotion-legend-name {
+        flex: 1 !important;
+        font-size: 0.9rem !important;
         color: var(--text-dark) !important;
         font-weight: 500 !important;
     }
     
-    .emotion-bar-percentage {
-        font-size: 0.85rem !important;
+    .emotion-legend-percentage {
+        font-size: 0.9rem !important;
         color: var(--text-secondary) !important;
         font-weight: 600 !important;
     }
@@ -339,8 +346,8 @@ body {
         display: none !important;
     }
     
-    /* Show mobile bars on mobile */
-    .emotion-breakdown-bars {
+    /* Show mobile layout on mobile */
+    .emotion-breakdown-mobile {
         display: flex !important;
     }
 }
@@ -561,7 +568,7 @@ body {
 
 /* Desktop overrides - restore original emotion breakdown pie chart */
 @media (min-width: 769px) {
-    .emotion-breakdown-bars {
+    .emotion-breakdown-mobile {
         display: none !important;
     }
     

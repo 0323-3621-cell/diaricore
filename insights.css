@@ -217,10 +217,13 @@ body {
     .happiness-trigger {
         flex: 1 !important;
         min-width: 0 !important;
-        padding: 0.75rem !important; /* Reduced padding to prevent pushing content to right */
+        padding: 0.75rem !important;
         font-size: 0.85rem !important;
         cursor: pointer !important;
         position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.25rem !important;
     }
     
     /* Hide detailed explanations by default on mobile */
@@ -238,15 +241,15 @@ body {
         display: none !important;
     }
     
-    /* Show only title and icon by default */
+    /* Title with icon - exact design from image */
     .stress-trigger .trigger-title,
     .happiness-trigger .trigger-title {
         font-size: 0.75rem !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0 !important;
         text-align: left !important;
         display: flex !important;
         align-items: center !important;
-        gap: 0.5rem !important; /* Same gap as weekly mood */
+        gap: 0.5rem !important;
         color: #666666 !important; /* Grey color for Top Stressor and Top Happiness */
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
@@ -261,10 +264,10 @@ body {
         color: black !important;
         align-items: center !important;
         justify-content: center !important;
-        background-color: transparent !important; /* Remove colored container */
-        border-radius: 0 !important; /* Remove rounded container */
-        width: auto !important; /* Auto width */
-        height: auto !important; /* Auto height */
+        background-color: transparent !important;
+        border-radius: 0 !important;
+        width: auto !important;
+        height: auto !important;
         flex-shrink: 0 !important;
     }
     

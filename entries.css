@@ -288,8 +288,21 @@ body {
 
 .entries-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 2rem;
+}
+
+/* Remove space below month header on desktop */
+.month-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0rem;
+    padding: 0.75rem 0;
+    border-bottom: none;
+    border-right: none;
+    width: fit-content;
+    position: relative;
 }
 
 /* Entry Cards */

@@ -46,7 +46,7 @@ function initializeMobileTriggers() {
 
 // Initialize Weekly Mood Chart
 function initializeWeeklyMoodChart() {
-    const ctx = document.getElementById('weeklyMoodChart');
+    const ctx = document.getElementById('weeklyChart');
     if (!ctx) return;
     
     const weeklyData = {

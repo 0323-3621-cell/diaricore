@@ -31,7 +31,6 @@ class SidebarComponent {
             tempDiv.innerHTML = html;
             
             this.sidebarElement = tempDiv.querySelector('.sidebar');
-            this.mobileTopNav = tempDiv.querySelector('.mobile-top-nav');
             this.mobileBottomNav = tempDiv.querySelector('.mobile-bottom-nav');
             
             // Insert sidebar and mobile nav into the page
@@ -59,12 +58,6 @@ class SidebarComponent {
             mainContent.parentNode.insertBefore(this.sidebarElement, mainContent);
         } else {
             document.body.appendChild(this.sidebarElement);
-        }
-        
-        /* Fixed app header (mobile only — hidden via CSS on desktop) */
-        if (this.mobileTopNav) {
-            document.body.prepend(this.mobileTopNav);
-            document.body.classList.add('has-mobile-top-nav');
         }
         
         // Also insert mobile bottom navigation if it exists

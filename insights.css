@@ -164,6 +164,20 @@ body {
         margin-bottom: 1rem; /* Match entries.html spacing */
     }
     
+    /* Reorder sections on mobile - weekly mood first, then triggers */
+    .main-content {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    .triggers-section {
+        order: 2 !important;
+    }
+    
+    .weekly-glance {
+        order: 1 !important;
+    }
+    
     /* Make stress and happiness triggers display side by side on mobile with hidden details */
     .triggers-grid {
         display: flex !important;

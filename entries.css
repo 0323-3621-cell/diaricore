@@ -972,7 +972,7 @@ body {
             font-size: 0.85rem !important;
             color: var(--text-secondary) !important;
             line-height: 1.4 !important;
-            margin: 0 0 0rem 0 !important;
+            margin: 0 0 0.5rem 0 !important;
             display: -webkit-box !important;
             -webkit-line-clamp: 2 !important;
             -webkit-box-orient: vertical !important;

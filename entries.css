@@ -1001,7 +1001,7 @@ body {
     
     /* Reduce space between April month header and March entries */
     .april-section {
-        margin-top: 0.5rem !important;
+        margin-top: -1rem !important;
     }
     
     /* Reduce space between load more button and last entry on mobile */

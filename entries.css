@@ -894,7 +894,7 @@ body {
             display: flex !important;
             justify-content: space-between !important;
             align-items: flex-start !important;
-            margin-bottom: 0.5rem !important;
+            margin-bottom: 1rem !important;
             gap: 0.75rem !important;
         }
         

@@ -741,14 +741,14 @@ body {
         gap: 2rem !important;
     }
     
-    /* Hide first chart-card (weekly mood) from charts-grid on desktop */
-    .charts-grid .chart-card:first-child {
-        display: none !important;
+    /* Show emotion breakdown and activity impact charts */
+    .charts-grid .chart-card:nth-child(1),
+    .charts-grid .chart-card:nth-child(2) {
+        display: block !important;
     }
     
-    /* Show emotion breakdown and activity impact charts */
-    .charts-grid .chart-card:nth-child(2),
-    .charts-grid .chart-card:nth-child(3) {
-        display: block !important;
+    /* Hide any additional charts if present */
+    .charts-grid .chart-card:nth-child(n+3) {
+        display: none !important;
     }
 }

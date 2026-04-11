@@ -422,6 +422,25 @@ body {
     /* Show mobile weekly glance on mobile */
     .weekly-glance {
         display: block !important;
+        margin-bottom: 2rem !important;
+        padding: 1rem !important;
+        background-color: var(--card-background) !important;
+        border-radius: 16px !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    
+    .weekly-glance .section-title {
+        font-size: 1rem !important;
+        margin-bottom: 1rem !important;
+        color: var(--text-dark) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .weekly-glance .chart-container {
+        height: 200px !important;
+        position: relative !important;
     }
     
     /* Hide original chart containers on mobile */

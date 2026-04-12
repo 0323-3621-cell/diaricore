@@ -564,6 +564,11 @@ body {
         padding: 0.2rem 0.4rem;
     }
     
+    /* Sit below fixed mobile app top bar */
+    body.has-mobile-app-topbar .floating-streak {
+        top: calc(env(safe-area-inset-top, 0px) + 3.35rem) !important;
+    }
+    
     .streak-flame {
         font-size: 1rem;
     }

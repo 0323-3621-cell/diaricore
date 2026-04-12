@@ -65,6 +65,30 @@
     </div>
 </div>
 
+<!-- Mobile-only top bar (brand, search, AI placeholder, profile) — styled in side-bar.css -->
+<header class="mobile-app-topbar" role="banner" aria-label="DiariCore">
+    <div class="mobile-app-topbar__inner">
+        <a href="dashboard.html" class="mobile-app-topbar__brand">
+            <span class="mobile-app-topbar__brand-icon" aria-hidden="true">
+                <i class="bi bi-images"></i>
+            </span>
+            <span class="mobile-app-topbar__brand-name">DiariCore</span>
+        </a>
+        <span class="mobile-app-topbar__divider" aria-hidden="true"></span>
+        <div class="mobile-app-topbar__actions">
+            <button type="button" class="mobile-app-topbar__btn" aria-label="Search">
+                <i class="bi bi-search"></i>
+            </button>
+            <button type="button" class="mobile-app-topbar__btn mobile-app-topbar__btn--ai" aria-label="AI Buddy (coming soon)" title="AI Buddy (coming soon)">
+                <i class="bi bi-grid-3x3-gap"></i>
+            </button>
+            <a href="profile.html" class="mobile-app-topbar__profile" aria-label="Profile">
+                <i class="bi bi-person-fill"></i>
+            </a>
+        </div>
+    </div>
+</header>
+
 <!-- Mobile Bottom Navigation (Home — Entries — + — Insights — Suggestions) -->
 <nav class="mobile-bottom-nav">
     <ul class="mobile-bottom-nav-items">

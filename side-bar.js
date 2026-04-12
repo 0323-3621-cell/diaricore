@@ -32,6 +32,7 @@ class SidebarComponent {
             
             this.sidebarElement = tempDiv.querySelector('.sidebar');
             this.mobileBottomNav = tempDiv.querySelector('.mobile-bottom-nav');
+            this.mobileAppTopbar = tempDiv.querySelector('.mobile-app-topbar');
             
             // Insert sidebar and mobile nav into the page
             this.insertSidebar();
@@ -48,6 +49,11 @@ class SidebarComponent {
 
     insertSidebar() {
         if (!this.sidebarElement) return;
+
+        if (this.mobileAppTopbar) {
+            document.body.insertBefore(this.mobileAppTopbar, document.body.firstChild);
+            document.body.classList.add('has-mobile-app-topbar');
+        }
 
         // Find where to insert the sidebar (before main content)
         const mainContent = document.querySelector('.main-content') || 

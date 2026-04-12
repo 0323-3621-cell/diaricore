@@ -406,6 +406,10 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    body.has-mobile-app-topbar .mobile-header {
+        top: var(--mobile-app-topbar-below, calc(env(safe-area-inset-top, 0px) + 3.85rem));
+    }
+    
     .mobile-header {
         display: flex;
     }

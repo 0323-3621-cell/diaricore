@@ -16,6 +16,19 @@
         <div class="main-content">
             <!-- Main Content -->
             <main class="profile-content">
+                <!-- Mobile: sage hero + back / logout (desktop hides via CSS) -->
+                <div class="profile-mobile-hero">
+                    <div class="profile-mobile-hero__curve" aria-hidden="true"></div>
+                    <div class="profile-mobile-hero__toolbar">
+                        <button type="button" class="profile-mobile-hero__icon-btn" onclick="window.location.href='dashboard.html'" aria-label="Back to home">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <button type="button" class="profile-mobile-hero__icon-btn profile-mobile-hero__icon-btn--logout" id="profileMobileLogoutBtn" aria-label="Log out">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Header Section -->
                 <div class="header-section">
                     <h1 class="main-title">Profile</h1>
@@ -28,14 +41,14 @@
                         <div class="profile-header">
                             <div class="profile-avatar">
                                 <img src="https://picsum.photos/seed/diari-user/120/120.jpg" alt="Profile Avatar" class="avatar-image">
-                                <button class="avatar-edit-btn">
+                                <button type="button" class="avatar-edit-btn" aria-label="Change profile photo">
                                     <i class="bi bi-camera"></i>
                                 </button>
                             </div>
                             <div class="profile-info">
                                 <h2 class="profile-name">Sarah Johnson</h2>
                                 <p class="profile-email">sarah.johnson@email.com</p>
-                                <p class="profile-member-since">Member since March 2024</p>
+                                <p class="profile-member-since profile-desktop-only-meta">Member since March 2024</p>
                             </div>
                         </div>
                         <div class="profile-stats-section">
@@ -46,17 +59,57 @@
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-number">45</span>
-                                    <span class="stat-label">Day Streak</span>
+                                    <span class="stat-label">Streak</span>
                                 </div>
                                 <div class="stat-item">
                                     <span class="stat-number">89%</span>
-                                    <span class="stat-label">Consistency</span>
+                                    <span class="stat-label">Rate</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
+                <!-- Account Settings (after overview on mobile; desktop keeps same flow) -->
+                <section class="account-settings-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Account Settings</h2>
+                        <p class="section-description">Manage your account information and security</p>
+                    </div>
+                    <h2 class="profile-mobile-block-title">Account</h2>
+                    <div class="settings-grid">
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Personal Info</h3>
+                                <p class="setting-description">Update your name, email, and profile details</p>
+                            </div>
+                            <div class="setting-action">
+                                <button type="button" class="btn-edit">Edit</button>
+                                <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                            </div>
+                        </div>
+                        <div class="setting-card">
+                            <div class="setting-icon">
+                                <i class="bi bi-lock"></i>
+                            </div>
+                            <div class="setting-content">
+                                <h3 class="setting-title">Security</h3>
+                                <p class="setting-description">Change password and enable two-factor authentication</p>
+                            </div>
+                            <div class="setting-action">
+                                <button type="button" class="btn-edit">Edit</button>
+                                <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <h2 class="profile-mobile-block-title profile-mobile-block-title--prefs">Preferences</h2>
+
+                <div class="profile-preferences-stack">
                 <!-- Appearance -->
                 <section class="appearance-section">
                     <div class="appearance-options">
@@ -67,13 +120,16 @@
                             </div>
                         </div>
                         <div class="appearance-item">
-                            <div class="appearance-info">
-                                <h3 class="appearance-subtitle">Dark Mode</h3>
-                                <p class="appearance-description">Switch between light and dark themes</p>
+                            <div class="appearance-item__row">
+                                <i class="bi bi-lightbulb appearance-item__leading-icon" aria-hidden="true"></i>
+                                <div class="appearance-info">
+                                    <h3 class="appearance-subtitle">Dark Mode</h3>
+                                    <p class="appearance-description">Switch between light and dark themes</p>
+                                </div>
                             </div>
                             <div class="appearance-control">
                                 <label class="toggle-switch">
-                                    <input type="checkbox">
+                                    <input type="checkbox" id="toggleDarkMode">
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -91,18 +147,21 @@
                             </div>
                         </div>
                         <div class="notifications-item">
-                            <div class="notifications-info">
-                                <h3 class="notifications-subtitle">Daily Reminders</h3>
-                                <p class="notifications-description">Get reminded to write in your journal</p>
+                            <div class="notifications-item__row">
+                                <i class="bi bi-bell notifications-item__leading-icon" aria-hidden="true"></i>
+                                <div class="notifications-info">
+                                    <h3 class="notifications-subtitle">Daily Reminders</h3>
+                                    <p class="notifications-description">Get reminded to write in your journal</p>
+                                </div>
                             </div>
                             <div class="notifications-control">
                                 <label class="toggle-switch">
-                                    <input type="checkbox">
+                                    <input type="checkbox" id="toggleDailyReminders" checked>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                         </div>
-                        <div class="notifications-item">
+                        <div class="notifications-item notifications-item--reminder-time">
                             <div class="notifications-info">
                                 <h3 class="notifications-subtitle">Reminder Time</h3>
                                 <p class="notifications-description">Set your daily reminder time</p>
@@ -113,40 +172,7 @@
                         </div>
                     </div>
                 </section>
-
-                <!-- Account Settings -->
-                <section class="account-settings-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Account Settings</h2>
-                        <p class="section-description">Manage your account information and security</p>
-                    </div>
-                    <div class="settings-grid">
-                        <div class="setting-card">
-                            <div class="setting-icon">
-                                <i class="bi bi-person"></i>
-                            </div>
-                            <div class="setting-content">
-                                <h3 class="setting-title">Personal Information</h3>
-                                <p class="setting-description">Update your name, email, and profile details</p>
-                            </div>
-                            <div class="setting-action">
-                                <button class="btn-edit">Edit</button>
-                            </div>
-                        </div>
-                        <div class="setting-card">
-                            <div class="setting-icon">
-                                <i class="bi bi-lock"></i>
-                            </div>
-                            <div class="setting-content">
-                                <h3 class="setting-title">Password & Security</h3>
-                                <p class="setting-description">Change password and enable two-factor authentication</p>
-                            </div>
-                            <div class="setting-action">
-                                <button class="btn-edit">Edit</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                </div>
 
                 <!-- Privacy -->
                 <section class="privacy-section">

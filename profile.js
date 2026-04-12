@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize Profile Interactions
 function initializeProfileInteractions() {
+    const mobileLogoutBtn = document.getElementById('profileMobileLogoutBtn');
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('diariCoreUser');
+            window.location.href = 'index.html';
+        });
+    }
+
     // Avatar edit button
     const avatarEditBtn = document.querySelector('.avatar-edit-btn');
     if (avatarEditBtn) {
@@ -33,11 +41,17 @@ function initializeProfileInteractions() {
 
 // Initialize Preference Toggles
 function initializePreferenceToggles() {
-    const toggleSwitches = document.querySelectorAll('.switch input[type="checkbox"]');
+    const toggleSwitches = document.querySelectorAll(
+        '.toggle-switch input[type="checkbox"], .switch input[type="checkbox"]'
+    );
     
     toggleSwitches.forEach(toggle => {
         toggle.addEventListener('change', function() {
-            const preferenceTitle = this.closest('.preference-item').querySelector('.preference-title').textContent;
+            const row = this.closest('.appearance-item, .notifications-item, .preference-item');
+            const titleEl = row && row.querySelector(
+                '.appearance-subtitle, .notifications-subtitle, .preference-title'
+            );
+            const preferenceTitle = titleEl ? titleEl.textContent.trim() : 'Preference';
             const isChecked = this.checked;
             
             showNotification(`${preferenceTitle} ${isChecked ? 'enabled' : 'disabled'}`, 'success');

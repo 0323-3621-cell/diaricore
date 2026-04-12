@@ -53,7 +53,10 @@ class SidebarComponent {
         if (!this.sidebarElement) return;
 
         if (this.mobileAppTopbar) {
-            document.body.insertBefore(this.mobileAppTopbar, document.body.firstChild);
+            const existingTopbar = document.querySelector('.mobile-app-topbar');
+            if (!existingTopbar) {
+                document.body.insertBefore(this.mobileAppTopbar, document.body.firstChild);
+            }
             document.body.classList.add('has-mobile-app-topbar');
         }
 

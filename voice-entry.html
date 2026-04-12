@@ -11,7 +11,44 @@
     <link href="dashboard.css" rel="stylesheet">
     <link href="voice-entry.css" rel="stylesheet">
 </head>
-<body class="page-voice-entry">
+<body class="page-voice-entry has-mobile-app-topbar">
+    <!-- Mobile top bar: inlined for first paint; keep in sync with side-bar.html (hidden on this page via CSS) -->
+    <header class="mobile-app-topbar" role="banner" aria-label="DiariCore">
+        <div class="mobile-app-topbar__inner">
+            <div class="mobile-app-topbar__default">
+                <a href="dashboard.html" class="mobile-app-topbar__brand">
+                    <span class="mobile-app-topbar__brand-icon" aria-hidden="true">
+                        <i class="bi bi-images"></i>
+                    </span>
+                    <span class="mobile-app-topbar__brand-name">DIARICORE</span>
+                </a>
+                <span class="mobile-app-topbar__divider" aria-hidden="true"></span>
+                <div class="mobile-app-topbar__actions">
+                    <button type="button" class="mobile-app-topbar__btn mobile-app-topbar__btn--search-toggle" aria-label="Open search" aria-expanded="false" aria-controls="mobileAppTopbarSearchInput">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <button type="button" class="mobile-app-topbar__btn mobile-app-topbar__btn--ai" aria-label="AI Buddy (coming soon)" title="AI Buddy (coming soon)">
+                        <i class="bi bi-grid"></i>
+                    </button>
+                    <a href="profile.html" class="mobile-app-topbar__profile" aria-label="Profile">
+                        <i class="bi bi-person-fill"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="mobile-app-topbar__search-expand" id="mobileAppTopbarSearchExpand" aria-hidden="true">
+                <button type="button" class="mobile-app-topbar__search-close" aria-label="Close search">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="mobile-app-topbar__search-field">
+                    <i class="bi bi-search mobile-app-topbar__search-field-icon" aria-hidden="true"></i>
+                    <input type="search" id="mobileAppTopbarSearchInput" class="mobile-app-topbar__search-input" placeholder="Search entries..." autocomplete="off" enterkeyhint="search" />
+                    <button type="button" class="mobile-app-topbar__filter-trigger" id="mobileTopbarFilterTrigger" aria-label="Filter entries" title="Filter">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
     <div class="dashboard-container">
         <!-- Include Sidebar -->
         <div include-html="side-bar.html"></div>

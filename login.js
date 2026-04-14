@@ -413,6 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!username) {
                 showError(document.getElementById('email'), 'Username is required.');
                 isValid = false;
+            } else if (username.length < 4 || username.length > 64) {
+                showError(document.getElementById('email'), 'Field must be between 4 and 64 characters long.');
+                isValid = false;
             } else {
                 showSuccess(document.getElementById('email'));
             }
@@ -470,6 +473,63 @@ document.addEventListener('DOMContentLoaded', function() {
                         submitBtn.disabled = false;
                     });
             }
+        });
+    }
+
+    const signInUsernameField = document.getElementById('email');
+    const signInPasswordField = document.getElementById('password');
+
+    if (signInUsernameField) {
+        signInUsernameField.addEventListener('input', function () {
+            const value = this.value.trim();
+            if (!value) {
+                showError(this, 'Username is required.');
+                return;
+            }
+            if (value.length < 4 || value.length > 64) {
+                showError(this, 'Field must be between 4 and 64 characters long.');
+                return;
+            }
+            showSuccess(this);
+        });
+        signInUsernameField.addEventListener('blur', function () {
+            const value = this.value.trim();
+            if (!value) {
+                showError(this, 'Username is required.');
+                return;
+            }
+            if (value.length < 4 || value.length > 64) {
+                showError(this, 'Field must be between 4 and 64 characters long.');
+                return;
+            }
+            showSuccess(this);
+        });
+    }
+
+    if (signInPasswordField) {
+        signInPasswordField.addEventListener('input', function () {
+            const value = this.value;
+            if (!value) {
+                showError(this, 'Password is required.');
+                return;
+            }
+            if (value.length < 8) {
+                showError(this, 'Password must be at least 8 characters.');
+                return;
+            }
+            showSuccess(this);
+        });
+        signInPasswordField.addEventListener('blur', function () {
+            const value = this.value;
+            if (!value) {
+                showError(this, 'Password is required.');
+                return;
+            }
+            if (value.length < 8) {
+                showError(this, 'Password must be at least 8 characters.');
+                return;
+            }
+            showSuccess(this);
         });
     }
     

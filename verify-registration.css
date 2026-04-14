@@ -184,12 +184,12 @@ body {
 
 .alert-error {
     background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: #b91c1c;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
 }
 
 .alert-error .alert__close {
-    color: #b91c1c;
+    color: #b84252;
 }
 
 .alert-success {
@@ -239,8 +239,8 @@ body {
 }
 
 .digit.error {
-    border-color: #dc3545;
-    background: #fff5f5;
+    border-color: #f59ca8;
+    background: #fff7f8;
 }
 
 .btn {

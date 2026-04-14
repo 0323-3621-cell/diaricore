@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let verifiedResetCode = '';
     let resetResendInterval = null;
     let resetResendRemaining = 0;
+    let resetVerifyInProgress = false;
+    let resetAutoVerifyTimeout = null;
     
     // Switch to Sign Up mode
     function switchToSignUp() {
@@ -854,6 +856,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function resetOtpInputs() {
+        if (resetAutoVerifyTimeout) {
+            clearTimeout(resetAutoVerifyTimeout);
+            resetAutoVerifyTimeout = null;
+        }
         resetOtpDigits.forEach((d) => {
             d.value = '';
         });
@@ -861,6 +867,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getResetOtpCode() {
         return resetOtpDigits.map((d) => d.value).join('');
+    }
+
+    function setVerifyResetButtonLoading(isLoading) {
+        if (!verifyResetCodeBtn) return;
+        verifyResetCodeBtn.disabled = isLoading;
+        verifyResetCodeBtn.classList.toggle('is-loading', isLoading);
+        if (isLoading) {
+            verifyResetCodeBtn.innerHTML = '<span class="reset-btn-spinner" aria-hidden="true"></span><span>Verifying...</span>';
+            return;
+        }
+        verifyResetCodeBtn.textContent = 'Verify Code';
+    }
+
+    function submitResetCodeVerification() {
+        if (resetVerifyInProgress) return;
+        const code = getResetOtpCode();
+        if (code.length !== 6) {
+            setResetAlert('Please enter the 6-digit reset code.');
+            return;
+        }
+
+        resetVerifyInProgress = true;
+        setVerifyResetButtonLoading(true);
+
+        fetch('/api/password/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: resetIdentifier || (resetIdentifierInput?.value || '').trim(), code })
+        })
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    setResetAlert(data.error || 'Invalid or expired reset code.');
+                    return;
+                }
+                verifiedResetCode = code;
+                if (resetConfirmForm) resetConfirmForm.hidden = true;
+                if (resetPasswordForm) resetPasswordForm.hidden = false;
+                if (resetSubtitle) resetSubtitle.textContent = 'Set your new password to finish recovery.';
+                setResetAlert('Code verified. Set your new password.', 'success');
+            })
+            .catch(() => setResetAlert('Could not reach the server. Please try again.'))
+            .finally(() => {
+                resetVerifyInProgress = false;
+                setVerifyResetButtonLoading(false);
+            });
     }
 
     function startResetResendCooldown(seconds = 57) {
@@ -1030,13 +1082,27 @@ document.addEventListener('DOMContentLoaded', function() {
             input.addEventListener('input', (e) => {
                 const v = e.target.value.replace(/\D/g, '').slice(-1);
                 e.target.value = v;
+                clearResetAlert();
                 if (v && idx < resetOtpDigits.length - 1) {
                     resetOtpDigits[idx + 1].focus();
+                }
+                const isComplete = getResetOtpCode().length === 6;
+                if (isComplete) {
+                    if (resetAutoVerifyTimeout) clearTimeout(resetAutoVerifyTimeout);
+                    resetAutoVerifyTimeout = setTimeout(() => {
+                        if (!resetVerifyInProgress && resetConfirmForm && !resetConfirmForm.hidden) {
+                            submitResetCodeVerification();
+                        }
+                    }, 220);
                 }
             });
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !input.value && idx > 0) {
                     resetOtpDigits[idx - 1].focus();
+                }
+                if (e.key === 'Backspace' && resetAutoVerifyTimeout) {
+                    clearTimeout(resetAutoVerifyTimeout);
+                    resetAutoVerifyTimeout = null;
                 }
             });
             input.addEventListener('paste', (e) => {
@@ -1045,6 +1111,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 resetOtpDigits.forEach((d, i) => {
                     d.value = digits[i] || '';
                 });
+                clearResetAlert();
+                if (getResetOtpCode().length === 6) {
+                    if (resetAutoVerifyTimeout) clearTimeout(resetAutoVerifyTimeout);
+                    resetAutoVerifyTimeout = setTimeout(() => {
+                        if (!resetVerifyInProgress && resetConfirmForm && !resetConfirmForm.hidden) {
+                            submitResetCodeVerification();
+                        }
+                    }, 220);
+                }
             });
         });
     }
@@ -1084,44 +1159,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetConfirmForm) {
         resetConfirmForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            const code = getResetOtpCode();
-
-            if (code.length !== 6) {
-                setResetAlert('Please enter the 6-digit reset code.');
-                return;
-            }
-
-            if (verifyResetCodeBtn) {
-                verifyResetCodeBtn.disabled = true;
-                verifyResetCodeBtn.classList.add('is-loading');
-                verifyResetCodeBtn.innerHTML = '<span class="reset-btn-spinner" aria-hidden="true"></span><span>Verifying...</span>';
-            }
-
-            fetch('/api/password/verify-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: resetIdentifier || (resetIdentifierInput?.value || '').trim(), code })
-            })
-                .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-                .then(({ ok, data }) => {
-                    if (!ok || !data.success) {
-                        setResetAlert(data.error || 'Invalid or expired reset code.');
-                        return;
-                    }
-                    verifiedResetCode = code;
-                    if (resetConfirmForm) resetConfirmForm.hidden = true;
-                    if (resetPasswordForm) resetPasswordForm.hidden = false;
-                    if (resetSubtitle) resetSubtitle.textContent = 'Set your new password to finish recovery.';
-                    setResetAlert('Code verified. Set your new password.', 'success');
-                })
-                .catch(() => setResetAlert('Could not reach the server. Please try again.'))
-                .finally(() => {
-                    if (verifyResetCodeBtn) {
-                        verifyResetCodeBtn.disabled = false;
-                        verifyResetCodeBtn.classList.remove('is-loading');
-                        verifyResetCodeBtn.textContent = 'Verify Code';
-                    }
-                });
+            submitResetCodeVerification();
         });
     }
 

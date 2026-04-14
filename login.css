@@ -725,14 +725,20 @@ body {
 
 /* Error States */
 .form-input.error {
-    border-color: #e74c3c;
-    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    border-color: #f59ca8;
+    box-shadow: 0 0 0 3px rgba(245, 156, 168, 0.16);
 }
 
 .error-message {
-    color: #e74c3c;
-    font-size: 12px;
-    margin-top: 0.5rem;
+    background: #fef2f2;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    line-height: 1.25;
     display: none;
 }
 
@@ -742,10 +748,11 @@ body {
 
 /* Inline signup validation style (ported from legacy system) */
 .custom-error {
-    background-color: #dc3545;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
+    background: #fef2f2;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
+    padding: 8px 10px;
+    border-radius: 8px;
     font-size: 13px;
     font-weight: 500;
     margin-top: 6px;
@@ -1114,8 +1121,8 @@ body {
 
 .reset-alert.error {
     background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: #b91c1c;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
 }
 
 .reset-alert.success {
@@ -1304,14 +1311,20 @@ body {
 
 /* Error States */
 .form-input.error {
-    border-color: #e74c3c;
-    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    border-color: #f59ca8;
+    box-shadow: 0 0 0 3px rgba(245, 156, 168, 0.16);
 }
 
 .error-message {
-    color: #e74c3c;
-    font-size: 12px;
-    margin-top: 0.5rem;
+    background: #fef2f2;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    line-height: 1.25;
     display: none;
 }
 

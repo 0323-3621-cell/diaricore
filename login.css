@@ -1124,7 +1124,7 @@ body {
 
 .reset-form {
     display: grid;
-    gap: 6px;
+    gap: 2px;
 }
 
 .reset-label {
@@ -1148,13 +1148,18 @@ body {
     margin-bottom: 0;
 }
 
+.reset-form .custom-error.show {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
 .reset-input:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.1);
 }
 
 .reset-btn {
-    margin-top: 4px;
+    margin-top: 2px;
     width: 100%;
     border: none;
     border-radius: 24px;

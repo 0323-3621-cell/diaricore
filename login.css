@@ -44,6 +44,7 @@ body {
     overflow: hidden;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     position: relative;
+    transition: height 0.3s ease, min-height 0.3s ease;
 }
 
 /* Right Panel - Green background that slides */

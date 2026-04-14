@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isPanelTransitioning) return;
         isPanelTransitioning = true;
 
+        const startHeight = loginContainer.offsetHeight;
+        loginContainer.style.height = `${startHeight}px`;
+
         const hideSection = toSignUp ? signinSection : signupSection;
         const showSection = toSignUp ? signupSection : signinSection;
         const hideWelcome = toSignUp ? signinWelcome : signupWelcome;
@@ -71,6 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
             showSection.style.opacity = '0';
             showWelcome.style.opacity = '0';
 
+            const targetHeight = loginContainer.scrollHeight;
+            loginContainer.style.height = `${targetHeight}px`;
+
             // Use RAF to ensure browser paints hidden->visible state before fade-in.
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -80,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             setTimeout(() => {
+                loginContainer.style.height = '';
                 isPanelTransitioning = false;
             }, PANEL_TRANSITION_MS);
         }, PANEL_TRANSITION_MS);

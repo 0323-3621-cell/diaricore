@@ -31,55 +31,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Google buttons
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
-    const PANEL_TRANSITION_MS = 300;
-    let isPanelTransitioning = false;
     
-    function switchPanel(toSignUp) {
-        if (isPanelTransitioning) return;
-        isPanelTransitioning = true;
-
-        const hideSection = toSignUp ? signinSection : signupSection;
-        const showSection = toSignUp ? signupSection : signinSection;
-        const hideWelcome = toSignUp ? signinWelcome : signupWelcome;
-        const showWelcome = toSignUp ? signupWelcome : signinWelcome;
-
-        loginContainer.classList.toggle('signup-mode', toSignUp);
-
-        // Fade out current pane and text first.
-        hideSection.style.opacity = '0';
-        hideWelcome.style.opacity = '0';
-
-        setTimeout(() => {
-            hideSection.classList.add('hidden');
-            hideWelcome.classList.add('hidden');
-
-            showSection.classList.remove('hidden');
-            showWelcome.classList.remove('hidden');
-            showSection.style.opacity = '0';
-            showWelcome.style.opacity = '0';
-
-            // Use RAF to ensure browser paints hidden->visible state before fade-in.
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    showSection.style.opacity = '1';
-                    showWelcome.style.opacity = '1';
-                });
-            });
-
-            setTimeout(() => {
-                isPanelTransitioning = false;
-            }, PANEL_TRANSITION_MS);
-        }, PANEL_TRANSITION_MS);
-    }
-
     // Switch to Sign Up mode
     function switchToSignUp() {
-        switchPanel(true);
+        loginContainer.classList.add('signup-mode');
+        
+        // Fade out current content
+        signinSection.style.opacity = '0';
+        signinWelcome.style.opacity = '0';
+        signupWelcome.classList.add('hidden');
+        
+        setTimeout(() => {
+            signinSection.classList.add('hidden');
+            signupSection.classList.remove('hidden');
+            signinWelcome.classList.add('hidden');
+            signupWelcome.classList.remove('hidden');
+            
+            // Fade in new content
+            signupSection.style.opacity = '0';
+            signupWelcome.style.opacity = '0';
+            
+            setTimeout(() => {
+                signupSection.style.opacity = '1';
+                signupWelcome.style.opacity = '1';
+            }, 50);
+        }, 300);
     }
     
     // Switch to Sign In mode
     function switchToSignIn() {
-        switchPanel(false);
+        // Hide signup welcome immediately to prevent flash during panel swap
+        signupWelcome.classList.add('hidden');
+        signupWelcome.style.opacity = '0';
+        loginContainer.classList.remove('signup-mode');
+        
+        // Fade out current content
+        signupSection.style.opacity = '0';
+        signinWelcome.classList.add('hidden');
+        
+        setTimeout(() => {
+            signupSection.classList.add('hidden');
+            signinSection.classList.remove('hidden');
+            signupWelcome.classList.add('hidden');
+            signinWelcome.classList.remove('hidden');
+            
+            // Fade in new content
+            signinSection.style.opacity = '0';
+            signinWelcome.style.opacity = '0';
+            
+            setTimeout(() => {
+                signinSection.style.opacity = '1';
+                signinWelcome.style.opacity = '1';
+            }, 50);
+        }, 300);
     }
     
     // Event listeners for switching

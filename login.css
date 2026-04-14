@@ -374,6 +374,8 @@ body {
     pointer-events: none;
     transition: all 0.2s ease;
     background-color: transparent;
+    z-index: 2;
+    text-shadow: none;
 }
 
 .input-wrapper.has-content .floating-label,
@@ -385,6 +387,12 @@ body {
     background-color: transparent;
     padding: 0;
     font-weight: 500;
+    /* Create a notch effect: hide only the border line behind text */
+    text-shadow:
+        -4px 0 var(--card-background),
+         4px 0 var(--card-background),
+         0 -2px var(--card-background),
+         0  2px var(--card-background);
 }
 
 .input-wrapper--static-label .floating-label {
@@ -395,6 +403,11 @@ body {
     background-color: transparent;
     padding: 0;
     font-weight: 500;
+    text-shadow:
+        -4px 0 var(--card-background),
+         4px 0 var(--card-background),
+         0 -2px var(--card-background),
+         0  2px var(--card-background);
 }
 
 .input-wrapper--static-label .form-input {

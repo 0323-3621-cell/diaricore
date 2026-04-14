@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const customError = document.getElementById(`${inputElement.id}-error`);
         if (customError) {
             customError.textContent = message;
-            customError.style.display = 'block';
+            customError.classList.add('show');
             return;
         }
 
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const customError = document.getElementById(`${inputElement.id}-error`);
         if (customError) {
-            customError.style.display = 'none';
+            customError.classList.remove('show');
         }
 
         const errorDiv = inputElement.parentElement.nextElementSibling;
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inputElement.classList.remove('error', 'success');
         const customError = document.getElementById(`${inputElement.id}-error`);
         if (customError) {
-            customError.style.display = 'none';
+            customError.classList.remove('show');
         }
         const errorDiv = inputElement.parentElement.nextElementSibling;
         if (errorDiv && errorDiv.classList.contains('error-message')) {

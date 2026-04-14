@@ -128,6 +128,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }
+
+    const availabilityState = {
+        nickname: { lastCheckedValue: '', isAvailable: null, pendingPromise: null },
+        signUpEmail: { lastCheckedValue: '', isAvailable: null, pendingPromise: null }
+    };
+    const availabilityTimers = { nickname: null, signUpEmail: null };
+
+    function resetAvailability(fieldId) {
+        if (!availabilityState[fieldId]) return;
+        availabilityState[fieldId].lastCheckedValue = '';
+        availabilityState[fieldId].isAvailable = null;
+        availabilityState[fieldId].pendingPromise = null;
+    }
+
+    function checkFieldAvailability(fieldId, value) {
+        if (!availabilityState[fieldId]) return Promise.resolve(true);
+        const state = availabilityState[fieldId];
+
+        if (state.lastCheckedValue === value && state.isAvailable !== null) {
+            return Promise.resolve(state.isAvailable);
+        }
+        if (state.lastCheckedValue === value && state.pendingPromise) {
+            return state.pendingPromise;
+        }
+
+        const apiField = fieldId === 'nickname' ? 'nickname' : 'email';
+        state.lastCheckedValue = value;
+        state.isAvailable = null;
+
+        state.pendingPromise = fetch(`/api/check-availability?field=${encodeURIComponent(apiField)}&value=${encodeURIComponent(value)}`)
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) return true;
+                if (state.lastCheckedValue !== value) return true;
+                state.isAvailable = !!data.available;
+                if (state.isAvailable) {
+                    showSuccess(document.getElementById(fieldId));
+                    return true;
+                }
+                showError(document.getElementById(fieldId), data.message || (fieldId === 'nickname' ? 'Nickname already exists.' : 'Email already exists.'));
+                return false;
+            })
+            .catch(() => true)
+            .finally(() => {
+                if (state.lastCheckedValue === value) {
+                    state.pendingPromise = null;
+                }
+            });
+
+        return state.pendingPromise;
+    }
+
+    function scheduleAvailabilityCheck(fieldId, value) {
+        if (!availabilityState[fieldId]) return;
+        if (availabilityTimers[fieldId]) {
+            clearTimeout(availabilityTimers[fieldId]);
+        }
+        availabilityTimers[fieldId] = setTimeout(() => {
+            checkFieldAvailability(fieldId, value);
+        }, 300);
+    }
     
     // Show error message
     function showError(inputElement, message) {
@@ -188,15 +249,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const value = field.value.trim();
 
         if (fieldId === 'nickname') {
-            if (!value) return showError(field, 'Nickname is required.'), false;
-            if (value.length < 4 || value.length > 64) return showError(field, 'Field must be between 4 and 64 characters long.'), false;
-            showSuccess(field); return true;
+            if (!value) {
+                resetAvailability('nickname');
+                return showError(field, 'Nickname is required.'), false;
+            }
+            if (value.length < 4 || value.length > 64) {
+                resetAvailability('nickname');
+                return showError(field, 'Field must be between 4 and 64 characters long.'), false;
+            }
+            scheduleAvailabilityCheck('nickname', value);
+            return true;
         }
 
         if (fieldId === 'signUpEmail') {
-            if (!value) return showError(field, 'Email is required.'), false;
-            if (!isValidEmail(value)) return showError(field, 'Please enter a valid email.'), false;
-            showSuccess(field); return true;
+            if (!value) {
+                resetAvailability('signUpEmail');
+                return showError(field, 'Email is required.'), false;
+            }
+            if (!isValidEmail(value)) {
+                resetAvailability('signUpEmail');
+                return showError(field, 'Please enter a valid email.'), false;
+            }
+            scheduleAvailabilityCheck('signUpEmail', value);
+            return true;
         }
 
         if (fieldId === 'firstName') {
@@ -312,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Sign up form submission
     if (signUpForm) {
-        signUpForm.addEventListener('submit', function(e) {
+        signUpForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const nickname = document.getElementById('nickname').value.trim();
@@ -333,8 +408,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (nickname.length < 4 || nickname.length > 64) {
                 showError(document.getElementById('nickname'), 'Field must be between 4 and 64 characters long.');
                 isValid = false;
-            } else {
-                showSuccess(document.getElementById('nickname'));
             }
 
             // Validate first name
@@ -376,8 +449,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (!isValidEmail(email)) {
                 showError(document.getElementById('signUpEmail'), 'Please enter a valid email.');
                 isValid = false;
-            } else {
-                showSuccess(document.getElementById('signUpEmail'));
             }
             
             // Validate password
@@ -403,6 +474,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (isValid) {
+                const nicknameAvailable = await checkFieldAvailability('nickname', nickname);
+                const emailAvailable = await checkFieldAvailability('signUpEmail', email);
+                if (!nicknameAvailable || !emailAvailable) {
+                    return;
+                }
+
                 const submitBtn = signUpForm.querySelector('.btn-signin');
                 submitBtn.textContent = 'Creating Account...';
                 submitBtn.disabled = true;
@@ -582,13 +659,6 @@ document.addEventListener('DOMContentLoaded', function() {
         field.addEventListener('blur', () => validateSignUpField(fieldId));
         field.addEventListener('input', () => validateSignUpField(fieldId));
         field.addEventListener('change', () => validateSignUpField(fieldId));
-    });
-    
-    // Clear validation on input
-    document.querySelectorAll('.form-input').forEach(input => {
-        input.addEventListener('input', function() {
-            clearValidation(this);
-        });
     });
     
     // Floating Label Animation

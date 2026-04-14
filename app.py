@@ -127,6 +127,38 @@ def api_login():
     return jsonify({"success": True, "user": serialize_user(result)}), 200
 
 
+@app.route("/api/check-availability")
+def api_check_availability():
+    field = (request.args.get("field") or "").strip().lower()
+    value = (request.args.get("value") or "").strip()
+
+    if field not in ("nickname", "email"):
+        return jsonify({"success": False, "error": "Invalid field."}), 400
+    if not value:
+        return jsonify({"success": False, "error": "Value is required."}), 400
+
+    if field == "nickname":
+        exists = db.get_user_by_nickname(value) is not None
+        return jsonify(
+            {
+                "success": True,
+                "field": "nickname",
+                "available": not exists,
+                "message": None if not exists else "Nickname already exists.",
+            }
+        )
+
+    exists = db.get_user_by_email(value) is not None
+    return jsonify(
+        {
+            "success": True,
+            "field": "signUpEmail",
+            "available": not exists,
+            "message": None if not exists else "Email already exists.",
+        }
+    )
+
+
 @app.route("/")
 def index():
     return send_from_directory(BASE_DIR, "index.html")

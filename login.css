@@ -37,7 +37,7 @@ body {
 .login-container {
     display: flex;
     width: 100%;
-    max-width: 1120px;
+    max-width: 1280px;
     min-height: 550px;
     background-color: var(--card-background);
     border-radius: 16px;
@@ -48,7 +48,7 @@ body {
 
 /* Right Panel - Green background that slides */
 .login-right-panel {
-    flex: 0.9;
+    flex: 0.82;
     background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
     display: flex;
     flex-direction: column;
@@ -63,7 +63,7 @@ body {
 
 /* Left Panel - Forms (White side - starts on LEFT) */
 .login-left-panel {
-    flex: 1.25;
+    flex: 1.38;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -80,7 +80,7 @@ body {
 }
 
 .signup-section {
-    max-width: 560px;
+    max-width: 660px;
 }
 
 .form-section.hidden {
@@ -176,14 +176,16 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+    height: 46px;
+    line-height: normal;
 }
 
 .input-wrapper.has-content .form-select-input,
 .input-wrapper:focus-within .form-select-input {
     /* Keep selected value readable while floating label is active */
-    padding-top: 16px;
+    padding-top: 20px;
     padding-bottom: 4px;
-    line-height: 1.35;
+    line-height: normal;
 }
 
 .form-select-input option {

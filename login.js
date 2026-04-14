@@ -962,7 +962,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resetResendInterval = null;
         }
         if (resendResetCodeBtn) resendResetCodeBtn.disabled = false;
-        if (resetTimerLabel) resetTimerLabel.textContent = '(1:00)';
+        if (resetTimerLabel) resetTimerLabel.textContent = '';
     }
 
     function closeResetModal() {
@@ -1016,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/password/forgot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier })
+                body: JSON.stringify({ identifier, email: identifier })
             })
                 .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
                 .then(({ ok, data }) => {
@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/password/forgot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: resetIdentifier })
+                body: JSON.stringify({ identifier: resetIdentifier, email: resetIdentifier })
             })
                 .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
                 .then(({ ok, data }) => {

@@ -304,7 +304,7 @@ def api_login():
 @app.route("/api/password/forgot", methods=["POST"])
 def api_password_forgot():
     data = request.get_json(silent=True) or {}
-    email = (data.get("identifier") or "").strip().lower()
+    email = (data.get("identifier") or data.get("email") or "").strip().lower()
     if not email:
         return jsonify({"success": False, "error": "Email address is required."}), 400
     if "@" not in email or "." not in email:

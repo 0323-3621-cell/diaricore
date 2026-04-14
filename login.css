@@ -376,6 +376,22 @@ body {
     background-color: transparent;
     z-index: 2;
     text-shadow: none;
+    display: inline-block;
+}
+
+.input-wrapper .floating-label::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    right: -5px;
+    top: 50%;
+    height: 0;
+    transform: translateY(-50%);
+    background: var(--card-background);
+    border-radius: 4px;
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.2s ease, height 0.2s ease;
 }
 
 .input-wrapper.has-content .floating-label,
@@ -387,12 +403,12 @@ body {
     background-color: transparent;
     padding: 0;
     font-weight: 500;
-    /* Create a notch effect: hide only the border line behind text */
-    text-shadow:
-        -4px 0 var(--card-background),
-         4px 0 var(--card-background),
-         0 -2px var(--card-background),
-         0  2px var(--card-background);
+}
+
+.input-wrapper.has-content .floating-label::before,
+.input-wrapper:focus-within .floating-label::before {
+    opacity: 1;
+    height: 11px;
 }
 
 .input-wrapper--static-label .floating-label {
@@ -403,11 +419,11 @@ body {
     background-color: transparent;
     padding: 0;
     font-weight: 500;
-    text-shadow:
-        -4px 0 var(--card-background),
-         4px 0 var(--card-background),
-         0 -2px var(--card-background),
-         0  2px var(--card-background);
+}
+
+.input-wrapper--static-label .floating-label::before {
+    opacity: 1;
+    height: 11px;
 }
 
 .input-wrapper--static-label .form-input {

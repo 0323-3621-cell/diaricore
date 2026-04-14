@@ -134,6 +134,7 @@ def create_user(
     """Returns (True, user_dict) or (False, field_id, error_message)."""
     password_hash = generate_password_hash(password)
     email_norm = email.lower().strip()
+    nickname_norm = nickname.strip()
 
     conn = get_conn()
     cur = conn.cursor()
@@ -145,7 +146,7 @@ def create_user(
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at
                 """,
-                (nickname.strip(), email_norm, password_hash, first_name.strip(), last_name.strip(), gender, birthday),
+                (nickname_norm, email_norm, password_hash, first_name.strip(), last_name.strip(), gender, birthday),
             )
             row = cur.fetchone()
             conn.commit()
@@ -159,7 +160,7 @@ def create_user(
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    nickname.strip(),
+                    nickname_norm,
                     email_norm,
                     password_hash,
                     first_name.strip(),
@@ -181,9 +182,9 @@ def create_user(
         err = str(e).lower()
         if any(s in err for s in ("unique", "duplicate", "already exists")):
             if "nickname" in err:
-                return False, "nickname", "This nickname is already taken."
+                return False, "nickname", "Nickname already exists."
             if "email" in err:
-                return False, "signUpEmail", "This email is already registered."
+                return False, "signUpEmail", "Email already exists."
         return False, None, "Could not create account. Please try again."
     finally:
         conn.close()

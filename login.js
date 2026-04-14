@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fieldId === 'nickname') {
             if (!value) return showError(field, 'Nickname is required.'), false;
-            if (value.length < 2) return showError(field, 'Nickname must be at least 2 characters.'), false;
+            if (value.length < 4 || value.length > 64) return showError(field, 'Field must be between 4 and 64 characters long.'), false;
             showSuccess(field); return true;
         }
 
@@ -201,13 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fieldId === 'firstName') {
             if (!value) return showError(field, 'First name is required.'), false;
-            if (value.length < 2) return showError(field, 'First name must be at least 2 characters.'), false;
             showSuccess(field); return true;
         }
 
         if (fieldId === 'lastName') {
             if (!value) return showError(field, 'Last name is required.'), false;
-            if (value.length < 2) return showError(field, 'Last name must be at least 2 characters.'), false;
             showSuccess(field); return true;
         }
 
@@ -223,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fieldId === 'signUpPassword') {
             if (!value) return showError(field, 'Password is required.'), false;
-            if (value.length < 6) return showError(field, 'Password must be at least 6 characters.'), false;
+            if (value.length < 8) return showError(field, 'Password must be at least 8 characters.'), false;
             showSuccess(field);
             // Re-validate confirm password when password changes
             if (document.getElementById('confirmPassword')?.value.trim()) {
@@ -254,10 +252,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate email
             if (!email) {
-                showError(document.getElementById('email'), 'Email is required');
+                showError(document.getElementById('email'), 'Email is required.');
                 isValid = false;
             } else if (!isValidEmail(email)) {
-                showError(document.getElementById('email'), 'Please enter a valid email');
+                showError(document.getElementById('email'), 'Please enter a valid email.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('email'));
@@ -265,10 +263,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate password
             if (!password) {
-                showError(document.getElementById('password'), 'Password is required');
+                showError(document.getElementById('password'), 'Password is required.');
                 isValid = false;
-            } else if (password.length < 6) {
-                showError(document.getElementById('password'), 'Password must be at least 6 characters');
+            } else if (password.length < 8) {
+                showError(document.getElementById('password'), 'Password must be at least 8 characters.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('password'));
@@ -330,10 +328,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate nickname
             if (!nickname) {
-                showError(document.getElementById('nickname'), 'Nickname is required');
+                showError(document.getElementById('nickname'), 'Nickname is required.');
                 isValid = false;
-            } else if (nickname.length < 2) {
-                showError(document.getElementById('nickname'), 'Nickname must be at least 2 characters');
+            } else if (nickname.length < 4 || nickname.length > 64) {
+                showError(document.getElementById('nickname'), 'Field must be between 4 and 64 characters long.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('nickname'));
@@ -341,10 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate first name
             if (!firstName) {
-                showError(document.getElementById('firstName'), 'First name is required');
-                isValid = false;
-            } else if (firstName.length < 2) {
-                showError(document.getElementById('firstName'), 'First name must be at least 2 characters');
+                showError(document.getElementById('firstName'), 'First name is required.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('firstName'));
@@ -352,10 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate last name
             if (!lastName) {
-                showError(document.getElementById('lastName'), 'Last name is required');
-                isValid = false;
-            } else if (lastName.length < 2) {
-                showError(document.getElementById('lastName'), 'Last name must be at least 2 characters');
+                showError(document.getElementById('lastName'), 'Last name is required.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('lastName'));
@@ -363,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate gender
             if (!gender) {
-                showError(document.getElementById('gender'), 'Gender is required');
+                showError(document.getElementById('gender'), 'Gender is required.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('gender'));
@@ -371,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate birthday
             if (!birthday) {
-                showError(document.getElementById('birthday'), 'Birthday is required');
+                showError(document.getElementById('birthday'), 'Date of birth is required.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('birthday'));
@@ -379,10 +371,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate email
             if (!email) {
-                showError(document.getElementById('signUpEmail'), 'Email is required');
+                showError(document.getElementById('signUpEmail'), 'Email is required.');
                 isValid = false;
             } else if (!isValidEmail(email)) {
-                showError(document.getElementById('signUpEmail'), 'Please enter a valid email');
+                showError(document.getElementById('signUpEmail'), 'Please enter a valid email.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('signUpEmail'));
@@ -390,10 +382,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Validate password
             if (!password) {
-                showError(document.getElementById('signUpPassword'), 'Password is required');
+                showError(document.getElementById('signUpPassword'), 'Password is required.');
                 isValid = false;
-            } else if (password.length < 6) {
-                showError(document.getElementById('signUpPassword'), 'Password must be at least 6 characters');
+            } else if (password.length < 8) {
+                showError(document.getElementById('signUpPassword'), 'Password must be at least 8 characters.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('signUpPassword'));
@@ -401,10 +393,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate confirm password
             if (!confirmPassword) {
-                showError(document.getElementById('confirmPassword'), 'Please confirm your password');
+                showError(document.getElementById('confirmPassword'), 'Password confirmation is required.');
                 isValid = false;
             } else if (confirmPassword !== password) {
-                showError(document.getElementById('confirmPassword'), 'Passwords do not match');
+                showError(document.getElementById('confirmPassword'), 'Passwords do not match.');
                 isValid = false;
             } else {
                 showSuccess(document.getElementById('confirmPassword'));
@@ -607,24 +599,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const input = wrapper.querySelector('.form-input');
             
             if (input) {
-                // Check on load if input has value
-                if (input.value.trim() !== '') {
-                    wrapper.classList.add('has-content');
-                }
-                
-                // Add event listeners
-                input.addEventListener('input', function() {
-                    if (this.value.trim() !== '') {
+                const syncHasContent = () => {
+                    const v = (input.value ?? '').toString().trim();
+                    if (v !== '') {
                         wrapper.classList.add('has-content');
                     } else {
                         wrapper.classList.remove('has-content');
                     }
+                };
+                // Check on load if input has value
+                syncHasContent();
+                
+                // Add event listeners
+                input.addEventListener('input', function() {
+                    syncHasContent();
+                });
+
+                // Selects often only emit change, not input (fixes "Gender selected but looks blank")
+                input.addEventListener('change', function() {
+                    syncHasContent();
                 });
                 
                 input.addEventListener('blur', function() {
-                    if (this.value.trim() === '') {
-                        wrapper.classList.remove('has-content');
-                    }
+                    syncHasContent();
                 });
                 
                 input.addEventListener('focus', function() {

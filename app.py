@@ -69,15 +69,24 @@ def api_register():
     gender = (data.get("gender") or "").strip()
     birthday = (data.get("birthday") or "").strip()
 
-    if not nickname or len(nickname) < 2:
+    if not nickname:
         return jsonify({"success": False, "field": "nickname", "error": "Nickname is required."}), 400
+    if len(nickname) < 4 or len(nickname) > 64:
+        return jsonify(
+            {"success": False, "field": "nickname", "error": "Field must be between 4 and 64 characters long."}
+        ), 400
     if not email:
         return jsonify({"success": False, "field": "signUpEmail", "error": "Email is required."}), 400
-    if not password or len(password) < 6:
-        return jsonify({"success": False, "field": "signUpPassword", "error": "Password must be at least 6 characters."}), 400
-    if not first_name or len(first_name) < 2:
+    # Keep backend email validation simple but consistent with frontend.
+    if "@" not in email or "." not in email:
+        return jsonify({"success": False, "field": "signUpEmail", "error": "Please enter a valid email."}), 400
+    if not password:
+        return jsonify({"success": False, "field": "signUpPassword", "error": "Password is required."}), 400
+    if len(password) < 8:
+        return jsonify({"success": False, "field": "signUpPassword", "error": "Password must be at least 8 characters."}), 400
+    if not first_name:
         return jsonify({"success": False, "field": "firstName", "error": "First name is required."}), 400
-    if not last_name or len(last_name) < 2:
+    if not last_name:
         return jsonify({"success": False, "field": "lastName", "error": "Last name is required."}), 400
     if not gender:
         return jsonify({"success": False, "field": "gender", "error": "Gender is required."}), 400

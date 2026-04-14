@@ -355,7 +355,12 @@ def api_check_availability():
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    return send_from_directory(BASE_DIR, "login.html")
+
+
+@app.route("/index.html")
+def legacy_index_page():
+    return send_from_directory(BASE_DIR, "login.html")
 
 
 @app.route("/<path:filename>")

@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(({ ok, data }) => {
                 if (!ok || !data.success) {
                     notify('Unauthorized. Please sign in as admin.');
-                    window.location.href = 'index.html';
+                    window.location.href = 'login.html';
                     return;
                 }
                 const s = data.settings;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/admin/logout', { method: 'POST' })
             .finally(() => {
                 localStorage.removeItem('diariCoreUser');
-                window.location.href = 'index.html';
+                window.location.href = 'login.html';
             });
     });
 

@@ -14,7 +14,7 @@ function initializeProfileInteractions() {
     if (mobileLogoutBtn) {
         mobileLogoutBtn.addEventListener('click', function() {
             localStorage.removeItem('diariCoreUser');
-            window.location.href = 'index.html';
+            window.location.href = 'login.html';
         });
     }
 

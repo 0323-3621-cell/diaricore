@@ -570,6 +570,7 @@ body {
     pointer-events: none;
     overflow: hidden;
     margin-top: 0;
+    margin-bottom: 0;
 }
 
 .custom-error.show {
@@ -577,6 +578,7 @@ body {
     max-height: 80px;
     transform: translateY(0);
     margin-top: 6px;
+    margin-bottom: 4px;
 }
 
 /* Success States */

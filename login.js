@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fade out current content
         signinSection.style.opacity = '0';
         signinWelcome.style.opacity = '0';
+        signupWelcome.classList.add('hidden');
         
         setTimeout(() => {
             signinSection.classList.add('hidden');
@@ -64,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fade out current content
         signupSection.style.opacity = '0';
         signupWelcome.style.opacity = '0';
+        signinWelcome.classList.add('hidden');
         
         setTimeout(() => {
             signupSection.classList.add('hidden');

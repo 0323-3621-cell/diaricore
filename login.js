@@ -133,14 +133,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function showError(inputElement, message) {
         inputElement.classList.add('error');
         inputElement.classList.remove('success');
-        
+
+        const customError = document.getElementById(`${inputElement.id}-error`);
+        if (customError) {
+            customError.textContent = message;
+            customError.style.display = 'block';
+            return;
+        }
+
         let errorDiv = inputElement.parentElement.nextElementSibling;
         if (!errorDiv || !errorDiv.classList.contains('error-message')) {
             errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
             inputElement.parentElement.after(errorDiv);
         }
-        
+
         errorDiv.textContent = message;
         errorDiv.classList.add('show');
     }
@@ -149,7 +156,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function showSuccess(inputElement) {
         inputElement.classList.remove('error');
         inputElement.classList.add('success');
-        
+
+        const customError = document.getElementById(`${inputElement.id}-error`);
+        if (customError) {
+            customError.style.display = 'none';
+        }
+
         const errorDiv = inputElement.parentElement.nextElementSibling;
         if (errorDiv && errorDiv.classList.contains('error-message')) {
             errorDiv.classList.remove('show');
@@ -159,10 +171,75 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear validation
     function clearValidation(inputElement) {
         inputElement.classList.remove('error', 'success');
+        const customError = document.getElementById(`${inputElement.id}-error`);
+        if (customError) {
+            customError.style.display = 'none';
+        }
         const errorDiv = inputElement.parentElement.nextElementSibling;
         if (errorDiv && errorDiv.classList.contains('error-message')) {
             errorDiv.classList.remove('show');
         }
+    }
+
+    function validateSignUpField(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return true;
+
+        const value = field.value.trim();
+
+        if (fieldId === 'nickname') {
+            if (!value) return showError(field, 'Nickname is required.'), false;
+            if (value.length < 2) return showError(field, 'Nickname must be at least 2 characters.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'signUpEmail') {
+            if (!value) return showError(field, 'Email is required.'), false;
+            if (!isValidEmail(value)) return showError(field, 'Please enter a valid email.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'firstName') {
+            if (!value) return showError(field, 'First name is required.'), false;
+            if (value.length < 2) return showError(field, 'First name must be at least 2 characters.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'lastName') {
+            if (!value) return showError(field, 'Last name is required.'), false;
+            if (value.length < 2) return showError(field, 'Last name must be at least 2 characters.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'gender') {
+            if (!value) return showError(field, 'Gender is required.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'birthday') {
+            if (!value) return showError(field, 'Date of birth is required.'), false;
+            showSuccess(field); return true;
+        }
+
+        if (fieldId === 'signUpPassword') {
+            if (!value) return showError(field, 'Password is required.'), false;
+            if (value.length < 6) return showError(field, 'Password must be at least 6 characters.'), false;
+            showSuccess(field);
+            // Re-validate confirm password when password changes
+            if (document.getElementById('confirmPassword')?.value.trim()) {
+                validateSignUpField('confirmPassword');
+            }
+            return true;
+        }
+
+        if (fieldId === 'confirmPassword') {
+            const pass = document.getElementById('signUpPassword').value;
+            if (!value) return showError(field, 'Password confirmation is required.'), false;
+            if (value !== pass) return showError(field, 'Passwords do not match.'), false;
+            showSuccess(field); return true;
+        }
+
+        return true;
     }
     
     // Login form submission
@@ -467,6 +544,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     checkAuthStatus();
+
+    const signUpFieldIds = [
+        'nickname',
+        'signUpEmail',
+        'firstName',
+        'lastName',
+        'gender',
+        'birthday',
+        'signUpPassword',
+        'confirmPassword'
+    ];
+
+    signUpFieldIds.forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+        field.addEventListener('blur', () => validateSignUpField(fieldId));
+        field.addEventListener('input', () => validateSignUpField(fieldId));
+        field.addEventListener('change', () => validateSignUpField(fieldId));
+    });
     
     // Clear validation on input
     document.querySelectorAll('.form-input').forEach(input => {

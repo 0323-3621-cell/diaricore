@@ -1241,8 +1241,8 @@ body {
 }
 
 .reset-form .custom-error.show {
-    margin-top: 3px;
-    margin-bottom: 3px;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 #resetPasswordForm {
@@ -1250,7 +1250,7 @@ body {
 }
 
 #resetPasswordForm #resetNewPassword-error.show {
-    margin-bottom: 6px;
+    margin-bottom: 10px;
 }
 
 .reset-input:focus {

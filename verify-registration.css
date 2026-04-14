@@ -252,6 +252,7 @@ body {
     border: none;
     color: var(--primary-color);
     font-weight: 600;
+    font-size: 14px;
     cursor: pointer;
 }
 
@@ -259,7 +260,7 @@ body {
 
 .timer {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
 }
 
@@ -271,7 +272,7 @@ body {
 .back {
     text-decoration: none;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .back:hover { color: var(--primary-color); }

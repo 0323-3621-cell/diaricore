@@ -140,6 +140,10 @@ body {
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
+.alert[hidden] {
+    display: none !important;
+}
+
 .alert.show {
     transform: translateY(0);
     opacity: 1;

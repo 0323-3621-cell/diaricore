@@ -17,49 +17,57 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="header">
-                <div class="icon">
-                    <i class="bi bi-shield-lock"></i>
+        <div class="verify-shell">
+            <aside class="verify-side">
+                <img src="dclogo.png" alt="DiariCore Logo" class="verify-logo">
+                <h2>Almost There</h2>
+                <p>Confirm your email with the 6-digit code to activate your DiariCore account securely.</p>
+            </aside>
+
+            <div class="card">
+                <div class="header">
+                    <div class="icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                    <h1>Account Verification</h1>
+                    <p>Enter the 6-digit code sent to your email</p>
                 </div>
-                <h1>Account Verification</h1>
-                <p>Enter the 6-digit code sent to your email</p>
-            </div>
 
-            <div class="email" id="emailDisplay"></div>
+                <div class="email" id="emailDisplay"></div>
 
-            <div class="otp" id="otpInputs">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 1">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 2">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 3">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 4">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 5">
-                <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 6">
-            </div>
-
-            <div class="alert alert-error" id="otpError" hidden aria-live="polite">
-                <div class="alert__left">
-                    <i class="bi bi-exclamation-circle"></i>
-                    <span class="alert__text"></span>
+                <div class="otp" id="otpInputs">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+                    <input class="digit" inputmode="numeric" maxlength="1" aria-label="Digit 6">
                 </div>
-                <button class="alert__close" id="otpErrorClose" aria-label="Close">×</button>
-            </div>
 
-            <button class="btn" id="verifyBtn" disabled>
-                <i class="bi bi-check2-circle" id="verifyBtnIcon"></i>
-                <span id="verifyBtnText">Verify Code</span>
-            </button>
+                <div class="alert alert-error" id="otpError" hidden aria-live="polite">
+                    <div class="alert__left">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <span class="alert__text"></span>
+                    </div>
+                    <button class="alert__close" id="otpErrorClose" aria-label="Close">×</button>
+                </div>
 
-            <div class="meta">
-                <button class="link" id="resendBtn">Resend Code</button>
-                <div class="timer" id="timerLabel">Code expires in 10:00</div>
-            </div>
+                <button class="btn" id="verifyBtn" disabled>
+                    <i class="bi bi-check2-circle" id="verifyBtnIcon"></i>
+                    <span id="verifyBtnText">Verify Code</span>
+                </button>
 
-            <div class="footer">
-                <a class="back" href="index.html?mode=signup">
-                    <i class="bi bi-arrow-left"></i>
-                    Back to registration
-                </a>
+                <div class="meta">
+                    <button class="link" id="resendBtn">Resend Code</button>
+                    <div class="timer" id="timerLabel">Code expires in 10:00</div>
+                </div>
+
+                <div class="footer">
+                    <a class="back" href="index.html?mode=signup">
+                        <i class="bi bi-arrow-left"></i>
+                        Back to registration
+                    </a>
+                </div>
             </div>
         </div>
     </div>

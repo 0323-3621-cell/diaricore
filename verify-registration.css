@@ -23,88 +23,60 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 28px 20px;
     flex-direction: column;
-}
-
-.top-banner {
-    width: 100%;
-    max-width: 1120px;
-    margin: 0 auto 14px;
-    padding: 0 20px;
-}
-
-.top-banner__content {
-    background: #d1fae5;
-    border: 1px solid #34d399;
-    color: #065f46;
-    border-radius: 10px;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 13px;
-}
-
-.top-banner__close {
-    border: none;
-    background: transparent;
-    color: #065f46;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 6px;
 }
 
 .card {
     width: 100%;
-    max-width: 540px;
+    max-width: 500px;
     background: var(--card-background);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-    padding: 30px;
+    border-radius: 0 18px 18px 0;
+    padding: 36px 34px 30px;
 }
 
 .verify-shell {
     width: 100%;
-    max-width: 1120px;
+    max-width: 980px;
     display: grid;
-    grid-template-columns: 1fr 1.1fr;
+    grid-template-columns: 1fr 1fr;
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 12px 44px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.1);
+    background: #fff;
 }
 
 .verify-side {
     background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
     color: white;
-    padding: 36px;
+    padding: 40px 34px;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
+    text-align: center;
     min-height: 560px;
 }
 
 .verify-logo {
-    width: 190px;
-    height: 190px;
+    width: 160px;
+    height: 160px;
     object-fit: contain;
-    margin-bottom: 18px;
+    margin-bottom: 26px;
     filter: drop-shadow(0 6px 20px rgba(0,0,0,0.12));
 }
 
 .verify-side h2 {
-    margin: 0 0 10px;
-    font-size: 38px;
+    margin: 0 0 12px;
+    font-size: 42px;
     line-height: 1.1;
 }
 
 .verify-side p {
     margin: 0;
-    font-size: 15px;
-    max-width: 320px;
+    font-size: 24px;
+    font-weight: 600;
+    max-width: 340px;
     opacity: 0.95;
 }
 
@@ -128,13 +100,13 @@ body {
 
 .header h1 {
     margin: 0;
-    font-size: 30px;
+    font-size: 40px;
     font-weight: 700;
 }
 
 .header p {
     margin: 6px 0 0;
-    font-size: 14px;
+    font-size: 22px;
     color: var(--text-secondary);
 }
 
@@ -142,8 +114,8 @@ body {
     background: #f6f9f8;
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 12px 14px;
+    font-size: 14px;
     color: var(--text-secondary);
     text-align: center;
     margin-bottom: 20px;
@@ -200,17 +172,17 @@ body {
 .otp {
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 9px;
     margin-bottom: 16px;
 }
 
 .digit {
-    width: 54px;
-    height: 60px;
+    width: 46px;
+    height: 46px;
     border: 2px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 10px;
     text-align: center;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     outline: none;
     transition: all 0.2s ease;
@@ -231,7 +203,7 @@ body {
     width: 100%;
     border: none;
     border-radius: 25px;
-    padding: 14px 16px;
+    padding: 13px 16px;
     background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
     color: white;
     font-weight: 700;
@@ -283,7 +255,7 @@ body {
 
 .timer {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
 }
 
@@ -309,8 +281,7 @@ body {
     .verify-side {
         min-height: 0;
         padding: 22px;
-        text-align: center;
-        align-items: center;
+        border-radius: 18px 18px 0 0;
     }
 
     .verify-logo {
@@ -320,11 +291,25 @@ body {
     }
 
     .verify-side h2 {
-        font-size: 28px;
+        font-size: 32px;
     }
 
     .verify-side p {
         max-width: 100%;
+        font-size: 18px;
+    }
+
+    .card {
+        border-radius: 0 0 18px 18px;
+        padding: 24px;
+    }
+
+    .header h1 {
+        font-size: 30px;
+    }
+
+    .header p {
+        font-size: 16px;
     }
 }
 

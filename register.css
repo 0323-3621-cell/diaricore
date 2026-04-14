@@ -1,0 +1,23 @@
+@import url('login.css');
+
+/* Register page keeps signup-mode layout by default */
+.login-container {
+    max-width: 1280px;
+}
+
+.login-right-panel {
+    flex: 0.82;
+}
+
+.login-left-panel {
+    flex: 1.38;
+}
+
+.signup-section {
+    max-width: 660px;
+}
+
+/* register page does not use sliding hidden blocks */
+.form-section {
+    opacity: 1 !important;
+}

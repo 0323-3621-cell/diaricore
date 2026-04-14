@@ -907,7 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     initFloatingLabels();
 
-    if (initialMode === 'signup') {
+    if (initialMode === 'signup' && signupSection && signupWelcome) {
         // Ensure the correct view when coming back from verification page
         switchToSignUp();
     }

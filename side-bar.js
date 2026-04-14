@@ -1,6 +1,6 @@
 // DiariCore Sidebar Component JavaScript
 // Temporary seed mode: keep UI empty while features are being built.
-const DIARICORE_FORCE_EMPTY_STATE = true;
+const DIARICORE_FORCE_EMPTY_STATE = false;
 
 class SidebarComponent {
     constructor() {

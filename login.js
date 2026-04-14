@@ -279,19 +279,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.textContent = 'Signing In...';
                 submitBtn.disabled = true;
                 
-                setTimeout(() => {
-                    localStorage.setItem('diariCoreUser', JSON.stringify({
-                        email: email,
-                        isLoggedIn: true,
-                        loginTime: new Date().toISOString()
-                    }));
-                    
-                    showNotification('Login successful! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                }, 2000);
+                fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                })
+                    .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (!ok || !data.success) {
+                            showNotification(data.error || 'Sign in failed', 'error');
+                            submitBtn.textContent = 'SIGN IN';
+                            submitBtn.disabled = false;
+                            return;
+                        }
+                        const u = data.user;
+                        localStorage.setItem('diariCoreUser', JSON.stringify({
+                            ...u,
+                            isLoggedIn: true,
+                            loginTime: new Date().toISOString()
+                        }));
+                        showNotification('Login successful! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 900);
+                    })
+                    .catch(() => {
+                        showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');
+                        submitBtn.textContent = 'SIGN IN';
+                        submitBtn.disabled = false;
+                    });
             }
         });
     }
@@ -399,40 +415,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.textContent = 'Creating Account...';
                 submitBtn.disabled = true;
                 
-                setTimeout(() => {
-                    const users = JSON.parse(localStorage.getItem('diariCoreUsers') || '[]');
-                    const fullName = `${firstName} ${lastName}`.trim();
-                    users.push({
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         nickname: nickname,
-                        firstName: firstName,
-                        lastName: lastName,
-                        fullName: fullName,
-                        gender: gender,
-                        birthday: birthday,
                         email: email,
                         password: password,
-                        createdAt: new Date().toISOString()
-                    });
-                    localStorage.setItem('diariCoreUsers', JSON.stringify(users));
-                    
-                    localStorage.setItem('diariCoreUser', JSON.stringify({
-                        nickname: nickname,
                         firstName: firstName,
                         lastName: lastName,
-                        email: email,
-                        fullName: fullName,
                         gender: gender,
-                        birthday: birthday,
-                        isLoggedIn: true,
-                        loginTime: new Date().toISOString()
-                    }));
-                    
-                    showNotification('Account created successfully! Redirecting...', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
-                }, 2000);
+                        birthday: birthday
+                    })
+                })
+                    .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (!data.success) {
+                            if (data.field) {
+                                const el = document.getElementById(data.field);
+                                if (el) {
+                                    showError(el, data.error || 'Invalid value');
+                                } else {
+                                    showNotification(data.error || 'Registration failed', 'error');
+                                }
+                            } else {
+                                showNotification(data.error || 'Registration failed', 'error');
+                            }
+                            submitBtn.textContent = 'SIGN UP';
+                            submitBtn.disabled = false;
+                            return;
+                        }
+                        const u = data.user;
+                        localStorage.setItem('diariCoreUser', JSON.stringify({
+                            ...u,
+                            isLoggedIn: true,
+                            loginTime: new Date().toISOString()
+                        }));
+                        showNotification('Account created successfully! Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 900);
+                    })
+                    .catch(() => {
+                        showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');
+                        submitBtn.textContent = 'SIGN UP';
+                        submitBtn.disabled = false;
+                    });
             }
         });
     }

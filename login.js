@@ -52,13 +52,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetNewPasswordInput = document.getElementById('resetNewPassword');
     const resetConfirmPasswordInput = document.getElementById('resetConfirmPassword');
     const sendResetCodeBtn = document.getElementById('sendResetCodeBtn');
+    const verifyResetCodeBtn = document.getElementById('verifyResetCodeBtn');
+    const resendResetCodeBtn = document.getElementById('resendResetCodeBtn');
+    const resetTimerLabel = document.getElementById('resetTimerLabel');
+    const resetOtpDigits = Array.from(document.querySelectorAll('.reset-otp-digit'));
     const confirmResetBtn = document.getElementById('confirmResetBtn');
-    const resetBackBtn = document.getElementById('resetBackBtn');
+    const resetVerifyBackBtn = document.getElementById('resetVerifyBackBtn');
+    const resetPasswordBackBtn = document.getElementById('resetPasswordBackBtn');
+    const resetPasswordForm = document.getElementById('resetPasswordForm');
     const resetSubtitle = document.getElementById('resetSubtitle');
     let pendingRegistrationEmail = '';
     let otpTimerInterval = null;
     let otpExpirySeconds = 0;
     let resetIdentifier = '';
+    let verifiedResetCode = '';
+    let resetResendInterval = null;
+    let resetResendRemaining = 0;
     
     // Switch to Sign Up mode
     function switchToSignUp() {
@@ -844,28 +853,76 @@ document.addEventListener('DOMContentLoaded', function() {
         resetAlert.className = 'reset-alert';
     }
 
+    function resetOtpInputs() {
+        resetOtpDigits.forEach((d) => {
+            d.value = '';
+        });
+    }
+
+    function getResetOtpCode() {
+        return resetOtpDigits.map((d) => d.value).join('');
+    }
+
+    function startResetResendCooldown(seconds = 57) {
+        resetResendRemaining = seconds;
+        if (resetResendInterval) clearInterval(resetResendInterval);
+        const render = () => {
+            const m = Math.floor(resetResendRemaining / 60);
+            const s = resetResendRemaining % 60;
+            if (resetTimerLabel) {
+                resetTimerLabel.textContent = `Resend available in ${m}:${String(s).padStart(2, '0')}`;
+            }
+        };
+        if (resendResetCodeBtn) resendResetCodeBtn.disabled = true;
+        render();
+        resetResendInterval = setInterval(() => {
+            resetResendRemaining -= 1;
+            if (resetResendRemaining <= 0) {
+                clearInterval(resetResendInterval);
+                resetResendInterval = null;
+                if (resetTimerLabel) resetTimerLabel.textContent = 'You can resend the code now.';
+                if (resendResetCodeBtn) resendResetCodeBtn.disabled = false;
+                return;
+            }
+            render();
+        }, 1000);
+    }
+
     function openResetModal() {
         if (!resetModal) return;
         resetModal.hidden = false;
         resetIdentifier = '';
+        verifiedResetCode = '';
         clearResetAlert();
         if (resetRequestForm) resetRequestForm.hidden = false;
         if (resetConfirmForm) resetConfirmForm.hidden = true;
+        if (resetPasswordForm) resetPasswordForm.hidden = true;
         if (resetSubtitle) resetSubtitle.textContent = 'Enter the email associated with your account to reset your password.';
         if (resetIdentifierInput) {
             resetIdentifierInput.value = '';
             resetIdentifierInput.focus();
         }
-        if (resetCodeInput) resetCodeInput.value = '';
+        resetOtpInputs();
         if (resetNewPasswordInput) resetNewPasswordInput.value = '';
         if (resetConfirmPasswordInput) resetConfirmPasswordInput.value = '';
+        if (resetResendInterval) {
+            clearInterval(resetResendInterval);
+            resetResendInterval = null;
+        }
+        if (resendResetCodeBtn) resendResetCodeBtn.disabled = false;
+        if (resetTimerLabel) resetTimerLabel.textContent = '';
     }
 
     function closeResetModal() {
         if (!resetModal) return;
         resetModal.hidden = true;
         resetIdentifier = '';
+        verifiedResetCode = '';
         clearResetAlert();
+        if (resetResendInterval) {
+            clearInterval(resetResendInterval);
+            resetResendInterval = null;
+        }
     }
 
     if (resetCloseBtn) resetCloseBtn.addEventListener('click', closeResetModal);
@@ -928,9 +985,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     resetIdentifier = identifier;
                     if (resetRequestForm) resetRequestForm.hidden = true;
                     if (resetConfirmForm) resetConfirmForm.hidden = false;
-                    if (resetSubtitle) resetSubtitle.textContent = 'Enter your reset code and choose a new password.';
+                    if (resetSubtitle) resetSubtitle.textContent = 'Enter your reset code to verify your request.';
                     setResetAlert(data.message || 'Reset code sent.', 'success');
-                    if (resetCodeInput) resetCodeInput.focus();
+                    startResetResendCooldown(57);
+                    if (resetOtpDigits[0]) resetOtpDigits[0].focus();
                 })
                 .catch(() => setResetAlert('Could not reach the server. Please try again.'))
                 .finally(() => {
@@ -943,26 +1001,132 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (resetBackBtn) {
-        resetBackBtn.addEventListener('click', function () {
+    if (resetVerifyBackBtn) {
+        resetVerifyBackBtn.addEventListener('click', function () {
             clearResetAlert();
             if (resetConfirmForm) resetConfirmForm.hidden = true;
             if (resetRequestForm) resetRequestForm.hidden = false;
+            if (resetPasswordForm) resetPasswordForm.hidden = true;
             if (resetSubtitle) resetSubtitle.textContent = 'Enter the email associated with your account to reset your password.';
+            if (resetResendInterval) {
+                clearInterval(resetResendInterval);
+                resetResendInterval = null;
+            }
+        });
+    }
+
+    if (resetPasswordBackBtn) {
+        resetPasswordBackBtn.addEventListener('click', function () {
+            clearResetAlert();
+            if (resetPasswordForm) resetPasswordForm.hidden = true;
+            if (resetConfirmForm) resetConfirmForm.hidden = false;
+            if (resetSubtitle) resetSubtitle.textContent = 'Enter your reset code to verify your request.';
+            startResetResendCooldown(Math.max(resetResendRemaining, 20));
+        });
+    }
+
+    if (resetOtpDigits.length) {
+        resetOtpDigits.forEach((input, idx) => {
+            input.addEventListener('input', (e) => {
+                const v = e.target.value.replace(/\D/g, '').slice(-1);
+                e.target.value = v;
+                if (v && idx < resetOtpDigits.length - 1) {
+                    resetOtpDigits[idx + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !input.value && idx > 0) {
+                    resetOtpDigits[idx - 1].focus();
+                }
+            });
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+                resetOtpDigits.forEach((d, i) => {
+                    d.value = digits[i] || '';
+                });
+            });
+        });
+    }
+
+    if (resendResetCodeBtn) {
+        resendResetCodeBtn.addEventListener('click', () => {
+            if (!resetIdentifier || resendResetCodeBtn.disabled) return;
+            clearResetAlert();
+            resendResetCodeBtn.disabled = true;
+            fetch('/api/password/forgot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: resetIdentifier })
+            })
+                .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) {
+                        setResetAlert(data.error || 'Failed to resend reset code.');
+                        resendResetCodeBtn.disabled = false;
+                        return;
+                    }
+                    setResetAlert('Reset code resent. Check your email.', 'success');
+                    resetOtpInputs();
+                    startResetResendCooldown(57);
+                })
+                .catch(() => {
+                    setResetAlert('Could not reach the server. Please try again.');
+                    resendResetCodeBtn.disabled = false;
+                });
         });
     }
 
     if (resetConfirmForm) {
         resetConfirmForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            const code = (resetCodeInput?.value || '').trim();
+            const code = getResetOtpCode();
+
+            if (code.length !== 6) {
+                setResetAlert('Please enter the 6-digit reset code.');
+                return;
+            }
+
+            if (verifyResetCodeBtn) {
+                verifyResetCodeBtn.disabled = true;
+                verifyResetCodeBtn.classList.add('is-loading');
+                verifyResetCodeBtn.innerHTML = '<span class="reset-btn-spinner" aria-hidden="true"></span><span>Verifying...</span>';
+            }
+
+            fetch('/api/password/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: resetIdentifier || (resetIdentifierInput?.value || '').trim(), code })
+            })
+                .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) {
+                        setResetAlert(data.error || 'Invalid or expired reset code.');
+                        return;
+                    }
+                    verifiedResetCode = code;
+                    if (resetConfirmForm) resetConfirmForm.hidden = true;
+                    if (resetPasswordForm) resetPasswordForm.hidden = false;
+                    if (resetSubtitle) resetSubtitle.textContent = 'Set your new password to finish recovery.';
+                    setResetAlert('Code verified. Set your new password.', 'success');
+                })
+                .catch(() => setResetAlert('Could not reach the server. Please try again.'))
+                .finally(() => {
+                    if (verifyResetCodeBtn) {
+                        verifyResetCodeBtn.disabled = false;
+                        verifyResetCodeBtn.classList.remove('is-loading');
+                        verifyResetCodeBtn.textContent = 'Verify Code';
+                    }
+                });
+        });
+    }
+
+    if (resetPasswordForm) {
+        resetPasswordForm.addEventListener('submit', function (e) {
+            e.preventDefault();
             const newPassword = resetNewPasswordInput?.value || '';
             const confirmPassword = resetConfirmPasswordInput?.value || '';
 
-            if (!code) {
-                setResetAlert('Reset code is required.');
-                return;
-            }
             if (!newPassword) {
                 setResetAlert('New password is required.');
                 return;
@@ -984,7 +1148,11 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/password/reset', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ identifier: resetIdentifier || (resetIdentifierInput?.value || '').trim(), code, newPassword })
+                body: JSON.stringify({
+                    identifier: resetIdentifier || (resetIdentifierInput?.value || '').trim(),
+                    code: verifiedResetCode,
+                    newPassword
+                })
             })
                 .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
                 .then(({ ok, data }) => {

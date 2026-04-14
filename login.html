@@ -124,9 +124,25 @@
             </form>
 
             <form id="resetConfirmForm" class="reset-form" autocomplete="off" novalidate hidden>
-                <label class="reset-label" for="resetCode">Reset Code</label>
-                <input id="resetCode" class="reset-input" type="text" inputmode="numeric" maxlength="6" autocomplete="off" required>
+                <label class="reset-label reset-label-center">Enter Verification Code</label>
+                <div class="reset-otp" id="resetOtpInputs">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+                    <input class="reset-otp-digit" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+                </div>
 
+                <button type="submit" class="reset-btn" id="verifyResetCodeBtn">Verify Code</button>
+                <div class="reset-meta">
+                    <button type="button" class="reset-link-btn" id="resendResetCodeBtn">Resend Code</button>
+                    <span class="reset-timer" id="resetTimerLabel">Resend available in 0:57</span>
+                </div>
+                <button type="button" class="reset-btn reset-btn-secondary" id="resetVerifyBackBtn">Back</button>
+            </form>
+
+            <form id="resetPasswordForm" class="reset-form" autocomplete="off" novalidate hidden>
                 <label class="reset-label" for="resetNewPassword">New Password</label>
                 <input id="resetNewPassword" class="reset-input" type="password" autocomplete="new-password" required>
 
@@ -134,7 +150,7 @@
                 <input id="resetConfirmPassword" class="reset-input" type="password" autocomplete="new-password" required>
 
                 <button type="submit" class="reset-btn" id="confirmResetBtn">Update Password</button>
-                <button type="button" class="reset-btn reset-btn-secondary" id="resetBackBtn">Back</button>
+                <button type="button" class="reset-btn reset-btn-secondary" id="resetPasswordBackBtn">Back</button>
             </form>
         </div>
     </div>

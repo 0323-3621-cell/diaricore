@@ -1133,6 +1133,10 @@ body {
     font-weight: 600;
 }
 
+.reset-label-center {
+    text-align: center;
+}
+
 .reset-input {
     width: 100%;
     height: 42px;
@@ -1190,6 +1194,56 @@ body {
 
 @keyframes resetBtnSpin {
     to { transform: rotate(360deg); }
+}
+
+.reset-otp {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 2px 0 4px;
+}
+
+.reset-otp-digit {
+    width: 34px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    outline: none;
+    color: var(--text-dark);
+}
+
+.reset-otp-digit:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.1);
+}
+
+.reset-meta {
+    margin: 2px 0 4px;
+    text-align: center;
+}
+
+.reset-link-btn {
+    border: none;
+    background: none;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.reset-link-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.reset-timer {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 .reset-btn-secondary {

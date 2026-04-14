@@ -370,6 +370,44 @@ def api_password_reset():
     return jsonify({"success": True, "message": "Password updated successfully. You can now sign in."}), 200
 
 
+@app.route("/api/password/verify-code", methods=["POST"])
+def api_password_verify_code():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("identifier") or "").strip().lower()
+    reset_code = (data.get("code") or "").strip()
+
+    if not email:
+        return jsonify({"success": False, "error": "Email address is required."}), 400
+    if "@" not in email or "." not in email:
+        return jsonify({"success": False, "error": "Please enter a valid email."}), 400
+    if not reset_code:
+        return jsonify({"success": False, "error": "Reset code is required."}), 400
+
+    user = db.get_user_by_email(email)
+    if not user:
+        return jsonify({"success": False, "error": "Invalid reset request."}), 400
+
+    reset_row = db.get_password_reset(user["email"])
+    if not reset_row:
+        return jsonify({"success": False, "error": "Invalid or expired reset code."}), 400
+
+    expires_raw = reset_row.get("expires_at")
+    try:
+        if isinstance(expires_raw, str):
+            expires_at = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
+        else:
+            expires_at = expires_raw
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+
+    if datetime.now(timezone.utc) > expires_at or (reset_row.get("reset_code") or "") != reset_code:
+        return jsonify({"success": False, "error": "Invalid or expired reset code."}), 400
+
+    return jsonify({"success": True, "message": "Code verified."}), 200
+
+
 @app.route("/api/admin/settings", methods=["GET"])
 def api_admin_settings_get():
     if not session.get("is_admin"):

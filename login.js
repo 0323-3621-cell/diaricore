@@ -1,6 +1,8 @@
 // DiariCore Login Page JavaScript - Sliding Panel Version
 
 document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialMode = (urlParams.get('mode') || '').toLowerCase();
     // Container and panels
     const loginContainer = document.getElementById('loginContainer');
     
@@ -603,10 +605,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             submitBtn.disabled = false;
                             return;
                         }
+                        const pendingEmail = data.email || email;
+                        sessionStorage.setItem('pendingRegistrationEmail', pendingEmail);
                         showNotification(data.message || 'Verification code sent to your email.', 'success');
-                        showOtpSection(data.email || email);
                         submitBtn.textContent = 'SIGN UP';
                         submitBtn.disabled = false;
+                        setTimeout(() => {
+                            window.location.href = `verify-registration.html?email=${encodeURIComponent(pendingEmail)}`;
+                        }, 450);
                     })
                     .catch(() => {
                         showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');
@@ -900,4 +906,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     initFloatingLabels();
+
+    if (initialMode === 'signup') {
+        // Ensure the correct view when coming back from verification page
+        switchToSignUp();
+    }
 });

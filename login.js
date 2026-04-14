@@ -452,7 +452,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 usernameField.classList.remove('success');
                             }
                             if (passwordField) {
+                                passwordField.value = '';
                                 showError(passwordField, loginError);
+                                passwordField.focus();
                             }
                             submitBtn.textContent = 'SIGN IN';
                             submitBtn.disabled = false;

@@ -1138,6 +1138,10 @@ body {
     border: 1px solid var(--border-color);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
     padding: 22px 22px 20px;
+}
+
+.reset-dialog.is-opening,
+.reset-dialog.is-step-animating {
     animation: resetDialogPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1213,10 +1217,6 @@ body {
 .reset-form {
     display: grid;
     gap: 2px;
-}
-
-.reset-form.is-animating-in {
-    animation: resetStepIn 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reset-label {
@@ -1393,17 +1393,6 @@ body {
     70% {
         opacity: 1;
         transform: translateY(-2px) scale(1.01);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-@keyframes resetStepIn {
-    0% {
-        opacity: 0;
-        transform: translateY(14px) scale(0.97);
     }
     100% {
         opacity: 1;

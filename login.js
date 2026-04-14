@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
     const resetModal = document.getElementById('resetModal');
+    const resetDialog = resetModal ? resetModal.querySelector('.reset-dialog') : null;
     const resetBackdrop = document.getElementById('resetBackdrop');
     const resetCloseBtn = document.getElementById('resetCloseBtn');
     const resetAlert = document.getElementById('resetAlert');
@@ -946,21 +947,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
 
+    function animateResetDialog(animationClass = 'is-step-animating') {
+        if (!resetDialog) return;
+        resetDialog.classList.remove('is-opening', 'is-step-animating');
+        requestAnimationFrame(() => {
+            resetDialog.classList.add(animationClass);
+        });
+        resetDialog.addEventListener('animationend', () => {
+            resetDialog.classList.remove('is-opening', 'is-step-animating');
+        }, { once: true });
+    }
+
     function showResetStep(form) {
         if (!form) return;
         form.hidden = false;
-        form.classList.remove('is-animating-in');
-        requestAnimationFrame(() => {
-            form.classList.add('is-animating-in');
-        });
-        form.addEventListener('animationend', () => {
-            form.classList.remove('is-animating-in');
-        }, { once: true });
+        animateResetDialog('is-step-animating');
     }
 
     function openResetModal() {
         if (!resetModal) return;
         resetModal.hidden = false;
+        animateResetDialog('is-opening');
         resetIdentifier = '';
         verifiedResetCode = '';
         clearResetAlert();

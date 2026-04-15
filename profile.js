@@ -9,32 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDangerZoneActions();
 });
 
-let personalInfoModalInstance = null;
-
-function getCurrentUserFromStorage() {
-    try {
-        return JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-    } catch (error) {
-        return null;
-    }
-}
-
-function setCurrentUserInStorage(user) {
-    localStorage.setItem('diariCoreUser', JSON.stringify(user));
-}
-
-function getDisplayName(user) {
-    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-    return fullName || user?.nickname || 'New User';
-}
-
-function syncSidebarName(user) {
-    const sidebarNameEl = document.querySelector('.user-name');
-    if (sidebarNameEl) sidebarNameEl.textContent = getDisplayName(user);
-}
-
 function initializeProfileFromStorage() {
-    const user = getCurrentUserFromStorage();
+    const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
     const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
     const safeEntries = Array.isArray(entries) ? entries.filter((e) => e && e.date) : [];
 
@@ -44,7 +20,8 @@ function initializeProfileFromStorage() {
     const statEls = document.querySelectorAll('.profile-stats .stat-number');
 
     if (nameEl) {
-        nameEl.textContent = getDisplayName(user);
+        const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+        nameEl.textContent = fullName || user?.nickname || 'New User';
     }
     if (emailEl) emailEl.textContent = user?.email || 'No email available';
     if (memberSinceEl) {
@@ -120,20 +97,11 @@ function initializeProfileInteractions() {
     const editButtons = document.querySelectorAll('.btn-edit');
     editButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const settingType = this.dataset.setting || '';
             const settingTitle = this.closest('.setting-card').querySelector('.setting-title').textContent;
-
-            if (settingType === 'personal-info') {
-                openPersonalInfoEditor();
-                return;
-            }
-
             showNotification(`Opening ${settingTitle} settings...`, 'info');
             console.log('Edit setting:', settingTitle);
         });
     });
-
-    initializePersonalInfoForm();
 }
 
 // Initialize Preference Toggles
@@ -354,101 +322,6 @@ function deleteAccountPermanently() {
         // In a real app, this would redirect to home page
         // window.location.href = 'index.html';
     }, 2000);
-}
-
-function initializePersonalInfoForm() {
-    const modalEl = document.getElementById('personalInfoModal');
-    const formEl = document.getElementById('personalInfoForm');
-    const saveBtn = document.getElementById('personalInfoSaveBtn');
-    if (!modalEl || !formEl) return;
-
-    if (window.bootstrap && window.bootstrap.Modal) {
-        personalInfoModalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-    }
-
-    formEl.addEventListener('submit', function(event) {
-        event.preventDefault();
-
-        const firstNameInput = document.getElementById('personalInfoFirstName');
-        const lastNameInput = document.getElementById('personalInfoLastName');
-        const nicknameInput = document.getElementById('personalInfoNickname');
-        const emailInput = document.getElementById('personalInfoEmail');
-        if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput) return;
-
-        const firstName = firstNameInput.value.trim();
-        const lastName = lastNameInput.value.trim();
-        const nickname = nicknameInput.value.trim();
-        const email = emailInput.value.trim();
-
-        if (!firstName || !lastName) {
-            showNotification('First name and last name are required.', 'warning');
-            return;
-        }
-        if (nickname.length < 4 || nickname.length > 64) {
-            showNotification('Username must be between 4 and 64 characters.', 'warning');
-            return;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showNotification('Please enter a valid email address.', 'warning');
-            return;
-        }
-
-        const user = getCurrentUserFromStorage();
-        if (!user) {
-            showNotification('No logged in user found.', 'error');
-            return;
-        }
-
-        if (saveBtn) saveBtn.disabled = true;
-
-        const updatedUser = {
-            ...user,
-            firstName,
-            lastName,
-            nickname,
-            email
-        };
-
-        setCurrentUserInStorage(updatedUser);
-        initializeProfileFromStorage();
-        syncSidebarName(updatedUser);
-        showNotification('Personal info updated successfully.', 'success');
-
-        if (personalInfoModalInstance) {
-            personalInfoModalInstance.hide();
-        }
-        if (saveBtn) saveBtn.disabled = false;
-    });
-
-    modalEl.addEventListener('hidden.bs.modal', function() {
-        if (formEl) formEl.reset();
-        if (saveBtn) saveBtn.disabled = false;
-    });
-}
-
-function openPersonalInfoEditor() {
-    const user = getCurrentUserFromStorage();
-    if (!user) {
-        showNotification('No logged in user found.', 'error');
-        return;
-    }
-
-    const firstNameInput = document.getElementById('personalInfoFirstName');
-    const lastNameInput = document.getElementById('personalInfoLastName');
-    const nicknameInput = document.getElementById('personalInfoNickname');
-    const emailInput = document.getElementById('personalInfoEmail');
-    if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput) return;
-
-    firstNameInput.value = user.firstName || '';
-    lastNameInput.value = user.lastName || '';
-    nicknameInput.value = user.nickname || '';
-    emailInput.value = user.email || '';
-
-    if (personalInfoModalInstance) {
-        personalInfoModalInstance.show();
-    } else {
-        showNotification('Editor is unavailable right now.', 'error');
-    }
 }
 
 // Show Notification

@@ -124,7 +124,7 @@
                                 <p class="setting-description">Update your name, email, and profile details</p>
                             </div>
                             <div class="setting-action">
-                                <button type="button" class="btn-edit" data-setting="personal-info">Edit</button>
+                                <button type="button" class="btn-edit">Edit</button>
                                 <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                             </div>
                         </div>
@@ -137,7 +137,7 @@
                                 <p class="setting-description">Change password and enable two-factor authentication</p>
                             </div>
                             <div class="setting-action">
-                                <button type="button" class="btn-edit" data-setting="security">Edit</button>
+                                <button type="button" class="btn-edit">Edit</button>
                                 <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                             </div>
                         </div>
@@ -259,41 +259,6 @@
                     </div>
                 </section>
             </main>
-        </div>
-    </div>
-
-    <div class="modal fade" id="personalInfoModal" tabindex="-1" aria-labelledby="personalInfoModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="personalInfoModalLabel">Edit Personal Info</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="personalInfoForm" novalidate>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="personalInfoFirstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control" id="personalInfoFirstName" required maxlength="64">
-                        </div>
-                        <div class="mb-3">
-                            <label for="personalInfoLastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control" id="personalInfoLastName" required maxlength="64">
-                        </div>
-                        <div class="mb-3">
-                            <label for="personalInfoNickname" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="personalInfoNickname" required minlength="4" maxlength="64">
-                        </div>
-                        <div class="mb-1">
-                            <label for="personalInfoEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="personalInfoEmail" required maxlength="120">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success" id="personalInfoSaveBtn">Save Changes</button>
-                    </div>
-                </form>
-            </div>
         </div>
     </div>
 

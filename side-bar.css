@@ -177,6 +177,22 @@
     .sidebar {
         display: flex !important; /* Always show sidebar on desktop */
     }
+
+    .profile-left {
+        align-items: flex-start;
+    }
+
+    .user-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .user-email {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        line-height: 1.25;
+    }
 }
 
 /* User Profile Section */

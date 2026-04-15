@@ -36,13 +36,17 @@ function populateForm(user) {
     const lastNameInput = document.getElementById('personalInfoLastName');
     const nicknameInput = document.getElementById('personalInfoNickname');
     const emailInput = document.getElementById('personalInfoEmail');
+    const genderInput = document.getElementById('personalInfoGender');
+    const birthdayInput = document.getElementById('personalInfoBirthday');
 
-    if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput) return;
+    if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput || !genderInput || !birthdayInput) return;
 
     firstNameInput.value = user.firstName || '';
     lastNameInput.value = user.lastName || '';
     nicknameInput.value = user.nickname || '';
     emailInput.value = user.email || '';
+    genderInput.value = user.gender || '';
+    birthdayInput.value = user.birthday || '';
 }
 
 function bindNavigationButtons() {
@@ -69,12 +73,16 @@ function bindFormSubmit() {
         const lastNameInput = document.getElementById('personalInfoLastName');
         const nicknameInput = document.getElementById('personalInfoNickname');
         const emailInput = document.getElementById('personalInfoEmail');
-        if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput) return;
+        const genderInput = document.getElementById('personalInfoGender');
+        const birthdayInput = document.getElementById('personalInfoBirthday');
+        if (!firstNameInput || !lastNameInput || !nicknameInput || !emailInput || !genderInput || !birthdayInput) return;
 
         const firstName = firstNameInput.value.trim();
         const lastName = lastNameInput.value.trim();
         const nickname = nicknameInput.value.trim();
         const email = emailInput.value.trim();
+        const gender = genderInput.value;
+        const birthday = birthdayInput.value;
 
         if (!firstName || !lastName) {
             showNotification('First name and last name are required.', 'warning');
@@ -86,6 +94,14 @@ function bindFormSubmit() {
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             showNotification('Please enter a valid email address.', 'warning');
+            return;
+        }
+        if (!gender) {
+            showNotification('Please select your gender.', 'warning');
+            return;
+        }
+        if (!birthday) {
+            showNotification('Date of birth is required.', 'warning');
             return;
         }
 
@@ -102,7 +118,9 @@ function bindFormSubmit() {
             firstName,
             lastName,
             nickname,
-            email
+            email,
+            gender,
+            birthday
         };
         setCurrentUserInStorage(updatedUser);
         showNotification('Personal info updated successfully.', 'success');

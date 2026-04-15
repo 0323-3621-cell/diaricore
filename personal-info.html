@@ -25,61 +25,32 @@
 
                 <section class="personal-info-card">
                     <div class="card-top">
-                        <div class="card-top__icon"><i class="bi bi-sliders2"></i></div>
+                        <div class="card-top__icon"><i class="bi bi-person-badge"></i></div>
                         <div>
-                            <h2 class="card-title">Update Your Account Details</h2>
-                            <p class="card-description">Keep your account information accurate and aligned with your registration details.</p>
+                            <h2 class="card-title">Account Identity</h2>
+                            <p class="card-description">These details are visible in your profile and used for account lookup.</p>
                         </div>
                     </div>
 
                     <form id="personalInfoForm" novalidate>
-                        <section class="form-section-block">
-                            <div class="section-heading">
-                                <h3>Account Information</h3>
-                                <p>Used for login and account identification.</p>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="personalInfoFirstName">First Name</label>
+                                <input type="text" id="personalInfoFirstName" class="form-control" required maxlength="64">
                             </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="personalInfoNickname">Username</label>
-                                    <input type="text" id="personalInfoNickname" class="form-control" required minlength="4" maxlength="64">
-                                </div>
-                                <div class="form-group">
-                                    <label for="personalInfoEmail">Email</label>
-                                    <input type="email" id="personalInfoEmail" class="form-control" required maxlength="120">
-                                </div>
+                            <div class="form-group">
+                                <label for="personalInfoLastName">Last Name</label>
+                                <input type="text" id="personalInfoLastName" class="form-control" required maxlength="64">
                             </div>
-                        </section>
-
-                        <section class="form-section-block">
-                            <div class="section-heading">
-                                <h3>Personal Information</h3>
-                                <p>These details personalize your profile experience.</p>
+                            <div class="form-group">
+                                <label for="personalInfoNickname">Username</label>
+                                <input type="text" id="personalInfoNickname" class="form-control" required minlength="4" maxlength="64">
                             </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="personalInfoFirstName">First Name</label>
-                                    <input type="text" id="personalInfoFirstName" class="form-control" required maxlength="64">
-                                </div>
-                                <div class="form-group">
-                                    <label for="personalInfoLastName">Last Name</label>
-                                    <input type="text" id="personalInfoLastName" class="form-control" required maxlength="64">
-                                </div>
-                                <div class="form-group">
-                                    <label for="personalInfoGender">Gender</label>
-                                    <select id="personalInfoGender" class="form-control" required>
-                                        <option value="" selected disabled hidden>Select gender</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Prefer not to say">Prefer not to say</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="personalInfoBirthday">Date of Birth</label>
-                                    <input type="date" id="personalInfoBirthday" class="form-control" required>
-                                    <p class="field-hint">Format from registration: YYYY-MM-DD</p>
-                                </div>
+                            <div class="form-group">
+                                <label for="personalInfoEmail">Email</label>
+                                <input type="email" id="personalInfoEmail" class="form-control" required maxlength="120">
                             </div>
-                        </section>
+                        </div>
 
                         <div class="actions-row">
                             <button type="button" class="btn-cancel" id="cancelEditBtn">Cancel</button>

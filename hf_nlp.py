@@ -25,6 +25,7 @@ EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "MilaNLProc/xlm-emo-t").strip
 
 HF_BASE_URL = "https://api-inference.huggingface.co/models"
 HF_ROUTER_BASE_URL = "https://router.huggingface.co/hf-inference/models"
+HF_PIPELINE_BASE_URL = "https://api-inference.huggingface.co/pipeline"
 
 
 def _hf_headers() -> Dict[str, str]:
@@ -123,16 +124,30 @@ def analyze(text: str) -> Dict[str, object]:
     started = time.time()
     timeout = httpx.Timeout(10.0, connect=5.0)
     with httpx.Client(timeout=timeout, headers=_hf_headers()) as client:
-        def _call_model(model_name: str):
-            """Try new HF router first, then legacy endpoint."""
-            urls = [f"{HF_ROUTER_BASE_URL}/{model_name}", f"{HF_BASE_URL}/{model_name}"]
+        def _call_model(model_name: str, task_hint: str):
+            """
+            Try multiple Hugging Face endpoint patterns because provider routing differs by model.
+            """
+            urls = [
+                f"{HF_ROUTER_BASE_URL}/{model_name}",
+                f"{HF_BASE_URL}/{model_name}",
+                f"{HF_PIPELINE_BASE_URL}/text-classification/{model_name}",
+            ]
+            if task_hint == "sentiment":
+                urls.append(f"{HF_PIPELINE_BASE_URL}/sentiment-analysis/{model_name}")
             last_response = None
             for url in urls:
                 try:
-                    response = client.post(url, json={"inputs": clean[:2000]})
+                    response = client.post(
+                        url,
+                        json={
+                            "inputs": clean[:2000],
+                            "options": {"wait_for_model": True, "use_cache": True},
+                        },
+                    )
                     last_response = response
-                    # 410 is common on legacy paths for some models; try alternate endpoint.
-                    if response.status_code == 410:
+                    # Try another endpoint on deprecations / unsupported routes.
+                    if response.status_code in (404, 410):
                         continue
                     return response
                 except Exception:
@@ -140,7 +155,7 @@ def analyze(text: str) -> Dict[str, object]:
             return last_response
 
         try:
-            sent_resp = _call_model(SENTIMENT_MODEL)
+            sent_resp = _call_model(SENTIMENT_MODEL, "sentiment")
             if sent_resp is None:
                 return _fallback(clean)
             if sent_resp.status_code != 200:
@@ -160,7 +175,7 @@ def analyze(text: str) -> Dict[str, object]:
             if sent_label_raw is None:
                 return _fallback(clean)
 
-            emo_resp = _call_model(EMOTION_MODEL)
+            emo_resp = _call_model(EMOTION_MODEL, "emotion")
             if emo_resp is None:
                 return _fallback(clean)
             if emo_resp.status_code != 200:

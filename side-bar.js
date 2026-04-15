@@ -44,6 +44,7 @@ class SidebarComponent {
             this.setupLogoutButton();
             this.initMobileWriteFab();
             this.initMobileTopbarSearchExpand();
+            this.applyCurrentUserIdentity();
             this.applyGuestEmptyState();
             
             document.dispatchEvent(new CustomEvent('diari-mobile-shell-ready', { bubbles: true }));
@@ -357,6 +358,24 @@ class SidebarComponent {
 
     isGuestUser() {
         return DIARICORE_FORCE_EMPTY_STATE || !this.getCurrentUser();
+    }
+
+    applyCurrentUserIdentity() {
+        const user = this.getCurrentUser();
+        if (!user) return;
+
+        const sidebarName = document.querySelector('.user-name');
+        const sidebarEmail = document.querySelector('.user-email');
+
+        const fullName = [user.firstName, user.lastName]
+            .filter((part) => typeof part === 'string' && part.trim())
+            .map((part) => part.trim())
+            .join(' ');
+        const displayName = fullName || user.nickname || 'User';
+        const displayEmail = user.email || 'No email available';
+
+        if (sidebarName) sidebarName.textContent = displayName;
+        if (sidebarEmail) sidebarEmail.textContent = displayEmail;
     }
 
     upsertGuestNotice(target, message) {

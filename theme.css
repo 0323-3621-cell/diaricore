@@ -194,13 +194,17 @@ html.theme-dark .logout-btn {
 }
 
 html.theme-dark .logout-btn:hover {
-    background: #243238 !important;
-    color: var(--text-dark) !important;
+    background: var(--primary-color) !important;
+    color: #ffffff !important;
 }
 
 html.theme-dark .logout-btn i,
 html.theme-dark .logout-btn:hover i {
     color: var(--primary-color) !important;
+}
+
+html.theme-dark .logout-btn:hover i {
+    color: #ffffff !important;
 }
 
 html.theme-dark .time-input::-webkit-calendar-picker-indicator {

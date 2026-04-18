@@ -168,3 +168,73 @@ html.theme-dark .mobile-bottom-nav-link,
 html.theme-dark .mobile-app-topbar__brand-name {
     color: var(--text-secondary) !important;
 }
+
+.theme-toggle-fab {
+    position: fixed;
+    right: 1.15rem;
+    bottom: 1.15rem;
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--card-background);
+    color: var(--text-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--box-shadow);
+    z-index: 1200;
+    transition: transform 0.18s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-toggle-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.theme-toggle-fab:active {
+    transform: translateY(0);
+}
+
+.theme-toggle-fab__icon {
+    position: absolute;
+    font-size: 1.05rem;
+    line-height: 1;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle-fab__icon--sun {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.theme-toggle-fab__icon--moon {
+    opacity: 0;
+    transform: scale(0.85);
+}
+
+.theme-toggle-fab[data-theme="dark"] .theme-toggle-fab__icon--sun {
+    opacity: 0;
+    transform: scale(0.85);
+}
+
+.theme-toggle-fab[data-theme="dark"] .theme-toggle-fab__icon--moon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+html.theme-dark .theme-toggle-fab {
+    background: #1b262c;
+    border-color: #3a4951;
+    color: #e7eff2;
+}
+
+@media (max-width: 768px) {
+    .theme-toggle-fab {
+        bottom: 5.3rem;
+        right: 0.9rem;
+        width: 44px;
+        height: 44px;
+    }
+}

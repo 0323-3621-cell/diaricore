@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
     initializeDashboardFromUserData();
     initializeGreetingClock();
-    initializeStreakBook();
     
     // Add smooth scrolling for navigation
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -86,38 +85,6 @@ function calculateEntryStreak(entries) {
         else break;
     }
     return streak;
-}
-
-function initializeStreakBook() {
-    const toggleBtn = document.getElementById('floatingStreakToggle');
-    const panel = document.getElementById('floatingStreakPanel');
-    const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
-    if (!toggleBtn || !panel || !icon || toggleBtn.dataset.bound === '1') return;
-    toggleBtn.dataset.bound = '1';
-
-    const setOpen = (open) => {
-        panel.hidden = !open;
-        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        toggleBtn.setAttribute('aria-label', open ? 'Close streak book' : 'Open streak book');
-        icon.classList.toggle('bi-book', !open);
-        icon.classList.toggle('bi-book-half', open);
-    };
-
-    toggleBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true';
-        setOpen(!isOpen);
-    });
-
-    document.addEventListener('click', (event) => {
-        if (panel.hidden) return;
-        if (panel.contains(event.target) || toggleBtn.contains(event.target)) return;
-        setOpen(false);
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') setOpen(false);
-    });
 }
 
 function initializeGreetingClock() {
@@ -266,13 +233,13 @@ function updateDashboardCards(entries) {
     const avgDescription = document.querySelector('.stat-card-average .stat-description');
     const insightValue = document.querySelector('.stat-card-insight .insight-text');
     const insightDescription = document.querySelector('.stat-card-insight .stat-description');
-    const streakCount = document.querySelector('.floating-streak-panel .streak-count');
+    const streakValue = document.getElementById('streakBookValue');
 
     const latest = getLatestEntry(entries);
     const weeklyEntries = (entries || []).filter((e) => e?.date && isWithinLast7Days(new Date(e.date)));
     const weeklyScores = weeklyEntries.map((e) => feelingToScore(resolveEntryFeeling(e)));
     const streak = calculateEntryStreak(entries || []);
-    if (streakCount) streakCount.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
+    if (streakValue) streakValue.textContent = String(streak);
 
     if (!latest) {
         if (moodEmoji) moodEmoji.textContent = '🙂';

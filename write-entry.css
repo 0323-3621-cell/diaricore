@@ -296,15 +296,15 @@
     background-color: var(--background-soft);
     padding: 1rem 1.5rem;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
 }
 
 .voice-input-btn {
-    background-color: var(--info-color);
-    color: white;
-    border: none;
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
     border-radius: 999px;
     width: 34px;
     height: 34px;
@@ -317,7 +317,8 @@
 }
 
 .voice-input-btn:hover {
-    background-color: #6b9dbf;
+    background-color: var(--primary-color);
+    color: white;
     transform: translateY(-1px);
 }
 
@@ -356,6 +357,12 @@
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.02em;
+}
+
+.character-counter {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
 }
 
 /* Action Buttons Section */

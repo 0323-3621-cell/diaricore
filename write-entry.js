@@ -325,8 +325,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const journalText = document.getElementById('journalText');
+    const charCount = document.getElementById('charCount');
     updateJournalDateTime();
     setInterval(updateJournalDateTime, 30000);
+
+    journalText.addEventListener('input', function() {
+        const count = this.value.length;
+        if (charCount) {
+            charCount.textContent = count;
+            if (count > 4500) {
+                charCount.style.color = 'var(--warning-color)';
+            } else if (count > 4000) {
+                charCount.style.color = 'var(--info-color)';
+            } else {
+                charCount.style.color = 'var(--text-muted)';
+            }
+        }
+    });
     
     // Voice input button functionality
     const voiceInputBtn = document.getElementById('voiceInputBtn');

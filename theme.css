@@ -107,6 +107,15 @@ html.theme-dark textarea::placeholder {
     color: var(--text-muted) !important;
 }
 
+html.theme-dark body.page-entries .search-bar,
+html.theme-dark body.page-entries .filter-btn {
+    background: transparent !important;
+}
+
+html.theme-dark body.page-entries .search-input {
+    background: transparent !important;
+}
+
 html.theme-dark .tag,
 html.theme-dark .tag-btn,
 html.theme-dark .filter-option,

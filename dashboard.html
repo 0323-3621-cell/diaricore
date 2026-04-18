@@ -55,10 +55,21 @@
         <div class="main-content">
             <!-- Floating Streak Counter -->
             <div class="floating-streak">
-                <div class="streak-flame">
-                    <i class="bi bi-fire"></i>
+                <button
+                    type="button"
+                    class="floating-streak-book"
+                    id="floatingStreakToggle"
+                    aria-expanded="false"
+                    aria-controls="floatingStreakPanel"
+                    aria-label="Open streak book"
+                    title="Open streak book"
+                >
+                    <i class="bi bi-book"></i>
+                </button>
+                <div class="floating-streak-panel" id="floatingStreakPanel" hidden>
+                    <p class="floating-streak-panel__label">Current Streak</p>
+                    <p class="streak-count">0 days</p>
                 </div>
-                <div class="streak-count">12</div>
             </div>
             
             <!-- Header Section -->

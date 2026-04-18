@@ -134,50 +134,58 @@ body {
     position: absolute;
     top: 2rem;
     right: 3rem;
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
-    border-radius: 50px;
-    padding: 0.75rem 1.25rem;
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
     z-index: 100;
-    transition: all 0.3s ease;
+}
+
+.floating-streak-book {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(140deg, #f39a32 0%, #e9782a 100%);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
     cursor: pointer;
+    box-shadow: 0 6px 18px rgba(233, 120, 42, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.floating-streak:hover {
+.floating-streak-book:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 8px 20px rgba(233, 120, 42, 0.42);
 }
 
-.streak-flame {
-    color: #ffffff;
-    font-size: 1.5rem;
-    animation: flame-flicker 2s ease-in-out infinite;
-}
-
-.streak-count {
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 600;
-    min-width: 20px;
+.floating-streak-panel {
+    min-width: 126px;
+    border-radius: 12px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+    padding: 0.55rem 0.75rem;
     text-align: center;
 }
 
-@keyframes flame-flicker {
-    0%, 100% {
-        transform: scale(1) rotate(-2deg);
-    }
-    25% {
-        transform: scale(1.05) rotate(1deg);
-    }
-    50% {
-        transform: scale(1.1) rotate(-1deg);
-    }
-    75% {
-        transform: scale(1.05) rotate(2deg);
-    }
+.floating-streak-panel__label {
+    margin: 0 0 0.2rem;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.streak-count {
+    color: var(--text-dark);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
 }
 
 .header-section {
@@ -672,16 +680,7 @@ body {
     .floating-streak {
         top: 1rem;
         right: 1rem;
-        padding: 0.5rem 1rem;
         z-index: 998;
-    }
-    
-    .streak-flame {
-        font-size: 1.25rem;
-    }
-    
-    .streak-count {
-        font-size: 1rem;
     }
     
     .main-title {
@@ -738,18 +737,16 @@ body {
         font-size: 0.72rem;
     }
     
-    .floating-streak {
-        top: 1.5rem; /* Moved further down */
-        right: 1rem;
-        padding: 0.2rem 0.4rem;
+    .floating-streak-book {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 1.15rem;
     }
-    
-    .streak-flame {
-        font-size: 1rem;
-    }
-    
-    .streak-count {
-        font-size: 0.75rem;
+
+    .floating-streak-panel {
+        min-width: 110px;
+        padding: 0.45rem 0.55rem;
     }
     
     /* Compact stat row: icon badge (left) + stacked copy (right), reference-style */

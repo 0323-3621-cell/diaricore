@@ -55,13 +55,21 @@
         <div class="main-content">
             <!-- Floating Streak Counter -->
             <div class="floating-streak">
-                <button type="button" class="streak-book" aria-label="Streak book">
-                    <span class="streak-book__book" aria-hidden="true"></span>
-                    <span class="streak-book__badge" aria-hidden="true">
-                        <span class="streak-book__badge-label">Streak</span>
-                        <span class="streak-book__badge-value" id="streakBookValue">0</span>
-                    </span>
+                <button
+                    type="button"
+                    class="floating-streak-book"
+                    id="floatingStreakToggle"
+                    aria-expanded="false"
+                    aria-controls="floatingStreakPanel"
+                    aria-label="Open streak book"
+                    title="Open streak book"
+                >
+                    <i class="bi bi-book"></i>
                 </button>
+                <div class="floating-streak-panel" id="floatingStreakPanel" hidden>
+                    <p class="floating-streak-panel__label">Current Streak</p>
+                    <p class="streak-count">0 days</p>
+                </div>
             </div>
             
             <!-- Header Section -->

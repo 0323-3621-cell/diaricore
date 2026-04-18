@@ -135,104 +135,57 @@ body {
     top: 2rem;
     right: 3rem;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
     z-index: 100;
 }
 
-.streak-book {
-    position: relative;
-    border: none;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-    width: 54px;
-    height: 54px;
+.floating-streak-book {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(140deg, #f39a32 0%, #e9782a 100%);
+    color: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-size: 1.35rem;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(233, 120, 42, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.streak-book:focus-visible {
-    outline: 3px solid rgba(var(--primary-rgb, 111, 143, 127), 0.35);
-    outline-offset: 4px;
-    border-radius: 14px;
+.floating-streak-book:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(233, 120, 42, 0.42);
 }
 
-.streak-book__book {
-    position: relative;
-    width: 54px;
-    height: 54px;
-    display: block;
-    transform-style: preserve-3d;
-    background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px 6px) left 16px top 10px / 6px 34px no-repeat;
-}
-
-.streak-book__book::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: linear-gradient(145deg, #e9782a 0%, #f39a32 100%);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
-}
-
-.streak-book__book::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 12px;
-    background: linear-gradient(145deg, #ffb04a 0%, #ea7c24 100%);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
-    transform-origin: left center;
-    transform: rotateY(0deg);
-    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.streak-book__badge {
-    position: absolute;
-    top: 50%;
-    left: calc(100% + 8px);
-    transform: translateY(-50%);
+.floating-streak-panel {
+    min-width: 126px;
     border-radius: 12px;
     background: var(--card-background);
     border: 1px solid var(--border-color);
     box-shadow: var(--box-shadow);
-    padding: 0.45rem 0.6rem;
-    min-width: 92px;
-    text-align: left;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.22s ease;
+    padding: 0.55rem 0.75rem;
+    text-align: center;
 }
 
-.streak-book__badge-label {
-    display: block;
-    font-size: 0.62rem;
+.floating-streak-panel__label {
+    margin: 0 0 0.2rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     color: var(--text-muted);
     font-weight: 700;
-    line-height: 1.2;
 }
 
-.streak-book__badge-value {
-    display: block;
-    margin-top: 0.12rem;
-    font-size: 1rem;
-    font-weight: 800;
+.streak-count {
     color: var(--text-dark);
-    line-height: 1.1;
-}
-
-.streak-book:hover .streak-book__book::after,
-.streak-book:focus-visible .streak-book__book::after {
-    transform: rotateY(-62deg);
-}
-
-.streak-book:hover .streak-book__badge,
-.streak-book:focus-visible .streak-book__badge {
-    opacity: 1;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
 }
 
 .header-section {
@@ -784,24 +737,16 @@ body {
         font-size: 0.72rem;
     }
     
-    .streak-book {
-        width: 46px;
-        height: 46px;
+    .floating-streak-book {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        font-size: 1.15rem;
     }
 
-    .streak-book__book {
-        width: 46px;
-        height: 46px;
-    }
-
-    .streak-book__book::before,
-    .streak-book__book::after {
-        border-radius: 11px;
-    }
-
-    .streak-book__badge {
-        min-width: 86px;
-        padding: 0.4rem 0.55rem;
+    .floating-streak-panel {
+        min-width: 110px;
+        padding: 0.45rem 0.55rem;
     }
     
     /* Compact stat row: icon badge (left) + stacked copy (right), reference-style */

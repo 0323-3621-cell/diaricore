@@ -210,8 +210,8 @@ body {
 
 .greeting-clock__dial {
     position: relative;
-    width: 48px;
-    height: 48px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     border: 2px solid #c8b583;
     background: radial-gradient(circle at 35% 35%, #fffef9, #f4edd8 72%);

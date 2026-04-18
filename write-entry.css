@@ -302,8 +302,8 @@
 }
 
 .voice-input-btn {
-    background-color: transparent;
-    color: var(--primary-color);
+    background-color: var(--primary-color);
+    color: white;
     border: 1px solid var(--primary-color);
     border-radius: 999px;
     width: 34px;
@@ -317,9 +317,8 @@
 }
 
 .voice-input-btn:hover {
-    background-color: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 111, 143, 127), 0.35);
 }
 
 .voice-input-btn i {
@@ -351,18 +350,50 @@
     padding: 0.75rem 1.5rem;
 }
 
+.journal-datetime-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.journal-datetime-btn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.journal-datetime-btn i {
+    font-size: 0.95rem;
+    color: var(--primary-color);
+}
+
 .journal-datetime {
     margin: 0;
-    font-size: 12px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--text-secondary);
     letter-spacing: 0.02em;
 }
 
 .character-counter {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-muted);
+}
+
+.journal-datetime-input {
+    display: none;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-background);
+    color: var(--text-dark);
+    padding: 0.25rem 0.45rem;
+    font-size: 12px;
 }
 
 /* Action Buttons Section */

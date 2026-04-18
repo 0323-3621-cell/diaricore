@@ -133,7 +133,13 @@
                 <h2 class="section-title">Your Thoughts</h2>
                 <div class="journal-container">
                     <div class="journal-header">
-                        <p class="journal-datetime" id="journalDateTime">Sunday, April 26, 2026 | 03:53 AM</p>
+                        <div class="journal-datetime-wrap">
+                            <button type="button" class="journal-datetime-btn" id="journalDateTimeBtn" title="Edit date and time">
+                                <span class="journal-datetime" id="journalDateTime">Sunday, April 26, 2026 | 03:53 AM</span>
+                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                            </button>
+                            <input type="datetime-local" id="journalDateTimeInput" class="journal-datetime-input" />
+                        </div>
                         <button class="voice-input-btn" id="voiceInputBtn" aria-label="Open voice entry" title="Voice entry">
                             <i class="bi bi-mic"></i>
                         </button>

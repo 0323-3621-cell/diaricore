@@ -4,18 +4,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize variables
     let selectedFeeling = null;
     let selectedTags = new Set();
+    let manualDateTime = null;
 
     function updateJournalDateTime() {
         const dateTimeEl = document.getElementById('journalDateTime');
         if (!dateTimeEl) return;
-        const now = new Date();
-        const datePart = now.toLocaleDateString('en-US', {
+        const sourceDate = manualDateTime || new Date();
+        const datePart = sourceDate.toLocaleDateString('en-US', {
             weekday: 'long',
             month: 'long',
             day: 'numeric',
             year: 'numeric',
         });
-        const timePart = now.toLocaleTimeString('en-US', {
+        const timePart = sourceDate.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
             hour12: true,
@@ -326,8 +327,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const journalText = document.getElementById('journalText');
     const charCount = document.getElementById('charCount');
+    const journalDateTimeBtn = document.getElementById('journalDateTimeBtn');
+    const journalDateTimeInput = document.getElementById('journalDateTimeInput');
     updateJournalDateTime();
-    setInterval(updateJournalDateTime, 30000);
+    setInterval(() => {
+        if (!manualDateTime) updateJournalDateTime();
+    }, 30000);
+
+    if (journalDateTimeBtn && journalDateTimeInput) {
+        const toLocalInputValue = (dateObj) => {
+            const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+            return d.toISOString().slice(0, 16);
+        };
+
+        journalDateTimeBtn.addEventListener('click', () => {
+            const baseDate = manualDateTime || new Date();
+            journalDateTimeInput.value = toLocalInputValue(baseDate);
+            journalDateTimeInput.style.display = 'inline-block';
+            journalDateTimeInput.focus();
+        });
+
+        journalDateTimeInput.addEventListener('change', () => {
+            if (!journalDateTimeInput.value) return;
+            manualDateTime = new Date(journalDateTimeInput.value);
+            updateJournalDateTime();
+        });
+
+        const hideDateInput = () => {
+            journalDateTimeInput.style.display = 'none';
+        };
+        journalDateTimeInput.addEventListener('blur', hideDateInput);
+        journalDateTimeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' || event.key === 'Enter') hideDateInput();
+        });
+    }
 
     journalText.addEventListener('input', function() {
         const count = this.value.length;

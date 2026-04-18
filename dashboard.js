@@ -284,10 +284,31 @@ function renderWeeklyChart(entries) {
     });
     const hasData = chartData.some((v) => v !== null);
 
+    const isDarkMode = document.documentElement.classList.contains('theme-dark');
+    const chartTheme = isDarkMode
+        ? {
+            line: '#8fb8a5',
+            fillTop: 'rgba(143, 184, 165, 0.35)',
+            fillBottom: 'rgba(143, 184, 165, 0.03)',
+            pointBorder: '#141c20',
+            tooltipBg: 'rgba(16, 24, 29, 0.95)',
+            tick: '#b7c7cd',
+            grid: 'rgba(64, 82, 90, 0.6)'
+        }
+        : {
+            line: '#6F8F7F',
+            fillTop: 'rgba(111, 143, 127, 0.3)',
+            fillBottom: 'rgba(111, 143, 127, 0.01)',
+            pointBorder: '#ffffff',
+            tooltipBg: 'rgba(44, 62, 80, 0.9)',
+            tick: '#6B7C74',
+            grid: 'rgba(224, 230, 227, 0.3)'
+        };
+
     const ctx = weeklyCanvas.getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(111, 143, 127, 0.3)');
-    gradient.addColorStop(1, 'rgba(111, 143, 127, 0.01)');
+    gradient.addColorStop(0, chartTheme.fillTop);
+    gradient.addColorStop(1, chartTheme.fillBottom);
 
     new Chart(ctx, {
         type: 'line',
@@ -296,18 +317,18 @@ function renderWeeklyChart(entries) {
             datasets: [{
                 label: 'Mood Score',
                 data: hasData ? chartData : [null, null, null, null, null, null, null],
-                borderColor: '#6F8F7F',
+                borderColor: chartTheme.line,
                 backgroundColor: gradient,
                 borderWidth: 3,
                 fill: true,
                 tension: 0.4,
-                pointBackgroundColor: '#6F8F7F',
-                pointBorderColor: '#ffffff',
+                pointBackgroundColor: chartTheme.line,
+                pointBorderColor: chartTheme.pointBorder,
                 pointBorderWidth: 2,
                 pointRadius: hasData ? 6 : 0,
                 pointHoverRadius: hasData ? 8 : 0,
-                pointHoverBackgroundColor: '#6F8F7F',
-                pointHoverBorderColor: '#ffffff',
+                pointHoverBackgroundColor: chartTheme.line,
+                pointHoverBorderColor: chartTheme.pointBorder,
                 pointHoverBorderWidth: 2,
                 spanGaps: false
             }]
@@ -321,7 +342,7 @@ function renderWeeklyChart(entries) {
                 },
                 tooltip: {
                     enabled: hasData,
-                    backgroundColor: 'rgba(44, 62, 80, 0.9)',
+                    backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
                     padding: 12,
@@ -340,7 +361,7 @@ function renderWeeklyChart(entries) {
                         display: false
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'
@@ -351,11 +372,11 @@ function renderWeeklyChart(entries) {
                     beginAtZero: true,
                     max: 10,
                     grid: {
-                        color: 'rgba(224, 230, 227, 0.3)',
+                        color: chartTheme.grid,
                         borderDash: [5, 5]
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'

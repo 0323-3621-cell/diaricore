@@ -1,0 +1,164 @@
+/* Global dark mode overrides (loaded after page-specific CSS) */
+
+:root.theme-dark {
+    --primary-color: #8fb8a5;
+    --primary-hover: #7aa691;
+    --primary-light: #a8d1bf;
+    --accent-green: #6f9e89;
+
+    --background-color: #11171a;
+    --background-soft: #1a2327;
+    --background-accent: #1f2b30;
+    --card-background: #182126;
+
+    --text-dark: #e7eff2;
+    --text-secondary: #b7c7cd;
+    --text-muted: #91a6ae;
+
+    --success-color: #8dd8ae;
+    --success-bg: #1d3528;
+    --warning-color: #f4be72;
+    --warning-bg: #3a2b16;
+    --info-color: #8abce0;
+    --info-bg: #1c2f3e;
+    --danger-color: #f28f8f;
+    --danger-bg: #412222;
+
+    --border-color: #2f3b42;
+    --divider-color: #3b4850;
+
+    --box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    --box-shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+html.theme-dark,
+html.theme-dark body {
+    background: var(--background-color) !important;
+    color: var(--text-dark) !important;
+}
+
+html.theme-dark .sidebar,
+html.theme-dark .main-content,
+html.theme-dark .dashboard-container,
+html.theme-dark .entries-container,
+html.theme-dark .insights-container,
+html.theme-dark .suggestions-container,
+html.theme-dark .profile-container,
+html.theme-dark .write-entry-container,
+html.theme-dark .voice-entry-container {
+    background: transparent !important;
+    color: var(--text-dark) !important;
+}
+
+html.theme-dark .main-title,
+html.theme-dark .section-title,
+html.theme-dark .profile-name,
+html.theme-dark .setting-title,
+html.theme-dark .stat-value,
+html.theme-dark .insight-title h3,
+html.theme-dark .entry-title {
+    color: var(--text-dark) !important;
+}
+
+html.theme-dark .subtitle,
+html.theme-dark .stat-description,
+html.theme-dark .profile-email,
+html.theme-dark .profile-member-since,
+html.theme-dark .setting-description,
+html.theme-dark .entry-excerpt,
+html.theme-dark .insight-message,
+html.theme-dark .notifications-description,
+html.theme-dark .appearance-description {
+    color: var(--text-secondary) !important;
+}
+
+html.theme-dark .header-section,
+html.theme-dark .profile-stats-section,
+html.theme-dark .setting-card,
+html.theme-dark .appearance-item,
+html.theme-dark .notifications-item,
+html.theme-dark .privacy-item,
+html.theme-dark .danger-zone-card,
+html.theme-dark .entry-card,
+html.theme-dark .stat-card,
+html.theme-dark .weekly-glance,
+html.theme-dark .smart-insights .insight-card,
+html.theme-dark .search-filter-section,
+html.theme-dark .filter-dropdown,
+html.theme-dark .profile-card,
+html.theme-dark .appearance-options,
+html.theme-dark .notifications-options,
+html.theme-dark .privacy-options {
+    background: var(--card-background) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--box-shadow) !important;
+}
+
+html.theme-dark input,
+html.theme-dark textarea,
+html.theme-dark select,
+html.theme-dark .time-input,
+html.theme-dark .search-input {
+    background: #121a1e !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-color) !important;
+}
+
+html.theme-dark input::placeholder,
+html.theme-dark textarea::placeholder {
+    color: var(--text-muted) !important;
+}
+
+html.theme-dark .tag,
+html.theme-dark .tag-btn,
+html.theme-dark .filter-option,
+html.theme-dark .month-header,
+html.theme-dark .privacy-control .btn-export,
+html.theme-dark .privacy-control .btn-privacy,
+html.theme-dark .btn-edit {
+    background: #1c262b !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-color) !important;
+}
+
+html.theme-dark .toggle-slider {
+    background: #34424a !important;
+}
+
+html.theme-dark input:checked + .toggle-slider {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light)) !important;
+}
+
+html.theme-dark .chart-container,
+html.theme-dark #weeklyChart,
+html.theme-dark #weeklyChartDesktop,
+html.theme-dark #emotionPieChart,
+html.theme-dark #emotionPieChartMobile,
+html.theme-dark #activityImpactChart {
+    background: transparent !important;
+}
+
+html.theme-dark .login-container,
+html.theme-dark .verify-shell,
+html.theme-dark .reset-dialog {
+    background: var(--card-background) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-color) !important;
+}
+
+html.theme-dark .login-right-panel,
+html.theme-dark .verify-brand,
+html.theme-dark .hero-panel {
+    filter: brightness(0.9) saturate(0.9);
+}
+
+html.theme-dark .mobile-app-topbar,
+html.theme-dark .mobile-bottom-nav {
+    background: #11191d !important;
+    border-color: var(--border-color) !important;
+}
+
+html.theme-dark .mobile-bottom-nav-link,
+html.theme-dark .mobile-app-topbar__brand-name {
+    color: var(--text-secondary) !important;
+}

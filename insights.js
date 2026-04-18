@@ -2,6 +2,30 @@
 let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
 
+function getChartTheme() {
+    const isDarkMode = document.documentElement.classList.contains('theme-dark');
+    if (isDarkMode) {
+        return {
+            primary: '#8fb8a5',
+            primarySoft: 'rgba(143, 184, 165, 0.22)',
+            tick: '#b7c7cd',
+            grid: 'rgba(66, 84, 92, 0.55)',
+            tooltipBg: 'rgba(16, 24, 29, 0.95)',
+            border: '#182126',
+            pieFallback: '#4e5e64',
+        };
+    }
+    return {
+        primary: '#6F8F7F',
+        primarySoft: 'rgba(111, 143, 127, 0.1)',
+        tick: '#6B7C74',
+        grid: '#E0E6E3',
+        tooltipBg: 'rgba(47, 62, 54, 0.9)',
+        border: '#ffffff',
+        pieFallback: '#B7C2BC',
+    };
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     await syncInsightsEntriesFromApi();
     INSIGHTS_ENTRIES = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]').filter((e) => e && e.date);
@@ -170,19 +194,20 @@ function initializeWeeklyMoodChart() {
     const ctx = document.getElementById('weeklyChart');
     if (!ctx) return;
     
+    const chartTheme = getChartTheme();
     const weekly = weeklyScoresFromEntries();
     const weeklyData = {
         labels: weekly.labels,
         datasets: [{
             label: 'Mood Score',
             data: weekly.data,
-            borderColor: '#6F8F7F',
-            backgroundColor: 'rgba(111, 143, 127, 0.1)',
+            borderColor: chartTheme.primary,
+            backgroundColor: chartTheme.primarySoft,
             borderWidth: 3,
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#6F8F7F',
-            pointBorderColor: '#ffffff',
+            pointBackgroundColor: chartTheme.primary,
+            pointBorderColor: chartTheme.border,
             pointBorderWidth: 2,
             pointRadius: HAS_INSIGHTS_DATA ? 6 : 0,
             pointHoverRadius: HAS_INSIGHTS_DATA ? 8 : 0
@@ -201,7 +226,7 @@ function initializeWeeklyMoodChart() {
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
-                    backgroundColor: 'rgba(47, 62, 54, 0.9)',
+                    backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
                     padding: 12,
@@ -220,7 +245,7 @@ function initializeWeeklyMoodChart() {
                         display: false
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'
@@ -231,11 +256,11 @@ function initializeWeeklyMoodChart() {
                     beginAtZero: true,
                     max: 10,
                     grid: {
-                        color: '#E0E6E3',
+                        color: chartTheme.grid,
                         borderDash: [5, 5]
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'
@@ -259,19 +284,20 @@ function initializeWeeklyMoodChartDesktop() {
     const ctx = document.getElementById('weeklyChartDesktop');
     if (!ctx) return;
     
+    const chartTheme = getChartTheme();
     const weekly = weeklyScoresFromEntries();
     const weeklyData = {
         labels: weekly.labels,
         datasets: [{
             label: 'Mood Score',
             data: weekly.data,
-            borderColor: '#6F8F7F',
-            backgroundColor: 'rgba(111, 143, 127, 0.1)',
+            borderColor: chartTheme.primary,
+            backgroundColor: chartTheme.primarySoft,
             borderWidth: 3,
             tension: 0.4,
             fill: true,
-            pointBackgroundColor: '#6F8F7F',
-            pointBorderColor: '#fff',
+            pointBackgroundColor: chartTheme.primary,
+            pointBorderColor: chartTheme.border,
             pointBorderWidth: 2,
             pointRadius: HAS_INSIGHTS_DATA ? 5 : 0,
             pointHoverRadius: HAS_INSIGHTS_DATA ? 7 : 0
@@ -290,10 +316,10 @@ function initializeWeeklyMoodChartDesktop() {
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#fff',
                     bodyColor: '#fff',
-                    borderColor: '#6F8F7F',
+                    borderColor: chartTheme.primary,
                     borderWidth: 1,
                     cornerRadius: 8,
                     displayColors: false,
@@ -313,7 +339,7 @@ function initializeWeeklyMoodChartDesktop() {
                         drawBorder: false
                     },
                     ticks: {
-                        color: '#666',
+                        color: chartTheme.tick,
                         font: {
                             size: 12
                         }
@@ -324,7 +350,7 @@ function initializeWeeklyMoodChartDesktop() {
                         display: false
                     },
                     ticks: {
-                        color: '#666',
+                        color: chartTheme.tick,
                         font: {
                             size: 12
                         }
@@ -346,18 +372,19 @@ function initializeEmotionPieChart() {
     const ctx = document.getElementById('emotionPieChart');
     if (!ctx) return;
     
+    const chartTheme = getChartTheme();
     const emotionData = {
         labels: HAS_INSIGHTS_DATA ? ['Happy', 'Sad', 'Angry', 'Anxious', 'Calm'] : ['No Data'],
         datasets: [{
             data: HAS_INSIGHTS_DATA ? [45, 20, 10, 15, 10] : [1],
             backgroundColor: [
-                HAS_INSIGHTS_DATA ? 'rgba(111, 143, 127, 0.9)' : 'rgba(180, 190, 185, 0.85)',
+                HAS_INSIGHTS_DATA ? 'rgba(111, 143, 127, 0.9)' : chartTheme.pieFallback,
                 'rgba(111, 143, 127, 0.7)',
                 'rgba(111, 143, 127, 0.5)',
                 'rgba(111, 143, 127, 0.6)',
                 'rgba(111, 143, 127, 0.4)'
             ],
-            borderColor: '#ffffff',
+            borderColor: chartTheme.border,
             borderWidth: 2
         }]
     };
@@ -372,7 +399,7 @@ function initializeEmotionPieChart() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'
@@ -382,7 +409,7 @@ function initializeEmotionPieChart() {
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
-                    backgroundColor: 'rgba(47, 62, 54, 0.9)',
+                    backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
                     padding: 12,
@@ -405,18 +432,19 @@ function initializeEmotionPieChartMobile() {
     const ctx = document.getElementById('emotionPieChartMobile');
     if (!ctx) return;
     
+    const chartTheme = getChartTheme();
     const breakdown = emotionBreakdownData();
     const emotionData = {
         labels: HAS_INSIGHTS_DATA ? ['Happy', 'Neutral', 'Sad', 'Anxious'] : ['No Data'],
         datasets: [{
             data: HAS_INSIGHTS_DATA ? breakdown.values : [1],
             backgroundColor: [
-                HAS_INSIGHTS_DATA ? '#7FBF9F' : '#B7C2BC',
+                HAS_INSIGHTS_DATA ? '#7FBF9F' : chartTheme.pieFallback,
                 '#F4A261',
                 '#7FA7BF',
                 '#E76F51'
             ],
-            borderColor: '#ffffff',
+            borderColor: chartTheme.border,
             borderWidth: 2
         }]
     };
@@ -464,6 +492,7 @@ function initializeActivityImpactChart() {
     const ctx = document.getElementById('activityImpactChart');
     if (!ctx) return;
     
+    const chartTheme = getChartTheme();
     const activityData = {
         labels: ['Exercise', 'Sleep', 'Work', 'Social', 'Reading', 'Meditation'],
         datasets: [{
@@ -477,7 +506,7 @@ function initializeActivityImpactChart() {
                 'rgba(111, 143, 127, 0.6)',
                 'rgba(111, 143, 127, 0.8)'
             ],
-            borderColor: '#6F8F7F',
+            borderColor: chartTheme.primary,
             borderWidth: 2,
             borderRadius: 6,
             barThickness: 40
@@ -496,7 +525,7 @@ function initializeActivityImpactChart() {
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
-                    backgroundColor: 'rgba(47, 62, 54, 0.9)',
+                    backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
                     padding: 12,
@@ -515,7 +544,7 @@ function initializeActivityImpactChart() {
                         display: false
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'
@@ -526,11 +555,11 @@ function initializeActivityImpactChart() {
                     beginAtZero: true,
                     max: 100,
                     grid: {
-                        color: '#E0E6E3',
+                        color: chartTheme.grid,
                         borderDash: [5, 5]
                     },
                     ticks: {
-                        color: '#6B7C74',
+                        color: chartTheme.tick,
                         font: {
                             size: 12,
                             weight: '500'

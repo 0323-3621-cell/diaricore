@@ -109,9 +109,18 @@ function initializePreferenceToggles() {
     const toggleSwitches = document.querySelectorAll(
         '.toggle-switch input[type="checkbox"], .switch input[type="checkbox"]'
     );
+
+    const darkModeToggle = document.getElementById('toggleDarkMode');
+    if (darkModeToggle && window.DiariTheme && typeof window.DiariTheme.getTheme === 'function') {
+        darkModeToggle.checked = window.DiariTheme.getTheme() === 'dark';
+    }
     
     toggleSwitches.forEach(toggle => {
         toggle.addEventListener('change', function() {
+            if (this.id === 'toggleDarkMode' && window.DiariTheme && typeof window.DiariTheme.setTheme === 'function') {
+                window.DiariTheme.setTheme(this.checked ? 'dark' : 'light');
+            }
+
             const row = this.closest('.appearance-item, .notifications-item, .preference-item');
             const titleEl = row && row.querySelector(
                 '.appearance-subtitle, .notifications-subtitle, .preference-title'

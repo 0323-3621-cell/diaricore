@@ -1,5 +1,9 @@
 /* Global dark mode overrides (loaded after page-specific CSS) */
 
+:root {
+    --primary-rgb: 111, 143, 127;
+}
+
 :root.theme-dark {
     --primary-color: var(--theme-dark-primary, #8fb8a5);
     --primary-hover: var(--theme-dark-primary-hover, #7aa691);
@@ -281,4 +285,39 @@ html.theme-dark .theme-toggle-fab {
         width: 44px;
         height: 44px;
     }
+}
+
+/* Palette-synced interactive hover surfaces */
+body.page-profile .appearance-item:hover,
+body.page-profile .notifications-item:hover,
+body.page-profile .privacy-item:hover {
+    background: linear-gradient(
+        135deg,
+        rgba(var(--primary-rgb), 0.11),
+        rgba(var(--primary-rgb), 0.05)
+    ) !important;
+    border-color: rgba(var(--primary-rgb), 0.32) !important;
+}
+
+body.page-profile .setting-card:hover,
+body.page-profile .appearance-options:hover,
+body.page-profile .notifications-options:hover,
+body.page-profile .privacy-options:hover {
+    box-shadow: 0 12px 40px rgba(var(--primary-rgb), 0.26) !important;
+}
+
+body.page-profile .theme-palette-picker__toggle:hover,
+body.page-profile .theme-palette-btn:hover {
+    border-color: var(--primary-color) !important;
+}
+
+body.page-write-entry .tag-btn:hover {
+    border-color: var(--primary-color) !important;
+    background-color: rgba(var(--primary-rgb), 0.1) !important;
+}
+
+body.page-write-entry .more-btn:hover {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    background-color: rgba(var(--primary-rgb), 0.08) !important;
 }

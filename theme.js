@@ -63,10 +63,12 @@
         const darkPrimary = shade(primary, 0.08);
         const darkPrimaryHover = shade(primary, -0.05);
         const darkPrimaryLight = shade(primary, 0.22);
+        const primaryRgb = hexToRgb(primary);
 
         root.style.setProperty('--primary-color', primary);
         root.style.setProperty('--primary-hover', primaryHover);
         root.style.setProperty('--primary-light', primaryLight);
+        root.style.setProperty('--primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
         root.style.setProperty('--accent-green', accent);
         root.style.setProperty('--theme-dark-primary', darkPrimary);
         root.style.setProperty('--theme-dark-primary-hover', darkPrimaryHover);

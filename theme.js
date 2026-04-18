@@ -72,6 +72,12 @@
         root.style.setProperty('--theme-dark-primary-hover', darkPrimaryHover);
         root.style.setProperty('--theme-dark-primary-light', darkPrimaryLight);
 
+        const currentName = document.querySelector('[data-theme-palette-name]');
+        if (currentName) currentName.textContent = palette.name;
+
+        const currentSwatch = document.querySelector('[data-theme-palette-swatch]');
+        if (currentSwatch) currentSwatch.style.background = palette.primary;
+
         document.querySelectorAll('[data-theme-palette]').forEach((btn) => {
             const isActive = btn.getAttribute('data-theme-palette') === palette.id;
             btn.classList.toggle('is-active', isActive);
@@ -162,7 +168,33 @@
                 const paletteId = this.getAttribute('data-theme-palette');
                 if (!paletteId) return;
                 setPalette(paletteId);
+                const panel = document.getElementById('themePalettePanel');
+                const toggleBtn = document.getElementById('themePaletteToggle');
+                if (panel && toggleBtn) {
+                    panel.hidden = true;
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
             });
+        });
+    }
+
+    function bindPalettePanelToggle() {
+        const toggleBtn = document.getElementById('themePaletteToggle');
+        const panel = document.getElementById('themePalettePanel');
+        if (!toggleBtn || !panel || toggleBtn.dataset.bound === '1') return;
+        toggleBtn.dataset.bound = '1';
+
+        toggleBtn.addEventListener('click', function () {
+            const nextOpen = panel.hidden;
+            panel.hidden = !nextOpen;
+            toggleBtn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', function (event) {
+            if (panel.hidden) return;
+            if (panel.contains(event.target) || toggleBtn.contains(event.target)) return;
+            panel.hidden = true;
+            toggleBtn.setAttribute('aria-expanded', 'false');
         });
     }
 
@@ -175,6 +207,7 @@
         applyPaletteById(getSavedPaletteId());
         createThemeToggleFab();
         bindPaletteButtons();
+        bindPalettePanelToggle();
         syncToggleState();
     });
 

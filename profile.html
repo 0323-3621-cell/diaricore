@@ -181,47 +181,59 @@
                                     <p class="appearance-description">Pick one of 10 calming color palettes.</p>
                                 </div>
                             </div>
-                            <div class="theme-palette-grid" role="group" aria-label="Theme palette selection">
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-1" aria-pressed="false" title="Soft Sage Green">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#6F8F7F;"></span>
-                                    <span class="theme-palette-btn__label">Sage</span>
+                            <div class="theme-palette-picker">
+                                <div class="theme-palette-current" aria-live="polite">
+                                    <span class="theme-palette-current__swatch" data-theme-palette-swatch></span>
+                                    <span class="theme-palette-current__name" data-theme-palette-name>Soft Sage Green</span>
+                                </div>
+                                <button type="button" class="theme-palette-picker__toggle" id="themePaletteToggle" aria-expanded="false" aria-controls="themePalettePanel">
+                                    Choose theme
+                                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-2" aria-pressed="false" title="Lavender Purple">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#8E7CB5;"></span>
-                                    <span class="theme-palette-btn__label">Lavender</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-3" aria-pressed="false" title="Sky Blue">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#6F9BB8;"></span>
-                                    <span class="theme-palette-btn__label">Sky</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-4" aria-pressed="false" title="Warm Peach">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#D89A82;"></span>
-                                    <span class="theme-palette-btn__label">Peach</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-5" aria-pressed="false" title="Aqua Teal">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#4FAFB0;"></span>
-                                    <span class="theme-palette-btn__label">Aqua</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-6" aria-pressed="false" title="Sand Beige">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#B5957E;"></span>
-                                    <span class="theme-palette-btn__label">Sand</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-7" aria-pressed="false" title="Rose Quartz">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#BC7E97;"></span>
-                                    <span class="theme-palette-btn__label">Rose</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-8" aria-pressed="false" title="Mint Green">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#6FAF9B;"></span>
-                                    <span class="theme-palette-btn__label">Mint</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-9" aria-pressed="false" title="Mauve Pink">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#A97B95;"></span>
-                                    <span class="theme-palette-btn__label">Mauve</span>
-                                </button>
-                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-10" aria-pressed="false" title="Sage Gray">
-                                    <span class="theme-palette-btn__swatch" style="--palette:#7F9393;"></span>
-                                    <span class="theme-palette-btn__label">Gray</span>
-                                </button>
+                            </div>
+                            <div class="theme-palette-panel" id="themePalettePanel" hidden>
+                                <div class="theme-palette-grid" role="group" aria-label="Theme palette selection">
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-1" aria-pressed="false" title="Soft Sage Green">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#6F8F7F;"></span>
+                                        <span class="theme-palette-btn__label">Sage</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-2" aria-pressed="false" title="Lavender Purple">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#8E7CB5;"></span>
+                                        <span class="theme-palette-btn__label">Lavender</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-3" aria-pressed="false" title="Sky Blue">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#6F9BB8;"></span>
+                                        <span class="theme-palette-btn__label">Sky</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-4" aria-pressed="false" title="Warm Peach">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#D89A82;"></span>
+                                        <span class="theme-palette-btn__label">Peach</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-5" aria-pressed="false" title="Aqua Teal">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#4FAFB0;"></span>
+                                        <span class="theme-palette-btn__label">Aqua</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-6" aria-pressed="false" title="Sand Beige">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#B5957E;"></span>
+                                        <span class="theme-palette-btn__label">Sand</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-7" aria-pressed="false" title="Rose Quartz">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#BC7E97;"></span>
+                                        <span class="theme-palette-btn__label">Rose</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-8" aria-pressed="false" title="Mint Green">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#6FAF9B;"></span>
+                                        <span class="theme-palette-btn__label">Mint</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-9" aria-pressed="false" title="Mauve Pink">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#A97B95;"></span>
+                                        <span class="theme-palette-btn__label">Mauve</span>
+                                    </button>
+                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-10" aria-pressed="false" title="Sage Gray">
+                                        <span class="theme-palette-btn__swatch" style="--palette:#7F9393;"></span>
+                                        <span class="theme-palette-btn__label">Gray</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

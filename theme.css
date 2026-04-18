@@ -178,6 +178,14 @@ html.theme-dark .theme-palette-btn__label {
     color: #c8d7dd !important;
 }
 
+html.theme-dark .theme-palette-current,
+html.theme-dark .theme-palette-picker__toggle,
+html.theme-dark .theme-palette-panel {
+    background: #1b262c !important;
+    border-color: #33424a !important;
+    color: #dce8ed !important;
+}
+
 .theme-toggle-fab {
     position: fixed;
     right: 1.15rem;

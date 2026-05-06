@@ -418,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(savedEntry);
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
-            console.log('Entry saved with NLP:', savedEntry, 'engine:', result.analysisEngine);
+            console.log('Entry saved:', savedEntry);
 
             showSuccessMessage();
             setTimeout(() => {

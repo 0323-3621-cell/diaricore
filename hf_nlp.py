@@ -12,7 +12,7 @@ import httpx
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
 
-EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "your-username/diari-core-mood").strip()
+EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "sseia/diari-core-mood").strip()
 HF_BASE_URL = "https://api-inference.huggingface.co/models"
 
 
@@ -110,7 +110,9 @@ def analyze(text: str) -> Dict[str, object]:
                     err = response.json()
                 except Exception:
                     err = {"error": "non-json error"}
-                print(f"[HF NLP] emotion error status={response.status_code} body_keys={list(err)[:5]}")
+                print(
+                    f"[HF NLP] emotion error status={response.status_code} model={EMOTION_MODEL} url={url} body_keys={list(err)[:5]}"
+                )
                 return _fallback(clean)
 
             payload = response.json()

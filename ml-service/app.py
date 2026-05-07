@@ -33,6 +33,102 @@ CALIBRATION_THRESHOLDS = {
     "happy": 0.75,
     "anxious": 0.70,
 }
+CONFIDENCE_THRESHOLD = 0.45
+MIN_KEYWORD_HITS = 2
+KEYWORD_SIGNALS = {
+    "sad": {
+        "en": [
+            "grief",
+            "grieving",
+            "mourning",
+            "lost someone",
+            "passed away",
+            "lonely",
+            "alone again",
+            "no one",
+            "empty inside",
+            "hollow",
+            "crying",
+            "sobbing",
+            "heartbroken",
+            "broke my heart",
+            "i miss you",
+            "i miss them",
+            "i miss her",
+            "i miss him",
+            "namimiss kita",
+            "namimiss ko siya",
+        ],
+        "tl": [
+            "malungkot",
+            "lungkot",
+            "nalulungkot",
+            "umiiyak",
+            "umiyak",
+            "nag-iisa",
+            "mag-isa",
+            "nawala",
+            "nawalan",
+            "nawala na",
+            "hindi ko na mababawi",
+            "hindi na babalik",
+        ],
+    },
+    "anxious": {
+        "en": [
+            "what if",
+            "what will happen",
+            "scared of",
+            "afraid of",
+            "worried about",
+            "i keep worrying",
+            "cant stop worrying",
+            "can't stop worrying",
+            "heart racing",
+            "cant breathe",
+            "can't breathe",
+            "panic",
+            "panicking",
+            "anxious about",
+            "overthinking",
+            "overthought",
+            "dreading",
+            "terrified of",
+            "nervous about",
+        ],
+        "tl": [
+            "nababahala",
+            "nag-aalala",
+            "natatakot",
+            "kabado",
+            "kinakabahan",
+            "hindi makatulog",
+            "di makatulog",
+            "di mapakali",
+            "hindi mapakali",
+            "palagi akong nag-iisip",
+            "hindi ko maiwasang mag-isip",
+        ],
+    },
+}
+AMBIGUOUS_WORDS = {
+    "miss",
+    "feel",
+    "think",
+    "sad",
+    "happy",
+    "angry",
+    "bad",
+    "good",
+    "okay",
+    "ok",
+    "fine",
+    "lost",
+    "hard",
+    "difficult",
+    "tired",
+    "pagod",
+}
 
 app = Flask(__name__)
 
@@ -55,6 +151,49 @@ def _derive_sentiment_from_emotion(label: str) -> str:
     if raw in ("angry", "anxious", "sad"):
         return "negative"
     return "neutral"
+
+
+def keyword_score(text: str) -> dict:
+    text_lower = (text or "").lower()
+    scores = {emotion: 0 for emotion in KEYWORD_SIGNALS}
+    for emotion, lang_dict in KEYWORD_SIGNALS.items():
+        for keywords in lang_dict.values():
+            for kw in keywords:
+                if kw.strip() in AMBIGUOUS_WORDS:
+                    continue
+                if kw in text_lower:
+                    scores[emotion] += 1
+    return scores
+
+
+def apply_keyword_layer(text: str, primary_label: str, primary_prob: float) -> tuple:
+    if primary_prob >= CONFIDENCE_THRESHOLD:
+        return primary_label, primary_prob, False, None, {"sad": 0, "anxious": 0}
+
+    if primary_label not in ("sad", "anxious"):
+        return primary_label, primary_prob, False, None, {"sad": 0, "anxious": 0}
+
+    scores = keyword_score(text)
+    sad_hits = int(scores.get("sad", 0))
+    anxious_hits = int(scores.get("anxious", 0))
+    best_emotion = max(scores, key=scores.get)
+    best_hits = int(scores.get(best_emotion, 0))
+
+    if best_hits < MIN_KEYWORD_HITS:
+        return primary_label, primary_prob, False, None, {"sad": sad_hits, "anxious": anxious_hits}
+
+    if sad_hits == anxious_hits:
+        return primary_label, primary_prob, False, None, {"sad": sad_hits, "anxious": anxious_hits}
+
+    if best_emotion != primary_label:
+        reason = (
+            f"keyword override: '{best_emotion}' signals={best_hits} "
+            f"vs '{primary_label}' signals={scores.get(primary_label, 0)} "
+            f"(model was {primary_prob * 100:.1f}% confident)"
+        )
+        return best_emotion, primary_prob, True, reason, {"sad": sad_hits, "anxious": anxious_hits}
+
+    return primary_label, primary_prob, False, None, {"sad": sad_hits, "anxious": anxious_hits}
 
 
 def _model_kwargs():
@@ -288,8 +427,14 @@ def predict():
         primary_label = str(primary_label).strip().lower()
         if primary_label not in ALLOWED_LABELS:
             primary_label = "neutral"
-        sentiment_label = _derive_sentiment_from_emotion(primary_label)
-        sentiment_score = float(primary_prob)
+        final_label, final_prob, was_overridden, override_reason, keyword_hits = apply_keyword_layer(
+            text, primary_label, float(primary_prob)
+        )
+        final_label = str(final_label).strip().lower()
+        if final_label not in ALLOWED_LABELS:
+            final_label = "neutral"
+        sentiment_label = _derive_sentiment_from_emotion(final_label)
+        sentiment_score = float(final_prob)
     except Exception as e:
         _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
         return jsonify({"success": False, "error": _MODEL_STATE["error"], "ms": int((time.time() - started) * 1000)}), 500
@@ -298,13 +443,18 @@ def predict():
         {
             "success": True,
             "engine": "ml-service",
-            "primary_mood": primary_label,
-            "primary_prob": round(float(primary_prob), 6),
+            "primary_mood": final_label,
+            "primary_prob": round(float(final_prob), 6),
             "all_probs": {str(k).strip().lower(): round(float(v), 6) for k, v in pairs},
-            "emotionLabel": primary_label,
-            "emotionScore": round(float(primary_prob), 6),
+            "emotionLabel": final_label,
+            "emotionScore": round(float(final_prob), 6),
             "sentimentLabel": sentiment_label,
             "sentimentScore": round(float(max(0.0, min(1.0, sentiment_score))), 6),
+            "modelPrimaryLabel": primary_label,
+            "modelPrimaryProb": round(float(primary_prob), 6),
+            "keywordHits": keyword_hits,
+            "keywordOverrideApplied": bool(was_overridden),
+            "keywordOverrideReason": override_reason,
             "ms": int((time.time() - started) * 1000),
         }
     )

@@ -414,6 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok || !result.success || !result.entry) {
                 throw new Error(result.error || 'Failed to save entry.');
             }
+            const analysisEngine = (result.analysisEngine || '').toString().toLowerCase();
 
             const savedEntry = {
                 ...result.entry,
@@ -424,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
             console.log('Entry saved:', savedEntry);
 
-            showAnalysisResult(analysisOverlay, savedEntry);
+            showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback');
             localStorage.removeItem('diariCoreDraft');
         } catch (error) {
             console.error('Failed to save entry via API:', error);

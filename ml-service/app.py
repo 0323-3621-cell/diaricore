@@ -4,8 +4,10 @@ import threading
 from typing import Optional, Tuple
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from flask import Flask, jsonify, request
+from huggingface_hub import hf_hub_download
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
@@ -14,8 +16,8 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
 MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
-MODEL_DTYPE = (os.environ.get("MODEL_DTYPE", "").strip() or "").lower()
-USE_DYNAMIC_QUANT = (os.environ.get("MODEL_DYNAMIC_QUANT", "true").strip() or "true").lower() == "true"
+MODEL_DTYPE = (os.environ.get("MODEL_DTYPE", "").strip() or "float32").lower()
+USE_DYNAMIC_QUANT = (os.environ.get("MODEL_DYNAMIC_QUANT", "false").strip() or "false").lower() == "true"
 
 # Keep cache in a writable dir on Railway containers.
 os.environ.setdefault("HF_HOME", "/tmp/hf")
@@ -55,17 +57,47 @@ def _model_kwargs():
 
 
 def _choose_torch_dtype():
-    # Reduce RAM usage on CPU by using lower precision.
-    if torch.cuda.is_available():
-        return torch.float16
-
+    # Default to float32 for stability and parity with training.
     if MODEL_DTYPE in ("float16", "fp16"):
         return torch.float16
     if MODEL_DTYPE in ("bfloat16", "bf16"):
         return torch.bfloat16
+    if MODEL_DTYPE in ("float32", "fp32"):
+        return torch.float32
 
-    # Default CPU: bf16
-    return torch.bfloat16
+    return torch.float32
+
+
+class XLMRobertaMoodClassifier(nn.Module):
+    """
+    Compatible loader for checkpoints saved from the custom training class
+    where keys are prefixed with `xlm_roberta.*`.
+    """
+
+    def __init__(self, model_name: str, num_classes: int = 5, dropout: float = 0.4):
+        super().__init__()
+        self.xlm_roberta = AutoModelForSequenceClassification.from_pretrained(
+            model_name,
+            num_labels=num_classes,
+            hidden_dropout_prob=0.1,
+            attention_probs_dropout_prob=0.1,
+            ignore_mismatched_sizes=True,
+            **_model_kwargs(),
+        )
+        hidden_size = self.xlm_roberta.config.hidden_size
+        self.xlm_roberta.classifier = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.LayerNorm(hidden_size // 2),
+            nn.GELU(),
+            nn.Dropout(dropout / 2),
+            nn.Linear(hidden_size // 2, num_classes),
+        )
+
+    def forward(self, input_ids, attention_mask):
+        outputs = self.xlm_roberta.roberta(input_ids=input_ids, attention_mask=attention_mask)
+        cls_output = outputs.last_hidden_state[:, 0, :]
+        return self.xlm_roberta.classifier(cls_output)
 
 
 def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optional[list], Optional[str]]:
@@ -92,13 +124,21 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
 
             tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
             dtype = _choose_torch_dtype()
-            # low_cpu_mem_usage helps reduce peak RAM when loading weights.
-            mdl = AutoModelForSequenceClassification.from_pretrained(
-                HF_MODEL_ID,
-                low_cpu_mem_usage=True,
-                torch_dtype=dtype,
+
+            # Download raw state dict and load through compatible custom class.
+            state_path = hf_hub_download(
+                repo_id=HF_MODEL_ID,
+                filename="pytorch_model.bin",
                 **_model_kwargs(),
-            ).to(DEVICE)
+            )
+            state = torch.load(state_path, map_location="cpu")
+            if isinstance(state, dict) and "model_state_dict" in state:
+                state = state["model_state_dict"]
+
+            mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
+            missing, unexpected = mdl.load_state_dict(state, strict=False)
+            print(f"[ml-service] checkpoint load missing={len(missing)} unexpected={len(unexpected)}")
+            mdl = mdl.to(dtype=dtype)
             mdl.eval()
             if USE_DYNAMIC_QUANT and DEVICE.type == "cpu":
                 # Dynamic quantization reduces RAM a lot for Linear layers (int8 weights).
@@ -110,6 +150,8 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             cfg = getattr(mdl, "config", None)
             if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
                 labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+            if not labels:
+                labels = ["angry", "anxious", "happy", "neutral", "sad"]
 
             _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
             _MODEL_STATE["loaded"] = True
@@ -119,17 +161,25 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             # If lower precision fails due to operator incompatibilities, retry in float32.
             try:
                 tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
-                mdl = AutoModelForSequenceClassification.from_pretrained(
-                    HF_MODEL_ID,
-                    low_cpu_mem_usage=True,
-                    torch_dtype=torch.float32,
+                state_path = hf_hub_download(
+                    repo_id=HF_MODEL_ID,
+                    filename="pytorch_model.bin",
                     **_model_kwargs(),
-                ).to(DEVICE)
+                )
+                state = torch.load(state_path, map_location="cpu")
+                if isinstance(state, dict) and "model_state_dict" in state:
+                    state = state["model_state_dict"]
+
+                mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
+                mdl.load_state_dict(state, strict=False)
+                mdl = mdl.to(dtype=torch.float32)
                 mdl.eval()
                 cfg = getattr(mdl, "config", None)
                 labels = None
                 if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
                     labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+                if not labels:
+                    labels = ["angry", "anxious", "happy", "neutral", "sad"]
                 _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
                 _MODEL_STATE["loaded"] = True
                 _MODEL_STATE["loaded_at"] = int(time.time())

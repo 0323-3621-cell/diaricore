@@ -13,6 +13,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
 MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
+MODEL_DTYPE = (os.environ.get("MODEL_DTYPE", "").strip() or "").lower()
 
 # Keep cache in a writable dir on Railway containers.
 os.environ.setdefault("HF_HOME", "/tmp/hf")
@@ -50,6 +51,20 @@ def _model_kwargs():
     return {}
 
 
+def _choose_torch_dtype():
+    # Reduce RAM usage on CPU by using lower precision.
+    if torch.cuda.is_available():
+        return torch.float16
+
+    if MODEL_DTYPE in ("float16", "fp16"):
+        return torch.float16
+    if MODEL_DTYPE in ("bfloat16", "bf16"):
+        return torch.bfloat16
+
+    # Default CPU: bf16
+    return torch.bfloat16
+
+
 def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optional[list], Optional[str]]:
     global _TOKENIZER, _MODEL, _LABELS
     if _MODEL_STATE["loaded"]:
@@ -61,7 +76,14 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
     _MODEL_STATE["error"] = None
     try:
         tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
-        mdl = AutoModelForSequenceClassification.from_pretrained(HF_MODEL_ID, **_model_kwargs()).to(DEVICE)
+        dtype = _choose_torch_dtype()
+        # low_cpu_mem_usage helps reduce peak RAM when loading weights.
+        mdl = AutoModelForSequenceClassification.from_pretrained(
+            HF_MODEL_ID,
+            low_cpu_mem_usage=True,
+            torch_dtype=dtype,
+            **_model_kwargs(),
+        ).to(DEVICE)
         mdl.eval()
         labels = None
         cfg = getattr(mdl, "config", None)
@@ -73,8 +95,27 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
         _MODEL_STATE["loaded_at"] = int(time.time())
         return _TOKENIZER, _MODEL, _LABELS, None
     except Exception as e:
-        _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
-        return None, None, None, "error"
+        # If lower precision fails due to operator incompatibilities, retry in float32.
+        try:
+            tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
+            mdl = AutoModelForSequenceClassification.from_pretrained(
+                HF_MODEL_ID,
+                low_cpu_mem_usage=True,
+                torch_dtype=torch.float32,
+                **_model_kwargs(),
+            ).to(DEVICE)
+            mdl.eval()
+            cfg = getattr(mdl, "config", None)
+            labels = None
+            if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
+                labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+            _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
+            _MODEL_STATE["loaded"] = True
+            _MODEL_STATE["loaded_at"] = int(time.time())
+            return _TOKENIZER, _MODEL, _LABELS, None
+        except Exception:
+            _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
+            return None, None, None, "error"
     finally:
         _MODEL_STATE["loading"] = False
 

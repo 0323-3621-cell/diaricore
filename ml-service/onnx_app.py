@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 import onnxruntime as ort
 from flask import Flask, jsonify, request
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, list_repo_files
 from transformers import AutoTokenizer
 
 
@@ -18,12 +18,6 @@ MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
 
-# Hugging Face repo filenames (try several because exports differ slightly).
-ONNX_CANDIDATE_FILENAMES = [
-    "diari-core-model.onnx",
-    "diari-core_model.onnx",
-    "diari-core-model.onnx",
-]
 LABEL_MAP_FILENAME = os.environ.get("HF_LABEL_MAP_FILENAME", "label_map.json").strip()
 
 # Keep caches in writable dirs on Railway containers.
@@ -60,16 +54,28 @@ def _hf_kwargs() -> dict:
     return {"token": HF_TOKEN} if HF_TOKEN else {}
 
 
-def _download_first_available(repo_id: str, filenames: list[str]) -> Tuple[str, str]:
-    last_err: Optional[Exception] = None
-    for fn in filenames:
-        try:
-            path = hf_hub_download(repo_id=repo_id, filename=fn, **_hf_kwargs())
-            return fn, path
-        except Exception as e:
-            last_err = e
-            continue
-    raise RuntimeError(f"Could not download ONNX file. Last error: {type(last_err).__name__}: {last_err}")
+def _download_any_onnx_file(repo_id: str) -> Tuple[str, str]:
+    files = list_repo_files(repo_id=repo_id, **_hf_kwargs())
+    onnx_files = [f for f in files if f.lower().endswith(".onnx")]
+    if not onnx_files:
+        raise RuntimeError(f"No .onnx files found in repo {repo_id}")
+
+    # Prefer more specific filenames first (best-effort).
+    def _score(fn: str) -> int:
+        s = fn.lower()
+        score = 0
+        if "model" in s:
+            score += 3
+        if "diari" in s:
+            score += 2
+        if "core" in s:
+            score += 1
+        return score
+
+    onnx_files_sorted = sorted(onnx_files, key=_score, reverse=True)
+    chosen = onnx_files_sorted[0]
+    path = hf_hub_download(repo_id=repo_id, filename=chosen, **_hf_kwargs())
+    return chosen, path
 
 
 def _softmax(logits: np.ndarray) -> np.ndarray:
@@ -97,7 +103,7 @@ def _load_model_if_needed() -> Tuple[bool, Optional[str]]:
         _STATE["error"] = None
         try:
             # Download required artifacts from Hugging Face.
-            onnx_filename, onnx_path = _download_first_available(HF_MODEL_ID, ONNX_CANDIDATE_FILENAMES)
+            onnx_filename, onnx_path = _download_any_onnx_file(HF_MODEL_ID)
             label_map_path = hf_hub_download(
                 repo_id=HF_MODEL_ID,
                 filename=LABEL_MAP_FILENAME,

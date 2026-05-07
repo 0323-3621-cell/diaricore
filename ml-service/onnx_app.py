@@ -73,9 +73,21 @@ def _download_any_onnx_file(repo_id: str) -> Tuple[str, str]:
         return score
 
     onnx_files_sorted = sorted(onnx_files, key=_score, reverse=True)
-    chosen = onnx_files_sorted[0]
-    path = hf_hub_download(repo_id=repo_id, filename=chosen, **_hf_kwargs())
-    return chosen, path
+    last_err: Optional[Exception] = None
+    tried: list[str] = []
+    for candidate in onnx_files_sorted:
+        tried.append(candidate)
+        try:
+            path = hf_hub_download(repo_id=repo_id, filename=candidate, **_hf_kwargs())
+            return candidate, path
+        except Exception as e:
+            last_err = e
+            continue
+    raise RuntimeError(
+        f"Could not download any .onnx file from repo {repo_id}. "
+        f"Tried={tried[:5]}{'...' if len(tried) > 5 else ''}. "
+        f"Last error: {type(last_err).__name__}: {last_err}"
+    )
 
 
 def _softmax(logits: np.ndarray) -> np.ndarray:

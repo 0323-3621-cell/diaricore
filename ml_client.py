@@ -35,7 +35,16 @@ def analyze(text: str):
         with urllib.request.urlopen(req, timeout=ML_API_TIMEOUT_SECONDS) as resp:
             body = resp.read().decode("utf-8")
             data = json.loads(body or "{}")
-    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+    except urllib.error.HTTPError as e:
+        # HTTPError is a subclass of URLError; we handle it separately for status/body visibility.
+        try:
+            err_body = (e.read() or b"").decode("utf-8", errors="ignore")[:500]
+        except Exception:
+            err_body = ""
+        print(f"[ml_client] ML HTTPError status={getattr(e, 'code', None)} url={ML_API_URL} body={err_body}")
+        return _fallback()
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        print(f"[ml_client] ML request failed url={ML_API_URL} err={type(e).__name__}: {e}")
         return _fallback()
     except Exception:
         return _fallback()

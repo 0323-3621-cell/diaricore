@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 from typing import Optional, Tuple
 
 import torch
@@ -35,6 +36,7 @@ _MODEL_STATE: dict = {
 _TOKENIZER = None
 _MODEL = None
 _LABELS = None
+_LOAD_LOCK = threading.Lock()
 
 
 def _derive_sentiment_from_emotion(label: str) -> str:
@@ -73,64 +75,77 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
     if _MODEL_STATE["loading"]:
         return None, None, None, "loading"
 
-    _MODEL_STATE["loading"] = True
-    _MODEL_STATE["error"] = None
-    try:
-        # Reduce memory pressure on small instances.
-        try:
-            torch.set_num_threads(int(os.environ.get("TORCH_NUM_THREADS", "1")))
-        except Exception:
-            pass
+    with _LOAD_LOCK:
+        if _MODEL_STATE["loaded"]:
+            return _TOKENIZER, _MODEL, _LABELS, None
+        if _MODEL_STATE["loading"]:
+            return None, None, None, "loading"
 
-        tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
-        dtype = _choose_torch_dtype()
-        # low_cpu_mem_usage helps reduce peak RAM when loading weights.
-        mdl = AutoModelForSequenceClassification.from_pretrained(
-            HF_MODEL_ID,
-            low_cpu_mem_usage=True,
-            torch_dtype=dtype,
-            **_model_kwargs(),
-        ).to(DEVICE)
-        mdl.eval()
-        if USE_DYNAMIC_QUANT and DEVICE.type == "cpu":
-            # Dynamic quantization reduces RAM a lot for Linear layers (int8 weights).
+        _MODEL_STATE["loading"] = True
+        _MODEL_STATE["error"] = None
+        try:
+            # Reduce memory pressure on small instances.
             try:
-                mdl = torch.quantization.quantize_dynamic(mdl, {torch.nn.Linear}, dtype=torch.qint8)
+                torch.set_num_threads(int(os.environ.get("TORCH_NUM_THREADS", "1")))
             except Exception:
                 pass
-        labels = None
-        cfg = getattr(mdl, "config", None)
-        if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
-            labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
 
-        _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
-        _MODEL_STATE["loaded"] = True
-        _MODEL_STATE["loaded_at"] = int(time.time())
-        return _TOKENIZER, _MODEL, _LABELS, None
-    except Exception as e:
-        # If lower precision fails due to operator incompatibilities, retry in float32.
-        try:
             tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
+            dtype = _choose_torch_dtype()
+            # low_cpu_mem_usage helps reduce peak RAM when loading weights.
             mdl = AutoModelForSequenceClassification.from_pretrained(
                 HF_MODEL_ID,
                 low_cpu_mem_usage=True,
-                torch_dtype=torch.float32,
+                torch_dtype=dtype,
                 **_model_kwargs(),
             ).to(DEVICE)
             mdl.eval()
-            cfg = getattr(mdl, "config", None)
+            if USE_DYNAMIC_QUANT and DEVICE.type == "cpu":
+                # Dynamic quantization reduces RAM a lot for Linear layers (int8 weights).
+                try:
+                    mdl = torch.quantization.quantize_dynamic(mdl, {torch.nn.Linear}, dtype=torch.qint8)
+                except Exception:
+                    pass
             labels = None
+            cfg = getattr(mdl, "config", None)
             if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
                 labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+
             _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
             _MODEL_STATE["loaded"] = True
             _MODEL_STATE["loaded_at"] = int(time.time())
             return _TOKENIZER, _MODEL, _LABELS, None
-        except Exception:
-            _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
-            return None, None, None, "error"
-    finally:
-        _MODEL_STATE["loading"] = False
+        except Exception as e:
+            # If lower precision fails due to operator incompatibilities, retry in float32.
+            try:
+                tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
+                mdl = AutoModelForSequenceClassification.from_pretrained(
+                    HF_MODEL_ID,
+                    low_cpu_mem_usage=True,
+                    torch_dtype=torch.float32,
+                    **_model_kwargs(),
+                ).to(DEVICE)
+                mdl.eval()
+                cfg = getattr(mdl, "config", None)
+                labels = None
+                if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
+                    labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+                _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
+                _MODEL_STATE["loaded"] = True
+                _MODEL_STATE["loaded_at"] = int(time.time())
+                return _TOKENIZER, _MODEL, _LABELS, None
+            except Exception:
+                _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
+                return None, None, None, "error"
+        finally:
+            _MODEL_STATE["loading"] = False
+
+
+def _start_background_load():
+    if _MODEL_STATE["loaded"] or _MODEL_STATE["loading"]:
+        return
+    t = threading.Thread(target=_load_model_if_needed, daemon=True)
+    t.start()
 
 
 @app.get("/health")
@@ -148,8 +163,25 @@ def health():
     )
 
 
+@app.post("/warmup")
+def warmup():
+    _start_background_load()
+    return jsonify(
+        {
+            "success": True,
+            "message": "Model warmup started",
+            "loading": bool(_MODEL_STATE["loading"]),
+            "loaded": bool(_MODEL_STATE["loaded"]),
+            "error": _MODEL_STATE["error"],
+        }
+    ), 202
+
+
 @app.post("/predict")
 def predict():
+    if not _MODEL_STATE["loaded"]:
+        _start_background_load()
+
     _, _, _, state = _load_model_if_needed()
     if state == "loading":
         return jsonify({"success": False, "error": "model is loading"}), 503

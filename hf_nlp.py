@@ -14,6 +14,7 @@ HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
 
 EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "sseia/diari-core-mood").strip()
 HF_BASE_URL = "https://api-inference.huggingface.co/models"
+HF_ROUTER_URL = "https://router.huggingface.co/hf-inference/models"
 
 
 def _hf_headers() -> Dict[str, str]:
@@ -97,21 +98,43 @@ def analyze(text: str) -> Dict[str, object]:
     timeout = httpx.Timeout(10.0, connect=5.0)
     with httpx.Client(timeout=timeout, headers=_hf_headers()) as client:
         try:
-            url = f"{HF_BASE_URL}/{EMOTION_MODEL}"
-            response = client.post(
-                url,
-                json={
-                    "inputs": clean[:2000],
-                    "options": {"wait_for_model": True, "use_cache": True},
-                },
-            )
+            payload_in = {
+                "inputs": clean[:2000],
+                "options": {"wait_for_model": True, "use_cache": True},
+            }
+
+            # HF has migrated many models behind Inference Providers.
+            # Router endpoint works when "Make calls to Inference Providers" is enabled.
+            urls = [
+                f"{HF_ROUTER_URL}/{EMOTION_MODEL}",
+                f"{HF_BASE_URL}/{EMOTION_MODEL}",
+            ]
+
+            response = None
+            used_url = None
+            for url in urls:
+                used_url = url
+                try:
+                    response = client.post(url, json=payload_in)
+                except Exception:
+                    response = None
+                if response is None:
+                    continue
+                # If model isn't available on one endpoint, try the other.
+                if response.status_code in (404, 410):
+                    continue
+                break
+
+            if response is None:
+                return _fallback(clean)
+
             if response.status_code != 200:
                 try:
                     err = response.json()
                 except Exception:
                     err = {"error": "non-json error"}
                 print(
-                    f"[HF NLP] emotion error status={response.status_code} model={EMOTION_MODEL} url={url} body_keys={list(err)[:5]}"
+                    f"[HF NLP] emotion error status={response.status_code} model={EMOTION_MODEL} url={used_url} body_keys={list(err)[:5]}"
                 )
                 return _fallback(clean)
 

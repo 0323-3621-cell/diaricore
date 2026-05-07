@@ -517,6 +517,35 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${(Math.max(0, Math.min(1, n)) * 100).toFixed(1)}%`;
     }
 
+    function toTitleCase(text) {
+        return (text || '')
+            .toString()
+            .toLowerCase()
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+
+    function buildSignalPairs(entry, primaryEmotion, primaryScore) {
+        const allowed = ['sad', 'anxious', 'angry', 'happy', 'neutral'];
+        const allProbs = entry && typeof entry.all_probs === 'object' ? entry.all_probs : null;
+
+        if (allProbs) {
+            const merged = {};
+            allowed.forEach((label) => {
+                merged[label] = Number(allProbs[label] || 0);
+            });
+            if (primaryEmotion && primaryEmotion in merged) {
+                merged[primaryEmotion] = Number(primaryScore || merged[primaryEmotion] || 0);
+            }
+            return Object.entries(merged).sort((a, b) => b[1] - a[1]);
+        }
+
+        const fallback = {};
+        allowed.forEach((label) => {
+            fallback[label] = label === primaryEmotion ? Number(primaryScore || 0.5) : 0;
+        });
+        return Object.entries(fallback).sort((a, b) => b[1] - a[1]);
+    }
+
     function showAnalysisResult(overlay, entry, isFallback = false) {
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
@@ -525,16 +554,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const score = Number(entry.emotionScore || entry.sentimentScore || 0.5);
         const sentiment = (entry.sentimentLabel || 'neutral').toString().toLowerCase();
         const valence = sentiment === 'positive' ? 'Positive' : sentiment === 'negative' ? 'Negative' : 'Balanced';
+        const pairs = buildSignalPairs(entry, emotion, score);
+        const secondary = pairs[1] && Number(pairs[1][1]) >= 0.15 ? pairs[1] : null;
+        const signalsHtml = pairs
+            .map(([label, prob]) => `<div class="mood-analysis-signal-row"><span>${label}</span><span>${formatPct(prob)}</span></div>`)
+            .join('');
 
         body.innerHTML = `
             <div class="mood-analysis-result">
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Primary Mood</span><span class="mood-analysis-value">${emotion.toUpperCase()} (${formatPct(score)})</span></div>
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Secondary Mood</span><span class="mood-analysis-value">None (no strong secondary signal)</span></div>
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Emotional Signals</span><span class="mood-analysis-value">${emotion}: ${formatPct(score)}</span></div>
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Valence</span><span class="mood-analysis-value">${valence}</span></div>
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Energy</span><span class="mood-analysis-value">${computeEnergy(score)}</span></div>
-                <div class="mood-analysis-row"><span class="mood-analysis-label">Interpretation</span><span class="mood-analysis-value">${computeInterpretation(score)}</span></div>
-                ${isFallback ? '<div class="mood-analysis-row"><span class="mood-analysis-label">Note</span><span class="mood-analysis-value">Saved with fallback analysis</span></div>' : ''}
+                <div class="mood-analysis-group">
+                    <div class="mood-analysis-row"><span class="mood-analysis-label">Primary Mood</span><span class="mood-analysis-value">${toTitleCase(emotion)} (${formatPct(score)})</span></div>
+                    <div class="mood-analysis-row"><span class="mood-analysis-label">Secondary Mood</span><span class="mood-analysis-value">${secondary ? `${toTitleCase(secondary[0])} (${formatPct(secondary[1])})` : 'None (no strong secondary signal)'}</span></div>
+                </div>
+                <div class="mood-analysis-group">
+                    <div class="mood-analysis-row mood-analysis-row--stack">
+                        <span class="mood-analysis-label">Emotional Signals</span>
+                        <div class="mood-analysis-signals">${signalsHtml}</div>
+                    </div>
+                </div>
+                <div class="mood-analysis-group">
+                    <div class="mood-analysis-row"><span class="mood-analysis-label">Valence</span><span class="mood-analysis-value">${valence}</span></div>
+                    <div class="mood-analysis-row"><span class="mood-analysis-label">Energy</span><span class="mood-analysis-value">${computeEnergy(score)}</span></div>
+                    <div class="mood-analysis-row"><span class="mood-analysis-label">Interpretation</span><span class="mood-analysis-value">${computeInterpretation(score)}</span></div>
+                </div>
+                ${isFallback ? '<div class="mood-analysis-note">Saved with fallback analysis</div>' : ''}
             </div>
         `;
         footer.style.display = 'flex';

@@ -10,10 +10,11 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
-MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "128"))
+MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
 MODEL_DTYPE = (os.environ.get("MODEL_DTYPE", "").strip() or "").lower()
+USE_DYNAMIC_QUANT = (os.environ.get("MODEL_DYNAMIC_QUANT", "true").strip() or "true").lower() == "true"
 
 # Keep cache in a writable dir on Railway containers.
 os.environ.setdefault("HF_HOME", "/tmp/hf")
@@ -75,6 +76,12 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
     _MODEL_STATE["loading"] = True
     _MODEL_STATE["error"] = None
     try:
+        # Reduce memory pressure on small instances.
+        try:
+            torch.set_num_threads(int(os.environ.get("TORCH_NUM_THREADS", "1")))
+        except Exception:
+            pass
+
         tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
         dtype = _choose_torch_dtype()
         # low_cpu_mem_usage helps reduce peak RAM when loading weights.
@@ -85,6 +92,12 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             **_model_kwargs(),
         ).to(DEVICE)
         mdl.eval()
+        if USE_DYNAMIC_QUANT and DEVICE.type == "cpu":
+            # Dynamic quantization reduces RAM a lot for Linear layers (int8 weights).
+            try:
+                mdl = torch.quantization.quantize_dynamic(mdl, {torch.nn.Linear}, dtype=torch.qint8)
+            except Exception:
+                pass
         labels = None
         cfg = getattr(mdl, "config", None)
         if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:

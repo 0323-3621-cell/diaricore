@@ -1,11 +1,14 @@
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
 
 ML_API_URL = os.environ.get("ML_API_URL", "http://127.0.0.1:5001/predict").strip()
 ML_API_TIMEOUT_SECONDS = float(os.environ.get("ML_API_TIMEOUT_SECONDS", "25").strip() or "25")
+ML_API_LOADING_RETRIES = int(os.environ.get("ML_API_LOADING_RETRIES", "8").strip() or "8")
+ML_API_LOADING_SLEEP_SECONDS = float(os.environ.get("ML_API_LOADING_SLEEP_SECONDS", "2").strip() or "2")
 
 
 def _fallback():
@@ -24,29 +27,48 @@ def analyze(text: str):
         return _fallback()
 
     payload = json.dumps({"text": clean}).encode("utf-8")
-    req = urllib.request.Request(
-        ML_API_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    def _make_req():
+        return urllib.request.Request(
+            ML_API_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
 
-    try:
-        with urllib.request.urlopen(req, timeout=ML_API_TIMEOUT_SECONDS) as resp:
-            body = resp.read().decode("utf-8")
-            data = json.loads(body or "{}")
-    except urllib.error.HTTPError as e:
-        # HTTPError is a subclass of URLError; we handle it separately for status/body visibility.
+    last_err = None
+    for attempt in range(max(1, ML_API_LOADING_RETRIES)):
         try:
-            err_body = (e.read() or b"").decode("utf-8", errors="ignore")[:500]
-        except Exception:
-            err_body = ""
-        print(f"[ml_client] ML HTTPError status={getattr(e, 'code', None)} url={ML_API_URL} body={err_body}")
-        return _fallback()
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        print(f"[ml_client] ML request failed url={ML_API_URL} err={type(e).__name__}: {e}")
-        return _fallback()
-    except Exception:
+            with urllib.request.urlopen(_make_req(), timeout=ML_API_TIMEOUT_SECONDS) as resp:
+                body = resp.read().decode("utf-8")
+                data = json.loads(body or "{}")
+                last_err = None
+                break
+        except urllib.error.HTTPError as e:
+            # HTTPError is a subclass of URLError; we handle it separately for status/body visibility.
+            code = getattr(e, "code", None)
+            try:
+                err_body = (e.read() or b"").decode("utf-8", errors="ignore")[:500]
+            except Exception:
+                err_body = ""
+
+            # If model is still warming up, wait and retry instead of falling back immediately.
+            if code == 503 and ("model is loading" in err_body.lower()):
+                last_err = f"503 loading (attempt {attempt + 1}/{ML_API_LOADING_RETRIES})"
+                time.sleep(ML_API_LOADING_SLEEP_SECONDS)
+                continue
+
+            print(f"[ml_client] ML HTTPError status={code} url={ML_API_URL} body={err_body}")
+            return _fallback()
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            last_err = f"{type(e).__name__}: {e}"
+            print(f"[ml_client] ML request failed url={ML_API_URL} err={type(e).__name__}: {e}")
+            return _fallback()
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"
+            return _fallback()
+
+    if last_err is not None:
+        print(f"[ml_client] ML still loading after retries url={ML_API_URL} last_err={last_err}")
         return _fallback()
 
     if not isinstance(data, dict):

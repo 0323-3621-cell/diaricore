@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
 import db
-import hf_nlp
+import ml_client
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -568,7 +568,7 @@ def api_entries_post():
     if not user:
         return jsonify({"success": False, "error": "User not found."}), 404
 
-    analysis = hf_nlp.analyze(text)
+    analysis = ml_client.analyze(text)
     row = db.create_journal_entry(
         user_id=user_id,
         text_content=text,
@@ -578,7 +578,7 @@ def api_entries_post():
         emotion_label=analysis["emotionLabel"],
         emotion_score=float(analysis["emotionScore"]),
     )
-    return jsonify({"success": True, "entry": serialize_entry(row), "analysisEngine": analysis.get("engine", "hf-custom")}), 201
+    return jsonify({"success": True, "entry": serialize_entry(row), "analysisEngine": analysis.get("engine", "ml-service")}), 201
 
 
 @app.route("/")

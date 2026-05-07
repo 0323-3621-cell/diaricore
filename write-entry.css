@@ -634,3 +634,117 @@
         padding: 0.65rem 1rem;
     }
 }
+
+.mood-analysis-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 24, 28, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.mood-analysis-overlay[hidden] {
+    display: none;
+}
+
+.mood-analysis-card {
+    width: min(560px, 100%);
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--box-shadow-hover);
+    color: var(--text-dark);
+    overflow: hidden;
+}
+
+.mood-analysis-card__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-soft);
+}
+
+.mood-analysis-card__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.mood-analysis-card__body {
+    padding: 1rem 1.25rem 1.1rem;
+}
+
+.mood-analysis-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.mood-analysis-spinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(var(--primary-rgb, 111, 143, 127), 0.2);
+    border-top-color: var(--primary-color);
+    animation: moodSpin 0.8s linear infinite;
+}
+
+@keyframes moodSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.mood-analysis-result {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.mood-analysis-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.7rem;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 0.45rem;
+}
+
+.mood-analysis-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.mood-analysis-label {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.mood-analysis-value {
+    color: var(--text-dark);
+    font-weight: 700;
+    text-align: right;
+}
+
+.mood-analysis-card__footer {
+    border-top: 1px solid var(--border-color);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.mood-analysis-btn {
+    border: none;
+    border-radius: 10px;
+    background: var(--primary-color);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.9rem;
+    cursor: pointer;
+}

@@ -396,6 +396,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUser = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
         const userId = Number(currentUser?.id || 0);
 
+        setSavingState(true);
+        const analysisOverlay = ensureAnalysisOverlay();
+        showAnalysisLoading(analysisOverlay);
+
         try {
             const response = await fetch('/api/entries', {
                 method: 'POST',
@@ -420,10 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
             console.log('Entry saved:', savedEntry);
 
-            showSuccessMessage();
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 2000);
+            showAnalysisResult(analysisOverlay, savedEntry);
+            localStorage.removeItem('diariCoreDraft');
         } catch (error) {
             console.error('Failed to save entry via API:', error);
             const fallbackEntry = {
@@ -436,10 +438,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(fallbackEntry);
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
-            showSuccessMessage();
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 2000);
+            showAnalysisResult(analysisOverlay, fallbackEntry, true);
+            localStorage.removeItem('diariCoreDraft');
+        } finally {
+            setSavingState(false);
         }
     }
 
@@ -461,48 +463,93 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Success message
-    function showSuccessMessage() {
-        const successDiv = document.createElement('div');
-        successDiv.className = 'success-message';
-        successDiv.innerHTML = `
-            <i class="bi bi-check-circle"></i>
-            <span>Entry saved successfully!</span>
+    function ensureAnalysisOverlay() {
+        let overlay = document.getElementById('moodAnalysisOverlay');
+        if (overlay) return overlay;
+
+        overlay = document.createElement('div');
+        overlay.id = 'moodAnalysisOverlay';
+        overlay.className = 'mood-analysis-overlay';
+        overlay.hidden = true;
+        overlay.innerHTML = `
+            <div class="mood-analysis-card">
+                <div class="mood-analysis-card__header">
+                    <h3 class="mood-analysis-card__title">Mood Analysis</h3>
+                </div>
+                <div class="mood-analysis-card__body" id="moodAnalysisBody"></div>
+                <div class="mood-analysis-card__footer">
+                    <button type="button" class="mood-analysis-btn" id="moodAnalysisContinueBtn">Continue</button>
+                </div>
+            </div>
         `;
-        
-        // Style the success message
-        successDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: var(--success-color);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 500;
-            z-index: 1000;
-            box-shadow: var(--box-shadow-hover);
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    function showAnalysisLoading(overlay) {
+        const body = overlay.querySelector('#moodAnalysisBody');
+        const footer = overlay.querySelector('.mood-analysis-card__footer');
+        body.innerHTML = `
+            <div class="mood-analysis-loading">
+                <span class="mood-analysis-spinner" aria-hidden="true"></span>
+                <span>Analyzing mood...</span>
+            </div>
         `;
-        
-        document.body.appendChild(successDiv);
-        
-        // Animate in
-        setTimeout(() => {
-            successDiv.style.transform = 'translateX(0)';
-        }, 10);
-        
-        // Remove after 2 seconds
-        setTimeout(() => {
-            successDiv.style.transform = 'translateX(100%)';
-            setTimeout(() => {
-                document.body.removeChild(successDiv);
-            }, 300);
-        }, 2000);
+        footer.style.display = 'none';
+        overlay.hidden = false;
+    }
+
+    function computeEnergy(score) {
+        if (score >= 0.65) return 'High';
+        if (score >= 0.45) return 'Moderate';
+        return 'Low';
+    }
+
+    function computeInterpretation(score) {
+        if (score >= 0.65) return 'Clear dominant mood';
+        if (score >= 0.45) return 'Mixed emotional signals';
+        return 'Highly mixed / ambiguous';
+    }
+
+    function formatPct(value) {
+        const n = Number(value || 0.5);
+        return `${(Math.max(0, Math.min(1, n)) * 100).toFixed(1)}%`;
+    }
+
+    function showAnalysisResult(overlay, entry, isFallback = false) {
+        const body = overlay.querySelector('#moodAnalysisBody');
+        const footer = overlay.querySelector('.mood-analysis-card__footer');
+        const continueBtn = overlay.querySelector('#moodAnalysisContinueBtn');
+        const emotion = (entry.emotionLabel || entry.feeling || 'neutral').toString().toLowerCase();
+        const score = Number(entry.emotionScore || entry.sentimentScore || 0.5);
+        const sentiment = (entry.sentimentLabel || 'neutral').toString().toLowerCase();
+        const valence = sentiment === 'positive' ? 'Positive' : sentiment === 'negative' ? 'Negative' : 'Balanced';
+
+        body.innerHTML = `
+            <div class="mood-analysis-result">
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Primary Mood</span><span class="mood-analysis-value">${emotion.toUpperCase()} (${formatPct(score)})</span></div>
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Secondary Mood</span><span class="mood-analysis-value">None (no strong secondary signal)</span></div>
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Emotional Signals</span><span class="mood-analysis-value">${emotion}: ${formatPct(score)}</span></div>
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Valence</span><span class="mood-analysis-value">${valence}</span></div>
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Energy</span><span class="mood-analysis-value">${computeEnergy(score)}</span></div>
+                <div class="mood-analysis-row"><span class="mood-analysis-label">Interpretation</span><span class="mood-analysis-value">${computeInterpretation(score)}</span></div>
+                ${isFallback ? '<div class="mood-analysis-row"><span class="mood-analysis-label">Note</span><span class="mood-analysis-value">Saved with fallback analysis</span></div>' : ''}
+            </div>
+        `;
+        footer.style.display = 'flex';
+        continueBtn.onclick = () => {
+            overlay.hidden = true;
+            window.location.href = 'dashboard.html';
+        };
+    }
+
+    function setSavingState(isSaving) {
+        const buttons = document.querySelectorAll('#saveEntryBtn, .btn-save-entry');
+        buttons.forEach((btn) => {
+            btn.disabled = isSaving;
+            btn.style.opacity = isSaving ? '0.75' : '1';
+            btn.style.cursor = isSaving ? 'not-allowed' : 'pointer';
+        });
     }
     
     // Auto-save functionality (optional)
@@ -562,12 +609,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load draft on page load
     loadDraft();
     
-    // Clear draft on successful save
-    saveEntryButtons.forEach((btn) => {
-        btn.addEventListener('click', function () {
-            if (journalText.value.trim()) {
-                localStorage.removeItem('diariCoreDraft');
-            }
-        });
-    });
 });

@@ -15,6 +15,7 @@ HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
 EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "sseia/diari-core-mood").strip()
 HF_BASE_URL = "https://api-inference.huggingface.co/models"
 HF_ROUTER_URL = "https://router.huggingface.co/hf-inference/models"
+HF_ROUTER_BASE_URL = "https://router.huggingface.co/hf-inference"
 
 
 def _hf_headers() -> Dict[str, str]:
@@ -106,6 +107,9 @@ def analyze(text: str) -> Dict[str, object]:
             # HF has migrated many models behind Inference Providers.
             # Router endpoint works when "Make calls to Inference Providers" is enabled.
             urls = [
+                # Newer router format: model passed in header.
+                HF_ROUTER_BASE_URL,
+                # Older router format: model in path.
                 f"{HF_ROUTER_URL}/{EMOTION_MODEL}",
                 f"{HF_BASE_URL}/{EMOTION_MODEL}",
             ]
@@ -115,7 +119,10 @@ def analyze(text: str) -> Dict[str, object]:
             for url in urls:
                 used_url = url
                 try:
-                    response = client.post(url, json=payload_in)
+                    if url == HF_ROUTER_BASE_URL:
+                        response = client.post(url, json=payload_in, headers={**_hf_headers(), "x-hf-model": EMOTION_MODEL})
+                    else:
+                        response = client.post(url, json=payload_in)
                 except Exception:
                     response = None
                 if response is None:

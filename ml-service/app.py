@@ -138,7 +138,8 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
             missing, unexpected = mdl.load_state_dict(state, strict=False)
             print(f"[ml-service] checkpoint load missing={len(missing)} unexpected={len(unexpected)}")
-            mdl = mdl.to(dtype=dtype)
+            # Keep everything in float32 for runtime stability on CPU.
+            mdl = mdl.to(dtype=torch.float32)
             mdl.eval()
             if USE_DYNAMIC_QUANT and DEVICE.type == "cpu":
                 # Dynamic quantization reduces RAM a lot for Linear layers (int8 weights).
@@ -256,7 +257,8 @@ def predict():
 
         with torch.no_grad():
             out = _MODEL(input_ids=input_ids, attention_mask=attention_mask)
-            logits = out.logits
+            # Custom wrapper returns raw logits tensor; transformers models return object with .logits.
+            logits = out.logits if hasattr(out, "logits") else out
             probs = F.softmax(logits, dim=1).detach().cpu().numpy()[0].tolist()
 
         labels = _LABELS or [str(i) for i in range(len(probs))]

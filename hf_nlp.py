@@ -1,10 +1,5 @@
 """
-Hugging Face Inference API client for sentiment + emotion.
-
-Designed for Railway free tier:
-- No torch/transformers dependency
-- Short timeouts
-- Safe fallback if API token missing or provider errors
+Hugging Face Inference API client for DiariCore mood analysis.
 """
 
 from __future__ import annotations
@@ -17,15 +12,8 @@ import httpx
 
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
 
-# Multilingual sentiment model
-SENTIMENT_MODEL = os.environ.get("HF_SENTIMENT_MODEL", "cardiffnlp/twitter-xlm-roberta-base-sentiment").strip()
-
-# Multilingual emotion model (19 languages; best-effort for Tagalog)
-EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "MilaNLProc/xlm-emo-t").strip()
-
+EMOTION_MODEL = os.environ.get("HF_EMOTION_MODEL", "your-username/diari-core-mood").strip()
 HF_BASE_URL = "https://api-inference.huggingface.co/models"
-HF_ROUTER_BASE_URL = "https://router.huggingface.co/hf-inference/models"
-HF_PIPELINE_BASE_URL = "https://api-inference.huggingface.co/pipeline"
 
 
 def _hf_headers() -> Dict[str, str]:
@@ -34,45 +22,12 @@ def _hf_headers() -> Dict[str, str]:
     return {"Authorization": f"Bearer {HF_API_TOKEN}", "Content-Type": "application/json"}
 
 
-def _normalize_sentiment(label: str) -> str:
-    raw = (label or "").strip().lower()
-    if "positive" in raw:
+def _derive_sentiment_from_emotion(emotion_label: str) -> str:
+    raw = (emotion_label or "").strip().lower()
+    if raw == "happy":
         return "positive"
-    if "negative" in raw:
+    if raw in ("angry", "anxious", "sad"):
         return "negative"
-    return "neutral"
-
-
-def _normalize_emotion(label: str) -> str:
-    raw = (label or "").strip().lower()
-    # Keep UI-compatible categories
-    if not raw:
-        return "neutral"
-    if any(k in raw for k in ("joy", "happiness", "love", "optimism", "trust")):
-        return "happy"
-    if any(k in raw for k in ("sad", "grief", "sorrow")):
-        return "sad"
-    if any(k in raw for k in ("anger", "angry", "rage", "annoy")):
-        return "angry"
-    if any(k in raw for k in ("fear", "anx", "stress", "worry", "nervous")):
-        return "stressed"
-    if any(k in raw for k in ("surprise", "excit", "anticipation")):
-        return "excited"
-    if any(k in raw for k in ("calm", "peace", "relax")):
-        return "calm"
-    if "neutral" in raw:
-        return "neutral"
-    return "neutral"
-
-
-def _resolve_final_emotion(sentiment_label: str, sentiment_score: float, emotion_label: str) -> str:
-    # Smooth mixed outputs so charts are less noisy when emotion model returns neutral.
-    if emotion_label != "neutral":
-        return emotion_label
-    if sentiment_label == "positive" and sentiment_score >= 0.62:
-        return "happy"
-    if sentiment_label == "negative" and sentiment_score >= 0.62:
-        return "stressed"
     return "neutral"
 
 
@@ -141,84 +96,46 @@ def analyze(text: str) -> Dict[str, object]:
     started = time.time()
     timeout = httpx.Timeout(10.0, connect=5.0)
     with httpx.Client(timeout=timeout, headers=_hf_headers()) as client:
-        def _call_model(model_name: str, task_hint: str):
-            """
-            Try multiple Hugging Face endpoint patterns because provider routing differs by model.
-            """
-            urls = [
-                f"{HF_ROUTER_BASE_URL}/{model_name}",
-                f"{HF_BASE_URL}/{model_name}",
-                f"{HF_PIPELINE_BASE_URL}/text-classification/{model_name}",
-            ]
-            if task_hint == "sentiment":
-                urls.append(f"{HF_PIPELINE_BASE_URL}/sentiment-analysis/{model_name}")
-            last_response = None
-            for url in urls:
-                try:
-                    response = client.post(
-                        url,
-                        json={
-                            "inputs": clean[:2000],
-                            "options": {"wait_for_model": True, "use_cache": True},
-                        },
-                    )
-                    last_response = response
-                    # Try another endpoint on deprecations / unsupported routes.
-                    if response.status_code in (404, 410):
-                        continue
-                    return response
-                except Exception:
-                    continue
-            return last_response
-
         try:
-            sent_resp = _call_model(SENTIMENT_MODEL, "sentiment")
-            if sent_resp is None:
-                return _fallback(clean)
-            if sent_resp.status_code != 200:
+            url = f"{HF_BASE_URL}/{EMOTION_MODEL}"
+            response = client.post(
+                url,
+                json={
+                    "inputs": clean[:2000],
+                    "options": {"wait_for_model": True, "use_cache": True},
+                },
+            )
+            if response.status_code != 200:
                 try:
-                    err = sent_resp.json()
+                    err = response.json()
                 except Exception:
                     err = {"error": "non-json error"}
-                print(f"[HF NLP] sentiment error status={sent_resp.status_code} body_keys={list(err)[:5]}")
-                return _fallback(clean)
-            sent_json = sent_resp.json()
-            if isinstance(sent_json, dict) and ("error" in sent_json or "estimated_time" in sent_json):
-                print(f"[HF NLP] sentiment error body_keys={list(sent_json)[:5]}")
-                return _fallback(clean)
-            sent_label_raw, sent_score = _pick_best_label(sent_json)
-            sentiment_label = _normalize_sentiment(sent_label_raw or "")
-            sentiment_score = float(sent_score or 0.5)
-            if sent_label_raw is None:
+                print(f"[HF NLP] emotion error status={response.status_code} body_keys={list(err)[:5]}")
                 return _fallback(clean)
 
-            emo_resp = _call_model(EMOTION_MODEL, "emotion")
-            if emo_resp is None:
+            payload = response.json()
+            if isinstance(payload, dict) and ("error" in payload or "estimated_time" in payload):
+                print(f"[HF NLP] emotion error body_keys={list(payload)[:5]}")
                 return _fallback(clean)
-            if emo_resp.status_code != 200:
-                try:
-                    err = emo_resp.json()
-                except Exception:
-                    err = {"error": "non-json error"}
-                print(f"[HF NLP] emotion error status={emo_resp.status_code} body_keys={list(err)[:5]}")
+
+            emotion_label_raw, emotion_score = _pick_best_label(payload)
+            if not emotion_label_raw:
                 return _fallback(clean)
-            emo_json = emo_resp.json()
-            if isinstance(emo_json, dict) and ("error" in emo_json or "estimated_time" in emo_json):
-                print(f"[HF NLP] emotion error body_keys={list(emo_json)[:5]}")
+
+            emotion_label = str(emotion_label_raw).strip().lower()
+            if emotion_label not in ("angry", "anxious", "happy", "neutral", "sad"):
                 return _fallback(clean)
-            emo_label_raw, emo_score = _pick_best_label(emo_json)
-            emotion_label = _normalize_emotion(emo_label_raw or "")
-            emotion_score = float(emo_score or 0.5)
-            if emo_label_raw is None:
-                return _fallback(clean)
-            emotion_label = _resolve_final_emotion(sentiment_label, sentiment_score, emotion_label)
+
+            emotion_score_f = float(emotion_score or 0.5)
+            sentiment_label = _derive_sentiment_from_emotion(emotion_label)
+            sentiment_score = emotion_score_f
 
             return {
                 "sentimentLabel": sentiment_label,
                 "sentimentScore": round(sentiment_score, 4),
                 "emotionLabel": emotion_label,
-                "emotionScore": round(emotion_score, 4),
-                "engine": "hf",
+                "emotionScore": round(emotion_score_f, 4),
+                "engine": "hf-custom",
                 "ms": int((time.time() - started) * 1000),
             }
         except Exception:

@@ -26,6 +26,13 @@ os.environ.setdefault("HF_HUB_CACHE", "/tmp/hf/hub")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ALLOWED_LABELS = ("angry", "anxious", "happy", "neutral", "sad")
+CALIBRATION_THRESHOLDS = {
+    "angry": 1.40,
+    "sad": 1.30,
+    "neutral": 1.35,
+    "happy": 0.75,
+    "anxious": 0.70,
+}
 
 app = Flask(__name__)
 
@@ -249,7 +256,14 @@ def predict():
     if word_count > WORD_MAX:
         return jsonify({"success": False, "error": "text is too long"}), 400
 
-    encoding = _TOKENIZER(text, max_length=MAX_LEN, padding=True, truncation=True, return_tensors="pt")
+    encoding = _TOKENIZER(
+        text,
+        add_special_tokens=True,
+        max_length=MAX_LEN,
+        padding="max_length",
+        truncation=True,
+        return_tensors="pt",
+    )
     started = time.time()
     try:
         input_ids = encoding["input_ids"].to(DEVICE)
@@ -262,7 +276,14 @@ def predict():
             probs = F.softmax(logits, dim=1).detach().cpu().numpy()[0].tolist()
 
         labels = _LABELS or [str(i) for i in range(len(probs))]
-        pairs = sorted(zip(labels, probs), key=lambda x: x[1], reverse=True)
+        # Match notebook behavior: apply per-class calibration multipliers.
+        calibrated_probs = list(probs)
+        for idx, label in enumerate(labels):
+            calibrated_probs[idx] *= CALIBRATION_THRESHOLDS.get(str(label).strip().lower(), 1.0)
+        total = float(sum(calibrated_probs)) or 1.0
+        calibrated_probs = [float(v) / total for v in calibrated_probs]
+
+        pairs = sorted(zip(labels, calibrated_probs), key=lambda x: x[1], reverse=True)
         primary_label, primary_prob = pairs[0]
         primary_label = str(primary_label).strip().lower()
         if primary_label not in ALLOWED_LABELS:

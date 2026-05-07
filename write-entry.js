@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatPct(value) {
-        const n = Number(value || 0.5);
+        const n = Number(value ?? 0);
         return `${(Math.max(0, Math.min(1, n)) * 100).toFixed(1)}%`;
     }
 

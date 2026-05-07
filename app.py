@@ -578,7 +578,9 @@ def api_entries_post():
         emotion_label=analysis["emotionLabel"],
         emotion_score=float(analysis["emotionScore"]),
     )
-    return jsonify({"success": True, "entry": serialize_entry(row), "analysisEngine": analysis.get("engine", "ml-service")}), 201
+    response_entry = serialize_entry(row)
+    response_entry["all_probs"] = analysis.get("all_probs") or {}
+    return jsonify({"success": True, "entry": response_entry, "analysisEngine": analysis.get("engine", "ml-service")}), 201
 
 
 @app.route("/")

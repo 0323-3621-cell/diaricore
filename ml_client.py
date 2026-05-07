@@ -17,6 +17,13 @@ def _fallback():
         "sentimentScore": 0.5,
         "emotionLabel": "neutral",
         "emotionScore": 0.5,
+        "all_probs": {
+            "sad": 0.0,
+            "anxious": 0.0,
+            "angry": 0.0,
+            "happy": 0.0,
+            "neutral": 1.0,
+        },
         "engine": "fallback",
     }
 
@@ -94,10 +101,19 @@ def analyze(text: str):
     sentiment_score = max(0.0, min(1.0, sentiment_score))
     emotion_score = max(0.0, min(1.0, emotion_score))
 
+    raw_probs = data.get("all_probs") if isinstance(data.get("all_probs"), dict) else {}
+    normalized_probs = {}
+    for key in ("sad", "anxious", "angry", "happy", "neutral"):
+        try:
+            normalized_probs[key] = max(0.0, min(1.0, float(raw_probs.get(key, 0.0))))
+        except Exception:
+            normalized_probs[key] = 0.0
+
     return {
         "sentimentLabel": sentiment_label,
         "sentimentScore": sentiment_score,
         "emotionLabel": emotion_label,
         "emotionScore": emotion_score,
+        "all_probs": normalized_probs,
         "engine": str(data.get("engine") or "ml-service"),
     }

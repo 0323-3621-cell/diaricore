@@ -99,7 +99,10 @@ def analyze(text: str) -> Dict[str, object]:
     timeout = httpx.Timeout(10.0, connect=5.0)
     with httpx.Client(timeout=timeout, headers=_hf_headers()) as client:
         try:
-            payload_in = {
+            # Router (Inference Providers) is stricter about payload shape than legacy api-inference.
+            # Keep it minimal: `inputs` + optional `parameters`.
+            payload_router = {"inputs": clean[:2000], "parameters": {"top_k": 5}}
+            payload_legacy = {
                 "inputs": clean[:2000],
                 "options": {"wait_for_model": True, "use_cache": True},
             }
@@ -120,9 +123,17 @@ def analyze(text: str) -> Dict[str, object]:
                 used_url = url
                 try:
                     if url == HF_ROUTER_BASE_URL:
-                        response = client.post(url, json=payload_in, headers={**_hf_headers(), "x-hf-model": EMOTION_MODEL})
+                        response = client.post(
+                            url,
+                            json=payload_router,
+                            headers={**_hf_headers(), "x-hf-model": EMOTION_MODEL},
+                        )
                     else:
-                        response = client.post(url, json=payload_in)
+                        # Router model-in-path
+                        if url.startswith(HF_ROUTER_URL):
+                            response = client.post(url, json=payload_router)
+                        else:
+                            response = client.post(url, json=payload_legacy)
                 except Exception:
                     response = None
                 if response is None:
@@ -139,9 +150,9 @@ def analyze(text: str) -> Dict[str, object]:
                 try:
                     err = response.json()
                 except Exception:
-                    err = {"error": "non-json error"}
+                    err = {"error": (response.text or "non-json error")}
                 print(
-                    f"[HF NLP] emotion error status={response.status_code} model={EMOTION_MODEL} url={used_url} body_keys={list(err)[:5]}"
+                    f"[HF NLP] emotion error status={response.status_code} model={EMOTION_MODEL} url={used_url} error={str(err.get('error') or '')[:200]}"
                 )
                 return _fallback(clean)
 

@@ -10,7 +10,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
-MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
+MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "128"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
 MODEL_DTYPE = (os.environ.get("MODEL_DTYPE", "").strip() or "").lower()
@@ -154,23 +154,27 @@ def predict():
         return jsonify({"success": False, "error": "text is too long"}), 400
 
     encoding = _TOKENIZER(text, max_length=MAX_LEN, padding=True, truncation=True, return_tensors="pt")
-    input_ids = encoding["input_ids"].to(DEVICE)
-    attention_mask = encoding["attention_mask"].to(DEVICE)
-
     started = time.time()
-    with torch.no_grad():
-        out = _MODEL(input_ids=input_ids, attention_mask=attention_mask)
-        logits = out.logits
-        probs = F.softmax(logits, dim=1).detach().cpu().numpy()[0].tolist()
+    try:
+        input_ids = encoding["input_ids"].to(DEVICE)
+        attention_mask = encoding["attention_mask"].to(DEVICE)
 
-    labels = _LABELS or [str(i) for i in range(len(probs))]
-    pairs = sorted(zip(labels, probs), key=lambda x: x[1], reverse=True)
-    primary_label, primary_prob = pairs[0]
-    primary_label = str(primary_label).strip().lower()
-    if primary_label not in ALLOWED_LABELS:
-        primary_label = "neutral"
-    sentiment_label = _derive_sentiment_from_emotion(primary_label)
-    sentiment_score = float(primary_prob)
+        with torch.no_grad():
+            out = _MODEL(input_ids=input_ids, attention_mask=attention_mask)
+            logits = out.logits
+            probs = F.softmax(logits, dim=1).detach().cpu().numpy()[0].tolist()
+
+        labels = _LABELS or [str(i) for i in range(len(probs))]
+        pairs = sorted(zip(labels, probs), key=lambda x: x[1], reverse=True)
+        primary_label, primary_prob = pairs[0]
+        primary_label = str(primary_label).strip().lower()
+        if primary_label not in ALLOWED_LABELS:
+            primary_label = "neutral"
+        sentiment_label = _derive_sentiment_from_emotion(primary_label)
+        sentiment_score = float(primary_prob)
+    except Exception as e:
+        _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
+        return jsonify({"success": False, "error": _MODEL_STATE["error"], "ms": int((time.time() - started) * 1000)}), 500
 
     return jsonify(
         {

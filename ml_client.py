@@ -5,7 +5,7 @@ import urllib.request
 
 
 ML_API_URL = os.environ.get("ML_API_URL", "http://127.0.0.1:5001/predict").strip()
-ML_API_TIMEOUT_SECONDS = float(os.environ.get("ML_API_TIMEOUT_SECONDS", "12").strip() or "12")
+ML_API_TIMEOUT_SECONDS = float(os.environ.get("ML_API_TIMEOUT_SECONDS", "25").strip() or "25")
 
 
 def _fallback():

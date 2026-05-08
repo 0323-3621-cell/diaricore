@@ -16,6 +16,8 @@ import db
 import ml_client
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -502,7 +504,7 @@ def api_admin_logout():
 def admin_page():
     if not session.get("is_admin"):
         return abort(403)
-    return send_from_directory(BASE_DIR, "admin.html")
+    return send_from_directory(TEMPLATES_DIR, "admin.html")
 
 
 @app.route("/api/check-availability")
@@ -585,12 +587,12 @@ def api_entries_post():
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "login.html")
+    return send_from_directory(TEMPLATES_DIR, "login.html")
 
 
 @app.route("/index.html")
 def legacy_index_page():
-    return send_from_directory(BASE_DIR, "login.html")
+    return send_from_directory(TEMPLATES_DIR, "login.html")
 
 
 @app.route("/<path:filename>")
@@ -599,13 +601,41 @@ def static_files(filename):
         abort(404)
     if filename == "admin.html" and not session.get("is_admin"):
         abort(403)
+
     safe = os.path.normpath(filename)
     if ".." in safe or safe.startswith(os.sep):
         abort(404)
-    full = os.path.join(BASE_DIR, safe)
-    if not os.path.abspath(full).startswith(os.path.abspath(BASE_DIR)):
+
+    ext = os.path.splitext(safe)[1].lower()
+    template_exts = {".html"}
+    static_dir_map = {
+        ".css": "css",
+        ".js": "js",
+        ".png": "img",
+        ".jpg": "img",
+        ".jpeg": "img",
+        ".gif": "img",
+        ".webp": "img",
+        ".svg": "img",
+        ".ico": "img",
+    }
+
+    if ext in template_exts:
+        full = os.path.join(TEMPLATES_DIR, safe)
+        if os.path.abspath(full).startswith(os.path.abspath(TEMPLATES_DIR)) and os.path.isfile(full):
+            return send_from_directory(TEMPLATES_DIR, safe)
         abort(404)
-    if os.path.isfile(full):
+
+    subdir = static_dir_map.get(ext)
+    if subdir:
+        full = os.path.join(STATIC_DIR, subdir, safe)
+        static_base = os.path.join(STATIC_DIR, subdir)
+        if os.path.abspath(full).startswith(os.path.abspath(static_base)) and os.path.isfile(full):
+            return send_from_directory(static_base, safe)
+
+    # Fallback for remaining root-level files that are intentionally kept.
+    full = os.path.join(BASE_DIR, safe)
+    if os.path.abspath(full).startswith(os.path.abspath(BASE_DIR)) and os.path.isfile(full):
         return send_from_directory(BASE_DIR, safe)
     abort(404)
 

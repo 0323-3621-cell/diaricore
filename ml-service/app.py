@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from flask import Flask, jsonify, request
 from huggingface_hub import hf_hub_download
+import transformers
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
@@ -138,6 +139,9 @@ _MODEL_STATE: dict = {
     "loading": False,
     "error": None,
     "loaded_at": None,
+    "loader_path": None,
+    "label_source": None,
+    "hf_snapshot": None,
 }
 _TOKENIZER = None
 _MODEL = None
@@ -326,6 +330,8 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
                 _TOKENIZER, _MODEL, _LABELS = tok, direct, labels
                 _MODEL_STATE["loaded"] = True
                 _MODEL_STATE["loaded_at"] = int(time.time())
+                _MODEL_STATE["loader_path"] = "direct_hf"
+                _MODEL_STATE["label_source"] = "label_map_or_config"
                 return _TOKENIZER, _MODEL, _LABELS, None
             except Exception as direct_err:
                 print(f"[ml-service] direct from_pretrained load failed, trying custom checkpoint path: {type(direct_err).__name__}")
@@ -336,6 +342,8 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
                 filename="pytorch_model.bin",
                 **_model_kwargs(),
             )
+            snap_parts = state_path.replace("\\", "/").split("/snapshots/")
+            _MODEL_STATE["hf_snapshot"] = snap_parts[1].split("/")[0] if len(snap_parts) > 1 else None
             state = torch.load(state_path, map_location="cpu")
             if isinstance(state, dict) and "model_state_dict" in state:
                 state = state["model_state_dict"]
@@ -357,6 +365,8 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
             _MODEL_STATE["loaded"] = True
             _MODEL_STATE["loaded_at"] = int(time.time())
+            _MODEL_STATE["loader_path"] = "custom_state_dict"
+            _MODEL_STATE["label_source"] = "label_map_or_config"
             return _TOKENIZER, _MODEL, _LABELS, None
         except Exception as e:
             # If lower precision fails due to operator incompatibilities, retry in float32.
@@ -368,23 +378,28 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
                         low_cpu_mem_usage=True,
                         **_model_kwargs(),
                     ).to(DEVICE)
+                    _MODEL_STATE["loader_path"] = "direct_hf_retry"
                 except Exception:
                     state_path = hf_hub_download(
                         repo_id=HF_MODEL_ID,
                         filename="pytorch_model.bin",
                         **_model_kwargs(),
                     )
+                    snap_parts = state_path.replace("\\", "/").split("/snapshots/")
+                    _MODEL_STATE["hf_snapshot"] = snap_parts[1].split("/")[0] if len(snap_parts) > 1 else None
                     state = torch.load(state_path, map_location="cpu")
                     if isinstance(state, dict) and "model_state_dict" in state:
                         state = state["model_state_dict"]
                     mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
                     mdl.load_state_dict(state, strict=False)
+                    _MODEL_STATE["loader_path"] = "custom_state_dict_retry"
                 mdl = mdl.to(dtype=torch.float32)
                 mdl.eval()
                 labels = _resolve_labels_from_model(mdl) or ["angry", "anxious", "happy", "neutral", "sad"]
                 _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
                 _MODEL_STATE["loaded"] = True
                 _MODEL_STATE["loaded_at"] = int(time.time())
+                _MODEL_STATE["label_source"] = "label_map_or_config"
                 return _TOKENIZER, _MODEL, _LABELS, None
             except Exception:
                 _MODEL_STATE["error"] = f"{type(e).__name__}: {str(e)[:240]}"
@@ -407,10 +422,15 @@ def health():
             "ok": True,
             "modelId": HF_MODEL_ID,
             "device": str(DEVICE),
+            "transformersVersion": transformers.__version__,
+            "torchVersion": torch.__version__,
             "loaded": bool(_MODEL_STATE["loaded"]),
             "loading": bool(_MODEL_STATE["loading"]),
             "error": _MODEL_STATE["error"],
             "labels": _LABELS,
+            "loaderPath": _MODEL_STATE.get("loader_path"),
+            "labelSource": _MODEL_STATE.get("label_source"),
+            "hfSnapshot": _MODEL_STATE.get("hf_snapshot"),
         }
     )
 
@@ -510,6 +530,9 @@ def predict():
             "keywordHits": keyword_hits,
             "keywordOverrideApplied": bool(was_overridden),
             "keywordOverrideReason": override_reason,
+            "loaderPath": _MODEL_STATE.get("loader_path"),
+            "labelSource": _MODEL_STATE.get("label_source"),
+            "hfSnapshot": _MODEL_STATE.get("hf_snapshot"),
             "ms": int((time.time() - started) * 1000),
         }
     )

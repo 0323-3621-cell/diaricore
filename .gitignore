@@ -3,5 +3,13 @@ __pycache__/
 .venv/
 venv/
 diaricore.db
+diaricore.local.db
 .env
 *.log
+
+# Model weights — stored on HuggingFace Hub, not in git
+model/pytorch_model.bin
+model/onnx_export/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import threading
 from typing import Optional, Tuple
@@ -153,6 +154,33 @@ def _derive_sentiment_from_emotion(label: str) -> str:
     return "neutral"
 
 
+def _resolve_labels_from_hf() -> Optional[list]:
+    try:
+        label_map_path = hf_hub_download(
+            repo_id=HF_MODEL_ID,
+            filename="label_map.json",
+            **_model_kwargs(),
+        )
+        with open(label_map_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            labels = [str(v).strip().lower() for v in data]
+        elif isinstance(data, dict):
+            # Supports both {"0":"sad",...} and {"sad":0,...}
+            if all(str(k).strip().isdigit() for k in data.keys()):
+                ordered = sorted(((int(k), v) for k, v in data.items()), key=lambda x: x[0])
+                labels = [str(v).strip().lower() for _, v in ordered]
+            else:
+                ordered = sorted(((int(v), k) for k, v in data.items()), key=lambda x: x[0])
+                labels = [str(k).strip().lower() for _, k in ordered]
+        else:
+            return None
+        labels = [l for l in labels if l in ALLOWED_LABELS]
+        return labels if len(labels) == 5 else None
+    except Exception:
+        return None
+
+
 def keyword_score(text: str) -> dict:
     text_lower = (text or "").lower()
     scores = {emotion: 0 for emotion in KEYWORD_SIGNALS}
@@ -246,6 +274,19 @@ class XLMRobertaMoodClassifier(nn.Module):
         return self.xlm_roberta.classifier(cls_output)
 
 
+def _resolve_labels_from_model(mdl) -> Optional[list]:
+    labels = _resolve_labels_from_hf()
+    if labels:
+        return labels
+    cfg = getattr(mdl, "config", None)
+    if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
+        vals = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
+        vals = [l for l in vals if l in ALLOWED_LABELS]
+        if len(vals) == 5:
+            return vals
+    return None
+
+
 def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optional[list], Optional[str]]:
     global _TOKENIZER, _MODEL, _LABELS
     if _MODEL_STATE["loaded"]:
@@ -271,6 +312,24 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
             dtype = _choose_torch_dtype()
 
+            # First preference: load the model exactly as exported on HF.
+            # This preserves behavior when the repo stores a standard transformers checkpoint.
+            try:
+                direct = AutoModelForSequenceClassification.from_pretrained(
+                    HF_MODEL_ID,
+                    low_cpu_mem_usage=True,
+                    **_model_kwargs(),
+                ).to(DEVICE)
+                direct = direct.to(dtype=torch.float32)
+                direct.eval()
+                labels = _resolve_labels_from_model(direct) or ["angry", "anxious", "happy", "neutral", "sad"]
+                _TOKENIZER, _MODEL, _LABELS = tok, direct, labels
+                _MODEL_STATE["loaded"] = True
+                _MODEL_STATE["loaded_at"] = int(time.time())
+                return _TOKENIZER, _MODEL, _LABELS, None
+            except Exception as direct_err:
+                print(f"[ml-service] direct from_pretrained load failed, trying custom checkpoint path: {type(direct_err).__name__}")
+
             # Download raw state dict and load through compatible custom class.
             state_path = hf_hub_download(
                 repo_id=HF_MODEL_ID,
@@ -293,12 +352,7 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
                     mdl = torch.quantization.quantize_dynamic(mdl, {torch.nn.Linear}, dtype=torch.qint8)
                 except Exception:
                     pass
-            labels = None
-            cfg = getattr(mdl, "config", None)
-            if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
-                labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
-            if not labels:
-                labels = ["angry", "anxious", "happy", "neutral", "sad"]
+            labels = _resolve_labels_from_model(mdl) or ["angry", "anxious", "happy", "neutral", "sad"]
 
             _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
             _MODEL_STATE["loaded"] = True
@@ -308,25 +362,26 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             # If lower precision fails due to operator incompatibilities, retry in float32.
             try:
                 tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
-                state_path = hf_hub_download(
-                    repo_id=HF_MODEL_ID,
-                    filename="pytorch_model.bin",
-                    **_model_kwargs(),
-                )
-                state = torch.load(state_path, map_location="cpu")
-                if isinstance(state, dict) and "model_state_dict" in state:
-                    state = state["model_state_dict"]
-
-                mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
-                mdl.load_state_dict(state, strict=False)
+                try:
+                    mdl = AutoModelForSequenceClassification.from_pretrained(
+                        HF_MODEL_ID,
+                        low_cpu_mem_usage=True,
+                        **_model_kwargs(),
+                    ).to(DEVICE)
+                except Exception:
+                    state_path = hf_hub_download(
+                        repo_id=HF_MODEL_ID,
+                        filename="pytorch_model.bin",
+                        **_model_kwargs(),
+                    )
+                    state = torch.load(state_path, map_location="cpu")
+                    if isinstance(state, dict) and "model_state_dict" in state:
+                        state = state["model_state_dict"]
+                    mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
+                    mdl.load_state_dict(state, strict=False)
                 mdl = mdl.to(dtype=torch.float32)
                 mdl.eval()
-                cfg = getattr(mdl, "config", None)
-                labels = None
-                if cfg and isinstance(getattr(cfg, "id2label", None), dict) and cfg.id2label:
-                    labels = [str(cfg.id2label[i]).strip().lower() for i in range(len(cfg.id2label))]
-                if not labels:
-                    labels = ["angry", "anxious", "happy", "neutral", "sad"]
+                labels = _resolve_labels_from_model(mdl) or ["angry", "anxious", "happy", "neutral", "sad"]
                 _TOKENIZER, _MODEL, _LABELS = tok, mdl, labels
                 _MODEL_STATE["loaded"] = True
                 _MODEL_STATE["loaded_at"] = int(time.time())

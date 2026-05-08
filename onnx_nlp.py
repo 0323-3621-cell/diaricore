@@ -134,7 +134,7 @@ def _apply_keyword_layer(
 # ---------------------------------------------------------------------------
 
 def _model_file() -> str:
-    return os.path.join(CACHE_DIR, "model_quantized.onnx")
+    return os.path.join(CACHE_DIR, "model.onnx")
 
 
 def _tok_dir() -> str:
@@ -157,11 +157,11 @@ def _load_model() -> None:
     # Download quantized ONNX
     onnx_path = _model_file()
     if not os.path.exists(onnx_path):
-        print(f"[onnx_nlp] Downloading model_quantized.onnx from {HF_MODEL_ID} ...")
+        print(f"[onnx_nlp] Downloading model.onnx from {HF_MODEL_ID} ...")
         try:
             dl = hf_hub_download(
                 repo_id=HF_MODEL_ID,
-                filename="model_quantized.onnx",
+                filename="model.onnx",
                 local_dir=CACHE_DIR,
                 **hf_kwargs,
             )
@@ -265,14 +265,11 @@ def _run_inference(text: str) -> Dict[str, float]:
     )
     logits = outputs[0][0]  # shape (5,)
 
-    # Softmax
-    logits -= logits.max()
-    exp    = __import__("math").e ** logits  # avoid numpy import at top level
-    import numpy as np
-    exp_v  = np.exp(logits - logits.max())
-    probs  = exp_v / exp_v.sum()
+    # Numerically-stable softmax
+    exp_v = np.exp(logits - logits.max())
+    probs = exp_v / exp_v.sum()
 
-    # alphabetical order matches training LabelEncoder
+    # alphabetical order matches training LabelEncoder: angry=0,anxious=1,happy=2,neutral=3,sad=4
     return {lbl: float(probs[i]) for i, lbl in enumerate(ALLOWED_LABELS)}
 
 

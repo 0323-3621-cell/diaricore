@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
 import db
-import hf_nlp
+import onnx_nlp
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
@@ -177,6 +177,9 @@ def ensure_db():
     if not getattr(app, "_db_ready", False):
         db.init_db()
         app._db_ready = True
+    if not getattr(app, "_model_warm", False):
+        onnx_nlp.start_background_load()
+        app._model_warm = True
 
 
 @app.route("/api/health")
@@ -570,7 +573,7 @@ def api_entries_post():
     if not user:
         return jsonify({"success": False, "error": "User not found."}), 404
 
-    analysis = hf_nlp.analyze(text)
+    analysis = onnx_nlp.analyze(text)
     row = db.create_journal_entry(
         user_id=user_id,
         text_content=text,

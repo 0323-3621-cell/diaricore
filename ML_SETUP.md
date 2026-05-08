@@ -1,24 +1,31 @@
-# Emotion & Sentiment Analysis (API-based)
+# ML Service Setup (Current)
 
-This project uses Hugging Face Inference API for multilingual sentiment + emotion classification.
+DiariCore now uses a dedicated Flask ML service (`ml-service/app.py`) that loads your custom model from Hugging Face Hub.
 
-## Why API-based?
+## Deployment mode (Railway)
 
-- Works on Railway free tier (no large `torch` installs)
-- Supports mixed-language input better than basic lexicons
-- Keeps the model shared across users; personalization comes from each user's text + stored history
+Set these in the **ML service**:
 
-## Required environment variables
+- `HF_MODEL_ID` (example: `sseia/diari-core-mood`)
+- `HF_TOKEN` (required only if model is private)
 
-- `HF_API_TOKEN`: Hugging Face access token (create at `https://huggingface.co/settings/tokens`)
+Set this in the **web service**:
 
-Optional overrides:
+- `ML_API_URL=https://<your-ml-service-domain>/predict`
 
-- `HF_SENTIMENT_MODEL`: defaults to `cardiffnlp/twitter-xlm-roberta-base-sentiment`
-- `HF_EMOTION_MODEL`: defaults to `MilaNLProc/xlm-emo-t`
+Database mode:
+- `DATABASE_URL` set -> Postgres
+- `DATABASE_URL` missing -> SQLite
+
+## Local mode
+
+Use `LOCAL_DEV.md` and `scripts/start-local.ps1` to run web + ML locally with:
+
+- `ML_API_URL=http://127.0.0.1:5001/predict`
+- SQLite local DB file (default `diaricore.local.db`)
 
 ## Notes
 
-- If `HF_API_TOKEN` is missing or the API fails, the app falls back to a lightweight heuristic analyzer (still returns labels/scores).
-- Do **not** put tokens in frontend code or commit them to GitHub.
+- Do not commit secrets/tokens.
+- Keep `HF_TOKEN` only in environment variables.
 

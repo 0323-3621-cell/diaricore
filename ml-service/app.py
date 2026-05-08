@@ -291,6 +291,28 @@ def _resolve_labels_from_model(mdl) -> Optional[list]:
     return None
 
 
+def _download_state_dict() -> tuple:
+    state_path = hf_hub_download(
+        repo_id=HF_MODEL_ID,
+        filename="pytorch_model.bin",
+        **_model_kwargs(),
+    )
+    snap_parts = state_path.replace("\\", "/").split("/snapshots/")
+    snapshot = snap_parts[1].split("/")[0] if len(snap_parts) > 1 else None
+    state = torch.load(state_path, map_location="cpu")
+    if isinstance(state, dict) and "model_state_dict" in state:
+        state = state["model_state_dict"]
+    return state, snapshot
+
+
+def _looks_like_custom_checkpoint(state) -> bool:
+    if not isinstance(state, dict):
+        return False
+    keys = list(state.keys())
+    # Custom notebook checkpoint uses prefixed module keys.
+    return any(str(k).startswith("xlm_roberta.") for k in keys)
+
+
 def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optional[list], Optional[str]]:
     global _TOKENIZER, _MODEL, _LABELS
     if _MODEL_STATE["loaded"]:
@@ -315,39 +337,31 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
 
             tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
             dtype = _choose_torch_dtype()
+            state, snapshot = _download_state_dict()
+            _MODEL_STATE["hf_snapshot"] = snapshot
 
-            # First preference: load the model exactly as exported on HF.
-            # This preserves behavior when the repo stores a standard transformers checkpoint.
-            try:
-                direct = AutoModelForSequenceClassification.from_pretrained(
-                    HF_MODEL_ID,
-                    low_cpu_mem_usage=True,
-                    **_model_kwargs(),
-                ).to(DEVICE)
-                direct = direct.to(dtype=torch.float32)
-                direct.eval()
-                labels = _resolve_labels_from_model(direct) or ["angry", "anxious", "happy", "neutral", "sad"]
-                _TOKENIZER, _MODEL, _LABELS = tok, direct, labels
-                _MODEL_STATE["loaded"] = True
-                _MODEL_STATE["loaded_at"] = int(time.time())
-                _MODEL_STATE["loader_path"] = "direct_hf"
-                _MODEL_STATE["label_source"] = "label_map_or_config"
-                return _TOKENIZER, _MODEL, _LABELS, None
-            except Exception as direct_err:
-                print(f"[ml-service] direct from_pretrained load failed, trying custom checkpoint path: {type(direct_err).__name__}")
+            # IMPORTANT: force custom loader for custom-saved checkpoints.
+            # Using from_pretrained on these can silently initialize missing layers and skew predictions.
+            if not _looks_like_custom_checkpoint(state):
+                try:
+                    direct = AutoModelForSequenceClassification.from_pretrained(
+                        HF_MODEL_ID,
+                        low_cpu_mem_usage=True,
+                        **_model_kwargs(),
+                    ).to(DEVICE)
+                    direct = direct.to(dtype=torch.float32)
+                    direct.eval()
+                    labels = _resolve_labels_from_model(direct) or ["angry", "anxious", "happy", "neutral", "sad"]
+                    _TOKENIZER, _MODEL, _LABELS = tok, direct, labels
+                    _MODEL_STATE["loaded"] = True
+                    _MODEL_STATE["loaded_at"] = int(time.time())
+                    _MODEL_STATE["loader_path"] = "direct_hf"
+                    _MODEL_STATE["label_source"] = "label_map_or_config"
+                    return _TOKENIZER, _MODEL, _LABELS, None
+                except Exception as direct_err:
+                    print(f"[ml-service] direct from_pretrained load failed, trying custom checkpoint path: {type(direct_err).__name__}")
 
             # Download raw state dict and load through compatible custom class.
-            state_path = hf_hub_download(
-                repo_id=HF_MODEL_ID,
-                filename="pytorch_model.bin",
-                **_model_kwargs(),
-            )
-            snap_parts = state_path.replace("\\", "/").split("/snapshots/")
-            _MODEL_STATE["hf_snapshot"] = snap_parts[1].split("/")[0] if len(snap_parts) > 1 else None
-            state = torch.load(state_path, map_location="cpu")
-            if isinstance(state, dict) and "model_state_dict" in state:
-                state = state["model_state_dict"]
-
             mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
             missing, unexpected = mdl.load_state_dict(state, strict=False)
             print(f"[ml-service] checkpoint load missing={len(missing)} unexpected={len(unexpected)}")
@@ -372,24 +386,16 @@ def _load_model_if_needed() -> Tuple[Optional[object], Optional[object], Optiona
             # If lower precision fails due to operator incompatibilities, retry in float32.
             try:
                 tok = AutoTokenizer.from_pretrained(HF_MODEL_ID, **_model_kwargs())
+                state, snapshot = _download_state_dict()
+                _MODEL_STATE["hf_snapshot"] = snapshot
                 try:
-                    mdl = AutoModelForSequenceClassification.from_pretrained(
-                        HF_MODEL_ID,
-                        low_cpu_mem_usage=True,
-                        **_model_kwargs(),
-                    ).to(DEVICE)
+                    if _looks_like_custom_checkpoint(state):
+                        raise RuntimeError("custom checkpoint format")
+                    mdl = AutoModelForSequenceClassification.from_pretrained(HF_MODEL_ID, low_cpu_mem_usage=True, **_model_kwargs()).to(
+                        DEVICE
+                    )
                     _MODEL_STATE["loader_path"] = "direct_hf_retry"
                 except Exception:
-                    state_path = hf_hub_download(
-                        repo_id=HF_MODEL_ID,
-                        filename="pytorch_model.bin",
-                        **_model_kwargs(),
-                    )
-                    snap_parts = state_path.replace("\\", "/").split("/snapshots/")
-                    _MODEL_STATE["hf_snapshot"] = snap_parts[1].split("/")[0] if len(snap_parts) > 1 else None
-                    state = torch.load(state_path, map_location="cpu")
-                    if isinstance(state, dict) and "model_state_dict" in state:
-                        state = state["model_state_dict"]
                     mdl = XLMRobertaMoodClassifier(model_name="xlm-roberta-base", num_classes=5).to(DEVICE)
                     mdl.load_state_dict(state, strict=False)
                     _MODEL_STATE["loader_path"] = "custom_state_dict_retry"

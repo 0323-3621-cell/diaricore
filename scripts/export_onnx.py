@@ -1,5 +1,5 @@
 """
-export_onnx.py — Export DiariCore XLM-RoBERTa model to ONNX and upload to HuggingFace Hub.
+export_onnx.py - Export DiariCore XLM-RoBERTa model to ONNX and upload to HuggingFace Hub.
 
 Usage:
     python scripts/export_onnx.py [--quantize] [--no-upload] [--branch BRANCH]
@@ -27,12 +27,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# ── Repo roots ────────────────────────────────────────────────────────────────
+# -- Repo roots ----------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 MODEL_DIR = REPO_ROOT / "model"
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# -- Config --------------------------------------------------------------------
 HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN = os.environ.get("HF_TOKEN", "").strip() or None
 
@@ -40,7 +40,7 @@ LABEL_ORDER = ["angry", "anxious", "happy", "neutral", "sad"]   # alphabetical =
 MAX_LEN = 256
 OPSET = 14
 
-# ── CALIBRATION (must match ml-service/app.py exactly) ────────────────────────
+# -- CALIBRATION (must match ml-service/app.py exactly) ------------------------
 CALIBRATION_THRESHOLDS = {
     "angry": 1.40,
     "sad": 1.30,
@@ -50,9 +50,9 @@ CALIBRATION_THRESHOLDS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Model definition — identical to ml-service/app.py
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# Model definition - identical to ml-service/app.py
+# -----------------------------------------------------------------------------
 
 class XLMRobertaMoodClassifier(nn.Module):
     """
@@ -87,12 +87,12 @@ class XLMRobertaMoodClassifier(nn.Module):
         return self.xlm_roberta.classifier(cls_output)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Helpers
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def _load_checkpoint(ckpt_path: Path) -> dict:
-    print(f"[export] Loading state dict from {ckpt_path} …")
+    print(f"[export] Loading state dict from {ckpt_path} ...")
     state = torch.load(str(ckpt_path), map_location="cpu")
     if isinstance(state, dict) and "model_state_dict" in state:
         state = state["model_state_dict"]
@@ -114,7 +114,7 @@ def load_model(ckpt_path: Path) -> XLMRobertaMoodClassifier:
 
     model = XLMRobertaMoodClassifier(num_classes=5)
     missing, unexpected = model.load_state_dict(state, strict=False)
-    print(f"[export] Loaded checkpoint — missing={len(missing)} unexpected={len(unexpected)}")
+    print(f"[export] Loaded checkpoint - missing={len(missing)} unexpected={len(unexpected)}")
     if missing:
         print(f"         Missing keys (first 5): {missing[:5]}")
     if unexpected:
@@ -138,14 +138,17 @@ def make_dummy_inputs(tokenizer, max_len: int = MAX_LEN):
     return enc["input_ids"], enc["attention_mask"]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # ONNX Export
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def export_to_onnx(model: XLMRobertaMoodClassifier, tokenizer, output_path: Path) -> None:
     input_ids, attention_mask = make_dummy_inputs(tokenizer)
 
-    print(f"[export] Exporting to ONNX (opset={OPSET}) → {output_path}")
+    print(f"[export] Exporting to ONNX (opset={OPSET}) -> {output_path}")
+    # Use the legacy TorchScript-based exporter (stable for custom nn.Module classes).
+    # PyTorch >= 2.5 defaults to the dynamo exporter which requires onnxscript and
+    # can be unreliable with custom architectures - force the old path explicitly.
     torch.onnx.export(
         model,
         args=(input_ids, attention_mask),
@@ -160,26 +163,27 @@ def export_to_onnx(model: XLMRobertaMoodClassifier, tokenizer, output_path: Path
         },
         do_constant_folding=True,
         export_params=True,
+        dynamo=False,
     )
     size_mb = output_path.stat().st_size / 1e6
-    print(f"[export] ONNX file written — size={size_mb:.1f} MB")
+    print(f"[export] ONNX file written -- size={size_mb:.1f} MB")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Validation
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def validate_onnx(model: XLMRobertaMoodClassifier, tokenizer, onnx_path: Path, atol: float = 1e-4) -> None:
     """Run the same input through PyTorch and ONNX and assert logits match."""
     try:
         import onnxruntime as ort
     except ImportError:
-        print("[validate] onnxruntime not installed — skipping validation.")
+        print("[validate] onnxruntime not installed - skipping validation.")
         return
 
     import onnx
     onnx.checker.check_model(str(onnx_path))
-    print("[validate] ONNX model structure check passed ✓")
+    print("[validate] ONNX model structure check passed OK")
 
     input_ids, attention_mask = make_dummy_inputs(tokenizer)
     with torch.no_grad():
@@ -199,8 +203,8 @@ def validate_onnx(model: XLMRobertaMoodClassifier, tokenizer, onnx_path: Path, a
     max_diff = float(np.abs(torch_logits - onnx_logits).max())
     print(f"[validate] Max logit difference (PyTorch vs ONNX): {max_diff:.6f}")
     if max_diff > atol:
-        raise ValueError(f"Validation FAILED — max diff {max_diff:.6f} exceeds atol {atol}")
-    print(f"[validate] Output parity check passed ✓  (atol={atol})")
+        raise ValueError(f"Validation FAILED - max diff {max_diff:.6f} exceeds atol {atol}")
+    print(f"[validate] Output parity check passed OK  (atol={atol})")
 
     # Show human-readable prediction for the sample sentence
     probs_onnx = F.softmax(torch.tensor(onnx_logits), dim=-1).numpy()[0]
@@ -208,33 +212,33 @@ def validate_onnx(model: XLMRobertaMoodClassifier, tokenizer, onnx_path: Path, a
     total = sum(calib) or 1.0
     calib = [v / total for v in calib]
     best_idx = int(np.argmax(calib))
-    print(f"[validate] Sample prediction → '{LABEL_ORDER[best_idx]}' ({calib[best_idx]*100:.1f}%)")
+    print(f"[validate] Sample prediction -> '{LABEL_ORDER[best_idx]}' ({calib[best_idx]*100:.1f}%)")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # INT8 Quantization (optional)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def quantize_onnx(onnx_path: Path, output_path: Path) -> None:
     try:
         from onnxruntime.quantization import QuantType, quantize_dynamic
     except ImportError:
-        print("[quantize] onnxruntime.quantization not available — skipping.")
+        print("[quantize] onnxruntime.quantization not available - skipping.")
         return
 
-    print(f"[quantize] Running INT8 dynamic quantization → {output_path}")
+    print(f"[quantize] Running INT8 dynamic quantization -> {output_path}")
     quantize_dynamic(
         model_input=str(onnx_path),
         model_output=str(output_path),
         weight_type=QuantType.QInt8,
     )
     size_mb = output_path.stat().st_size / 1e6
-    print(f"[quantize] Quantized model written — size={size_mb:.1f} MB")
+    print(f"[quantize] Quantized model written -- size={size_mb:.1f} MB")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # HuggingFace Hub Upload
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def upload_to_hub(
     model_dir: Path,
@@ -247,11 +251,11 @@ def upload_to_hub(
     try:
         from huggingface_hub import HfApi, create_repo
     except ImportError:
-        print("[upload] huggingface_hub not installed — skipping upload.")
+        print("[upload] huggingface_hub not installed - skipping upload.")
         return
 
     if not token:
-        print("[upload] HF_TOKEN not set — skipping upload.")
+        print("[upload] HF_TOKEN not set - skipping upload.")
         print("         Set HF_TOKEN env var and re-run to push to Hub.")
         return
 
@@ -263,7 +267,7 @@ def upload_to_hub(
     except Exception as e:
         print(f"[upload] Note: create_repo returned: {e}")
 
-    # Determine upload branch — if "main" use None (default), otherwise create branch
+    # Determine upload branch - if "main" use None (default), otherwise create branch
     upload_revision: Optional[str] = None
     if branch != "main":
         try:
@@ -271,10 +275,10 @@ def upload_to_hub(
             upload_revision = branch
             print(f"[upload] Targeting branch '{branch}'")
         except Exception as e:
-            print(f"[upload] Could not create branch '{branch}': {e} — uploading to main")
+            print(f"[upload] Could not create branch '{branch}': {e} - uploading to main")
 
     def _upload(local: Path, remote: str, description: str):
-        print(f"[upload] Uploading {description} → {repo_id}/{remote}")
+        print(f"[upload] Uploading {description} -> {repo_id}/{remote}")
         api.upload_file(
             path_or_fileobj=str(local),
             path_in_repo=remote,
@@ -307,18 +311,18 @@ def upload_to_hub(
         else:
             print(f"[upload] Skipping {fname} (not found locally)")
 
-    print(f"\n[upload] ✅ Upload complete!")
+    print(f"\n[upload] [OK] Upload complete!")
     print(f"         View at: https://huggingface.co/{repo_id}" + (f"/tree/{branch}" if branch != "main" else ""))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Main
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(description="Export DiariCore XLM-RoBERTa to ONNX and push to HF Hub.")
     parser.add_argument("--quantize",    action="store_true", help="Also produce an INT8-quantized ONNX model and upload that instead.")
-    parser.add_argument("--no-upload",  action="store_true", help="Export and validate only — skip HuggingFace upload.")
+    parser.add_argument("--no-upload",  action="store_true", help="Export and validate only - skip HuggingFace upload.")
     parser.add_argument("--branch",     default="onnx",      help="HF repo branch to push to (default: 'onnx').")
     parser.add_argument("--model-dir",  default=str(MODEL_DIR), help="Path to local model directory.")
     parser.add_argument("--atol",       type=float, default=1e-4, help="Max allowed logit difference for validation.")
@@ -331,29 +335,33 @@ def main():
         print(f"[error] Checkpoint not found: {ckpt_path}", file=sys.stderr)
         sys.exit(1)
 
-    # ── Imports that need to be present ──────────────────────────────────────
+    # -- Imports that need to be present --------------------------------------
     try:
         from transformers import AutoTokenizer
     except ImportError:
         print("[error] transformers is not installed. Run: pip install transformers>=4.40.0", file=sys.stderr)
         sys.exit(1)
 
-    # ── Tokenizer (load from local model dir) ────────────────────────────────
+    # -- Tokenizer (load from local model dir) --------------------------------
     print(f"[export] Loading tokenizer from {model_dir}")
     tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
 
-    # ── Model ────────────────────────────────────────────────────────────────
+    # -- Model ----------------------------------------------------------------
     model = load_model(ckpt_path)
 
-    # ── Output directory (alongside model dir) ───────────────────────────────
+    # -- Output directory (alongside model dir) -------------------------------
     out_dir = model_dir / "onnx_export"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     onnx_path = out_dir / "model.onnx"
-    export_to_onnx(model, tokenizer, onnx_path)
+    if onnx_path.exists():
+        size_mb = onnx_path.stat().st_size / 1e6
+        print(f"[export] model.onnx already exists ({size_mb:.1f} MB) - skipping export, running validate+upload.")
+    else:
+        export_to_onnx(model, tokenizer, onnx_path)
     validate_onnx(model, tokenizer, onnx_path, atol=args.atol)
 
-    # ── Optional quantization ────────────────────────────────────────────────
+    # -- Optional quantization ------------------------------------------------
     upload_onnx_path = onnx_path
     if args.quantize:
         quant_path = out_dir / "model_quantized.onnx"
@@ -361,13 +369,13 @@ def main():
         if quant_path.exists():
             upload_onnx_path = quant_path
 
-    # ── label_map.json (used by ml-service to resolve labels at runtime) ─────
+    # -- label_map.json (used by ml-service to resolve labels at runtime) -----
     label_map_path = out_dir / "label_map.json"
     with open(label_map_path, "w", encoding="utf-8") as f:
         json.dump({str(i): lbl for i, lbl in enumerate(LABEL_ORDER)}, f, indent=2)
-    print(f"[export] label_map.json written → {label_map_path}")
+    print(f"[export] label_map.json written -> {label_map_path}")
 
-    # ── Upload ────────────────────────────────────────────────────────────────
+    # -- Upload ----------------------------------------------------------------
     if not args.no_upload:
         upload_to_hub(
             model_dir=model_dir,
@@ -380,7 +388,7 @@ def main():
     else:
         print("\n[export] --no-upload specified. Files ready in:", out_dir)
 
-    print("\n✅ Done.")
+    print("\n[OK] Done.")
 
 
 if __name__ == "__main__":

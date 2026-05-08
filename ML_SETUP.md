@@ -1,31 +1,72 @@
-# ML Service Setup (Current)
+# ML Setup — DiariCore
 
-DiariCore now uses a dedicated Flask ML service (`ml-service/app.py`) that loads your custom model from Hugging Face Hub.
+DiariCore uses **HuggingFace Inference API** for mood analysis.
+The model (`sseia/diari-core-mood`) is hosted on HuggingFace Hub as an ONNX file,
+so **no ML service runs on Railway** — only the lightweight web app does.
 
-## Deployment mode (Railway)
+## Architecture
 
-Set these in the **ML service**:
+```
+User writes entry
+      │
+      ▼
+Railway Web App (app.py)   ← only service on Railway free tier
+      │  uses hf_nlp.py
+      ▼
+HuggingFace Inference API  ← free, serverless, ONNX-backed
+(sseia/diari-core-mood)
+      │
+      ▼
+Returns: emotionLabel, emotionScore, sentimentLabel, sentimentScore
+```
 
-- `HF_MODEL_ID` (example: `sseia/diari-core-mood`)
-- `HF_TOKEN` (required only if model is private)
+## Railway Environment Variables (web service only)
 
-Set this in the **web service**:
+| Variable        | Value                          | Required |
+|-----------------|--------------------------------|----------|
+| `HF_API_TOKEN`  | Your HuggingFace read token    | Yes (model may be private) |
+| `HF_EMOTION_MODEL` | `sseia/diari-core-mood`     | Optional (this is the default) |
+| `DATABASE_URL`  | Postgres connection string     | Yes (Railway Postgres plugin) |
+| `SECRET_KEY`    | Flask session secret           | Yes |
 
-- `ML_API_URL=https://<your-ml-service-domain>/predict`
+## Uploading the ONNX model to HuggingFace Hub
 
-Database mode:
-- `DATABASE_URL` set -> Postgres
-- `DATABASE_URL` missing -> SQLite
+Run this **once** from your local machine after training a new model:
 
-## Local mode
+```powershell
+# Install export deps (one-time)
+.venv\Scripts\pip install "onnx>=1.16.0" "onnxruntime>=1.18.0" "huggingface_hub>=0.22.0"
 
-Use `LOCAL_DEV.md` and `scripts/start-local.ps1` to run web + ML locally with:
+# Export + validate + upload (needs HF token with write access)
+$env:HF_TOKEN = "hf_your_write_token_here"
+.venv\Scripts\python.exe scripts/export_onnx.py
 
-- `ML_API_URL=http://127.0.0.1:5001/predict`
-- SQLite local DB file (default `diaricore.local.db`)
+# Optional: also produce an INT8-quantized version (~70% smaller)
+.venv\Scripts\python.exe scripts/export_onnx.py --quantize
+
+# Push to main branch instead of the default 'onnx' branch
+.venv\Scripts\python.exe scripts/export_onnx.py --branch main
+```
+
+The script:
+1. Loads `model/pytorch_model.bin` using the custom training class
+2. Exports to ONNX (opset 14, dynamic axes)
+3. Validates PyTorch vs ONNX output parity
+4. Uploads `model.onnx`, `config.json`, `label_map.json`, and tokenizer files to HF Hub
+
+## Local Development
+
+For local development, `hf_nlp.py` falls back gracefully if `HF_API_TOKEN` is not set
+(uses a keyword-based heuristic). Set it in a `.env`-style approach:
+
+```powershell
+$env:HF_API_TOKEN = "hf_your_read_token_here"
+.venv\Scripts\python.exe app.py
+```
 
 ## Notes
 
-- Do not commit secrets/tokens.
-- Keep `HF_TOKEN` only in environment variables.
-
+- Do **not** commit `HF_API_TOKEN` or any secrets. Use Railway environment variables.
+- The `ml-service/` folder is kept for reference / local heavy testing only.
+  It is **not deployed** to Railway.
+- `ml_client.py` is also kept for reference but is **no longer used** by `app.py`.

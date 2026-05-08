@@ -15,6 +15,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN = os.environ.get("HF_TOKEN", "").strip()
+HF_MODEL_REVISION = os.environ.get("HF_MODEL_REVISION", "").strip()
+HF_FORCE_DOWNLOAD = (os.environ.get("HF_FORCE_DOWNLOAD", "false").strip() or "false").lower() == "true"
 MAX_LEN = int(os.environ.get("MODEL_MAX_LEN", "256"))
 WORD_MIN = int(os.environ.get("MODEL_WORD_MIN", "3"))
 WORD_MAX = int(os.environ.get("MODEL_WORD_MAX", "300"))
@@ -229,9 +231,14 @@ def apply_keyword_layer(text: str, primary_label: str, primary_prob: float) -> t
 
 
 def _model_kwargs():
+    kwargs = {}
     if HF_TOKEN:
-        return {"token": HF_TOKEN}
-    return {}
+        kwargs["token"] = HF_TOKEN
+    if HF_MODEL_REVISION:
+        kwargs["revision"] = HF_MODEL_REVISION
+    if HF_FORCE_DOWNLOAD:
+        kwargs["force_download"] = True
+    return kwargs
 
 
 def _choose_torch_dtype():
@@ -437,6 +444,8 @@ def health():
             "loaderPath": _MODEL_STATE.get("loader_path"),
             "labelSource": _MODEL_STATE.get("label_source"),
             "hfSnapshot": _MODEL_STATE.get("hf_snapshot"),
+            "hfRevision": HF_MODEL_REVISION or None,
+            "hfForceDownload": bool(HF_FORCE_DOWNLOAD),
         }
     )
 

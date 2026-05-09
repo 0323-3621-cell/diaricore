@@ -29,6 +29,8 @@ HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN    = os.environ.get("HF_TOKEN", "").strip() or None
 CACHE_DIR   = "/tmp/diaricore"
 MAX_LEN     = 256
+# If "1"/"true", never run torch.export — use model.onnx from the Hub only (helps when Space export fails).
+SKIP_ONNX_EXPORT = (os.environ.get("SKIP_ONNX_EXPORT", "").strip().lower() in ("1", "true", "yes"))
 
 ALLOWED_LABELS = ("angry", "anxious", "happy", "neutral", "sad")
 
@@ -88,7 +90,8 @@ AMBIGUOUS_WORDS = {
 _LOCK      = threading.Lock()
 _SESSION   = None
 _TOKENIZER = None
-_LOAD_ERR  = None
+_LOAD_ERR        = None
+_LAST_EXPORT_ERR = None  # surfaced in /health when export fails but Hub fallback might work
 _LOADED    = False
 _RAKE_READY = False
 _RAKE_LOCK  = threading.Lock()
@@ -220,18 +223,22 @@ def _build_custom_model():
     return XLMRobertaMoodClassifier
 
 
-def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool:
-    """Load the custom XLM-RoBERTa weights and export to ONNX. Returns True on success."""
+def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> Tuple[bool, str]:
+    """Load the custom XLM-RoBERTa weights and export to ONNX. Returns (ok, error_message)."""
     try:
         import torch
     except ImportError as e:
-        print(f"[inference] torch not available for export: {e}")
-        return False
+        msg = f"torch not available for export: {e}"
+        print(f"[inference] {msg}")
+        return False, msg
 
     print("[inference] Building model for ONNX export ...")
     try:
         XLMRobertaMoodClassifier = _build_custom_model()
-        state = torch.load(bin_path, map_location="cpu")
+        try:
+            state = torch.load(bin_path, map_location="cpu", weights_only=True)
+        except TypeError:
+            state = torch.load(bin_path, map_location="cpu")
         if isinstance(state, dict) and "model_state_dict" in state:
             state = state["model_state_dict"]
         model = XLMRobertaMoodClassifier(num_classes=len(ALLOWED_LABELS))
@@ -240,8 +247,9 @@ def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool
         model = model.to(dtype=torch.float32)
         model.eval()
     except Exception as e:
+        msg = f"PyTorch load for export: {e}"
         print(f"[inference] Could not load PyTorch model: {e}")
-        return False
+        return False, msg
 
     try:
         tok = _TOKENIZER
@@ -275,19 +283,20 @@ def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool
             )
         size_mb = os.path.getsize(onnx_path) / 1e6
         print(f"[inference] ONNX exported successfully — {size_mb:.0f} MB")
-        return True
+        return True, ""
     except Exception as e:
+        msg = str(e)
         print(f"[inference] ONNX export failed: {e}")
         if os.path.exists(onnx_path):
             os.remove(onnx_path)
-        return False
+        return False, msg
 
 # ---------------------------------------------------------------------------
 # Model loading
 # ---------------------------------------------------------------------------
 
 def _load_model():
-    global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR
+    global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR, _LAST_EXPORT_ERR
     try:
         import onnxruntime as ort
         from transformers import AutoTokenizer
@@ -348,20 +357,23 @@ def _load_model():
         bin_available = False
 
     # ── Step 3: Decide whether to (re-)export ONNX ──────────────────────────
+    _LAST_EXPORT_ERR = None
     need_export = False
-    if bin_available:
+    if not SKIP_ONNX_EXPORT and bin_available:
         if not os.path.exists(onnx_path):
             need_export = True
         elif os.path.getmtime(bin_path) > os.path.getmtime(onnx_path):
             print("[inference] pytorch_model.bin is newer — re-exporting ONNX ...")
             os.remove(onnx_path)
             need_export = True
+    elif SKIP_ONNX_EXPORT and bin_available:
+        print("[inference] SKIP_ONNX_EXPORT set — skipping torch ONNX export")
 
     if need_export:
-        if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
-            _LOAD_ERR = "ONNX export from PyTorch weights failed"
-            print(f"[inference] {_LOAD_ERR}")
-            return
+        ok, export_msg = _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path)
+        if not ok:
+            _LAST_EXPORT_ERR = export_msg
+            print("[inference] Export failed — will try pre-built model.onnx from Hub if missing")
 
     # Fallback: download model.onnx if still missing
     if not os.path.exists(onnx_path):
@@ -378,7 +390,11 @@ def _load_model():
                 import shutil
                 shutil.copy2(dl, onnx_path)
         except Exception as e:
-            _LOAD_ERR = f"Could not obtain model weights: {e}"
+            parts = ["Could not download model.onnx from Hub."]
+            if _LAST_EXPORT_ERR:
+                parts.append(f"ONNX export error: {_LAST_EXPORT_ERR}")
+            parts.append(str(e))
+            _LOAD_ERR = " ".join(parts)
             print(f"[inference] {_LOAD_ERR}")
             return
 
@@ -536,6 +552,16 @@ def health():
         "status": "ok",
         "model_loaded": _LOADED,
         "model_error":  _LOAD_ERR,
+        "export_error": _LAST_EXPORT_ERR if (not _LOADED and _LAST_EXPORT_ERR) else None,
+        "skipOnnxExport": SKIP_ONNX_EXPORT,
+        "hf_model_id": HF_MODEL_ID,
+        "hint": None
+        if _LOADED
+        else (
+            "Upload model.onnx to HF_MODEL_ID repo, set SKIP_ONNX_EXPORT=1, or check Space logs for export_error."
+            if _LAST_EXPORT_ERR
+            else "Check Space logs; ensure sseia/diari-core-mood has model.onnx or exportable pytorch_model.bin."
+        ),
     }
 
 

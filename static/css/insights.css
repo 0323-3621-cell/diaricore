@@ -976,6 +976,47 @@ body {
     line-height: 1.55;
 }
 
+.trigger-justification {
+    margin: 0.7rem 0 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--background-soft);
+    overflow: hidden;
+}
+
+.trigger-justification summary {
+    cursor: pointer;
+    padding: 0.6rem 0.8rem;
+    list-style: none;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.trigger-justification summary::-webkit-details-marker {
+    display: none;
+}
+
+.trigger-justification summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 0.45rem;
+    color: var(--text-secondary);
+    transition: transform 0.18s ease;
+}
+
+.trigger-justification[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.trigger-justification p {
+    margin: 0;
+    padding: 0 0.8rem 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 .emotion-triggers-empty,
 .emotion-triggers-loading {
     margin: 0;

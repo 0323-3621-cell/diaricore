@@ -911,6 +911,8 @@ def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3):
         "topHappinessTriggers": top_happy,
         "stressRanking": _rank_all(stress_counts) if stress_entries_with_tags >= min_entries else [],
         "happinessRanking": _rank_all(happy_counts) if happy_entries_with_tags >= min_entries else [],
+        "stressCounts": stress_counts if stress_entries_with_tags >= min_entries else {},
+        "happinessCounts": happy_counts if happy_entries_with_tags >= min_entries else {},
         "stressTaggedEntries": stress_entries_with_tags,
         "happinessTaggedEntries": happy_entries_with_tags,
         "minRequiredEntries": min_entries,

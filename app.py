@@ -73,11 +73,31 @@ HAPPINESS_TRIGGER_TEMPLATES = [
     "Your journal points to {tag} as a recurring mood booster.",
 ]
 
+STRESS_COUNT_JUSTIFICATION_TEMPLATES = [
+    "{count} of your stress-related entries include {tag}.",
+    "{tag} appears in {count} entries that were detected as stress moods.",
+    "Across your stressed days, {tag} showed up {count} times.",
+    "{count} stressed entries mention {tag}, which is why it ranks at the top.",
+]
+
+HAPPINESS_COUNT_JUSTIFICATION_TEMPLATES = [
+    "{count} of your happy entries include {tag}.",
+    "{tag} appears in {count} entries detected as happy.",
+    "In your positive days, {tag} showed up {count} times.",
+    "{count} happy entries mention {tag}, which is why it ranks at the top.",
+]
+
 
 def _pick_template(templates: list[str], *, tag: str) -> str:
     safe_tag = _to_title_case(tag) if tag else "that topic"
     pool = templates or ["{tag} keeps showing up in your entries."]
     return random.choice(pool).format(tag=safe_tag)
+
+def _pick_count_template(templates: list[str], *, tag: str, count: int) -> str:
+    safe_tag = _to_title_case(tag) if tag else "that topic"
+    safe_count = max(0, int(count or 0))
+    pool = templates or ["{count} entries include {tag}."]
+    return random.choice(pool).format(tag=safe_tag, count=safe_count)
 
 
 def _random_insight_line(emotion: str, top_keyword: str) -> str:
@@ -678,32 +698,17 @@ def api_triggers_summary():
     happy_list = [x for x in (summary.get("topHappinessTriggers") or []) if x]
     stress_rank = [x for x in (summary.get("stressRanking") or []) if x]
     happy_rank = [x for x in (summary.get("happinessRanking") or []) if x]
+    stress_counts = summary.get("stressCounts") or {}
+    happy_counts = summary.get("happinessCounts") or {}
 
     # Primary tags (what we display as "Top ... trigger")
     stress_primary = stress_rank[0] if stress_rank else (stress_list[0] if stress_list else None)
     happy_primary = happy_rank[0] if happy_rank else (happy_list[0] if happy_list else None)
 
-    shared = False
-    shared_tag = None
-    shared_note = None
-
-    # If both buckets point to the same primary tag, try to pick a runner-up for one side.
-    if stress_primary and happy_primary and stress_primary == happy_primary:
-        shared = True
-        shared_tag = stress_primary
-        # Prefer adjusting happiness to next distinct (keeps "stress trigger" stable).
-        next_happy = next((t for t in happy_rank[1:] if t != shared_tag), None)
-        if next_happy:
-            happy_primary = next_happy
-        else:
-            next_stress = next((t for t in stress_rank[1:] if t != shared_tag), None)
-            if next_stress:
-                stress_primary = next_stress
-            else:
-                shared_note = "This tag shows up in both your stressful and happy entries."
-
     stress = _to_title_case(stress_primary) if stress_primary else None
     happy = _to_title_case(happy_primary) if happy_primary else None
+    stress_top_count = int(stress_counts.get(stress_primary) or 0) if stress_primary else 0
+    happy_top_count = int(happy_counts.get(happy_primary) or 0) if happy_primary else 0
 
     stress_desc = (
         _pick_template(STRESS_TRIGGER_TEMPLATES, tag=stress_primary)
@@ -715,8 +720,16 @@ def api_triggers_summary():
         if happy_primary
         else "Add more tagged happy entries to unlock your positive trigger insight."
     )
-    if shared and shared_note and stress_primary:
-        stress_desc = f"{stress_desc} {shared_note}"
+    stress_justification = (
+        _pick_count_template(STRESS_COUNT_JUSTIFICATION_TEMPLATES, tag=stress_primary, count=stress_top_count)
+        if stress_primary and stress_top_count > 0
+        else None
+    )
+    happiness_justification = (
+        _pick_count_template(HAPPINESS_COUNT_JUSTIFICATION_TEMPLATES, tag=happy_primary, count=happy_top_count)
+        if happy_primary and happy_top_count > 0
+        else None
+    )
 
     return jsonify(
         {
@@ -727,9 +740,10 @@ def api_triggers_summary():
             "topHappinessTriggers": [_to_title_case(x) for x in happy_list],
             "stressDescription": stress_desc,
             "happinessDescription": happy_desc,
-            "sharedTrigger": bool(shared),
-            "sharedTag": _to_title_case(shared_tag) if shared_tag else None,
-            "sharedNote": shared_note,
+            "stressTopCount": stress_top_count,
+            "happinessTopCount": happy_top_count,
+            "stressJustification": stress_justification,
+            "happinessJustification": happiness_justification,
             "stressTaggedEntries": int(summary.get("stressTaggedEntries") or 0),
             "happinessTaggedEntries": int(summary.get("happinessTaggedEntries") or 0),
             "minRequiredEntries": int(summary.get("minRequiredEntries") or 3),

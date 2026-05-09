@@ -43,6 +43,42 @@ INSIGHT_TEMPLATES = {
     ],
 }
 
+STRESS_TRIGGER_TEMPLATES = [
+    "You tend to feel more stressed when {tag} comes up.",
+    "Stress often shows up alongside mentions of {tag}.",
+    "When {tag} is on your mind, your mood leans more tense.",
+    "Mentions of {tag} frequently appear in your tougher days.",
+    "{tag} seems to be a common theme when you're feeling overwhelmed.",
+    "Your stress-related entries often include {tag}.",
+    "You often sound more pressured when you write about {tag}.",
+    "{tag} is a recurring topic on days that feel heavy.",
+    "When {tag} appears, your mood is more likely to dip into stress.",
+    "Your stress trigger pattern points to {tag} as a frequent factor.",
+    "Your journal suggests {tag} is linked to your stressful moments.",
+    "Hard days often include {tag} in what you write.",
+]
+
+HAPPINESS_TRIGGER_TEMPLATES = [
+    "Your mood improves when you mention {tag}.",
+    "{tag} often shows up in your happiest entries.",
+    "You seem to feel lighter when {tag} is part of your day.",
+    "Positive entries frequently include {tag}.",
+    "{tag} looks like a consistent source of joy for you.",
+    "You often sound more hopeful when you write about {tag}.",
+    "When {tag} appears, your mood trends more positive.",
+    "{tag} seems to be a bright spot in your recent entries.",
+    "Your happiest moments often connect to {tag}.",
+    "You tend to feel better on days that include {tag}.",
+    "{tag} shows up a lot when you're in a good place.",
+    "Your journal points to {tag} as a recurring mood booster.",
+]
+
+
+def _pick_template(templates: list[str], *, tag: str) -> str:
+    safe_tag = _to_title_case(tag) if tag else "that topic"
+    pool = templates or ["{tag} keeps showing up in your entries."]
+    return random.choice(pool).format(tag=safe_tag)
+
 
 def _random_insight_line(emotion: str, top_keyword: str) -> str:
     emo = (emotion or "neutral").lower()
@@ -642,9 +678,14 @@ def api_triggers_summary():
     happy_list = [x for x in (summary.get("topHappinessTriggers") or []) if x]
     stress = ", ".join(_to_title_case(x) for x in stress_list) if stress_list else None
     happy = ", ".join(_to_title_case(x) for x in happy_list) if happy_list else None
-    insight = (
-        f"Your mood improves when you mention {happy}."
-        if happy
+    stress_desc = (
+        _pick_template(STRESS_TRIGGER_TEMPLATES, tag=stress_list[0])
+        if stress_list
+        else "Add more tagged stress-related entries to unlock your stress trigger insight."
+    )
+    happy_desc = (
+        _pick_template(HAPPINESS_TRIGGER_TEMPLATES, tag=happy_list[0])
+        if happy_list
         else "Add more tagged happy entries to unlock your positive trigger insight."
     )
 
@@ -655,7 +696,8 @@ def api_triggers_summary():
             "topHappinessTrigger": happy,
             "topStressTriggers": [_to_title_case(x) for x in stress_list],
             "topHappinessTriggers": [_to_title_case(x) for x in happy_list],
-            "insight": insight,
+            "stressDescription": stress_desc,
+            "happinessDescription": happy_desc,
             "stressTaggedEntries": int(summary.get("stressTaggedEntries") or 0),
             "happinessTaggedEntries": int(summary.get("happinessTaggedEntries") or 0),
             "minRequiredEntries": int(summary.get("minRequiredEntries") or 3),

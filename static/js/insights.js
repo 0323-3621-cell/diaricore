@@ -46,18 +46,20 @@ function renderTagBasedSummaryCard(summary) {
             .replace(/"/g, '&quot;');
     const topStress = summary.topStressTrigger || 'Not enough data yet';
     const topHappy = summary.topHappinessTrigger || 'Not enough data yet';
-    const insight = summary.insight || 'Add more tagged entries to unlock personalized trigger insights.';
+    const stressDesc = summary.stressDescription || 'Add more tagged stress-related entries to unlock your stress trigger insight.';
+    const happyDesc = summary.happinessDescription || 'Add more tagged happy entries to unlock your positive trigger insight.';
     return `
         <article class="emotion-trigger-card" data-emotion="summary">
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">😰</span>
                 <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>
             </div>
+            <p class="emotion-trigger-card__insight">${esc(stressDesc)}</p>
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">😊</span>
                 <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top happiness trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topHappy)}</span></h3>
             </div>
-            <p class="emotion-trigger-card__insight">${esc(insight)}</p>
+            <p class="emotion-trigger-card__insight">${esc(happyDesc)}</p>
         </article>`;
 }
 

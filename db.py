@@ -104,6 +104,24 @@ def init_db():
                 );
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS emotion_triggers (
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    emotion VARCHAR(32) NOT NULL,
+                    keyword VARCHAR(128) NOT NULL,
+                    count INTEGER NOT NULL DEFAULT 1,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, emotion, keyword)
+                );
+                """
+            )
+            cur.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_emotion_triggers_user
+                ON emotion_triggers (user_id);
+                """
+            )
         else:
             cur.execute(
                 """
@@ -161,6 +179,22 @@ def init_db():
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
                 """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS emotion_triggers (
+                    user_id INTEGER NOT NULL,
+                    emotion TEXT NOT NULL,
+                    keyword TEXT NOT NULL,
+                    count INTEGER NOT NULL DEFAULT 1,
+                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, emotion, keyword),
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_emotion_triggers_user ON emotion_triggers (user_id);"
             )
         if USE_POSTGRES:
             cur.execute(
@@ -743,3 +777,109 @@ def get_journal_entries_by_user(user_id: int):
         return [row_to_dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
+
+
+def upsert_emotion_triggers(*, user_id: int, emotion: str, keywords: list):
+    """Increment counts for (user_id, emotion, keyword); insert new rows as needed."""
+    emo = (emotion or "").strip().lower()
+    if not emo or user_id <= 0:
+        return 0
+    seen = set()
+    cleaned = []
+    for raw in keywords or []:
+        if raw is None:
+            continue
+        k = str(raw).strip().lower()
+        if len(k) < 2:
+            continue
+        k = k[:128]
+        if k in seen:
+            continue
+        seen.add(k)
+        cleaned.append(k)
+    if not cleaned:
+        return 0
+
+    conn = get_conn()
+    cur = conn.cursor()
+    n = 0
+    try:
+        if USE_POSTGRES:
+            for kw in cleaned:
+                cur.execute(
+                    """
+                    INSERT INTO emotion_triggers (user_id, emotion, keyword, count, last_updated)
+                    VALUES (%s, %s, %s, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, emotion, keyword) DO UPDATE SET
+                        count = emotion_triggers.count + 1,
+                        last_updated = CURRENT_TIMESTAMP
+                    """,
+                    (user_id, emo, kw),
+                )
+                n += cur.rowcount if cur.rowcount else 1
+        else:
+            for kw in cleaned:
+                cur.execute(
+                    """
+                    INSERT INTO emotion_triggers (user_id, emotion, keyword, count, last_updated)
+                    VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id, emotion, keyword) DO UPDATE SET
+                        count = count + 1,
+                        last_updated = CURRENT_TIMESTAMP
+                    """,
+                    (user_id, emo, kw),
+                )
+                n += 1
+        conn.commit()
+        return n
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_emotion_trigger_rows_for_user(user_id: int):
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                SELECT emotion, keyword, count, last_updated
+                FROM emotion_triggers
+                WHERE user_id = %s
+                ORDER BY emotion ASC, count DESC, keyword ASC
+                """,
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT emotion, keyword, count, last_updated
+                FROM emotion_triggers
+                WHERE user_id = ?
+                ORDER BY emotion ASC, count DESC, keyword ASC
+                """,
+                (user_id,),
+            )
+        return [row_to_dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_top_triggers_by_emotion(user_id: int, per_emotion: int = 3):
+    """Return list of {emotion, keywords: [str, ...]} for emotions that have data."""
+    rows = get_emotion_trigger_rows_for_user(user_id)
+    grouped = {}
+    for r in rows:
+        emo = (r.get("emotion") or "").lower()
+        if not emo:
+            continue
+        grouped.setdefault(emo, []).append(r)
+    out = []
+    for emo in sorted(grouped.keys()):
+        kws = [x["keyword"] for x in grouped[emo][:per_emotion]]
+        if kws:
+            out.append({"emotion": emo, "keywords": kws})
+    return out

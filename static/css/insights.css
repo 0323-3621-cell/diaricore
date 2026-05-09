@@ -762,6 +762,94 @@ body {
     margin-bottom: 3rem;
 }
 
+.triggers-section__heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.triggers-section__heading .bi {
+    color: var(--primary-color);
+}
+
+.triggers-section__subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0 0 1.25rem 0;
+    max-width: 42rem;
+    line-height: 1.5;
+}
+
+.emotion-triggers-dashboard {
+    min-height: 2rem;
+}
+
+.emotion-triggers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.emotion-trigger-card {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--card-background);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.emotion-trigger-card:hover {
+    box-shadow: var(--box-shadow-hover);
+    transform: translateY(-1px);
+}
+
+.emotion-trigger-card__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.emotion-trigger-card__emoji {
+    font-size: 1.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.emotion-trigger-card__title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+    line-height: 1.45;
+}
+
+.emotion-trigger-card__keywords {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+.emotion-trigger-card__insight {
+    margin: 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.emotion-triggers-empty,
+.emotion-triggers-loading {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
 .triggers-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

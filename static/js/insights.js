@@ -37,6 +37,101 @@ function getChartTheme() {
     };
 }
 
+const EMOTION_TRIGGER_UI = {
+    happy: { label: 'Happy', emoji: '😊' },
+    sad: { label: 'Sad', emoji: '😢' },
+    angry: { label: 'Angry', emoji: '😠' },
+    anxious: { label: 'Anxious', emoji: '😰' },
+    neutral: { label: 'Neutral', emoji: '😐' },
+};
+
+function titleCaseEmotion(emo) {
+    const s = (emo || '').toLowerCase();
+    if (!s) return 'Mood';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function renderEmotionTriggerCard(item) {
+    const emo = (item.emotion || '').toLowerCase();
+    const meta = EMOTION_TRIGGER_UI[emo] || { label: titleCaseEmotion(emo), emoji: '📝' };
+    const kws = (item.keywords || []).slice(0, 3).join(', ') || '—';
+    const insight = item.insight ? String(item.insight) : '';
+    const esc = (t) =>
+        String(t)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    return `
+        <article class="emotion-trigger-card" data-emotion="${esc(emo)}">
+            <div class="emotion-trigger-card__head">
+                <span class="emotion-trigger-card__emoji" aria-hidden="true">${meta.emoji}</span>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">${esc(meta.label)} triggers:</span> <span class="emotion-trigger-card__keywords">${esc(kws)}</span></h3>
+            </div>
+            <p class="emotion-trigger-card__insight">${esc(insight)}</p>
+        </article>`;
+}
+
+async function loadEmotionTriggersDashboard() {
+    const el = document.getElementById('emotionTriggersDashboard');
+    if (!el) return;
+
+    const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    const userId = Number(user?.id || 0);
+    if (!userId) {
+        el.innerHTML =
+            '<p class="emotion-triggers-empty">Log in and save entries to see mood-linked trigger keywords here.</p>';
+        return;
+    }
+
+    el.innerHTML =
+        '<p class="emotion-triggers-loading" role="status">Loading trigger patterns…</p>';
+
+    try {
+        const [topRes, insRes] = await Promise.all([
+            fetch(`/api/triggers/top?userId=${encodeURIComponent(String(userId))}`),
+            fetch(`/api/triggers/insights?userId=${encodeURIComponent(String(userId))}`),
+        ]);
+        const topJson = await topRes.json();
+        const insJson = await insRes.json();
+        if (!topRes.ok || !topJson.success) {
+            throw new Error(topJson.error || 'Could not load trigger keywords.');
+        }
+        if (!insRes.ok || !insJson.success) {
+            throw new Error(insJson.error || 'Could not load insights.');
+        }
+
+        const byEmo = {};
+        (topJson.byEmotion || []).forEach((row) => {
+            const e = (row.emotion || '').toLowerCase();
+            if (!e) return;
+            byEmo[e] = { emotion: e, keywords: row.keywords || [] };
+        });
+        (insJson.insights || []).forEach((row) => {
+            const e = (row.emotion || '').toLowerCase();
+            if (!e) return;
+            if (!byEmo[e]) {
+                byEmo[e] = { emotion: e, keywords: [] };
+            }
+            byEmo[e].insight = row.insight;
+        });
+
+        const items = Object.values(byEmo).filter((x) => (x.keywords || []).length > 0);
+        if (!items.length) {
+            el.innerHTML =
+                '<p class="emotion-triggers-empty">No trigger keywords yet. Save a few journal entries and come back — keywords are counted from your diary text.</p>';
+            return;
+        }
+
+        items.sort((a, b) => (a.emotion || '').localeCompare(b.emotion || ''));
+        el.innerHTML = `<div class="emotion-triggers-list">${items.map(renderEmotionTriggerCard).join('')}</div>`;
+    } catch (err) {
+        console.error('emotion triggers dashboard:', err);
+        el.innerHTML =
+            '<p class="emotion-triggers-empty">Could not load trigger patterns. Please refresh or try again later.</p>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     await syncInsightsEntriesFromApi();
     INSIGHTS_ENTRIES = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]').filter((e) => e && e.date);
@@ -51,9 +146,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Load Data
     loadInsightsData();
-    
-    // Initialize Mobile Trigger Functionality
-    initializeMobileTriggers();
+
+    await loadEmotionTriggersDashboard();
 });
 
 async function syncInsightsEntriesFromApi() {
@@ -135,69 +229,8 @@ function emotionBreakdownData() {
 
 function applyInsightsEmptyState() {
     if (HAS_INSIGHTS_DATA) return;
-    document.querySelectorAll('.trigger-name-desktop, .trigger-name-mobile-only').forEach((el) => {
-        el.textContent = 'No data yet';
-    });
-    document.querySelectorAll('.trigger-description').forEach((el) => {
-        el.textContent = 'Write a few entries first to unlock personalized emotional trigger insights.';
-    });
     const moodHeader = document.querySelector('.header-section .subtitle');
     if (moodHeader) moodHeader.textContent = 'Insights will appear once you start journaling.';
-}
-
-// Mobile: Top Stressor / Top Joy flip cards (desktop uses static layout from CSS)
-function initializeMobileTriggers() {
-    const mq = window.matchMedia('(max-width: 768px)');
-    const stressTrigger = document.querySelector('.stress-trigger');
-    const happinessTrigger = document.querySelector('.happiness-trigger');
-    
-    function resetFlips() {
-        document.querySelectorAll('.trigger-flip-inner.is-flipped').forEach(function (el) {
-            el.classList.remove('is-flipped');
-        });
-    }
-    
-    function flipHandler(card, inner, otherInner) {
-        return function (ev) {
-            if (!mq.matches) return;
-            ev.preventDefault();
-            inner.classList.toggle('is-flipped');
-            if (otherInner && otherInner.classList.contains('is-flipped')) {
-                otherInner.classList.remove('is-flipped');
-            }
-        };
-    }
-    
-    function apply() {
-        const stressInner = stressTrigger && stressTrigger.querySelector('.trigger-flip-inner');
-        const happyInner = happinessTrigger && happinessTrigger.querySelector('.trigger-flip-inner');
-        
-        if (stressTrigger && stressTrigger._stressFlipHandler) {
-            stressTrigger.removeEventListener('click', stressTrigger._stressFlipHandler);
-            stressTrigger._stressFlipHandler = null;
-        }
-        if (happinessTrigger && happinessTrigger._happyFlipHandler) {
-            happinessTrigger.removeEventListener('click', happinessTrigger._happyFlipHandler);
-            happinessTrigger._happyFlipHandler = null;
-        }
-        
-        if (!mq.matches) {
-            resetFlips();
-            return;
-        }
-        
-        if (stressTrigger && stressInner) {
-            stressTrigger._stressFlipHandler = flipHandler(stressTrigger, stressInner, happyInner);
-            stressTrigger.addEventListener('click', stressTrigger._stressFlipHandler);
-        }
-        if (happinessTrigger && happyInner) {
-            happinessTrigger._happyFlipHandler = flipHandler(happinessTrigger, happyInner, stressInner);
-            happinessTrigger.addEventListener('click', happinessTrigger._happyFlipHandler);
-        }
-    }
-    
-    apply();
-    mq.addEventListener('change', apply);
 }
 
 // Initialize Weekly Mood Chart

@@ -746,7 +746,7 @@ def get_journal_entries_by_user(user_id: int):
         conn.close()
 
 
-def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3, top_n: int = 3):
+def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3):
     """
     Build top tag triggers from saved entry tags (not NLP keywords).
 
@@ -797,15 +797,16 @@ def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3, top_n
             for tag in tags:
                 happy_counts[tag] = happy_counts.get(tag, 0) + 1
 
-    def _pick_top(counter, max_items: int = 3):
+    def _pick_top_with_ties(counter, max_items: int = 2):
         if not counter:
             return []
         ordered = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
-        return [tag for tag, _ in ordered[: max(1, int(max_items or 1))]]
+        top_count = ordered[0][1]
+        ties = [tag for tag, cnt in ordered if cnt == top_count]
+        return ties[: max(1, int(max_items or 1))]
 
-    max_items = max(1, int(top_n or 1))
-    top_stress = _pick_top(stress_counts, max_items) if stress_entries_with_tags >= min_entries else []
-    top_happy = _pick_top(happy_counts, max_items) if happy_entries_with_tags >= min_entries else []
+    top_stress = _pick_top_with_ties(stress_counts, 2) if stress_entries_with_tags >= min_entries else []
+    top_happy = _pick_top_with_ties(happy_counts, 2) if happy_entries_with_tags >= min_entries else []
     return {
         "topStressTriggers": top_stress,
         "topHappinessTriggers": top_happy,

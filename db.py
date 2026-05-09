@@ -797,16 +797,19 @@ def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3):
             for tag in tags:
                 happy_counts[tag] = happy_counts.get(tag, 0) + 1
 
-    def _pick_top(counter):
+    def _pick_top_with_ties(counter, max_items: int = 2):
         if not counter:
-            return None
-        return sorted(counter.items(), key=lambda x: (-x[1], x[0]))[0][0]
+            return []
+        ordered = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
+        top_count = ordered[0][1]
+        ties = [tag for tag, cnt in ordered if cnt == top_count]
+        return ties[: max(1, int(max_items or 1))]
 
-    top_stress = _pick_top(stress_counts) if stress_entries_with_tags >= min_entries else None
-    top_happy = _pick_top(happy_counts) if happy_entries_with_tags >= min_entries else None
+    top_stress = _pick_top_with_ties(stress_counts, 2) if stress_entries_with_tags >= min_entries else []
+    top_happy = _pick_top_with_ties(happy_counts, 2) if happy_entries_with_tags >= min_entries else []
     return {
-        "topStressTrigger": top_stress,
-        "topHappinessTrigger": top_happy,
+        "topStressTriggers": top_stress,
+        "topHappinessTriggers": top_happy,
         "stressTaggedEntries": stress_entries_with_tags,
         "happinessTaggedEntries": happy_entries_with_tags,
         "minRequiredEntries": min_entries,

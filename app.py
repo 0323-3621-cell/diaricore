@@ -609,10 +609,12 @@ def api_triggers_summary():
         return jsonify({"success": False, "error": "User not found."}), 404
 
     summary = db.get_tag_trigger_summary(uid, min_entries_per_bucket=3)
-    stress = summary.get("topStressTrigger")
-    happy = summary.get("topHappinessTrigger")
+    stress_list = [x for x in (summary.get("topStressTriggers") or []) if x]
+    happy_list = [x for x in (summary.get("topHappinessTriggers") or []) if x]
+    stress = ", ".join(_to_title_case(x) for x in stress_list) if stress_list else None
+    happy = ", ".join(_to_title_case(x) for x in happy_list) if happy_list else None
     insight = (
-        f"Your mood improves when you mention {_to_title_case(happy)}."
+        f"Your mood improves when you mention {happy}."
         if happy
         else "Add more tagged happy entries to unlock your positive trigger insight."
     )
@@ -620,8 +622,10 @@ def api_triggers_summary():
     return jsonify(
         {
             "success": True,
-            "topStressTrigger": _to_title_case(stress) if stress else None,
-            "topHappinessTrigger": _to_title_case(happy) if happy else None,
+            "topStressTrigger": stress,
+            "topHappinessTrigger": happy,
+            "topStressTriggers": [_to_title_case(x) for x in stress_list],
+            "topHappinessTriggers": [_to_title_case(x) for x in happy_list],
             "insight": insight,
             "stressTaggedEntries": int(summary.get("stressTaggedEntries") or 0),
             "happinessTaggedEntries": int(summary.get("happinessTaggedEntries") or 0),

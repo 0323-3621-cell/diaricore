@@ -821,6 +821,79 @@ body {
     margin-top: 1rem;
 }
 
+/* Emotion Breakdown desktop legend (below pie chart) */
+.emotion-breakdown-desktop-legend {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+    align-items: stretch;
+}
+
+.emotion-breakdown-desktop-legend .legend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    border-radius: 14px;
+    line-height: 1.15;
+    min-width: 0;
+}
+
+.emotion-breakdown-desktop-legend .legend-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.emotion-breakdown-desktop-legend .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    flex: 0 0 12px;
+}
+
+.emotion-breakdown-desktop-legend .legend-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.emotion-breakdown-desktop-legend .legend-name {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.emotion-breakdown-desktop-legend .legend-meta {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.82rem;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+.emotion-breakdown-desktop-legend .legend-pct {
+    color: var(--text-dark);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.2px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+    .emotion-breakdown-desktop-legend {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+    }
+}
+
 /* Triggers Section */
 .triggers-section {
     margin-bottom: 3rem;
@@ -1037,6 +1110,10 @@ body {
     .charts-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
+    }
+
+    .emotion-breakdown-desktop-legend {
+        display: none !important;
     }
     
     /* Insight .triggers-grid uses flex row in the earlier max-width: 768px block; do not force single column here */

@@ -662,7 +662,7 @@ def api_triggers_top():
         return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
-    top = db.get_top_triggers_by_emotion(uid, 3)
+    top = db.get_top_triggers_by_emotion(uid, per_emotion=1, min_total_count=3)
     return jsonify({"success": True, "byEmotion": top}), 200
 
 
@@ -674,7 +674,7 @@ def api_triggers_insights():
         return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
-    top = db.get_top_triggers_by_emotion(uid, 3)
+    top = db.get_top_triggers_by_emotion(uid, per_emotion=1, min_total_count=3)
     insights = []
     for row in top:
         emo = row["emotion"]

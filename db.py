@@ -868,8 +868,12 @@ def get_emotion_trigger_rows_for_user(user_id: int):
         conn.close()
 
 
-def get_top_triggers_by_emotion(user_id: int, per_emotion: int = 3):
-    """Return list of {emotion, keywords: [str, ...]} for emotions that have data."""
+def get_top_triggers_by_emotion(user_id: int, per_emotion: int = 1, min_total_count: int = 3):
+    """
+    Return list of {emotion, keywords: [str, ...]}.
+
+    Only includes emotions with cumulative trigger count >= min_total_count.
+    """
     rows = get_emotion_trigger_rows_for_user(user_id)
     grouped = {}
     for r in rows:
@@ -879,7 +883,10 @@ def get_top_triggers_by_emotion(user_id: int, per_emotion: int = 3):
         grouped.setdefault(emo, []).append(r)
     out = []
     for emo in sorted(grouped.keys()):
-        kws = [x["keyword"] for x in grouped[emo][:per_emotion]]
+        total = sum(int(x.get("count") or 0) for x in grouped[emo])
+        if total < max(1, int(min_total_count or 1)):
+            continue
+        kws = [x["keyword"] for x in grouped[emo][: max(1, int(per_emotion or 1))]]
         if kws:
             out.append({"emotion": emo, "keywords": kws})
     return out

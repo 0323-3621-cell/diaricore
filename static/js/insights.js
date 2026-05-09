@@ -54,7 +54,7 @@ function titleCaseEmotion(emo) {
 function renderEmotionTriggerCard(item) {
     const emo = (item.emotion || '').toLowerCase();
     const meta = EMOTION_TRIGGER_UI[emo] || { label: titleCaseEmotion(emo), emoji: '📝' };
-    const kws = (item.keywords || []).slice(0, 3).join(', ') || '—';
+    const topKeyword = (item.keywords || [])[0] || '—';
     const insight = item.insight ? String(item.insight) : '';
     const esc = (t) =>
         String(t)
@@ -66,7 +66,7 @@ function renderEmotionTriggerCard(item) {
         <article class="emotion-trigger-card" data-emotion="${esc(emo)}">
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">${meta.emoji}</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">${esc(meta.label)} triggers:</span> <span class="emotion-trigger-card__keywords">${esc(kws)}</span></h3>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">${esc(meta.label)} trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topKeyword)}</span></h3>
             </div>
             <p class="emotion-trigger-card__insight">${esc(insight)}</p>
         </article>`;

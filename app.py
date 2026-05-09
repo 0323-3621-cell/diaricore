@@ -4,7 +4,6 @@ Deploy on Railway with PostgreSQL (DATABASE_URL). Local dev uses SQLite.
 """
 
 import os
-import re
 import json
 import random
 import urllib.request
@@ -15,18 +14,6 @@ from werkzeug.security import check_password_hash
 
 import db
 import space_nlp
-
-_BASE_KEYWORD_STOPWORDS = frozenset(
-    """
-    a an the and or but if in on at to for of as is it be so no not we you he she they them his
-    her its our your my me i are was were been being have has had do does did will would could
-    should may might must can this that these those with from than then too very just also only
-    even into over out up down what when where which who whom whose why how all each every both
-    few more most some such any many much own same other about after before above below between
-    through while during until unless though although because under again there here something
-    nothing everything
-    """.split()
-)
 
 INSIGHT_TEMPLATES = {
     "anxious": [
@@ -55,52 +42,6 @@ INSIGHT_TEMPLATES = {
         "When you're steady, {k} still appears as a quiet theme.",
     ],
 }
-
-
-def _extract_keywords_fallback(text: str, max_keywords: int = 12) -> list:
-    """Lightweight keyword list when the client/ML does not send keywords (not full RAKE)."""
-    t = (text or "").lower()
-    words = re.findall(r"\b[a-z][a-z\-']{1,}\b", t)
-    freq = {}
-    for w in words:
-        if w in _BASE_KEYWORD_STOPWORDS or len(w) < 3:
-            continue
-        freq[w] = freq.get(w, 0) + 1
-    ranked = sorted(freq.items(), key=lambda x: (-x[1], x[0]))
-    return [w for w, _ in ranked[:max_keywords]]
-
-
-def _normalize_request_keywords(raw) -> list:
-    if raw is None:
-        return []
-    if isinstance(raw, str):
-        raw = [raw]
-    if not isinstance(raw, list):
-        return []
-    seen = set()
-    out = []
-    for item in raw:
-        if item is None:
-            continue
-        k = str(item).strip().lower()
-        if len(k) < 2:
-            continue
-        k = k[:128]
-        if k in seen:
-            continue
-        seen.add(k)
-        out.append(k)
-    return out
-
-
-def _keywords_for_entry_save(data: dict, text: str, analysis: dict | None = None) -> list:
-    merged = _normalize_request_keywords(data.get("keywords"))
-    if merged:
-        return merged
-    from_space = _normalize_request_keywords((analysis or {}).get("keywords"))
-    if from_space:
-        return from_space
-    return _extract_keywords_fallback(text)
 
 
 def _random_insight_line(emotion: str, top_keyword: str) -> str:
@@ -659,35 +600,6 @@ def api_entries_get():
     return jsonify({"success": True, "entries": [serialize_entry(r) for r in rows]}), 200
 
 
-@app.route("/api/triggers/top", methods=["GET"])
-@app.route("/triggers/top", methods=["GET"])
-def api_triggers_top():
-    uid = _trigger_query_user_id()
-    if uid is None or uid <= 0:
-        return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
-    if not db.get_user_by_id(uid):
-        return jsonify({"success": False, "error": "User not found."}), 404
-    top = db.get_top_triggers_by_emotion(uid, per_emotion=1, min_total_count=3)
-    return jsonify({"success": True, "byEmotion": top}), 200
-
-
-@app.route("/api/triggers/insights", methods=["GET"])
-@app.route("/triggers/insights", methods=["GET"])
-def api_triggers_insights():
-    uid = _trigger_query_user_id()
-    if uid is None or uid <= 0:
-        return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
-    if not db.get_user_by_id(uid):
-        return jsonify({"success": False, "error": "User not found."}), 404
-    top = db.get_top_triggers_by_emotion(uid, per_emotion=1, min_total_count=3)
-    insights = []
-    for row in top:
-        emo = row["emotion"]
-        kws = row.get("keywords") or []
-        insights.append({"emotion": emo, "insight": _random_insight_line(emo, kws[0] if kws else "")})
-    return jsonify({"success": True, "insights": insights}), 200
-
-
 @app.route("/api/triggers/summary", methods=["GET"])
 def api_triggers_summary():
     uid = _trigger_query_user_id()
@@ -746,14 +658,6 @@ def api_entries_post():
         emotion_label=analysis["emotionLabel"],
         emotion_score=float(analysis["emotionScore"]),
     )
-    emo_for_triggers = str(analysis.get("emotionLabel") or "neutral").lower()
-    if emo_for_triggers not in space_nlp.ALLOWED:
-        emo_for_triggers = "neutral"
-    kw_list = _keywords_for_entry_save(data, text, analysis)
-    try:
-        db.upsert_emotion_triggers(user_id=user_id, emotion=emo_for_triggers, keywords=kw_list)
-    except Exception as exc:
-        print(f"[triggers] upsert failed user={user_id}: {exc}")
     response_entry = serialize_entry(row)
     response_entry["all_probs"]     = analysis.get("all_probs") or {}
     response_entry["secondaryMood"] = analysis.get("secondaryMood")

@@ -69,7 +69,7 @@ async function loadEmotionTriggersDashboard() {
     const userId = Number(user?.id || 0);
     if (!userId) {
         el.innerHTML =
-            '<p class="emotion-triggers-empty">Log in and save entries to see mood-linked trigger keywords here.</p>';
+            '<p class="emotion-triggers-empty">Log in and save entries with tags to see your trigger summary here.</p>';
         return;
     }
 

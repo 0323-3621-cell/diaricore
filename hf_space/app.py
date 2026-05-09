@@ -96,60 +96,6 @@ _LOAD_ERR        = None
 _LAST_EXPORT_ERR = None  # surfaced in /health when export fails but Hub fallback might work
 _LOAD_PHASE      = ""  # non-empty while load is progressing (helps explain null model_error during big downloads)
 _LOADED    = False
-_RAKE_READY = False
-_RAKE_LOCK  = threading.Lock()
-
-# ---------------------------------------------------------------------------
-# RAKE keywords (for DiariCore trigger analytics; NLTK data downloaded once)
-# ---------------------------------------------------------------------------
-
-def _ensure_rake_nltk() -> None:
-    global _RAKE_READY
-    if _RAKE_READY:
-        return
-    with _RAKE_LOCK:
-        if _RAKE_READY:
-            return
-        try:
-            import nltk
-
-            for pkg in ("punkt", "punkt_tab", "stopwords"):
-                try:
-                    nltk.download(pkg, quiet=True)
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"[inference] NLTK / RAKE prep warning: {e}")
-        _RAKE_READY = True
-
-
-def extract_rake_keywords(text: str, max_keywords: int = 12) -> list:
-    """RAKE-ranked phrases (length 1–3 tokens), lowercase, deduped."""
-    _ensure_rake_nltk()
-    try:
-        from rake_nltk import Rake
-
-        rake = Rake(min_length=1, max_length=3)
-        rake.extract_keywords_from_text(text or "")
-        phrases = rake.get_ranked_phrases()
-        out, seen = [], set()
-        for p in phrases:
-            s = (p or "").strip().lower()
-            if len(s) < 2:
-                continue
-            s = s[:128]
-            if s in seen:
-                continue
-            seen.add(s)
-            out.append(s)
-            if len(out) >= max_keywords:
-                break
-        return out
-    except Exception as e:
-        print(f"[inference] RAKE extract error: {e}")
-        return []
-
-
 # ---------------------------------------------------------------------------
 # Keyword layer
 # ---------------------------------------------------------------------------
@@ -495,7 +441,6 @@ def _fallback(text: str) -> dict:
     raw[emo] = 0.62
     all_probs = _apply_calibration(raw)
     best      = max(all_probs, key=all_probs.__getitem__)
-    rake_kw = extract_rake_keywords(text or "")
     return {
         "sentimentLabel": _derive_sentiment(best),
         "sentimentScore": round(all_probs[best], 4),
@@ -503,7 +448,6 @@ def _fallback(text: str) -> dict:
         "emotionScore":   round(all_probs[best], 4),
         "all_probs":      all_probs,
         "engine":         "fallback",
-        "keywords":       rake_kw,
     }
 
 
@@ -529,7 +473,6 @@ def analyze(text: str) -> dict:
         if overridden:
             print(f"[inference] keyword override: {reason}")
 
-        rake_kw = extract_rake_keywords(clean)
         return {
             "sentimentLabel":  _derive_sentiment(final_label),
             "sentimentScore":  round(final_prob, 4),
@@ -540,7 +483,6 @@ def analyze(text: str) -> dict:
             "keywordOverride": overridden,
             "engine":          "onnx-space",
             "ms":              int((time.time() - started) * 1000),
-            "keywords":        rake_kw,
         }
     except Exception as e:
         print(f"[inference] error: {e}")
@@ -558,7 +500,6 @@ class PredictRequest(BaseModel):
 
 
 def _warmup_background():
-    _ensure_rake_nltk()
     _ensure_loaded()
 
 

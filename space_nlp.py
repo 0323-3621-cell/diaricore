@@ -41,7 +41,6 @@ def _fallback(text: str) -> Dict[str, object]:
         "emotionScore":   score,
         "all_probs":      {lbl: (score if lbl == emo else 0.0) for lbl in ALLOWED},
         "engine":         "fallback",
-        "keywords":       [],
     }
 
 
@@ -66,9 +65,6 @@ def analyze(text: str) -> Dict[str, object]:
         if "emotionLabel" not in data:
             print(f"[space_nlp] Unexpected response keys: {list(data)[:5]}")
             return _fallback(clean)
-
-        if not isinstance(data.get("keywords"), list):
-            data["keywords"] = []
 
         print(f"[space_nlp] OK — {data.get('emotionLabel')} "
               f"({data.get('emotionScore',0)*100:.1f}%) "

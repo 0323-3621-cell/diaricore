@@ -491,11 +491,16 @@ function initializeEmotionPieChart() {
         ];
         legendEl.innerHTML = items
             .map((it) => `
-                <span class="legend-item">
-                    <span class="legend-dot" style="background:${it.color}"></span>
-                    <span class="legend-name">${it.name}</span>
-                    <span class="legend-meta">(${it.pct.toFixed(1)}% · ${it.meta})</span>
-                </span>
+                <div class="legend-card" role="listitem">
+                    <div class="legend-left">
+                        <span class="legend-dot" style="background:${it.color}" aria-hidden="true"></span>
+                        <div class="legend-text">
+                            <div class="legend-name">${it.name}</div>
+                            <div class="legend-meta">${it.meta}</div>
+                        </div>
+                    </div>
+                    <div class="legend-pct">${it.pct.toFixed(1)}%</div>
+                </div>
             `)
             .join('');
     } else if (legendEl) {

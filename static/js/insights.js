@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     initializeWeeklyMoodChartDesktop();
     initializeEmotionPieChart();
     initializeEmotionPieChartMobile();
-    initializeActivityImpactChart();
+    initializeMoodByTagChart();
     
     // Load Data
     loadInsightsData();
@@ -571,41 +571,110 @@ function initializeEmotionPieChartMobile() {
     }
 }
 
+function normalizeTagValue(tag) {
+    return String(tag || '').trim().replace(/\s+/g, ' ');
+}
+
+function buildTagMoodBreakdown() {
+    const countsByTag = {};
+    const totalsByTag = {};
+    const moods = ['happy', 'sad', 'angry', 'anxious', 'neutral'];
+
+    INSIGHTS_ENTRIES.forEach((entry) => {
+        const tags = Array.isArray(entry?.tags) ? entry.tags : [];
+        if (!tags.length) return;
+        const mood = resolveDetectedMood(entry);
+
+        tags.forEach((raw) => {
+            const normalized = normalizeTagValue(raw);
+            if (!normalized) return;
+            const key = normalized.toLowerCase();
+
+            if (!countsByTag[key]) {
+                countsByTag[key] = { display: normalized, happy: 0, sad: 0, angry: 0, anxious: 0, neutral: 0 };
+                totalsByTag[key] = 0;
+            }
+
+            countsByTag[key][mood] = (countsByTag[key][mood] || 0) + 1;
+            totalsByTag[key] += 1;
+        });
+    });
+
+    const rankedTagKeys = Object.keys(totalsByTag)
+        .sort((a, b) => (totalsByTag[b] - totalsByTag[a]) || a.localeCompare(b))
+        .slice(0, 7);
+
+    const labels = rankedTagKeys.map((k) => countsByTag[k].display);
+    const totals = rankedTagKeys.map((k) => totalsByTag[k] || 0);
+
+    const pct = (tagKey, moodKey) => {
+        const total = totalsByTag[tagKey] || 1;
+        return Math.round(((countsByTag[tagKey][moodKey] || 0) / total) * 1000) / 10; // 0.1%
+    };
+
+    const datasets = moods.map((m) => ({
+        mood: m,
+        data: rankedTagKeys.map((k) => pct(k, m)),
+    }));
+
+    return { labels, rankedTagKeys, totals, countsByTag, datasets };
+}
+
 // Initialize Activity Impact Chart
-function initializeActivityImpactChart() {
+function initializeMoodByTagChart() {
     const ctx = document.getElementById('activityImpactChart');
     if (!ctx) return;
     
     const chartTheme = getChartTheme();
-    const activityData = {
-        labels: ['Exercise', 'Sleep', 'Work', 'Social', 'Reading', 'Meditation'],
-        datasets: [{
-            label: 'Mood Impact',
-            data: HAS_INSIGHTS_DATA ? [85, 78, 45, 72, 68, 82] : [0, 0, 0, 0, 0, 0],
-            backgroundColor: [
-                hexToRgba(chartTheme.primary, 0.9),
-                hexToRgba(chartTheme.primary, 0.85),
-                hexToRgba(chartTheme.primary, 0.5),
-                hexToRgba(chartTheme.primary, 0.7),
-                hexToRgba(chartTheme.primary, 0.6),
-                hexToRgba(chartTheme.primary, 0.8)
-            ],
-            borderColor: chartTheme.primary,
-            borderWidth: 2,
-            borderRadius: 6,
-            barThickness: 40
-        }]
+
+    const moodColors = {
+        happy: '#2A9D8F',
+        sad: '#457B9D',
+        angry: '#E63946',
+        anxious: '#F4A261',
+        neutral: '#9AA5B1',
     };
+
+    const breakdown = HAS_INSIGHTS_DATA ? buildTagMoodBreakdown() : null;
+    const labels = breakdown && breakdown.labels.length ? breakdown.labels : ['No Data'];
+
+    const datasets = breakdown
+        ? breakdown.datasets.map((d) => ({
+            label: d.mood.charAt(0).toUpperCase() + d.mood.slice(1),
+            data: d.data,
+            backgroundColor: moodColors[d.mood],
+            borderColor: moodColors[d.mood],
+            borderWidth: 1,
+            borderRadius: 6,
+            barThickness: 34,
+            stack: 'moods',
+        }))
+        : [{
+            label: 'No Data',
+            data: [0],
+            backgroundColor: chartTheme.pieFallback,
+            borderColor: chartTheme.pieFallback,
+            borderWidth: 1,
+            borderRadius: 6,
+            barThickness: 34,
+            stack: 'moods',
+        }];
     
     const config = {
         type: 'bar',
-        data: activityData,
+        data: { labels, datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        color: chartTheme.tick,
+                        font: { size: 12, weight: '600' },
+                        padding: 14,
+                    }
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
@@ -614,16 +683,27 @@ function initializeActivityImpactChart() {
                     bodyColor: '#ffffff',
                     padding: 12,
                     cornerRadius: 8,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            return `Impact: ${context.parsed.y}%`;
+                            const mood = String(context.dataset.label || '');
+                            const pctValue = Number(context.parsed.y || 0);
+                            return `${mood}: ${pctValue.toFixed(1)}%`;
+                        },
+                        afterBody: function(context) {
+                            if (!breakdown) return '';
+                            const idx = context?.[0]?.dataIndex ?? -1;
+                            const tagKey = breakdown.rankedTagKeys?.[idx];
+                            if (!tagKey) return '';
+                            const total = breakdown.totals?.[idx] ?? 0;
+                            return `Based on ${total} tagged entries`;
                         }
                     }
                 }
             },
             scales: {
                 x: {
+                    stacked: true,
                     grid: {
                         display: false
                     },
@@ -632,12 +712,19 @@ function initializeActivityImpactChart() {
                         font: {
                             size: 12,
                             weight: '500'
+                        },
+                        maxRotation: 0,
+                        callback: function(value) {
+                            const label = this.getLabelForValue(value);
+                            const s = String(label || '');
+                            return s.length > 10 ? s.slice(0, 10) + '…' : s;
                         }
                     }
                 },
                 y: {
                     beginAtZero: true,
                     max: 100,
+                    stacked: true,
                     grid: {
                         color: chartTheme.grid,
                         borderDash: [5, 5]
@@ -653,6 +740,10 @@ function initializeActivityImpactChart() {
                         }
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     };

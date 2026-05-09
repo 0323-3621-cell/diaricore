@@ -590,9 +590,9 @@ body {
         position: relative !important;
     }
     
-    /* Hide original chart containers on mobile */
+    /* On mobile: show chart canvases (we removed static activity bars) */
     .chart-card .chart-container {
-        display: none !important;
+        display: block !important;
     }
     
     /* Show mobile custom layouts */
@@ -607,16 +607,7 @@ body {
         border: 1px solid var(--border-color) !important;
     }
     
-    .activity-impact-mobile {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.7rem !important;
-        padding: 1rem !important;
-        margin-bottom: 1rem !important;
-        background-color: var(--card-background) !important;
-        border-radius: 16px !important;
-        border: 1px solid var(--border-color) !important;
-    }
+    .activity-impact-mobile { display: none !important; }
     
     /* Hide chart-card containers on mobile */
     .charts-grid .chart-card {

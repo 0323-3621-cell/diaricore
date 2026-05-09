@@ -581,7 +581,8 @@ def api_entries_post():
         emotion_score=float(analysis["emotionScore"]),
     )
     response_entry = serialize_entry(row)
-    response_entry["all_probs"] = analysis.get("all_probs") or {}
+    response_entry["all_probs"]     = analysis.get("all_probs") or {}
+    response_entry["secondaryMood"] = analysis.get("secondaryMood")
     return jsonify({"success": True, "entry": response_entry, "analysisEngine": analysis.get("engine", "hf-custom")}), 201
 
 

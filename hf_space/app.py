@@ -1,6 +1,12 @@
 """
 DiariCore Inference API — HuggingFace Space
-FastAPI server that loads the ONNX mood classification model and serves predictions.
+FastAPI server that loads the mood classification model and serves predictions.
+
+Loading strategy (in priority order):
+  1. If model.onnx exists in cache → use ONNX directly (fastest)
+  2. If pytorch_model.bin exists → export it to ONNX, then use ONNX
+  3. If neither exists → download pytorch_model.bin, export to ONNX
+
 Replicates the notebook's predict_mood() pipeline exactly:
   tokenize -> ONNX forward -> softmax -> calibration -> keyword layer
 """
@@ -26,6 +32,7 @@ MAX_LEN     = 256
 
 ALLOWED_LABELS = ("angry", "anxious", "happy", "neutral", "sad")
 
+# Must match notebook predict_mood() THRESHOLDS exactly
 CALIBRATION: Dict[str, float] = {
     "angry":   1.40,
     "sad":     1.30,
@@ -118,8 +125,76 @@ def _apply_keyword_layer(text, primary, prob) -> Tuple[str, float, bool, Optiona
     return primary, prob, False, None
 
 # ---------------------------------------------------------------------------
-# Model loading
+# Model loading — PyTorch → ONNX export pipeline
 # ---------------------------------------------------------------------------
+
+def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool:
+    """
+    Load XLM-RoBERTa fine-tuned weights from bin_path and export to ONNX.
+    Returns True on success.
+    """
+    try:
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    except ImportError as e:
+        print(f"[inference] torch/transformers not available for export: {e}")
+        return False
+
+    print("[inference] Loading PyTorch model for ONNX export ...")
+    try:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            tok_dir,                       # config + tokenizer already there
+            state_dict=torch.load(bin_path, map_location="cpu"),
+            num_labels=len(ALLOWED_LABELS),
+        )
+    except Exception:
+        # Fallback: try loading from a saved_model directory layout
+        try:
+            model = AutoModelForSequenceClassification.from_pretrained(
+                os.path.dirname(bin_path),
+                num_labels=len(ALLOWED_LABELS),
+            )
+        except Exception as e2:
+            print(f"[inference] Could not load PyTorch model: {e2}")
+            return False
+
+    model.eval()
+
+    try:
+        tok = _TOKENIZER  # already loaded
+        dummy = tok(
+            "test",
+            add_special_tokens=True,
+            max_length=MAX_LEN,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        )
+        import torch
+        with torch.no_grad():
+            torch.onnx.export(
+                model,
+                (dummy["input_ids"], dummy["attention_mask"]),
+                onnx_path,
+                input_names=["input_ids", "attention_mask"],
+                output_names=["logits"],
+                dynamic_axes={
+                    "input_ids":      {0: "batch"},
+                    "attention_mask": {0: "batch"},
+                    "logits":         {0: "batch"},
+                },
+                opset_version=14,
+            )
+        size_mb = os.path.getsize(onnx_path) / 1e6
+        print(f"[inference] ONNX exported successfully — {size_mb:.0f} MB")
+        return True
+    except Exception as e:
+        print(f"[inference] ONNX export failed: {e}")
+        # Clean up broken file
+        if os.path.exists(onnx_path):
+            os.remove(onnx_path)
+        return False
+
 
 def _load_model():
     global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR
@@ -136,31 +211,18 @@ def _load_model():
     hf_kwargs = {"token": HF_TOKEN} if HF_TOKEN else {}
 
     onnx_path = os.path.join(CACHE_DIR, "model.onnx")
-    if not os.path.exists(onnx_path):
-        print(f"[inference] Downloading model.onnx from {HF_MODEL_ID} ...")
-        try:
-            dl = hf_hub_download(
-                repo_id=HF_MODEL_ID,
-                filename="model.onnx",
-                local_dir=CACHE_DIR,
-                **hf_kwargs,
-            )
-            if os.path.abspath(dl) != os.path.abspath(onnx_path):
-                import shutil; shutil.copy2(dl, onnx_path)
-        except Exception as e:
-            _LOAD_ERR = f"Download failed: {e}"
-            print(f"[inference] {_LOAD_ERR}")
-            return
-
-    tok_dir    = os.path.join(CACHE_DIR, "tokenizer")
+    bin_path  = os.path.join(CACHE_DIR, "pytorch_model.bin")
+    tok_dir   = os.path.join(CACHE_DIR, "tokenizer")
     tok_config = os.path.join(tok_dir, "tokenizer_config.json")
+
+    # ── Step 1: Download tokenizer (always needed) ──────────────────────────
     if not os.path.exists(tok_config):
-        print(f"[inference] Downloading tokenizer ...")
+        print(f"[inference] Downloading tokenizer from {HF_MODEL_ID} ...")
         try:
             snapshot_download(
                 repo_id=HF_MODEL_ID,
                 local_dir=tok_dir,
-                ignore_patterns=["*.onnx", "*.bin", "*.pt"],
+                ignore_patterns=["*.onnx", "*.bin", "*.pt", "*.safetensors"],
                 **hf_kwargs,
             )
         except Exception as e:
@@ -176,6 +238,67 @@ def _load_model():
         print(f"[inference] {_LOAD_ERR}")
         return
 
+    # ── Step 2: Ensure we have a valid ONNX model ───────────────────────────
+    # Check if the existing ONNX is stale: compare against HF commit sha
+    # (simple heuristic: if pytorch_model.bin is newer than model.onnx, re-export)
+    need_onnx = not os.path.exists(onnx_path)
+    if not need_onnx and os.path.exists(bin_path):
+        # Re-export if .bin is newer than .onnx (fresh upload scenario)
+        if os.path.getmtime(bin_path) > os.path.getmtime(onnx_path):
+            print("[inference] pytorch_model.bin is newer than model.onnx — re-exporting ...")
+            need_onnx = True
+
+    if need_onnx:
+        # Try downloading pytorch_model.bin first (preferred: exact new weights)
+        print(f"[inference] Downloading pytorch_model.bin from {HF_MODEL_ID} ...")
+        try:
+            dl = hf_hub_download(
+                repo_id=HF_MODEL_ID,
+                filename="pytorch_model.bin",
+                local_dir=CACHE_DIR,
+                force_download=True,   # always get the freshest weights
+                **hf_kwargs,
+            )
+            if os.path.abspath(dl) != os.path.abspath(bin_path):
+                import shutil
+                shutil.copy2(dl, bin_path)
+            print(f"[inference] pytorch_model.bin downloaded ({os.path.getsize(bin_path)/1e6:.0f} MB)")
+        except Exception as e:
+            print(f"[inference] pytorch_model.bin not found ({e}), trying model.onnx ...")
+            # Fall back to downloading model.onnx directly
+            try:
+                dl = hf_hub_download(
+                    repo_id=HF_MODEL_ID,
+                    filename="model.onnx",
+                    local_dir=CACHE_DIR,
+                    force_download=True,
+                    **hf_kwargs,
+                )
+                if os.path.abspath(dl) != os.path.abspath(onnx_path):
+                    import shutil
+                    shutil.copy2(dl, onnx_path)
+                print(f"[inference] model.onnx downloaded ({os.path.getsize(onnx_path)/1e6:.0f} MB)")
+            except Exception as e2:
+                _LOAD_ERR = f"Could not download model weights: bin={e}, onnx={e2}"
+                print(f"[inference] {_LOAD_ERR}")
+                return
+
+        # Export PyTorch → ONNX if we got the .bin
+        if os.path.exists(bin_path) and not os.path.exists(onnx_path):
+            if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
+                _LOAD_ERR = "ONNX export from PyTorch weights failed"
+                print(f"[inference] {_LOAD_ERR}")
+                return
+        elif os.path.exists(bin_path) and need_onnx:
+            # Re-export because bin is newer
+            if os.path.exists(onnx_path):
+                os.remove(onnx_path)
+            if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
+                _LOAD_ERR = "ONNX re-export from PyTorch weights failed"
+                print(f"[inference] {_LOAD_ERR}")
+                return
+
+    # ── Step 3: Load ONNX session ────────────────────────────────────────────
     try:
         opts = ort.SessionOptions()
         opts.log_severity_level   = 3
@@ -302,7 +425,7 @@ def analyze(text: str) -> dict:
 # FastAPI app
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="DiariCore Mood Inference API", version="1.0.0")
+app = FastAPI(title="DiariCore Mood Inference API", version="2.0.0")
 
 
 class PredictRequest(BaseModel):

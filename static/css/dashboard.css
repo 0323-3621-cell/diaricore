@@ -491,7 +491,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 1.15rem 1.2rem 1.1rem;
+    padding: 1.35rem 1.5rem 1.3rem;
 }
 
 .weekly-snapshot-head {

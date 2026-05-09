@@ -13,3 +13,12 @@ model/onnx_export/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Local clones / nested repos (keep outside git)
+hf_space_clone/
+
+# Notebook scratch exports (not used by runtime)
+model/nb_*.txt
+
+# ML experiment notebooks (keep out of app repo by default)
+ml-service/*KeyBERT*.ipynb

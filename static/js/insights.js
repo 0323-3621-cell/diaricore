@@ -51,11 +51,11 @@ function renderTagBasedSummaryCard(summary) {
         <article class="emotion-trigger-card" data-emotion="summary">
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">😰</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress triggers:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>
             </div>
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">😊</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top happiness trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topHappy)}</span></h3>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top happiness triggers:</span> <span class="emotion-trigger-card__keywords">${esc(topHappy)}</span></h3>
             </div>
             <p class="emotion-trigger-card__insight">${esc(insight)}</p>
         </article>`;

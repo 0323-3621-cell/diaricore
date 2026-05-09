@@ -608,7 +608,7 @@ def api_triggers_summary():
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
 
-    summary = db.get_tag_trigger_summary(uid, min_entries_per_bucket=3)
+    summary = db.get_tag_trigger_summary(uid, min_entries_per_bucket=3, top_n=3)
     stress_list = [x for x in (summary.get("topStressTriggers") or []) if x]
     happy_list = [x for x in (summary.get("topHappinessTriggers") or []) if x]
     stress = ", ".join(_to_title_case(x) for x in stress_list) if stress_list else None

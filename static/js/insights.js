@@ -1,8 +1,6 @@
 // DiariCore Insights Page JavaScript - New Layout
 let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
-let WEEKLY_RANGE_DAYS = 7;
-let WEEKLY_DESKTOP_CHART = null;
 
 function hexToRgba(hex, alpha) {
     const safe = String(hex || '').trim().replace('#', '');
@@ -122,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     applyInsightsEmptyState();
     // Initialize Charts
     initializeWeeklyMoodChart();
-    initializeInsightsWeeklyControls();
     initializeWeeklyMoodChartDesktop();
     initializeEmotionPieChart();
     initializeEmotionPieChartMobile();
@@ -133,66 +130,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     await loadEmotionTriggersDashboard();
 });
-
-function weeklyScoresForRange(days) {
-    const safeDays = Math.max(7, Number(days) || 7);
-    const labels = [];
-    const buckets = [];
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - (safeDays - 1));
-
-    for (let i = 0; i < safeDays; i += 1) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        labels.push(safeDays <= 7 ? d.toLocaleDateString('en-US', { weekday: 'short' }) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-        buckets.push([]);
-    }
-
-    INSIGHTS_ENTRIES.forEach((entry) => {
-        if (!entry?.date) return;
-        const d = new Date(entry.date);
-        d.setHours(0, 0, 0, 0);
-        const idx = Math.floor((d - start) / (1000 * 60 * 60 * 24));
-        if (idx < 0 || idx >= safeDays) return;
-        buckets[idx].push(feelingToScore(resolveEntryFeeling(entry)));
-    });
-
-    const data = buckets.map((scores) => scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) : null);
-    return { labels, data };
-}
-
-function updateWeeklyTrendSummary(days, series) {
-    const el = document.getElementById('weeklyTrendSummary');
-    if (!el) return;
-    const valid = (series || []).filter((v) => v !== null);
-    if (!valid.length) {
-        el.textContent = 'No mood trend yet for this range.';
-        return;
-    }
-    const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
-    const half = Math.max(1, Math.floor(valid.length / 2));
-    const firstAvg = valid.slice(0, half).reduce((a, b) => a + b, 0) / half;
-    const secondPart = valid.slice(half);
-    const secondAvg = secondPart.reduce((a, b) => a + b, 0) / (secondPart.length || 1);
-    const delta = secondAvg - firstAvg;
-    const trend = delta > 0.25 ? 'improving' : (delta < -0.25 ? 'declining' : 'steady');
-    el.textContent = `${days}-day average: ${avg.toFixed(1)}/10, trend: ${trend}${Math.abs(delta) >= 0.05 ? ` (${delta > 0 ? '+' : ''}${delta.toFixed(1)})` : ''}.`;
-}
-
-function initializeInsightsWeeklyControls() {
-    const buttons = document.querySelectorAll('.weekly-range-btn');
-    if (!buttons.length) return;
-    buttons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const nextRange = Number(btn.dataset.range || 7);
-            if (!nextRange || WEEKLY_RANGE_DAYS === nextRange) return;
-            WEEKLY_RANGE_DAYS = nextRange;
-            buttons.forEach((b) => b.classList.toggle('is-active', b === btn));
-            initializeWeeklyMoodChartDesktop();
-        });
-    });
-}
 
 async function syncInsightsEntriesFromApi() {
     const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
@@ -413,8 +350,7 @@ function initializeWeeklyMoodChartDesktop() {
     if (!ctx) return;
     
     const chartTheme = getChartTheme();
-    const weekly = weeklyScoresForRange(WEEKLY_RANGE_DAYS);
-    const hasData = weekly.data.some((v) => v !== null);
+    const weekly = weeklyScoresFromEntries();
     const weeklyData = {
         labels: weekly.labels,
         datasets: [{
@@ -428,8 +364,8 @@ function initializeWeeklyMoodChartDesktop() {
             pointBackgroundColor: chartTheme.primary,
             pointBorderColor: chartTheme.border,
             pointBorderWidth: 2,
-            pointRadius: hasData ? 4 : 0,
-            pointHoverRadius: hasData ? 6 : 0
+            pointRadius: HAS_INSIGHTS_DATA ? 5 : 0,
+            pointHoverRadius: HAS_INSIGHTS_DATA ? 7 : 0
         }]
     };
     
@@ -444,7 +380,7 @@ function initializeWeeklyMoodChartDesktop() {
                     display: false
                 },
                 tooltip: {
-                    enabled: hasData,
+                    enabled: HAS_INSIGHTS_DATA,
                     backgroundColor: chartTheme.tooltipBg,
                     titleColor: '#fff',
                     bodyColor: '#fff',
@@ -454,7 +390,7 @@ function initializeWeeklyMoodChartDesktop() {
                     displayColors: false,
                     callbacks: {
                         label: function(context) {
-                            return 'Mood Score: ' + Number(context.parsed.y || 0).toFixed(1) + '/10';
+                            return 'Mood Score: ' + context.parsed.y;
                         }
                     }
                 }
@@ -492,12 +428,8 @@ function initializeWeeklyMoodChartDesktop() {
             }
         }
     };
-
-    if (WEEKLY_DESKTOP_CHART) {
-        WEEKLY_DESKTOP_CHART.destroy();
-    }
-    WEEKLY_DESKTOP_CHART = new Chart(ctx, config);
-    updateWeeklyTrendSummary(WEEKLY_RANGE_DAYS, weekly.data);
+    
+    new Chart(ctx, config);
 }
 
 // Initialize Emotion Pie Chart

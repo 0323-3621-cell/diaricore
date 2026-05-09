@@ -491,12 +491,6 @@ body {
     margin-bottom: 3rem;
 }
 
-.weekly-glance-meta {
-    margin: 0.65rem 0 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
 .chart-container {
     position: relative;
     height: 300px;

@@ -1118,41 +1118,6 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.weekly-mood-desktop .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.weekly-range-toggle {
-    display: inline-flex;
-    gap: 0.45rem;
-}
-
-.weekly-range-btn {
-    border: 1px solid var(--border-color);
-    background: var(--card-background);
-    color: var(--text-secondary);
-    border-radius: 999px;
-    padding: 0.22rem 0.7rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.weekly-range-btn.is-active {
-    background: var(--primary-color);
-    color: #fff;
-    border-color: var(--primary-color);
-}
-
-.weekly-trend-summary {
-    margin: 0.65rem 0 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
 .section-title {
     font-size: 1.25rem;
     font-weight: 600;

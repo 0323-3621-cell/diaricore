@@ -511,6 +511,14 @@ body {
     line-height: 1.1;
     font-weight: 700;
     color: var(--text-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.weekly-snapshot-title .bi {
+    color: var(--primary-color);
+    font-size: 1rem;
 }
 
 .weekly-snapshot-range {

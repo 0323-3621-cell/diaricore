@@ -1,4 +1,5 @@
 // DiariCore Dashboard JavaScript
+const FORCE_DASHBOARD_PREVIEW_TREND = true;
 
 document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
@@ -378,8 +379,14 @@ function renderWeeklyChart(entries) {
         return scores.reduce((sum, s) => sum + s, 0) / scores.length;
     });
     const firstKnown = chartData.find((v) => v !== null) ?? 5;
-    const series = chartData.map((v) => (v === null ? firstKnown : v));
+    let series = chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
+
+    // Temporary visual preview mode so the dashboard card shows a clear trend style
+    // even when there are very few entries this week.
+    if (FORCE_DASHBOARD_PREVIEW_TREND && (series.filter((v) => Number.isFinite(v)).length < 3 || new Set(series.map((v) => Number(v).toFixed(2))).size <= 2)) {
+        series = [6.8, 6.7, 6.3, 6.0, 6.2, 5.9, 5.5];
+    }
 
     const valid = series.filter((v) => Number.isFinite(v));
     const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
@@ -389,8 +396,6 @@ function renderWeeklyChart(entries) {
     const firstAvg = (series[0] + series[1] + series[2]) / 3;
     const secondAvg = (series[4] + series[5] + series[6]) / 3;
     const delta = secondAvg - firstAvg;
-    const trendWord = delta > 0.15 ? 'Up' : (delta < -0.15 ? 'Down' : 'Steady');
-
     if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
     if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
     if (trendEl) trendEl.textContent = hasData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';

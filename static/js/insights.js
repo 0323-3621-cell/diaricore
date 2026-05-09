@@ -191,16 +191,45 @@ function emotionBreakdownData() {
         else counts.neutral += 1;
     });
     const total = INSIGHTS_ENTRIES.length || 1;
-    const pct = (n) => Math.round((n / total) * 100);
+    const pct = (n) => (n / total) * 100;
+    const oneDecimal = (v) => Math.round(v * 10) / 10;
+    const ensureSumsTo100 = (arr) => {
+        // Round to 0.1 and distribute remainder so labels sum to exactly 100.0
+        const rounded = arr.map(oneDecimal);
+        let sum = oneDecimal(rounded.reduce((a, b) => a + b, 0));
+        let diff = oneDecimal(100 - sum);
+        // Apply diff in 0.1 steps to the largest slices first
+        const order = arr
+            .map((v, idx) => ({ idx, v }))
+            .sort((a, b) => b.v - a.v)
+            .map((x) => x.idx);
+        let guard = 0;
+        while (Math.abs(diff) >= 0.1 && guard < 2000) {
+            const step = diff > 0 ? 0.1 : -0.1;
+            const idx = order[guard % order.length];
+            rounded[idx] = oneDecimal(rounded[idx] + step);
+            diff = oneDecimal(diff - step);
+            guard += 1;
+        }
+        return rounded;
+    };
+    const rawPercents = [
+        pct(counts.happy),
+        pct(counts.sad),
+        pct(counts.angry),
+        pct(counts.anxious),
+        pct(counts.neutral),
+    ];
+    const percents = ensureSumsTo100(rawPercents);
     return {
         labels: ['Happy', 'Sad', 'Angry', 'Anxious', 'Neutral'],
         values: [counts.happy, counts.sad, counts.angry, counts.anxious, counts.neutral],
         percentages: {
-            happy: pct(counts.happy),
-            sad: pct(counts.sad),
-            angry: pct(counts.angry),
-            anxious: pct(counts.anxious),
-            neutral: pct(counts.neutral),
+            happy: percents[0],
+            sad: percents[1],
+            angry: percents[2],
+            anxious: percents[3],
+            neutral: percents[4],
         }
     };
 }
@@ -398,7 +427,7 @@ function initializeEmotionPieChart() {
     const breakdown = emotionBreakdownData();
     const emotionData = {
         labels: HAS_INSIGHTS_DATA
-            ? ['😊 Happy (uplifted)', '😢 Sad (low)', '😠 Angry (frustrated)', '😰 Anxious (stressed)', '😐 Neutral (steady)']
+            ? ['Happy (uplifted)', 'Sad (low)', 'Angry (frustrated)', 'Anxious (stressed)', 'Neutral (steady)']
             : ['No Data'],
         datasets: [{
             data: HAS_INSIGHTS_DATA ? breakdown.values : [1],
@@ -422,15 +451,7 @@ function initializeEmotionPieChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        color: chartTheme.tick,
-                        font: {
-                            size: 12,
-                            weight: '500'
-                        },
-                        padding: 20
-                    }
+                    display: false
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
@@ -441,9 +462,13 @@ function initializeEmotionPieChart() {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            const raw = String(context.label || '');
-                            const name = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
-                            return `${name}: ${context.parsed}%`;
+                            const idx = context.dataIndex;
+                            const name = String(context.label || '').trim();
+                            const pMap = breakdown.percentages;
+                            const order = ['happy', 'sad', 'angry', 'anxious', 'neutral'];
+                            const key = order[idx] || 'neutral';
+                            const pctValue = Number(pMap[key] ?? 0);
+                            return `${name}: ${pctValue.toFixed(1)}%`;
                         }
                     }
                 }
@@ -452,6 +477,30 @@ function initializeEmotionPieChart() {
     };
     
     new Chart(ctx, config);
+
+    // Custom desktop legend (clearer than default legend + avoids icons inside chart)
+    const legendEl = document.getElementById('emotionLegendDesktop');
+    if (legendEl && HAS_INSIGHTS_DATA) {
+        const p = breakdown.percentages;
+        const items = [
+            { key: 'happy', name: 'Happy', meta: 'uplifted', color: '#2A9D8F', pct: p.happy },
+            { key: 'sad', name: 'Sad', meta: 'low', color: '#457B9D', pct: p.sad },
+            { key: 'angry', name: 'Angry', meta: 'frustrated', color: '#E63946', pct: p.angry },
+            { key: 'anxious', name: 'Anxious', meta: 'stressed', color: '#F4A261', pct: p.anxious },
+            { key: 'neutral', name: 'Neutral', meta: 'steady', color: '#9AA5B1', pct: p.neutral },
+        ];
+        legendEl.innerHTML = items
+            .map((it) => `
+                <span class="legend-item">
+                    <span class="legend-dot" style="background:${it.color}"></span>
+                    <span class="legend-name">${it.name}</span>
+                    <span class="legend-meta">(${it.pct.toFixed(1)}% · ${it.meta})</span>
+                </span>
+            `)
+            .join('');
+    } else if (legendEl) {
+        legendEl.innerHTML = '';
+    }
 }
 
 // Initialize Mobile Emotion Pie Chart
@@ -491,7 +540,13 @@ function initializeEmotionPieChartMobile() {
                     enabled: HAS_INSIGHTS_DATA,
                     callbacks: {
                         label: function(context) {
-                            return context.label + ': ' + context.parsed + '%';
+                            const name = String(context.label || '').trim();
+                            const idx = context.dataIndex;
+                            const pMap = breakdown.percentages;
+                            const order = ['happy', 'sad', 'angry', 'anxious', 'neutral'];
+                            const key = order[idx] || 'neutral';
+                            const pctValue = Number(pMap[key] ?? 0);
+                            return `${name}: ${pctValue.toFixed(1)}%`;
                         }
                     }
                 }
@@ -504,14 +559,14 @@ function initializeEmotionPieChartMobile() {
     if (HAS_INSIGHTS_DATA) {
         const legendItems = document.querySelectorAll('.emotion-legend-item');
         const p = breakdown.percentages;
-        if (legendItems[0]) legendItems[0].querySelector('.emotion-legend-percentage').textContent = `${p.happy}%`;
-        if (legendItems[1]) legendItems[1].querySelector('.emotion-legend-percentage').textContent = `${p.sad}%`;
-        if (legendItems[2]) legendItems[2].querySelector('.emotion-legend-percentage').textContent = `${p.angry}%`;
-        if (legendItems[3]) legendItems[3].querySelector('.emotion-legend-percentage').textContent = `${p.anxious}%`;
-        if (legendItems[4]) legendItems[4].querySelector('.emotion-legend-percentage').textContent = `${p.neutral}%`;
+        if (legendItems[0]) legendItems[0].querySelector('.emotion-legend-percentage').textContent = `${Number(p.happy ?? 0).toFixed(1)}%`;
+        if (legendItems[1]) legendItems[1].querySelector('.emotion-legend-percentage').textContent = `${Number(p.sad ?? 0).toFixed(1)}%`;
+        if (legendItems[2]) legendItems[2].querySelector('.emotion-legend-percentage').textContent = `${Number(p.angry ?? 0).toFixed(1)}%`;
+        if (legendItems[3]) legendItems[3].querySelector('.emotion-legend-percentage').textContent = `${Number(p.anxious ?? 0).toFixed(1)}%`;
+        if (legendItems[4]) legendItems[4].querySelector('.emotion-legend-percentage').textContent = `${Number(p.neutral ?? 0).toFixed(1)}%`;
     } else {
         document.querySelectorAll('.emotion-legend-percentage').forEach((el) => {
-            el.textContent = '0%';
+            el.textContent = '0.0%';
         });
     }
 }

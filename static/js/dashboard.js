@@ -374,6 +374,7 @@ function renderWeeklyChart(entries) {
         return scores.reduce((sum, s) => sum + s, 0) / scores.length;
     });
     const hasData = chartData.some((v) => v !== null);
+    const weeklyMeta = document.getElementById('dashboardWeeklySnapshotMeta');
 
     const chartTheme = buildChartThemeFromCss();
 
@@ -387,18 +388,18 @@ function renderWeeklyChart(entries) {
         data: {
             labels,
             datasets: [{
-                label: 'Mood Score',
+                label: 'Snapshot',
                 data: hasData ? chartData : [null, null, null, null, null, null, null],
                 borderColor: chartTheme.line,
-                backgroundColor: gradient,
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
+                backgroundColor: chartTheme.line,
+                borderWidth: 2.5,
+                fill: false,
+                tension: 0.3,
                 pointBackgroundColor: chartTheme.line,
                 pointBorderColor: chartTheme.pointBorder,
                 pointBorderWidth: 2,
-                pointRadius: hasData ? 6 : 0,
-                pointHoverRadius: hasData ? 8 : 0,
+                pointRadius: hasData ? 4 : 0,
+                pointHoverRadius: hasData ? 6 : 0,
                 pointHoverBackgroundColor: chartTheme.line,
                 pointHoverBorderColor: chartTheme.pointBorder,
                 pointHoverBorderWidth: 2,
@@ -443,6 +444,7 @@ function renderWeeklyChart(entries) {
                 y: {
                     beginAtZero: true,
                     max: 10,
+                    display: false,
                     grid: {
                         color: chartTheme.grid,
                         borderDash: [5, 5]
@@ -463,6 +465,16 @@ function renderWeeklyChart(entries) {
             }
         }
     });
+
+    if (!weeklyMeta) return;
+    if (!hasData) {
+        weeklyMeta.textContent = 'No entries yet this week.';
+        return;
+    }
+    const valid = chartData.filter((v) => v !== null);
+    const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+    const latest = valid[valid.length - 1];
+    weeklyMeta.textContent = `Avg ${avg.toFixed(1)}/10 this week, latest day ${latest.toFixed(1)}/10.`;
 }
 
 // Mobile menu toggle (for responsive design)

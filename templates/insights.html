@@ -90,10 +90,15 @@
                             <i class="bi bi-calendar"></i>
                             Weekly Mood
                         </h2>
+                        <div class="weekly-range-toggle" role="group" aria-label="Weekly mood range">
+                            <button type="button" class="weekly-range-btn is-active" data-range="7">7d</button>
+                            <button type="button" class="weekly-range-btn" data-range="30">30d</button>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="weeklyChartDesktop"></canvas>
                     </div>
+                    <p class="weekly-trend-summary" id="weeklyTrendSummary">Loading trend summary...</p>
                 </div>
             </div>
 

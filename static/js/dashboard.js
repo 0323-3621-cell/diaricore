@@ -1,5 +1,5 @@
 // DiariCore Dashboard JavaScript
-const FORCE_DASHBOARD_PREVIEW_TREND = true;
+const FORCE_DASHBOARD_PREVIEW_TREND = false;
 
 document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
@@ -382,11 +382,7 @@ function renderWeeklyChart(entries) {
     let series = chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
 
-    // Temporary visual preview mode so the dashboard card shows a clear trend style
-    // even when there are very few entries this week.
-    if (FORCE_DASHBOARD_PREVIEW_TREND && (series.filter((v) => Number.isFinite(v)).length < 3 || new Set(series.map((v) => Number(v).toFixed(2))).size <= 2)) {
-        series = [6.8, 6.7, 6.3, 6.0, 6.2, 5.9, 5.5];
-    }
+    // Preview mode intentionally disabled (data-driven sparkline only).
 
     const valid = series.filter((v) => Number.isFinite(v));
     const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;

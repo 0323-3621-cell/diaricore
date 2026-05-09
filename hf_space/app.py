@@ -3,9 +3,9 @@ DiariCore Inference API — HuggingFace Space
 FastAPI server that loads the mood classification model and serves predictions.
 
 Loading strategy (in priority order):
-  1. If model.onnx exists in cache → use ONNX directly (fastest)
-  2. If pytorch_model.bin exists → export it to ONNX, then use ONNX
-  3. If neither exists → download pytorch_model.bin, export to ONNX
+  1. If pytorch_model.bin exists and is newer than model.onnx → re-export ONNX
+  2. If model.onnx exists and is up-to-date → use directly
+  3. Download pytorch_model.bin → export to ONNX → serve
 
 Replicates the notebook's predict_mood() pipeline exactly:
   tokenize -> ONNX forward -> softmax -> calibration -> keyword layer
@@ -90,6 +90,59 @@ _SESSION   = None
 _TOKENIZER = None
 _LOAD_ERR  = None
 _LOADED    = False
+_RAKE_READY = False
+_RAKE_LOCK  = threading.Lock()
+
+# ---------------------------------------------------------------------------
+# RAKE keywords (for DiariCore trigger analytics; NLTK data downloaded once)
+# ---------------------------------------------------------------------------
+
+def _ensure_rake_nltk() -> None:
+    global _RAKE_READY
+    if _RAKE_READY:
+        return
+    with _RAKE_LOCK:
+        if _RAKE_READY:
+            return
+        try:
+            import nltk
+
+            for pkg in ("punkt", "punkt_tab", "stopwords"):
+                try:
+                    nltk.download(pkg, quiet=True)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[inference] NLTK / RAKE prep warning: {e}")
+        _RAKE_READY = True
+
+
+def extract_rake_keywords(text: str, max_keywords: int = 12) -> list:
+    """RAKE-ranked phrases (length 1–3 tokens), lowercase, deduped."""
+    _ensure_rake_nltk()
+    try:
+        from rake_nltk import Rake
+
+        rake = Rake(min_length=1, max_length=3)
+        rake.extract_keywords_from_text(text or "")
+        phrases = rake.get_ranked_phrases()
+        out, seen = [], set()
+        for p in phrases:
+            s = (p or "").strip().lower()
+            if len(s) < 2:
+                continue
+            s = s[:128]
+            if s in seen:
+                continue
+            seen.add(s)
+            out.append(s)
+            if len(out) >= max_keywords:
+                break
+        return out
+    except Exception as e:
+        print(f"[inference] RAKE extract error: {e}")
+        return []
+
 
 # ---------------------------------------------------------------------------
 # Keyword layer
@@ -125,57 +178,90 @@ def _apply_keyword_layer(text, primary, prob) -> Tuple[str, float, bool, Optiona
     return primary, prob, False, None
 
 # ---------------------------------------------------------------------------
-# Model loading — PyTorch → ONNX export pipeline
+# Custom model architecture (must match training notebook exactly)
 # ---------------------------------------------------------------------------
 
+def _build_custom_model():
+    """
+    XLMRobertaMoodClassifier — mirrors the training notebook architecture:
+    xlm-roberta-base backbone + custom head:
+      Dropout(0.4) -> Linear(768, 384) -> LayerNorm(384) -> GELU -> Dropout(0.2) -> Linear(384, 5)
+    """
+    import torch.nn as nn
+    from transformers import AutoModelForSequenceClassification
+
+    class XLMRobertaMoodClassifier(nn.Module):
+        def __init__(self, num_classes=5, dropout=0.4):
+            super().__init__()
+            self.xlm_roberta = AutoModelForSequenceClassification.from_pretrained(
+                "xlm-roberta-base",
+                num_labels=num_classes,
+                hidden_dropout_prob=0.1,
+                attention_probs_dropout_prob=0.1,
+                ignore_mismatched_sizes=True,
+            )
+            hidden_size = self.xlm_roberta.config.hidden_size
+            self.xlm_roberta.classifier = nn.Sequential(
+                nn.Dropout(dropout),
+                nn.Linear(hidden_size, hidden_size // 2),
+                nn.LayerNorm(hidden_size // 2),
+                nn.GELU(),
+                nn.Dropout(dropout / 2),
+                nn.Linear(hidden_size // 2, num_classes),
+            )
+
+        def forward(self, input_ids, attention_mask):
+            outputs = self.xlm_roberta.roberta(
+                input_ids=input_ids, attention_mask=attention_mask
+            )
+            cls_output = outputs.last_hidden_state[:, 0, :]
+            return self.xlm_roberta.classifier(cls_output)
+
+    return XLMRobertaMoodClassifier
+
+
 def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool:
-    """
-    Load XLM-RoBERTa fine-tuned weights from bin_path and export to ONNX.
-    Returns True on success.
-    """
+    """Load the custom XLM-RoBERTa weights and export to ONNX. Returns True on success."""
     try:
         import torch
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
     except ImportError as e:
-        print(f"[inference] torch/transformers not available for export: {e}")
+        print(f"[inference] torch not available for export: {e}")
         return False
 
-    print("[inference] Loading PyTorch model for ONNX export ...")
+    print("[inference] Building model for ONNX export ...")
     try:
-        model = AutoModelForSequenceClassification.from_pretrained(
-            tok_dir,                       # config + tokenizer already there
-            state_dict=torch.load(bin_path, map_location="cpu"),
-            num_labels=len(ALLOWED_LABELS),
-        )
-    except Exception:
-        # Fallback: try loading from a saved_model directory layout
-        try:
-            model = AutoModelForSequenceClassification.from_pretrained(
-                os.path.dirname(bin_path),
-                num_labels=len(ALLOWED_LABELS),
-            )
-        except Exception as e2:
-            print(f"[inference] Could not load PyTorch model: {e2}")
-            return False
-
-    model.eval()
+        XLMRobertaMoodClassifier = _build_custom_model()
+        state = torch.load(bin_path, map_location="cpu")
+        if isinstance(state, dict) and "model_state_dict" in state:
+            state = state["model_state_dict"]
+        model = XLMRobertaMoodClassifier(num_classes=len(ALLOWED_LABELS))
+        missing, unexpected = model.load_state_dict(state, strict=False)
+        print(f"[inference] Weights loaded — missing={len(missing)} unexpected={len(unexpected)}")
+        model = model.to(dtype=torch.float32)
+        model.eval()
+    except Exception as e:
+        print(f"[inference] Could not load PyTorch model: {e}")
+        return False
 
     try:
-        tok = _TOKENIZER  # already loaded
+        tok = _TOKENIZER
         dummy = tok(
-            "test",
+            "Today I feel really mixed emotions about everything.",
             add_special_tokens=True,
             max_length=MAX_LEN,
             padding="max_length",
             truncation=True,
             return_tensors="pt",
         )
-        import torch
+        input_ids      = dummy["input_ids"]
+        attention_mask = dummy["attention_mask"]
+
         with torch.no_grad():
             torch.onnx.export(
                 model,
-                (dummy["input_ids"], dummy["attention_mask"]),
+                (input_ids, attention_mask),
                 onnx_path,
+                opset_version=14,
                 input_names=["input_ids", "attention_mask"],
                 output_names=["logits"],
                 dynamic_axes={
@@ -183,18 +269,22 @@ def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> bool
                     "attention_mask": {0: "batch"},
                     "logits":         {0: "batch"},
                 },
-                opset_version=14,
+                do_constant_folding=True,
+                export_params=True,
+                dynamo=False,
             )
         size_mb = os.path.getsize(onnx_path) / 1e6
         print(f"[inference] ONNX exported successfully — {size_mb:.0f} MB")
         return True
     except Exception as e:
         print(f"[inference] ONNX export failed: {e}")
-        # Clean up broken file
         if os.path.exists(onnx_path):
             os.remove(onnx_path)
         return False
 
+# ---------------------------------------------------------------------------
+# Model loading
+# ---------------------------------------------------------------------------
 
 def _load_model():
     global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR
@@ -215,7 +305,7 @@ def _load_model():
     tok_dir   = os.path.join(CACHE_DIR, "tokenizer")
     tok_config = os.path.join(tok_dir, "tokenizer_config.json")
 
-    # ── Step 1: Download tokenizer (always needed) ──────────────────────────
+    # ── Step 1: Download tokenizer ───────────────────────────────────────────
     if not os.path.exists(tok_config):
         print(f"[inference] Downloading tokenizer from {HF_MODEL_ID} ...")
         try:
@@ -238,67 +328,61 @@ def _load_model():
         print(f"[inference] {_LOAD_ERR}")
         return
 
-    # ── Step 2: Ensure we have a valid ONNX model ───────────────────────────
-    # Check if the existing ONNX is stale: compare against HF commit sha
-    # (simple heuristic: if pytorch_model.bin is newer than model.onnx, re-export)
-    need_onnx = not os.path.exists(onnx_path)
-    if not need_onnx and os.path.exists(bin_path):
-        # Re-export if .bin is newer than .onnx (fresh upload scenario)
-        if os.path.getmtime(bin_path) > os.path.getmtime(onnx_path):
-            print("[inference] pytorch_model.bin is newer than model.onnx — re-exporting ...")
-            need_onnx = True
+    # ── Step 2: Download pytorch_model.bin (always fresh) ───────────────────
+    print(f"[inference] Downloading pytorch_model.bin from {HF_MODEL_ID} ...")
+    try:
+        dl = hf_hub_download(
+            repo_id=HF_MODEL_ID,
+            filename="pytorch_model.bin",
+            local_dir=CACHE_DIR,
+            force_download=True,
+            **hf_kwargs,
+        )
+        if os.path.abspath(dl) != os.path.abspath(bin_path):
+            import shutil
+            shutil.copy2(dl, bin_path)
+        print(f"[inference] pytorch_model.bin ready ({os.path.getsize(bin_path)/1e6:.0f} MB)")
+        bin_available = True
+    except Exception as e:
+        print(f"[inference] pytorch_model.bin not found: {e}")
+        bin_available = False
 
-    if need_onnx:
-        # Try downloading pytorch_model.bin first (preferred: exact new weights)
-        print(f"[inference] Downloading pytorch_model.bin from {HF_MODEL_ID} ...")
+    # ── Step 3: Decide whether to (re-)export ONNX ──────────────────────────
+    need_export = False
+    if bin_available:
+        if not os.path.exists(onnx_path):
+            need_export = True
+        elif os.path.getmtime(bin_path) > os.path.getmtime(onnx_path):
+            print("[inference] pytorch_model.bin is newer — re-exporting ONNX ...")
+            os.remove(onnx_path)
+            need_export = True
+
+    if need_export:
+        if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
+            _LOAD_ERR = "ONNX export from PyTorch weights failed"
+            print(f"[inference] {_LOAD_ERR}")
+            return
+
+    # Fallback: download model.onnx if still missing
+    if not os.path.exists(onnx_path):
+        print(f"[inference] Downloading model.onnx from {HF_MODEL_ID} ...")
         try:
             dl = hf_hub_download(
                 repo_id=HF_MODEL_ID,
-                filename="pytorch_model.bin",
+                filename="model.onnx",
                 local_dir=CACHE_DIR,
-                force_download=True,   # always get the freshest weights
+                force_download=True,
                 **hf_kwargs,
             )
-            if os.path.abspath(dl) != os.path.abspath(bin_path):
+            if os.path.abspath(dl) != os.path.abspath(onnx_path):
                 import shutil
-                shutil.copy2(dl, bin_path)
-            print(f"[inference] pytorch_model.bin downloaded ({os.path.getsize(bin_path)/1e6:.0f} MB)")
+                shutil.copy2(dl, onnx_path)
         except Exception as e:
-            print(f"[inference] pytorch_model.bin not found ({e}), trying model.onnx ...")
-            # Fall back to downloading model.onnx directly
-            try:
-                dl = hf_hub_download(
-                    repo_id=HF_MODEL_ID,
-                    filename="model.onnx",
-                    local_dir=CACHE_DIR,
-                    force_download=True,
-                    **hf_kwargs,
-                )
-                if os.path.abspath(dl) != os.path.abspath(onnx_path):
-                    import shutil
-                    shutil.copy2(dl, onnx_path)
-                print(f"[inference] model.onnx downloaded ({os.path.getsize(onnx_path)/1e6:.0f} MB)")
-            except Exception as e2:
-                _LOAD_ERR = f"Could not download model weights: bin={e}, onnx={e2}"
-                print(f"[inference] {_LOAD_ERR}")
-                return
+            _LOAD_ERR = f"Could not obtain model weights: {e}"
+            print(f"[inference] {_LOAD_ERR}")
+            return
 
-        # Export PyTorch → ONNX if we got the .bin
-        if os.path.exists(bin_path) and not os.path.exists(onnx_path):
-            if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
-                _LOAD_ERR = "ONNX export from PyTorch weights failed"
-                print(f"[inference] {_LOAD_ERR}")
-                return
-        elif os.path.exists(bin_path) and need_onnx:
-            # Re-export because bin is newer
-            if os.path.exists(onnx_path):
-                os.remove(onnx_path)
-            if not _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path):
-                _LOAD_ERR = "ONNX re-export from PyTorch weights failed"
-                print(f"[inference] {_LOAD_ERR}")
-                return
-
-    # ── Step 3: Load ONNX session ────────────────────────────────────────────
+    # ── Step 4: Load ONNX session ────────────────────────────────────────────
     try:
         opts = ort.SessionOptions()
         opts.log_severity_level   = 3
@@ -355,7 +439,7 @@ def _run_inference(text: str) -> Dict[str, float]:
     logits = outputs[0][0]
     exp_v  = np.exp(logits - logits.max())
     probs  = exp_v / exp_v.sum()
-    # ALLOWED_LABELS is alphabetical = same as training LabelEncoder
+    # alphabetical order: angry=0, anxious=1, happy=2, neutral=3, sad=4
     return {lbl: float(probs[i]) for i, lbl in enumerate(ALLOWED_LABELS)}
 
 
@@ -374,6 +458,7 @@ def _fallback(text: str) -> dict:
     raw[emo] = 0.62
     all_probs = _apply_calibration(raw)
     best      = max(all_probs, key=all_probs.__getitem__)
+    rake_kw = extract_rake_keywords(text or "")
     return {
         "sentimentLabel": _derive_sentiment(best),
         "sentimentScore": round(all_probs[best], 4),
@@ -381,6 +466,7 @@ def _fallback(text: str) -> dict:
         "emotionScore":   round(all_probs[best], 4),
         "all_probs":      all_probs,
         "engine":         "fallback",
+        "keywords":       rake_kw,
     }
 
 
@@ -406,6 +492,7 @@ def analyze(text: str) -> dict:
         if overridden:
             print(f"[inference] keyword override: {reason}")
 
+        rake_kw = extract_rake_keywords(clean)
         return {
             "sentimentLabel":  _derive_sentiment(final_label),
             "sentimentScore":  round(final_prob, 4),
@@ -416,6 +503,7 @@ def analyze(text: str) -> dict:
             "keywordOverride": overridden,
             "engine":          "onnx-space",
             "ms":              int((time.time() - started) * 1000),
+            "keywords":        rake_kw,
         }
     except Exception as e:
         print(f"[inference] error: {e}")
@@ -432,11 +520,14 @@ class PredictRequest(BaseModel):
     text: str
 
 
+def _warmup_background():
+    _ensure_rake_nltk()
+    _ensure_loaded()
+
+
 @app.on_event("startup")
 def startup():
-    # Load model in background so the health endpoint works immediately
-    t = threading.Thread(target=_ensure_loaded, daemon=True)
-    t.start()
+    threading.Thread(target=_warmup_background, daemon=True).start()
 
 
 @app.get("/health")

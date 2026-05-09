@@ -93,10 +93,13 @@ def _normalize_request_keywords(raw) -> list:
     return out
 
 
-def _keywords_for_entry_save(data: dict, text: str) -> list:
+def _keywords_for_entry_save(data: dict, text: str, analysis: dict | None = None) -> list:
     merged = _normalize_request_keywords(data.get("keywords"))
     if merged:
         return merged
+    from_space = _normalize_request_keywords((analysis or {}).get("keywords"))
+    if from_space:
+        return from_space
     return _extract_keywords_fallback(text)
 
 
@@ -711,7 +714,7 @@ def api_entries_post():
     emo_for_triggers = str(analysis.get("emotionLabel") or "neutral").lower()
     if emo_for_triggers not in space_nlp.ALLOWED:
         emo_for_triggers = "neutral"
-    kw_list = _keywords_for_entry_save(data, text)
+    kw_list = _keywords_for_entry_save(data, text, analysis)
     try:
         db.upsert_emotion_triggers(user_id=user_id, emotion=emo_for_triggers, keywords=kw_list)
     except Exception as exc:

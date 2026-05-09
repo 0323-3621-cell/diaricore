@@ -29,8 +29,10 @@ HF_MODEL_ID = os.environ.get("HF_MODEL_ID", "sseia/diari-core-mood").strip()
 HF_TOKEN    = os.environ.get("HF_TOKEN", "").strip() or None
 CACHE_DIR   = "/tmp/diaricore"
 MAX_LEN     = 256
-# If "1"/"true", never run torch.export — use model.onnx from the Hub only (helps when Space export fails).
+# If "1"/"true", never download pytorch weights or torch.export — only pull ONNX from Hub (fast cold start).
 SKIP_ONNX_EXPORT = (os.environ.get("SKIP_ONNX_EXPORT", "").strip().lower() in ("1", "true", "yes"))
+# Which ONNX artifact in HF_MODEL_ID to download when not using export (also used after failed export).
+HF_ONNX_FILENAME = os.environ.get("HF_ONNX_FILE", "model.onnx").strip() or "model.onnx"
 
 ALLOWED_LABELS = ("angry", "anxious", "happy", "neutral", "sad")
 
@@ -92,6 +94,7 @@ _SESSION   = None
 _TOKENIZER = None
 _LOAD_ERR        = None
 _LAST_EXPORT_ERR = None  # surfaced in /health when export fails but Hub fallback might work
+_LOAD_PHASE      = ""  # non-empty while load is progressing (helps explain null model_error during big downloads)
 _LOADED    = False
 _RAKE_READY = False
 _RAKE_LOCK  = threading.Lock()
@@ -296,13 +299,15 @@ def _export_pytorch_to_onnx(bin_path: str, tok_dir: str, onnx_path: str) -> Tupl
 # ---------------------------------------------------------------------------
 
 def _load_model():
-    global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR, _LAST_EXPORT_ERR
+    global _SESSION, _TOKENIZER, _LOADED, _LOAD_ERR, _LAST_EXPORT_ERR, _LOAD_PHASE
+    _LOAD_PHASE = "imports"
     try:
         import onnxruntime as ort
         from transformers import AutoTokenizer
         from huggingface_hub import hf_hub_download, snapshot_download
     except ImportError as e:
         _LOAD_ERR = str(e)
+        _LOAD_PHASE = ""
         print(f"[inference] Import error: {e}")
         return
 
@@ -316,6 +321,7 @@ def _load_model():
 
     # ── Step 1: Download tokenizer ───────────────────────────────────────────
     if not os.path.exists(tok_config):
+        _LOAD_PHASE = "tokenizer_download"
         print(f"[inference] Downloading tokenizer from {HF_MODEL_ID} ...")
         try:
             snapshot_download(
@@ -326,35 +332,44 @@ def _load_model():
             )
         except Exception as e:
             _LOAD_ERR = f"Tokenizer download failed: {e}"
+            _LOAD_PHASE = ""
             print(f"[inference] {_LOAD_ERR}")
             return
 
     try:
+        _LOAD_PHASE = "tokenizer_load"
         _TOKENIZER = AutoTokenizer.from_pretrained(tok_dir)
         print("[inference] Tokenizer ready")
     except Exception as e:
         _LOAD_ERR = f"Tokenizer load error: {e}"
+        _LOAD_PHASE = ""
         print(f"[inference] {_LOAD_ERR}")
         return
 
-    # ── Step 2: Download pytorch_model.bin (always fresh) ───────────────────
-    print(f"[inference] Downloading pytorch_model.bin from {HF_MODEL_ID} ...")
-    try:
-        dl = hf_hub_download(
-            repo_id=HF_MODEL_ID,
-            filename="pytorch_model.bin",
-            local_dir=CACHE_DIR,
-            force_download=True,
-            **hf_kwargs,
-        )
-        if os.path.abspath(dl) != os.path.abspath(bin_path):
-            import shutil
-            shutil.copy2(dl, bin_path)
-        print(f"[inference] pytorch_model.bin ready ({os.path.getsize(bin_path)/1e6:.0f} MB)")
-        bin_available = True
-    except Exception as e:
-        print(f"[inference] pytorch_model.bin not found: {e}")
-        bin_available = False
+    # ── Step 2: PyTorch checkpoint (skipped when SKIP_ONNX_EXPORT — saves ~1GB + many minutes)
+    bin_available = False
+    if SKIP_ONNX_EXPORT:
+        print("[inference] SKIP_ONNX_EXPORT — skipping pytorch_model.bin; using Hub ONNX file only")
+    else:
+        _LOAD_PHASE = "pytorch_download"
+        print(f"[inference] Downloading pytorch_model.bin from {HF_MODEL_ID} ...")
+        try:
+            dl = hf_hub_download(
+                repo_id=HF_MODEL_ID,
+                filename="pytorch_model.bin",
+                local_dir=CACHE_DIR,
+                force_download=True,
+                **hf_kwargs,
+            )
+            if os.path.abspath(dl) != os.path.abspath(bin_path):
+                import shutil
+
+                shutil.copy2(dl, bin_path)
+            print(f"[inference] pytorch_model.bin ready ({os.path.getsize(bin_path)/1e6:.0f} MB)")
+            bin_available = True
+        except Exception as e:
+            print(f"[inference] pytorch_model.bin not found: {e}")
+            bin_available = False
 
     # ── Step 3: Decide whether to (re-)export ONNX ──────────────────────────
     _LAST_EXPORT_ERR = None
@@ -367,21 +382,23 @@ def _load_model():
             os.remove(onnx_path)
             need_export = True
     elif SKIP_ONNX_EXPORT and bin_available:
-        print("[inference] SKIP_ONNX_EXPORT set — skipping torch ONNX export")
+        print("[inference] pytorch present but SKIP_ONNX_EXPORT — skipping ONNX export anyway")
 
     if need_export:
+        _LOAD_PHASE = "onnx_export_torch"
         ok, export_msg = _export_pytorch_to_onnx(bin_path, tok_dir, onnx_path)
         if not ok:
             _LAST_EXPORT_ERR = export_msg
             print("[inference] Export failed — will try pre-built model.onnx from Hub if missing")
 
-    # Fallback: download model.onnx if still missing
+    # Fallback: download ONNX from Hub if still missing (filename configurable, e.g. model_quantized.onnx)
     if not os.path.exists(onnx_path):
-        print(f"[inference] Downloading model.onnx from {HF_MODEL_ID} ...")
+        _LOAD_PHASE = f"onnx_download:{HF_ONNX_FILENAME}"
+        print(f"[inference] Downloading {HF_ONNX_FILENAME} from {HF_MODEL_ID} ...")
         try:
             dl = hf_hub_download(
                 repo_id=HF_MODEL_ID,
-                filename="model.onnx",
+                filename=HF_ONNX_FILENAME,
                 local_dir=CACHE_DIR,
                 force_download=True,
                 **hf_kwargs,
@@ -390,16 +407,18 @@ def _load_model():
                 import shutil
                 shutil.copy2(dl, onnx_path)
         except Exception as e:
-            parts = ["Could not download model.onnx from Hub."]
+            parts = [f"Could not download {HF_ONNX_FILENAME} from Hub."]
             if _LAST_EXPORT_ERR:
                 parts.append(f"ONNX export error: {_LAST_EXPORT_ERR}")
             parts.append(str(e))
             _LOAD_ERR = " ".join(parts)
+            _LOAD_PHASE = ""
             print(f"[inference] {_LOAD_ERR}")
             return
 
     # ── Step 4: Load ONNX session ────────────────────────────────────────────
     try:
+        _LOAD_PHASE = "onnx_runtime_session"
         opts = ort.SessionOptions()
         opts.log_severity_level   = 3
         opts.intra_op_num_threads = 2
@@ -412,8 +431,10 @@ def _load_model():
         size_mb = os.path.getsize(onnx_path) / 1e6
         print(f"[inference] ONNX session ready — model size: {size_mb:.0f} MB")
         _LOADED = True
+        _LOAD_PHASE = ""
     except Exception as e:
         _LOAD_ERR = f"ONNX session error: {e}"
+        _LOAD_PHASE = ""
         print(f"[inference] {_LOAD_ERR}")
 
 
@@ -548,19 +569,34 @@ def startup():
 
 @app.get("/health")
 def health():
+    # Warm / finish load so health reflects reality after restarts (first call may await big downloads).
+    _ensure_loaded()
+    busy = bool(_LOAD_PHASE) and not _LOADED
     return {
         "status": "ok",
         "model_loaded": _LOADED,
-        "model_error":  _LOAD_ERR,
+        "model_error": _LOAD_ERR,
         "export_error": _LAST_EXPORT_ERR if (not _LOADED and _LAST_EXPORT_ERR) else None,
         "skipOnnxExport": SKIP_ONNX_EXPORT,
+        "onnx_hub_file": HF_ONNX_FILENAME,
         "hf_model_id": HF_MODEL_ID,
-        "hint": None
-        if _LOADED
-        else (
-            "Upload model.onnx to HF_MODEL_ID repo, set SKIP_ONNX_EXPORT=1, or check Space logs for export_error."
-            if _LAST_EXPORT_ERR
-            else "Check Space logs; ensure sseia/diari-core-mood has model.onnx or exportable pytorch_model.bin."
+        "load_phase": _LOAD_PHASE if busy else ("" if _LOADED else (_LOAD_PHASE or None)),
+        "hint": (
+            None
+            if _LOADED
+            else (
+                f"Still working: {_LOAD_PHASE}. Large LFS downloads can take several minutes."
+                if busy
+                else (
+                    _LOAD_ERR
+                    or (
+                        "Set SKIP_ONNX_EXPORT=1 in Space vars to skip ~1GB PyTorch pull and load ONNX only."
+                        + " Optionally HF_ONNX_FILE=model_quantized.onnx for faster startup."
+                        if not SKIP_ONNX_EXPORT
+                        else f"Ensure {HF_ONNX_FILENAME} exists on {HF_MODEL_ID}."
+                    )
+                )
+            )
         ),
     }
 

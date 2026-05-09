@@ -6,6 +6,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedTags = new Set();
     let manualDateTime = null;
 
+    function normalizeTag(tag) {
+        return String(tag || '').trim().replace(/\s+/g, ' ');
+    }
+
     function updateJournalDateTime() {
         const dateTimeEl = document.getElementById('journalDateTime');
         if (!dateTimeEl) return;
@@ -252,7 +256,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const tagButtons = document.querySelectorAll('.tag-btn:not(.add-tag)');
     tagButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const tag = this.dataset.tag;
+            const tag = normalizeTag(this.dataset.tag);
+            if (!tag) return;
             
             if (selectedTags.has(tag)) {
                 // Remove tag if already selected
@@ -271,9 +276,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add tag functionality
     const addTagBtn = document.querySelector('.tag-btn.add-tag');
     addTagBtn.addEventListener('click', function() {
-        const tagName = prompt('Enter new tag name:');
-        if (tagName && tagName.trim()) {
-            createNewTag(tagName.trim());
+            const tagName = normalizeTag(prompt('Enter new tag name:'));
+        if (tagName) {
+            createNewTag(tagName);
         }
     });
     
@@ -281,17 +286,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const tagsContainer = document.querySelector('.tags-container');
         const addTagBtn = document.querySelector('.tag-btn.add-tag');
         
+        const normalizedName = normalizeTag(tagName);
+        if (!normalizedName) return;
+        const existingTags = Array.from(document.querySelectorAll('.tag-btn:not(.add-tag)'))
+            .map((btn) => normalizeTag(btn.dataset.tag).toLowerCase());
+        if (existingTags.includes(normalizedName.toLowerCase())) return;
+
         const newTagBtn = document.createElement('button');
         newTagBtn.className = 'tag-btn';
-        newTagBtn.dataset.tag = tagName;
+        newTagBtn.dataset.tag = normalizedName;
         newTagBtn.innerHTML = `
             <i class="bi bi-hash"></i>
-            <span>${tagName}</span>
+            <span>${normalizedName}</span>
         `;
         
         // Add click event to new tag
         newTagBtn.addEventListener('click', function() {
-            const tag = this.dataset.tag;
+            const tag = normalizeTag(this.dataset.tag);
+            if (!tag) return;
             
             if (selectedTags.has(tag)) {
                 selectedTags.delete(tag);
@@ -407,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     userId,
                     text: entryText,
-                    tags: Array.from(selectedTags)
+                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean)
                 })
             });
             const result = await response.json();

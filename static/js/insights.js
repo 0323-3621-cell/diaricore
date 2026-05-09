@@ -37,36 +37,25 @@ function getChartTheme() {
     };
 }
 
-const EMOTION_TRIGGER_UI = {
-    happy: { label: 'Happy', emoji: '😊' },
-    sad: { label: 'Sad', emoji: '😢' },
-    angry: { label: 'Angry', emoji: '😠' },
-    anxious: { label: 'Anxious', emoji: '😰' },
-    neutral: { label: 'Neutral', emoji: '😐' },
-};
-
-function titleCaseEmotion(emo) {
-    const s = (emo || '').toLowerCase();
-    if (!s) return 'Mood';
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function renderEmotionTriggerCard(item) {
-    const emo = (item.emotion || '').toLowerCase();
-    const meta = EMOTION_TRIGGER_UI[emo] || { label: titleCaseEmotion(emo), emoji: '📝' };
-    const topKeyword = (item.keywords || [])[0] || '—';
-    const insight = item.insight ? String(item.insight) : '';
+function renderTagBasedSummaryCard(summary) {
     const esc = (t) =>
         String(t)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
+    const topStress = summary.topStressTrigger || 'Not enough data yet';
+    const topHappy = summary.topHappinessTrigger || 'Not enough data yet';
+    const insight = summary.insight || 'Add more tagged entries to unlock personalized trigger insights.';
     return `
-        <article class="emotion-trigger-card" data-emotion="${esc(emo)}">
+        <article class="emotion-trigger-card" data-emotion="summary">
             <div class="emotion-trigger-card__head">
-                <span class="emotion-trigger-card__emoji" aria-hidden="true">${meta.emoji}</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">${esc(meta.label)} trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topKeyword)}</span></h3>
+                <span class="emotion-trigger-card__emoji" aria-hidden="true">😰</span>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>
+            </div>
+            <div class="emotion-trigger-card__head">
+                <span class="emotion-trigger-card__emoji" aria-hidden="true">😊</span>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top happiness trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topHappy)}</span></h3>
             </div>
             <p class="emotion-trigger-card__insight">${esc(insight)}</p>
         </article>`;
@@ -88,43 +77,19 @@ async function loadEmotionTriggersDashboard() {
         '<p class="emotion-triggers-loading" role="status">Loading trigger patterns…</p>';
 
     try {
-        const [topRes, insRes] = await Promise.all([
-            fetch(`/api/triggers/top?userId=${encodeURIComponent(String(userId))}`),
-            fetch(`/api/triggers/insights?userId=${encodeURIComponent(String(userId))}`),
-        ]);
-        const topJson = await topRes.json();
-        const insJson = await insRes.json();
-        if (!topRes.ok || !topJson.success) {
-            throw new Error(topJson.error || 'Could not load trigger keywords.');
-        }
-        if (!insRes.ok || !insJson.success) {
-            throw new Error(insJson.error || 'Could not load insights.');
+        const summaryRes = await fetch(`/api/triggers/summary?userId=${encodeURIComponent(String(userId))}`);
+        const summaryJson = await summaryRes.json();
+        if (!summaryRes.ok || !summaryJson.success) {
+            throw new Error(summaryJson.error || 'Could not load tag trigger summary.');
         }
 
-        const byEmo = {};
-        (topJson.byEmotion || []).forEach((row) => {
-            const e = (row.emotion || '').toLowerCase();
-            if (!e) return;
-            byEmo[e] = { emotion: e, keywords: row.keywords || [] };
-        });
-        (insJson.insights || []).forEach((row) => {
-            const e = (row.emotion || '').toLowerCase();
-            if (!e) return;
-            if (!byEmo[e]) {
-                byEmo[e] = { emotion: e, keywords: [] };
-            }
-            byEmo[e].insight = row.insight;
-        });
-
-        const items = Object.values(byEmo).filter((x) => (x.keywords || []).length > 0);
-        if (!items.length) {
+        const hasAnySignal = Boolean(summaryJson.topStressTrigger || summaryJson.topHappinessTrigger);
+        if (!hasAnySignal) {
             el.innerHTML =
-                '<p class="emotion-triggers-empty">No trigger keywords yet. Save a few journal entries and come back — keywords are counted from your diary text.</p>';
+                '<p class="emotion-triggers-empty">No strong trigger pattern yet. Add tags when writing entries, then save at least 3 stress-related and 3 happy entries.</p>';
             return;
         }
-
-        items.sort((a, b) => (a.emotion || '').localeCompare(b.emotion || ''));
-        el.innerHTML = `<div class="emotion-triggers-list">${items.map(renderEmotionTriggerCard).join('')}</div>`;
+        el.innerHTML = `<div class="emotion-triggers-list">${renderTagBasedSummaryCard(summaryJson)}</div>`;
     } catch (err) {
         console.error('emotion triggers dashboard:', err);
         el.innerHTML =

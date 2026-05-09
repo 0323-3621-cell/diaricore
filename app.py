@@ -110,6 +110,11 @@ def _random_insight_line(emotion: str, top_keyword: str) -> str:
     return random.choice(templates).format(k=k)
 
 
+def _to_title_case(text: str) -> str:
+    s = str(text or "").strip()
+    return " ".join(p[:1].upper() + p[1:] if p else "" for p in s.split(" "))
+
+
 def _trigger_query_user_id():
     raw = (request.args.get("userId") or request.args.get("user_id") or "").strip()
     if not raw.isdigit():
@@ -681,6 +686,36 @@ def api_triggers_insights():
         kws = row.get("keywords") or []
         insights.append({"emotion": emo, "insight": _random_insight_line(emo, kws[0] if kws else "")})
     return jsonify({"success": True, "insights": insights}), 200
+
+
+@app.route("/api/triggers/summary", methods=["GET"])
+def api_triggers_summary():
+    uid = _trigger_query_user_id()
+    if uid is None or uid <= 0:
+        return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
+    if not db.get_user_by_id(uid):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    summary = db.get_tag_trigger_summary(uid, min_entries_per_bucket=3)
+    stress = summary.get("topStressTrigger")
+    happy = summary.get("topHappinessTrigger")
+    insight = (
+        f"Your mood improves when you mention {_to_title_case(happy)}."
+        if happy
+        else "Add more tagged happy entries to unlock your positive trigger insight."
+    )
+
+    return jsonify(
+        {
+            "success": True,
+            "topStressTrigger": _to_title_case(stress) if stress else None,
+            "topHappinessTrigger": _to_title_case(happy) if happy else None,
+            "insight": insight,
+            "stressTaggedEntries": int(summary.get("stressTaggedEntries") or 0),
+            "happinessTaggedEntries": int(summary.get("happinessTaggedEntries") or 0),
+            "minRequiredEntries": int(summary.get("minRequiredEntries") or 3),
+        }
+    ), 200
 
 
 @app.route("/api/entries", methods=["POST"])

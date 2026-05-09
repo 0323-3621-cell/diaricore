@@ -4,6 +4,7 @@ DiariCore database layer — same pattern as AnemoCheck: PostgreSQL on Railway
 """
 
 import os
+import json
 import sqlite3
 from datetime import datetime
 
@@ -890,3 +891,70 @@ def get_top_triggers_by_emotion(user_id: int, per_emotion: int = 1, min_total_co
         if kws:
             out.append({"emotion": emo, "keywords": kws})
     return out
+
+
+def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3):
+    """
+    Build top tag triggers from saved entry tags (not NLP keywords).
+
+    Buckets:
+      - stress: anxious + sad + angry
+      - happiness: happy
+    """
+    rows = get_journal_entries_by_user(user_id)
+    min_entries = max(1, int(min_entries_per_bucket or 1))
+
+    def _norm_tags(tags_raw):
+        try:
+            parsed = json.loads(tags_raw or "[]")
+        except Exception:
+            parsed = []
+        if not isinstance(parsed, list):
+            return []
+        out = []
+        seen = set()
+        for t in parsed:
+            s = str(t or "").strip().lower()
+            if not s:
+                continue
+            if s in seen:
+                continue
+            seen.add(s)
+            out.append(s)
+        return out
+
+    stress_emotions = {"anxious", "sad", "angry"}
+    happy_emotions = {"happy"}
+    stress_counts = {}
+    happy_counts = {}
+    stress_entries_with_tags = 0
+    happy_entries_with_tags = 0
+
+    for r in rows:
+        emo = str(r.get("emotion_label") or "").strip().lower()
+        tags = _norm_tags(r.get("tags_json"))
+        if not tags:
+            continue
+        if emo in stress_emotions:
+            stress_entries_with_tags += 1
+            for tag in tags:
+                stress_counts[tag] = stress_counts.get(tag, 0) + 1
+        if emo in happy_emotions:
+            happy_entries_with_tags += 1
+            for tag in tags:
+                happy_counts[tag] = happy_counts.get(tag, 0) + 1
+
+    def _pick_top(counter):
+        if not counter:
+            return None
+        return sorted(counter.items(), key=lambda x: (-x[1], x[0]))[0][0]
+
+    top_stress = _pick_top(stress_counts) if stress_entries_with_tags >= min_entries else None
+    top_happy = _pick_top(happy_counts) if happy_entries_with_tags >= min_entries else None
+    return {
+        "topStressTrigger": top_stress,
+        "topHappinessTrigger": top_happy,
+        "stressTaggedEntries": stress_entries_with_tags,
+        "happinessTaggedEntries": happy_entries_with_tags,
+        "minRequiredEntries": min_entries,
+    }

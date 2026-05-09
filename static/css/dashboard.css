@@ -482,12 +482,8 @@ body {
     opacity: 0.9;
 }
 
-/* Weekly Glance */
-.weekly-glance {
-    background-color: var(--card-background);
-    border-radius: 12px;
-    padding: 1.35rem;
-    box-shadow: var(--box-shadow);
+/* Weekly mood snapshot (dashboard) */
+.weekly-snapshot-wrap {
     margin-bottom: 3rem;
 }
 
@@ -507,9 +503,9 @@ body {
 
 .weekly-snapshot-title {
     margin: 0;
-    font-size: 1.45rem;
-    line-height: 1.1;
-    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    font-weight: 600;
     color: var(--text-dark);
     display: inline-flex;
     align-items: center;
@@ -518,7 +514,11 @@ body {
 
 .weekly-snapshot-title .bi {
     color: var(--primary-color);
-    font-size: 1rem;
+    font-size: 1.05rem;
+}
+
+.weekly-snapshot-range {
+    opacity: 0.85;
 }
 
 .weekly-snapshot-range {

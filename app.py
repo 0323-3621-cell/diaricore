@@ -676,18 +676,47 @@ def api_triggers_summary():
     summary = db.get_tag_trigger_summary(uid, min_entries_per_bucket=3)
     stress_list = [x for x in (summary.get("topStressTriggers") or []) if x]
     happy_list = [x for x in (summary.get("topHappinessTriggers") or []) if x]
-    stress = ", ".join(_to_title_case(x) for x in stress_list) if stress_list else None
-    happy = ", ".join(_to_title_case(x) for x in happy_list) if happy_list else None
+    stress_rank = [x for x in (summary.get("stressRanking") or []) if x]
+    happy_rank = [x for x in (summary.get("happinessRanking") or []) if x]
+
+    # Primary tags (what we display as "Top ... trigger")
+    stress_primary = stress_rank[0] if stress_rank else (stress_list[0] if stress_list else None)
+    happy_primary = happy_rank[0] if happy_rank else (happy_list[0] if happy_list else None)
+
+    shared = False
+    shared_tag = None
+    shared_note = None
+
+    # If both buckets point to the same primary tag, try to pick a runner-up for one side.
+    if stress_primary and happy_primary and stress_primary == happy_primary:
+        shared = True
+        shared_tag = stress_primary
+        # Prefer adjusting happiness to next distinct (keeps "stress trigger" stable).
+        next_happy = next((t for t in happy_rank[1:] if t != shared_tag), None)
+        if next_happy:
+            happy_primary = next_happy
+        else:
+            next_stress = next((t for t in stress_rank[1:] if t != shared_tag), None)
+            if next_stress:
+                stress_primary = next_stress
+            else:
+                shared_note = "This tag shows up in both your stressful and happy entries."
+
+    stress = _to_title_case(stress_primary) if stress_primary else None
+    happy = _to_title_case(happy_primary) if happy_primary else None
+
     stress_desc = (
-        _pick_template(STRESS_TRIGGER_TEMPLATES, tag=stress_list[0])
-        if stress_list
+        _pick_template(STRESS_TRIGGER_TEMPLATES, tag=stress_primary)
+        if stress_primary
         else "Add more tagged stress-related entries to unlock your stress trigger insight."
     )
     happy_desc = (
-        _pick_template(HAPPINESS_TRIGGER_TEMPLATES, tag=happy_list[0])
-        if happy_list
+        _pick_template(HAPPINESS_TRIGGER_TEMPLATES, tag=happy_primary)
+        if happy_primary
         else "Add more tagged happy entries to unlock your positive trigger insight."
     )
+    if shared and shared_note and stress_primary:
+        stress_desc = f"{stress_desc} {shared_note}"
 
     return jsonify(
         {
@@ -698,6 +727,9 @@ def api_triggers_summary():
             "topHappinessTriggers": [_to_title_case(x) for x in happy_list],
             "stressDescription": stress_desc,
             "happinessDescription": happy_desc,
+            "sharedTrigger": bool(shared),
+            "sharedTag": _to_title_case(shared_tag) if shared_tag else None,
+            "sharedNote": shared_note,
             "stressTaggedEntries": int(summary.get("stressTaggedEntries") or 0),
             "happinessTaggedEntries": int(summary.get("happinessTaggedEntries") or 0),
             "minRequiredEntries": int(summary.get("minRequiredEntries") or 3),

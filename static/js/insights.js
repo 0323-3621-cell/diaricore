@@ -48,8 +48,17 @@ function renderTagBasedSummaryCard(summary) {
     const topHappy = summary.topHappinessTrigger || 'Not enough data yet';
     const stressDesc = summary.stressDescription || 'Add more tagged stress-related entries to unlock your stress trigger insight.';
     const happyDesc = summary.happinessDescription || 'Add more tagged happy entries to unlock your positive trigger insight.';
+    const sharedTag = summary.sharedTrigger && summary.sharedTag ? summary.sharedTag : null;
+    const sharedNote = summary.sharedTrigger && summary.sharedNote ? summary.sharedNote : null;
     return `
         <article class="emotion-trigger-card" data-emotion="summary">
+            ${sharedTag ? `
+            <div class="emotion-trigger-card__head">
+                <span class="emotion-trigger-card__emoji" aria-hidden="true">🔁</span>
+                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Shared trigger:</span> <span class="emotion-trigger-card__keywords">${esc(sharedTag)}</span></h3>
+            </div>
+            ${sharedNote ? `<p class="emotion-trigger-card__insight">${esc(sharedNote)}</p>` : ``}
+            ` : ``}
             <div class="emotion-trigger-card__head">
                 <span class="emotion-trigger-card__emoji" aria-hidden="true">😰</span>
                 <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>

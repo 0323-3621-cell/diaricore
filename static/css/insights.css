@@ -1118,6 +1118,66 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.weekly-mood-desktop .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.weekly-range-toggle {
+    display: inline-flex;
+    gap: 0.45rem;
+}
+
+.weekly-range-btn {
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    color: var(--text-secondary);
+    border-radius: 10px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.weekly-range-btn.is-active {
+    background: #1f2523;
+    border-color: #1f2523;
+    color: #fff;
+}
+
+.weekly-stats-row {
+    margin-top: 0.8rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.weekly-stat-card {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-background);
+    padding: 0.65rem 0.75rem;
+}
+
+.weekly-stat-value {
+    font-size: 1.8rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.weekly-stat-value.is-up { color: #1d9e75; }
+.weekly-stat-value.is-down { color: #d14f4f; }
+
+.weekly-stat-label {
+    margin-top: 0.28rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
 .section-title {
     font-size: 1.25rem;
     font-weight: 600;

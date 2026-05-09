@@ -168,12 +168,37 @@
             
             <!-- Weekly Glance -->
             <div class="weekly-glance">
-                <h2 class="section-title">
-                    <i class="bi bi-calendar"></i>
-                    Weekly Mood
-                </h2>
-                <div class="chart-container">
-                    <canvas id="weeklyChart"></canvas>
+                <div class="weekly-snapshot-card">
+                    <div class="weekly-snapshot-head">
+                        <div>
+                            <h2 class="weekly-snapshot-title">Weekly mood</h2>
+                            <p class="weekly-snapshot-range">Mon - Sun</p>
+                        </div>
+                        <span class="weekly-trend-badge" id="dashboardTrendBadge">
+                            <i class="bi bi-arrow-down-right"></i>
+                            Declining
+                        </span>
+                    </div>
+                    <div class="weekly-sparkline-wrap" id="dashboardWeeklySparkline"></div>
+                    <div class="weekly-snapshot-stats">
+                        <div class="snapshot-stat">
+                            <p class="snapshot-stat-value" id="dashboardWeeklyAvg">--</p>
+                            <p class="snapshot-stat-label">Avg this week</p>
+                        </div>
+                        <div class="snapshot-stat">
+                            <p class="snapshot-stat-value" id="dashboardWeeklyBestDay">--</p>
+                            <p class="snapshot-stat-label">Highest day</p>
+                        </div>
+                        <div class="snapshot-stat">
+                            <p class="snapshot-stat-value" id="dashboardWeeklyTrend">--</p>
+                            <p class="snapshot-stat-label">Trend</p>
+                        </div>
+                    </div>
+                    <div class="weekly-snapshot-footer">
+                        <button type="button" class="weekly-full-view-btn" onclick="window.location.href='insights.html'">
+                            Full view <i class="bi bi-arrow-up-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             

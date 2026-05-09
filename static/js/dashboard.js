@@ -348,8 +348,12 @@ function buildChartThemeFromCss() {
 }
 
 function renderWeeklyChart(entries) {
-    const weeklyCanvas = document.getElementById('weeklyChart');
-    if (!weeklyCanvas || !weeklyCanvas.getContext) return;
+    const sparklineEl = document.getElementById('dashboardWeeklySparkline');
+    if (!sparklineEl) return;
+    const avgEl = document.getElementById('dashboardWeeklyAvg');
+    const bestDayEl = document.getElementById('dashboardWeeklyBestDay');
+    const trendEl = document.getElementById('dashboardWeeklyTrend');
+    const trendBadge = document.getElementById('dashboardTrendBadge');
 
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const today = new Date();
@@ -373,96 +377,53 @@ function renderWeeklyChart(entries) {
         if (scores.length === 0) return null;
         return scores.reduce((sum, s) => sum + s, 0) / scores.length;
     });
+    const firstKnown = chartData.find((v) => v !== null) ?? 5;
+    const series = chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
 
-    const chartTheme = buildChartThemeFromCss();
+    const valid = series.filter((v) => Number.isFinite(v));
+    const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
+    const maxVal = valid.length ? Math.max(...valid) : 0;
+    const maxIndex = series.findIndex((v) => v === maxVal);
+    const bestDay = maxIndex >= 0 ? labels[maxIndex] : '--';
+    const firstAvg = (series[0] + series[1] + series[2]) / 3;
+    const secondAvg = (series[4] + series[5] + series[6]) / 3;
+    const delta = secondAvg - firstAvg;
+    const trendWord = delta > 0.15 ? 'Up' : (delta < -0.15 ? 'Down' : 'Steady');
 
-    const ctx = weeklyCanvas.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, chartTheme.fillTop);
-    gradient.addColorStop(1, chartTheme.fillBottom);
+    if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
+    if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
+    if (trendEl) trendEl.textContent = hasData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
+    if (trendBadge) {
+        const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
+        trendBadge.classList.toggle('is-up', delta > 0.15);
+        trendBadge.innerHTML = `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`;
+    }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Mood Score',
-                data: hasData ? chartData : [null, null, null, null, null, null, null],
-                borderColor: chartTheme.line,
-                backgroundColor: gradient,
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: chartTheme.line,
-                pointBorderColor: chartTheme.pointBorder,
-                pointBorderWidth: 2,
-                pointRadius: hasData ? 6 : 0,
-                pointHoverRadius: hasData ? 8 : 0,
-                pointHoverBackgroundColor: chartTheme.line,
-                pointHoverBorderColor: chartTheme.pointBorder,
-                pointHoverBorderWidth: 2,
-                spanGaps: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    enabled: hasData,
-                    backgroundColor: chartTheme.tooltipBg,
-                    titleColor: '#ffffff',
-                    bodyColor: '#ffffff',
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Mood Score: ${context.parsed.y.toFixed(1)}/10`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: chartTheme.tick,
-                        font: {
-                            size: 12,
-                            weight: '500'
-                        }
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    max: 10,
-                    grid: {
-                        color: chartTheme.grid,
-                        borderDash: [5, 5]
-                    },
-                    ticks: {
-                        color: chartTheme.tick,
-                        font: {
-                            size: 12,
-                            weight: '500'
-                        },
-                        stepSize: 2
-                    }
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
-        }
-    });
+    const w = 640;
+    const h = 120;
+    const padX = 12;
+    const padY = 12;
+    const step = (w - padX * 2) / 6;
+    const yMin = 0;
+    const yMax = 10;
+    const toY = (v) => h - padY - ((v - yMin) / (yMax - yMin)) * (h - padY * 2);
+    const points = series.map((v, i) => ({ x: padX + i * step, y: toY(v) }));
+    const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
+    const areaD = `${lineD} L ${(padX + 6 * step).toFixed(2)} ${(h - padY).toFixed(2)} L ${padX.toFixed(2)} ${(h - padY).toFixed(2)} Z`;
+
+    sparklineEl.innerHTML = `
+        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
+            <defs>
+                <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.15"></stop>
+                    <stop offset="100%" stop-color="#1D9E75" stop-opacity="0"></stop>
+                </linearGradient>
+            </defs>
+            <path d="${areaD}" fill="url(#dashMoodFill)"></path>
+            <path d="${lineD}" fill="none" stroke="#1D9E75" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="${points[6].x.toFixed(2)}" cy="${points[6].y.toFixed(2)}" r="3.8" fill="#1D9E75"></circle>
+        </svg>`;
 }
 
 // Mobile menu toggle (for responsive design)

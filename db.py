@@ -105,6 +105,19 @@ def init_db():
                 );
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_tags (
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    tag VARCHAR(128) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, tag)
+                );
+                """
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_user_tags_user_id ON user_tags (user_id);"
+            )
         else:
             cur.execute(
                 """
@@ -163,6 +176,18 @@ def init_db():
                 );
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_tags (
+                    user_id INTEGER NOT NULL,
+                    tag TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, tag),
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                """
+            )
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_user_tags_user_id ON user_tags (user_id);")
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -184,6 +209,75 @@ def init_db():
                 """
             )
         conn.commit()
+    finally:
+        conn.close()
+
+
+def _normalize_tag_value(tag: str) -> str:
+    s = str(tag or "").strip()
+    s = " ".join(s.split())
+    return s[:128]
+
+
+def list_user_tags(user_id: int):
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                SELECT tag, created_at
+                FROM user_tags
+                WHERE user_id = %s
+                ORDER BY created_at ASC, tag ASC
+                """,
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT tag, created_at
+                FROM user_tags
+                WHERE user_id = ?
+                ORDER BY datetime(created_at) ASC, tag ASC
+                """,
+                (user_id,),
+            )
+        return [row_to_dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def add_user_tag(*, user_id: int, tag: str) -> bool:
+    t = _normalize_tag_value(tag)
+    if not t or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                INSERT INTO user_tags (user_id, tag)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id, tag) DO NOTHING
+                """,
+                (user_id, t),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO user_tags (user_id, tag, created_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, tag) DO NOTHING
+                """,
+                (user_id, t),
+            )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
     finally:
         conn.close()
 

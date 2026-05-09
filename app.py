@@ -600,6 +600,35 @@ def api_entries_get():
     return jsonify({"success": True, "entries": [serialize_entry(r) for r in rows]}), 200
 
 
+@app.route("/api/tags", methods=["GET"])
+def api_tags_get():
+    uid = _trigger_query_user_id()
+    if uid is None or uid <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not db.get_user_by_id(uid):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    rows = db.list_user_tags(uid)
+    tags = [r.get("tag") for r in rows if r and r.get("tag")]
+    return jsonify({"success": True, "tags": tags}), 200
+
+
+@app.route("/api/tags", methods=["POST"])
+def api_tags_post():
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    tag = (data.get("tag") or "").strip()
+    if not isinstance(user_id, int) or user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not tag:
+        return jsonify({"success": False, "error": "Tag is required."}), 400
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    ok = db.add_user_tag(user_id=user_id, tag=tag)
+    if not ok:
+        return jsonify({"success": False, "error": "Could not save tag."}), 500
+    return jsonify({"success": True}), 201
+
+
 @app.route("/api/triggers/summary", methods=["GET"])
 def api_triggers_summary():
     uid = _trigger_query_user_id()

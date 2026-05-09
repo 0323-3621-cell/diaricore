@@ -10,6 +10,90 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(tag || '').trim().replace(/\s+/g, ' ');
     }
 
+    const DEFAULT_TAGS = [
+        { name: 'School', icon: 'bi bi-book' },
+        { name: 'Home', icon: 'bi bi-house' },
+        { name: 'Friends', icon: 'bi bi-people' },
+        { name: 'Work', icon: 'bi bi-briefcase' },
+        { name: 'Family', icon: 'bi bi-heart' },
+        { name: 'Health', icon: 'bi bi-heart-pulse' },
+        { name: 'Money', icon: 'bi bi-currency-dollar' },
+    ];
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function iconClassForTag(tagName) {
+        const t = normalizeTag(tagName).toLowerCase();
+        const match = DEFAULT_TAGS.find((x) => x.name.toLowerCase() === t);
+        return match ? match.icon : 'bi bi-hash';
+    }
+
+    async function syncUserTagsIntoUI() {
+        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+        const userId = Number(user?.id || 0);
+        const container = document.querySelector('.tags-container');
+        if (!container) return;
+
+        // Start from defaults
+        let tags = DEFAULT_TAGS.map((x) => x.name);
+
+        if (userId) {
+            try {
+                const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
+                const json = await res.json();
+                if (res.ok && json.success && Array.isArray(json.tags)) {
+                    tags = tags.concat(json.tags);
+                }
+            } catch (e) {
+                console.error('Failed to load user tags:', e);
+            }
+        }
+
+        // Dedup, normalize, keep order (defaults first)
+        const seen = new Set();
+        const merged = [];
+        tags.forEach((t) => {
+            const n = normalizeTag(t);
+            const key = n.toLowerCase();
+            if (!n || seen.has(key)) return;
+            seen.add(key);
+            merged.push(n);
+        });
+
+        // Preserve the existing "Add Tag" button
+        const addBtn = container.querySelector('.tag-btn.add-tag');
+        container.querySelectorAll('.tag-btn:not(.add-tag)').forEach((el) => el.remove());
+
+        merged.forEach((name) => {
+            const btn = document.createElement('button');
+            btn.className = 'tag-btn';
+            btn.dataset.tag = name;
+            btn.innerHTML = `<i class="${escapeHtml(iconClassForTag(name))}"></i><span>${escapeHtml(name)}</span>`;
+            btn.addEventListener('click', function() {
+                const tag = normalizeTag(this.dataset.tag);
+                if (!tag) return;
+                if (selectedTags.has(tag)) {
+                    selectedTags.delete(tag);
+                    this.classList.remove('selected');
+                } else {
+                    selectedTags.add(tag);
+                    this.classList.add('selected');
+                }
+            });
+            if (addBtn) container.insertBefore(btn, addBtn);
+            else container.appendChild(btn);
+        });
+
+        // Re-run your existing visibility logic now that buttons changed
+        updateTagVisibility();
+    }
+
     function updateJournalDateTime() {
         const dateTimeEl = document.getElementById('journalDateTime');
         if (!dateTimeEl) return;
@@ -246,8 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initialize tag visibility on load
-    updateTagVisibility();
+    // Initialize tags (defaults + user tags) then apply visibility rules
+    syncUserTagsIntoUI();
     
     // Update on window resize
     window.addEventListener('resize', updateTagVisibility);
@@ -296,9 +380,25 @@ document.addEventListener('DOMContentLoaded', function() {
         newTagBtn.className = 'tag-btn';
         newTagBtn.dataset.tag = normalizedName;
         newTagBtn.innerHTML = `
-            <i class="bi bi-hash"></i>
+            <i class="${iconClassForTag(normalizedName)}"></i>
             <span>${normalizedName}</span>
         `;
+
+        // Persist to user account (best-effort)
+        (async () => {
+            const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+            const userId = Number(user?.id || 0);
+            if (!userId) return;
+            try {
+                await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, tag: normalizedName })
+                });
+            } catch (e) {
+                console.error('Failed to save tag:', e);
+            }
+        })();
         
         // Add click event to new tag
         newTagBtn.addEventListener('click', function() {

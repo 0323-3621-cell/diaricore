@@ -460,19 +460,23 @@ body {
     }
     
     .emotion-legend-dot.happy {
-        background-color: #7FBF9F !important;
+        background-color: #2A9D8F !important;
     }
     
     .emotion-legend-dot.neutral {
-        background-color: #F4A261 !important;
+        background-color: #9AA5B1 !important;
     }
     
     .emotion-legend-dot.sad {
-        background-color: #7FA7BF !important;
+        background-color: #457B9D !important;
     }
     
     .emotion-legend-dot.anxious {
-        background-color: #E76F51 !important;
+        background-color: #F4A261 !important;
+    }
+
+    .emotion-legend-dot.angry {
+        background-color: #E63946 !important;
     }
     
     .emotion-legend-name {

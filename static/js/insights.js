@@ -149,6 +149,16 @@ function resolveEntryFeeling(entry) {
     return 'neutral';
 }
 
+function resolveDetectedMood(entry) {
+    const raw = (entry?.emotionLabel || entry?.feeling || '').toLowerCase();
+    const allowed = new Set(['happy', 'sad', 'angry', 'anxious', 'neutral']);
+    if (allowed.has(raw)) return raw;
+    // fall back to the older heuristic mapping if needed
+    const resolved = resolveEntryFeeling(entry);
+    if (allowed.has(resolved)) return resolved;
+    return 'neutral';
+}
+
 function weeklyScoresFromEntries() {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     if (!HAS_INSIGHTS_DATA) return { labels, data: [null, null, null, null, null, null, null] };
@@ -172,24 +182,25 @@ function weeklyScoresFromEntries() {
 
 function emotionBreakdownData() {
     if (!HAS_INSIGHTS_DATA) {
-        return { labels: ['No Data'], values: [1], percentages: { happy: 0, neutral: 0, sad: 0, anxious: 0 } };
+        return { labels: ['No Data'], values: [1], percentages: { happy: 0, neutral: 0, sad: 0, anxious: 0, angry: 0 } };
     }
-    const counts = { happy: 0, neutral: 0, sad: 0, anxious: 0, calm: 0, angry: 0, stressed: 0 };
+    const counts = { happy: 0, neutral: 0, sad: 0, anxious: 0, angry: 0 };
     INSIGHTS_ENTRIES.forEach((entry) => {
-        const f = resolveEntryFeeling(entry);
+        const f = resolveDetectedMood(entry);
         if (Object.prototype.hasOwnProperty.call(counts, f)) counts[f] += 1;
         else counts.neutral += 1;
     });
     const total = INSIGHTS_ENTRIES.length || 1;
     const pct = (n) => Math.round((n / total) * 100);
     return {
-        labels: ['Happy', 'Neutral', 'Sad', 'Anxious'],
-        values: [counts.happy + counts.calm, counts.neutral, counts.sad, counts.anxious + counts.stressed + counts.angry],
+        labels: ['Happy', 'Sad', 'Angry', 'Anxious', 'Neutral'],
+        values: [counts.happy, counts.sad, counts.angry, counts.anxious, counts.neutral],
         percentages: {
-            happy: pct(counts.happy + counts.calm),
-            neutral: pct(counts.neutral),
+            happy: pct(counts.happy),
             sad: pct(counts.sad),
-            anxious: pct(counts.anxious + counts.stressed + counts.angry)
+            angry: pct(counts.angry),
+            anxious: pct(counts.anxious),
+            neutral: pct(counts.neutral),
         }
     };
 }
@@ -384,16 +395,19 @@ function initializeEmotionPieChart() {
     if (!ctx) return;
     
     const chartTheme = getChartTheme();
+    const breakdown = emotionBreakdownData();
     const emotionData = {
-        labels: HAS_INSIGHTS_DATA ? ['Happy', 'Sad', 'Angry', 'Anxious', 'Calm'] : ['No Data'],
+        labels: HAS_INSIGHTS_DATA
+            ? ['😊 Happy (uplifted)', '😢 Sad (low)', '😠 Angry (frustrated)', '😰 Anxious (stressed)', '😐 Neutral (steady)']
+            : ['No Data'],
         datasets: [{
-            data: HAS_INSIGHTS_DATA ? [45, 20, 10, 15, 10] : [1],
+            data: HAS_INSIGHTS_DATA ? breakdown.values : [1],
             backgroundColor: [
-                HAS_INSIGHTS_DATA ? hexToRgba(chartTheme.primary, 0.9) : chartTheme.pieFallback,
-                hexToRgba(chartTheme.primary, 0.7),
-                hexToRgba(chartTheme.primary, 0.5),
-                hexToRgba(chartTheme.primary, 0.6),
-                hexToRgba(chartTheme.primary, 0.4)
+                HAS_INSIGHTS_DATA ? '#2A9D8F' : chartTheme.pieFallback, // happy
+                '#457B9D', // sad
+                '#E63946', // angry
+                '#F4A261', // anxious
+                '#9AA5B1', // neutral
             ],
             borderColor: chartTheme.border,
             borderWidth: 2
@@ -427,7 +441,9 @@ function initializeEmotionPieChart() {
                     cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
-                            return `${context.label}: ${context.parsed}%`;
+                            const raw = String(context.label || '');
+                            const name = raw.replace(/\s*\(.*?\)\s*/g, '').trim();
+                            return `${name}: ${context.parsed}%`;
                         }
                     }
                 }
@@ -446,14 +462,15 @@ function initializeEmotionPieChartMobile() {
     const chartTheme = getChartTheme();
     const breakdown = emotionBreakdownData();
     const emotionData = {
-        labels: HAS_INSIGHTS_DATA ? ['Happy', 'Neutral', 'Sad', 'Anxious'] : ['No Data'],
+        labels: HAS_INSIGHTS_DATA ? ['Happy', 'Sad', 'Angry', 'Anxious', 'Neutral'] : ['No Data'],
         datasets: [{
             data: HAS_INSIGHTS_DATA ? breakdown.values : [1],
             backgroundColor: [
-                HAS_INSIGHTS_DATA ? hexToRgba(chartTheme.primary, 0.92) : chartTheme.pieFallback,
-                '#F4A261',
-                '#7FA7BF',
-                '#E76F51'
+                HAS_INSIGHTS_DATA ? '#2A9D8F' : chartTheme.pieFallback, // happy
+                '#457B9D', // sad
+                '#E63946', // angry
+                '#F4A261', // anxious
+                '#9AA5B1', // neutral
             ],
             borderColor: chartTheme.border,
             borderWidth: 2
@@ -488,9 +505,10 @@ function initializeEmotionPieChartMobile() {
         const legendItems = document.querySelectorAll('.emotion-legend-item');
         const p = breakdown.percentages;
         if (legendItems[0]) legendItems[0].querySelector('.emotion-legend-percentage').textContent = `${p.happy}%`;
-        if (legendItems[1]) legendItems[1].querySelector('.emotion-legend-percentage').textContent = `${p.neutral}%`;
-        if (legendItems[2]) legendItems[2].querySelector('.emotion-legend-percentage').textContent = `${p.sad}%`;
+        if (legendItems[1]) legendItems[1].querySelector('.emotion-legend-percentage').textContent = `${p.sad}%`;
+        if (legendItems[2]) legendItems[2].querySelector('.emotion-legend-percentage').textContent = `${p.angry}%`;
         if (legendItems[3]) legendItems[3].querySelector('.emotion-legend-percentage').textContent = `${p.anxious}%`;
+        if (legendItems[4]) legendItems[4].querySelector('.emotion-legend-percentage').textContent = `${p.neutral}%`;
     } else {
         document.querySelectorAll('.emotion-legend-percentage').forEach((el) => {
             el.textContent = '0%';

@@ -1,5 +1,45 @@
 // DiariCore Dashboard JavaScript
-const FORCE_DASHBOARD_PREVIEW_TREND = false;
+const DAILY_PROMPTS = [
+    "What's one thing you're grateful for today?",
+    "How did your body feel when you woke up this morning?",
+    "What emotion has been showing up the most lately?",
+    "Is there something you've been avoiding thinking about?",
+    "What would make today feel complete?",
+    "Who made you feel seen this week?",
+    "What's draining your energy right now?",
+    "What are you looking forward to tomorrow?",
+    "What's something small that brought you joy today?",
+    "How kind have you been to yourself this week?",
+    "What feeling are you carrying into today?",
+    "What do you wish someone knew about how you're feeling?",
+    "What does rest look like for you today?",
+    "What are you holding on to that you could let go of?",
+    "What made you proud of yourself recently?",
+    "What boundary would help you feel safer today?",
+];
+
+const WELLNESS_QUOTES = [
+    { text: "You yourself, as much as anybody in the universe, deserve your love.", author: "Buddha" },
+    { text: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
+    { text: "Feelings are just visitors, let them come and go.", author: "Mooji" },
+    { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+    { text: "What you resist, persists.", author: "Carl Jung" },
+    { text: "You don't have to be positive all the time.", author: "Lori Deschene" },
+    { text: "The present moment is the only moment available to us.", author: "Thich Nhat Hanh" },
+    { text: "Owning our story and loving ourselves through that process is the bravest thing we'll ever do.", author: "Brené Brown" },
+    { text: "Not all storms come to disrupt your life, some come to clear your path.", author: "Unknown" },
+    { text: "Sometimes the most productive thing you can do is rest.", author: "Unknown" },
+    { text: "Your emotions are valid. All of them.", author: "Unknown" },
+    { text: "Healing is not linear.", author: "Unknown" },
+    { text: "Be gentle with yourself, you are a child of the universe.", author: "Max Ehrmann" },
+    { text: "You are allowed to be both a masterpiece and a work in progress.", author: "Sophia Bush" },
+    { text: "The only way out is through.", author: "Robert Frost" },
+    { text: "Peace is the result of retraining your mind.", author: "Wayne Dyer" },
+    { text: "Self-care is not selfish.", author: "Audre Lorde" },
+    { text: "Give yourself the same compassion you would give a good friend.", author: "Unknown" },
+    { text: "It's okay to not be okay.", author: "Unknown" },
+    { text: "Rest is not idleness.", author: "John Lubbock" },
+];
 
 document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
@@ -179,8 +219,10 @@ function initializeDashboardFromUserData() {
 
     updateGreeting(user);
     updateDashboardCards(entries);
-    updateSmartInsightSection(entries);
+    updateDailyPrompt();
     renderWeeklyChart(entries);
+    updateRecentEntrySnapshot(entries);
+    updateWellnessQuote();
 }
 
 function updateGreeting(user) {
@@ -309,19 +351,75 @@ function updateDashboardCards(entries) {
     if (insightDescription) insightDescription.textContent = 'Based on your recent entries';
 }
 
-function updateSmartInsightSection(entries) {
-    const hasEntries = Array.isArray(entries) && entries.length > 0;
-    const desktopInsightMessages = document.querySelectorAll('.smart-insights .insight-message');
-    const mobileInsightDescription = document.querySelector('.mobile-smart-insights .insight-description');
+function daySeedNumber() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return Math.floor(d.getTime() / 86400000);
+}
 
-    if (hasEntries) return;
+function pickDailyFromList(items) {
+    if (!Array.isArray(items) || items.length === 0) return null;
+    const idx = daySeedNumber() % items.length;
+    return items[idx];
+}
 
-    desktopInsightMessages.forEach((el) => {
-        el.textContent = 'Not enough journal data yet. Write entries to unlock personalized insights.';
-    });
-    if (mobileInsightDescription) {
-        mobileInsightDescription.textContent = 'No insights yet. Write your first entry to begin tracking your patterns.';
+function updateDailyPrompt() {
+    const el = document.getElementById('dailyPrompt');
+    if (!el) return;
+    const prompt = pickDailyFromList(DAILY_PROMPTS) || "How are you feeling right now?";
+    el.textContent = prompt;
+}
+
+function formatRecentEntryDate(rawDate) {
+    const d = new Date(rawDate);
+    if (Number.isNaN(d.getTime())) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(d);
+    target.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today - target) / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function updateRecentEntrySnapshot(entries) {
+    const card = document.getElementById('recentEntrySnapshot');
+    const textEl = document.getElementById('recentEntryText');
+    const dateEl = document.getElementById('recentEntryDate');
+    const scoreEl = document.getElementById('recentEntryScore');
+    const openBtn = document.getElementById('recentEntryOpenBtn');
+    if (!card || !textEl || !dateEl || !scoreEl || !openBtn) return;
+
+    const latest = getLatestEntry(entries || []);
+    if (!latest) {
+        card.hidden = true;
+        return;
     }
+
+    const rawText = String(latest.text || latest.textContent || '').trim();
+    const snippet = rawText || 'No text content available for this entry.';
+    const score = feelingToScore(resolveEntryFeeling(latest));
+
+    dateEl.textContent = formatRecentEntryDate(latest.date);
+    textEl.textContent = snippet;
+    scoreEl.textContent = `${score.toFixed(1)}/10`;
+    openBtn.onclick = () => {
+        if (latest.id != null) {
+            localStorage.setItem('diariCoreFocusEntryId', String(latest.id));
+        }
+        window.location.href = 'entries.html';
+    };
+    card.hidden = false;
+}
+
+function updateWellnessQuote() {
+    const quoteEl = document.getElementById('wellnessQuoteText');
+    const authorEl = document.getElementById('wellnessQuoteAuthor');
+    if (!quoteEl || !authorEl) return;
+    const selected = pickDailyFromList(WELLNESS_QUOTES) || { text: "Take a deep breath. You are doing your best.", author: "Unknown" };
+    quoteEl.textContent = selected.text;
+    authorEl.textContent = `— ${selected.author}`;
 }
 
 function hexToRgba(hex, alpha) {
@@ -381,8 +479,6 @@ function renderWeeklyChart(entries) {
     const firstKnown = chartData.find((v) => v !== null) ?? 5;
     let series = chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
-
-    // Preview mode intentionally disabled (data-driven sparkline only).
 
     const valid = series.filter((v) => Number.isFinite(v));
     const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;

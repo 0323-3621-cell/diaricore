@@ -134,6 +134,9 @@
                 </div>
             </div>
             
+            <!-- Daily Prompt -->
+            <p class="daily-prompt" id="dailyPrompt"></p>
+
             <!-- Quick Actions -->
             <div class="quick-actions">
                 <div class="action-buttons">
@@ -153,17 +156,6 @@
                         </div>
                     </button>
                 </div>
-            </div>
-            
-            <!-- Mobile Smart Insights -->
-            <div class="mobile-smart-insights">
-                <div class="insight-header">
-                    <h3 class="insight-title">✨ Smart Insights</h3>
-                    <button class="insight-shortcut" onclick="window.location.href='suggestions.html'">
-                        <i class="bi bi-arrow-right"></i>
-                    </button>
-                </div>
-                <p class="insight-description">You seem a bit stressed today. Would you like a calming suggestion?</p>
             </div>
             
             <!-- Weekly Mood Snapshot -->
@@ -201,60 +193,26 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Smart Insights Section -->
-            <div class="smart-insights">
-                <h2 class="section-title">🧠 Smart Insights</h2>
-                <div class="insights-grid">
-                    <div class="insight-card pattern">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-graph-up-arrow"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Emotional Pattern</h3>
-                                <span class="insight-tag pattern-tag">Pattern</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"You feel more stressed during weekdays"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">HOW</span>
-                        </div>
-                    </div>
-                    
-                    <div class="insight-card trigger">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-exclamation-triangle"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Trigger Alert</h3>
-                                <span class="insight-tag trigger-tag">Trigger</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"Deadlines often trigger stress"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">WHY</span>
-                        </div>
-                    </div>
-                    
-                    <div class="insight-card behavior">
-                        <div class="insight-header">
-                            <div class="insight-icon">
-                                <i class="bi bi-lightbulb"></i>
-                            </div>
-                            <div class="insight-title">
-                                <h3>Behavior Summary</h3>
-                                <span class="insight-tag behavior-tag">Habit</span>
-                            </div>
-                        </div>
-                        <p class="insight-message">"Your mood improves when you journal consistently"</p>
-                        <div class="insight-footer">
-                            <span class="insight-type">BEHAVIOR</span>
-                        </div>
-                    </div>
+
+            <!-- Recent Entry Snapshot -->
+            <section class="recent-entry-card" id="recentEntrySnapshot" hidden>
+                <div class="recent-entry-head">
+                    <h2 class="recent-entry-title">Last Entry</h2>
+                    <span class="recent-entry-date" id="recentEntryDate"></span>
                 </div>
-            </div>
+                <p class="recent-entry-text" id="recentEntryText"></p>
+                <div class="recent-entry-footer">
+                    <span class="recent-entry-score" id="recentEntryScore"></span>
+                    <button type="button" class="recent-entry-open" id="recentEntryOpenBtn">Open <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </section>
+
+            <!-- Rotating Wellness Quote -->
+            <section class="wellness-quote" aria-label="Daily wellness quote">
+                <div class="wellness-quote-mark" aria-hidden="true">"</div>
+                <p class="wellness-quote-text" id="wellnessQuoteText"></p>
+                <p class="wellness-quote-author" id="wellnessQuoteAuthor"></p>
+            </section>
             
             </div>
     </div>

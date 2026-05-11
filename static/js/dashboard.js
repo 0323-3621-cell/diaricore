@@ -486,11 +486,13 @@ function renderWeeklyChart(entries) {
     });
     const hasFullWeekData = chartData.every((v) => v !== null);
     const staticSevenDayProfile = [6.2, 5.9, 5.1, 5.5, 5.8, 6.8, 6.6];
+    const useStaticPreview = !hasFullWeekData;
     const firstKnown = chartData.find((v) => v !== null) ?? 5;
-    let series = hasFullWeekData
+    let series = useStaticPreview
         ? staticSevenDayProfile.slice()
         : chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
+    const hasDisplayData = hasData || useStaticPreview;
 
     const valid = series.filter((v) => Number.isFinite(v));
     const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
@@ -500,9 +502,9 @@ function renderWeeklyChart(entries) {
     const firstAvg = (series[0] + series[1] + series[2]) / 3;
     const secondAvg = (series[4] + series[5] + series[6]) / 3;
     const delta = secondAvg - firstAvg;
-    if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
-    if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
-    if (trendEl) trendEl.textContent = hasData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
+    if (avgEl) avgEl.textContent = hasDisplayData ? `${avg.toFixed(1)}/10` : '--';
+    if (bestDayEl) bestDayEl.textContent = hasDisplayData ? bestDay : '--';
+    if (trendEl) trendEl.textContent = hasDisplayData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
     if (trendBadge) {
         const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
         trendBadge.classList.toggle('is-up', delta > 0.15);

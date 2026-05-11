@@ -210,8 +210,8 @@
 .user-profile {
     margin-top: auto; /* pin to bottom */
     padding: 0.75rem 1.15rem 0; /* flush to bottom edge */
-    border-top: 1px solid var(--border-color);
-    background: linear-gradient(135deg, var(--card-background) 0%, var(--background-soft) 100%);
+    border-top: 1px solid rgba(224, 230, 227, 0.65); /* subtler separator */
+    background: var(--card-background); /* same surface as sidebar */
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
@@ -275,8 +275,8 @@
 }
 
 .logout-btn {
-    background: linear-gradient(135deg, var(--background-soft), #E8F0ED);
-    border: 2px solid var(--primary-color);
+    background: var(--card-background);
+    border: 1px solid rgba(111, 143, 127, 0.55);
     color: var(--text-dark);
     padding: 0.75rem 1.25rem;
     border-radius: 8px;
@@ -288,15 +288,15 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    box-shadow: 0 2px 8px rgba(111, 143, 127, 0.15);
+    box-shadow: none;
     margin-bottom: 0;
 }
 
 .logout-btn:hover {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    color: white;
+    background: rgba(111, 143, 127, 0.12);
+    color: var(--text-dark);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(111, 143, 127, 0.3);
+    box-shadow: 0 2px 8px rgba(111, 143, 127, 0.12);
 }
 
 .logout-btn i {
@@ -305,7 +305,7 @@
 }
 
 .logout-btn:hover i {
-    color: white;
+    color: var(--primary-color);
 }
 
 /* Mobile styles - MUST come after desktop to override */

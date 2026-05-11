@@ -645,13 +645,12 @@ body {
         overflow: hidden;
     }
 
-    .weekly-weekday__mood-img {
+    .weekly-weekday__lottie {
         width: 34px;
         height: 34px;
         display: block;
         pointer-events: none;
         flex-shrink: 0;
-        object-fit: contain;
     }
 
     .weekly-weekday.is-today .weekly-weekday__dot {
@@ -729,9 +728,9 @@ body {
 }
 
 .stat-card-mood .mood-emoji__img {
-    /* ~same visual weight as 1.25–1.35rem Bootstrap icons in sibling stat wells */
-    width: 22px;
-    height: 22px;
+    /* Slightly smaller than 44px well so padding matches bi icons; larger than 22px for readability */
+    width: 30px;
+    height: 30px;
     display: block;
     object-fit: contain;
 }
@@ -1602,8 +1601,8 @@ body {
     }
     
     .stat-card-mood .mood-emoji__img {
-        width: 20px;
-        height: 20px;
+        width: 26px;
+        height: 26px;
     }
     
     /* Write/Voice quick actions hidden on mobile (use bottom nav / FAB) */

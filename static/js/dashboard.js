@@ -397,6 +397,15 @@ const STAT_NOTO_MOOD_SRC = {
     neutral: '/noto-emoji-static/3563-lookat.png',
 };
 
+/** Weekly day-strip: animated Noto Lottie (paths relative to static/img/). */
+const WEEK_STRIP_MOOD_LOTTIE_SRC = {
+    happy: 'noto-emoji/noto-happy.json',
+    sad: 'noto-emoji/noto-sad.json',
+    angry: 'noto-emoji/noto-angry.json',
+    anxious: 'noto-emoji/noto-anxious.json',
+    neutral: 'noto-emoji/noto-neutral.json',
+};
+
 function feelingToStatNotoKey(feelingRaw) {
     const f = String(feelingRaw || '').toLowerCase();
     if (f === 'happy' || f === 'excited' || f === 'grateful') return 'happy';
@@ -404,6 +413,11 @@ function feelingToStatNotoKey(feelingRaw) {
     if (f === 'angry') return 'angry';
     if (f === 'anxious' || f === 'stressed') return 'anxious';
     return 'neutral';
+}
+
+function weekStripLottieSrcForFeeling(feelingRaw) {
+    const k = feelingToStatNotoKey(feelingRaw);
+    return WEEK_STRIP_MOOD_LOTTIE_SRC[k] || '';
 }
 
 function statNotoSrcForFeeling(feelingRaw) {
@@ -647,7 +661,7 @@ function renderWeeklyChart(entries) {
             : `<i class="bi bi-arrow-left-right"></i>Steady`;
     }
 
-    // Week strip (reference-style day dots). Same static PNG set as Today's Mood stat card.
+    // Week strip: animated Noto Lottie (Today's Mood stat card stays static PNG).
     if (weekStripEl) {
         const now = new Date();
         const todayIdx = (() => {
@@ -659,13 +673,13 @@ function renderWeeklyChart(entries) {
         weekStripEl.innerHTML = labels.map((lbl, idx) => {
             const feelings = dayFeelings[idx] || [];
             const lastFeeling = feelings.length ? feelings[feelings.length - 1] : '';
-            const moodSrc = lastFeeling ? statNotoSrcForFeeling(lastFeeling) : '';
+            const lottieSrc = lastFeeling ? weekStripLottieSrcForFeeling(lastFeeling) : '';
             const isToday = idx === todayIdx;
             return `
                 <div class="weekly-weekday${isToday ? ' is-today' : ''}">
                     <div class="weekly-weekday__dot" aria-hidden="true">
-                        ${moodSrc
-                            ? `<img class="weekly-weekday__mood-img" src="${moodSrc}" alt="" width="34" height="34" decoding="async" />`
+                        ${lottieSrc
+                            ? `<lottie-player class="weekly-weekday__lottie" autoplay loop src="${lottieSrc}"></lottie-player>`
                             : ''}
                     </div>
                     <div class="weekly-weekday__label">${lbl}</div>

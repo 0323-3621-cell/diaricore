@@ -921,7 +921,7 @@ body {
 }
 
 .weekly-snapshot-footer {
-    margin-top: 0.4rem;
+    margin-top: 0.95rem;
     display: flex;
     justify-content: flex-end;
 }
@@ -938,7 +938,7 @@ body {
     align-items: center;
     gap: 0.35rem;
     cursor: pointer;
-    transform: translateY(3px); /* lower button slightly without resizing chart container */
+    transform: translateY(9px); /* move button visibly lower */
 }
 
 /* Desktop override MUST come after base button rule */
@@ -959,12 +959,12 @@ body {
 
     .weekly-snapshot-card .weekly-full-view-btn:hover {
         background: rgba(111, 143, 127, 0.22);
-        transform: translateY(2px);
+        transform: translateY(8px);
         box-shadow: 0 10px 28px rgba(111, 143, 127, 0.18);
     }
 
     .weekly-snapshot-card .weekly-full-view-btn:active {
-        transform: translateY(3px) scale(0.99);
+        transform: translateY(9px) scale(0.99);
         box-shadow: 0 6px 18px rgba(111, 143, 127, 0.14);
     }
 }

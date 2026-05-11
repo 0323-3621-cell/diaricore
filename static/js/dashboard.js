@@ -519,14 +519,14 @@ function renderWeeklyChart(entries) {
 
     // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
     if (weekStripEl) {
-        // Google Noto Animated Emoji — one art direction; Lottie JSON per codepoint.
-        // Preview / browse: https://googlefonts.github.io/noto-emoji-animation/
+        // Google Noto Animated Emoji (vendored under static/img/noto-emoji) for offline / PWA.
+        // Source: https://fonts.gstatic.com/s/e/notoemoji/latest/<codepoint>/lottie.json — browse https://googlefonts.github.io/noto-emoji-animation/
         const MOOD_LOTTIE_URLS = {
-            happy: 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f604/lottie.json', // grinning face with open mouth and smiling eyes
-            sad: 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f622/lottie.json', // crying face
-            angry: 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f620/lottie.json', // angry face
-            anxious: 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f630/lottie.json', // anxious face with sweat
-            neutral: 'https://fonts.gstatic.com/s/e/notoemoji/latest/1f610/lottie.json', // neutral face
+            happy: 'noto-emoji/noto-happy.json', // U+1F604
+            sad: 'noto-emoji/noto-sad.json', // U+1F622
+            angry: 'noto-emoji/noto-angry.json', // U+1F620
+            anxious: 'noto-emoji/noto-anxious.json', // U+1F630
+            neutral: 'noto-emoji/noto-neutral.json', // U+1F610
         };
 
         const feelingToLottieSrc = (feeling) => {

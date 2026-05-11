@@ -229,20 +229,25 @@ html.theme-dark .time-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
-/* Streak book (dark): subtle chip + light edge on art — avoid heavy glow */
+/*
+ * Streak book (dark): BOOK.json uses dark sage strokes — they vanish on a dark chip.
+ * Use the same light mint well as stat icons so the art matches the rest of the UI.
+ */
 html.theme-dark .floating-streak-book {
-    background: rgba(28, 36, 40, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+    background: linear-gradient(160deg, #eaf3ec 0%, #dceee3 100%) !important;
+    border: 1px solid rgba(70, 96, 85, 0.22) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 4px 16px rgba(0, 0, 0, 0.38) !important;
 }
 
 html.theme-dark .floating-streak-book:hover {
-    background: rgba(34, 44, 48, 0.96) !important;
-    border-color: rgba(255, 255, 255, 0.2) !important;
+    background: linear-gradient(160deg, #f0f6f2 0%, #e4efe8 100%) !important;
+    border-color: rgba(70, 96, 85, 0.3) !important;
 }
 
 html.theme-dark .floating-streak-book__lottie {
-    filter: brightness(1.12) contrast(1.08) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.65));
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.14)) contrast(1.08);
 }
 
 .theme-toggle-fab {

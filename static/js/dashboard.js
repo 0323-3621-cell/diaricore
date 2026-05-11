@@ -457,6 +457,7 @@ function renderWeeklyChart(entries) {
     const bestDayEl = document.getElementById('dashboardWeeklyBestDay');
     const trendEl = document.getElementById('dashboardWeeklyTrend');
     const trendBadge = document.getElementById('dashboardTrendBadge');
+    const weekStripEl = document.getElementById('dashboardWeekStrip');
 
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const today = new Date();
@@ -467,13 +468,16 @@ function renderWeeklyChart(entries) {
     monday.setHours(0, 0, 0, 0);
 
     const dayScores = new Array(7).fill(null).map(() => []);
+    const dayFeelings = new Array(7).fill(null).map(() => []);
     (entries || []).forEach((entry) => {
         if (!entry?.date) return;
         const d = new Date(entry.date);
         if (d < monday) return;
         const idx = Math.floor((d - monday) / (1000 * 60 * 60 * 24));
         if (idx < 0 || idx > 6) return;
-        dayScores[idx].push(feelingToScore(resolveEntryFeeling(entry)));
+        const feeling = resolveEntryFeeling(entry);
+        dayScores[idx].push(feelingToScore(feeling));
+        dayFeelings[idx].push(String(feeling || '').toLowerCase());
     });
 
     const chartData = dayScores.map((scores) => {
@@ -499,6 +503,29 @@ function renderWeeklyChart(entries) {
         const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
         trendBadge.classList.toggle('is-up', delta > 0.15);
         trendBadge.innerHTML = `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`;
+    }
+
+    // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
+    if (weekStripEl) {
+        const now = new Date();
+        const todayIdx = (() => {
+            const t = new Date(now);
+            t.setHours(0, 0, 0, 0);
+            return Math.floor((t - monday) / 86400000);
+        })();
+
+        weekStripEl.innerHTML = labels.map((lbl, idx) => {
+            const feelings = dayFeelings[idx] || [];
+            const lastFeeling = feelings.length ? feelings[feelings.length - 1] : '';
+            const emoji = lastFeeling ? feelingToEmoji(lastFeeling) : '';
+            const isToday = idx === todayIdx;
+            return `
+                <div class="weekly-weekday${isToday ? ' is-today' : ''}">
+                    <div class="weekly-weekday__dot" aria-hidden="true">${emoji || ''}</div>
+                    <div class="weekly-weekday__label">${lbl}</div>
+                </div>
+            `;
+        }).join('');
     }
 
     const w = 640;

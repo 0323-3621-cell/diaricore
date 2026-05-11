@@ -159,62 +159,68 @@
                     </button>
                 </div>
             </div>
-            
-            <!-- Weekly Mood Snapshot -->
-            <div class="weekly-snapshot-wrap">
-                <div class="weekly-snapshot-card">
-                    <div class="weekly-snapshot-head">
-                        <div>
-                            <h2 class="weekly-snapshot-title"><i class="bi bi-calendar"></i> Weekly Mood</h2>
-                            <p class="weekly-snapshot-range">Mon – Sun</p>
+
+            <!-- Weekly mood + side cards (desktop layout like reference; mobile stacks naturally) -->
+            <div class="dashboard-lower-grid">
+                <!-- Weekly Mood Snapshot -->
+                <div class="weekly-snapshot-wrap">
+                    <div class="weekly-snapshot-card">
+                        <div class="weekly-snapshot-head">
+                            <div>
+                                <h2 class="weekly-snapshot-title"><i class="bi bi-calendar"></i> Weekly Mood</h2>
+                                <p class="weekly-snapshot-range">Mon – Sun</p>
+                            </div>
+                            <span class="weekly-trend-badge" id="dashboardTrendBadge">
+                                <i class="bi bi-arrow-down-right"></i>
+                                Declining
+                            </span>
                         </div>
-                        <span class="weekly-trend-badge" id="dashboardTrendBadge">
-                            <i class="bi bi-arrow-down-right"></i>
-                            Declining
-                        </span>
+                        <div class="weekly-weekstrip" id="dashboardWeekStrip" aria-hidden="true"></div>
+                        <div class="weekly-sparkline-wrap" id="dashboardWeeklySparkline"></div>
+                        <div class="weekly-snapshot-stats">
+                            <div class="snapshot-stat">
+                                <p class="snapshot-stat-value" id="dashboardWeeklyAvg">--</p>
+                                <p class="snapshot-stat-label">Avg this week</p>
+                            </div>
+                            <div class="snapshot-stat">
+                                <p class="snapshot-stat-value" id="dashboardWeeklyBestDay">--</p>
+                                <p class="snapshot-stat-label">Highest day</p>
+                            </div>
+                            <div class="snapshot-stat">
+                                <p class="snapshot-stat-value" id="dashboardWeeklyTrend">--</p>
+                                <p class="snapshot-stat-label">Trend</p>
+                            </div>
+                        </div>
+                        <div class="weekly-snapshot-footer">
+                            <button type="button" class="weekly-full-view-btn" onclick="window.location.href='insights.html'">
+                                Full insights <i class="bi bi-arrow-up-right"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="weekly-sparkline-wrap" id="dashboardWeeklySparkline"></div>
-                    <div class="weekly-snapshot-stats">
-                        <div class="snapshot-stat">
-                            <p class="snapshot-stat-value" id="dashboardWeeklyAvg">--</p>
-                            <p class="snapshot-stat-label">Avg this week</p>
+                </div>
+
+                <div class="dashboard-side-stack">
+                    <!-- Recent Entry Snapshot -->
+                    <section class="recent-entry-card" id="recentEntrySnapshot" hidden>
+                        <div class="recent-entry-head">
+                            <h2 class="recent-entry-title">Last Entry</h2>
+                            <span class="recent-entry-date" id="recentEntryDate"></span>
                         </div>
-                        <div class="snapshot-stat">
-                            <p class="snapshot-stat-value" id="dashboardWeeklyBestDay">--</p>
-                            <p class="snapshot-stat-label">Highest day</p>
+                        <p class="recent-entry-text" id="recentEntryText"></p>
+                        <div class="recent-entry-footer">
+                            <span class="recent-entry-score" id="recentEntryScore"></span>
+                            <button type="button" class="recent-entry-open" id="recentEntryOpenBtn">Open <i class="bi bi-arrow-right"></i></button>
                         </div>
-                        <div class="snapshot-stat">
-                            <p class="snapshot-stat-value" id="dashboardWeeklyTrend">--</p>
-                            <p class="snapshot-stat-label">Trend</p>
-                        </div>
-                    </div>
-                    <div class="weekly-snapshot-footer">
-                        <button type="button" class="weekly-full-view-btn" onclick="window.location.href='insights.html'">
-                            Full view <i class="bi bi-arrow-up-right"></i>
-                        </button>
-                    </div>
+                    </section>
+
+                    <!-- Rotating Wellness Quote -->
+                    <section class="wellness-quote wellness-quote--card" aria-label="Daily wellness quote">
+                        <div class="wellness-quote-mark" aria-hidden="true">"</div>
+                        <p class="wellness-quote-text" id="wellnessQuoteText"></p>
+                        <p class="wellness-quote-author" id="wellnessQuoteAuthor"></p>
+                    </section>
                 </div>
             </div>
-
-            <!-- Recent Entry Snapshot -->
-            <section class="recent-entry-card" id="recentEntrySnapshot" hidden>
-                <div class="recent-entry-head">
-                    <h2 class="recent-entry-title">Last Entry</h2>
-                    <span class="recent-entry-date" id="recentEntryDate"></span>
-                </div>
-                <p class="recent-entry-text" id="recentEntryText"></p>
-                <div class="recent-entry-footer">
-                    <span class="recent-entry-score" id="recentEntryScore"></span>
-                    <button type="button" class="recent-entry-open" id="recentEntryOpenBtn">Open <i class="bi bi-arrow-right"></i></button>
-                </div>
-            </section>
-
-            <!-- Rotating Wellness Quote -->
-            <section class="wellness-quote" aria-label="Daily wellness quote">
-                <div class="wellness-quote-mark" aria-hidden="true">"</div>
-                <p class="wellness-quote-text" id="wellnessQuoteText"></p>
-                <p class="wellness-quote-author" id="wellnessQuoteAuthor"></p>
-            </section>
             
             </div>
     </div>

@@ -133,10 +133,35 @@ function initializeStreakBook() {
     const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
     const panel = document.getElementById('floatingStreakPanel');
-    const chromeLabel = document.getElementById('floatingStreakChromeLabel');
     const player = document.getElementById('floatingStreakBookLottie');
-    if (!toggleBtn || !panel || !root || !chromeLabel || !player || toggleBtn.dataset.bound === '1') return;
+    if (!toggleBtn || !panel || !root || !player || toggleBtn.dataset.bound === '1') return;
     toggleBtn.dataset.bound = '1';
+
+    let revealTimer = null;
+    let completeHandler = null;
+
+    const clearRevealSchedule = () => {
+        if (revealTimer) {
+            clearTimeout(revealTimer);
+            revealTimer = null;
+        }
+        if (completeHandler) {
+            player.removeEventListener('complete', completeHandler);
+            completeHandler = null;
+        }
+    };
+
+    const hidePanel = () => {
+        panel.hidden = true;
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute('aria-label', 'Open streak book');
+    };
+
+    const showPanel = () => {
+        panel.hidden = false;
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.setAttribute('aria-label', 'Close streak book');
+    };
 
     const freezeClosed = () => {
         try {
@@ -151,29 +176,69 @@ function initializeStreakBook() {
         }
     };
 
-    const syncStreakChrome = () => {
-        const hovering = root.dataset.hover === '1';
-        const panelOpen = !panel.hidden;
-        const active = hovering || panelOpen;
-        chromeLabel.hidden = !active;
-        chromeLabel.setAttribute('aria-hidden', active ? 'false' : 'true');
-        if (active) {
-            try {
-                player.loop = true;
-                player.play();
-            } catch (e) {
-                /* ignore */
+    /** Hold last frame (open book) — no loop while hovering. */
+    const freezeOpenHold = () => {
+        try {
+            player.loop = false;
+            player.pause();
+            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
+            if (anim && typeof anim.goToAndStop === 'function') {
+                const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
+                anim.goToAndStop(end, true);
             }
-        } else {
-            freezeClosed();
+        } catch (e) {
+            /* ignore */
         }
     };
 
-    const setOpen = (open) => {
-        panel.hidden = !open;
-        toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        toggleBtn.setAttribute('aria-label', open ? 'Close streak book' : 'Open streak book');
-        syncStreakChrome();
+    const bookDurationMs = () => {
+        try {
+            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
+            if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
+                return (anim.totalFrames / anim.frameRate) * 1000;
+            }
+        } catch (e) {
+            /* ignore */
+        }
+        return (46 / 60) * 1000;
+    };
+
+    const streakRevealOk = () => root.dataset.inside === '1' || root.dataset.clickOpen === '1';
+
+    const revealPanelIfActive = () => {
+        if (!streakRevealOk()) return;
+        showPanel();
+        freezeOpenHold();
+    };
+
+    const beginOpenSequence = () => {
+        clearRevealSchedule();
+        hidePanel();
+        freezeClosed();
+        try {
+            player.loop = false;
+            player.play();
+        } catch (e) {
+            /* ignore */
+        }
+
+        const duration = bookDurationMs();
+        const minDelay = 420;
+        const revealAfter = Math.max(minDelay, duration * 0.92);
+        revealTimer = setTimeout(revealPanelIfActive, revealAfter);
+
+        completeHandler = () => {
+            if (!streakRevealOk()) return;
+            freezeOpenHold();
+        };
+        player.addEventListener('complete', completeHandler);
+    };
+
+    const endOpenSequence = () => {
+        root.dataset.clickOpen = '0';
+        clearRevealSchedule();
+        hidePanel();
+        freezeClosed();
     };
 
     let streakLottieFramed = false;
@@ -189,28 +254,37 @@ function initializeStreakBook() {
     }, 600);
 
     root.addEventListener('mouseenter', () => {
-        root.dataset.hover = '1';
-        syncStreakChrome();
+        root.dataset.inside = '1';
+        beginOpenSequence();
     });
     root.addEventListener('mouseleave', () => {
-        root.dataset.hover = '0';
-        syncStreakChrome();
+        root.dataset.inside = '0';
+        endOpenSequence();
     });
 
     toggleBtn.addEventListener('click', (event) => {
         event.stopPropagation();
-        const isOpen = toggleBtn.getAttribute('aria-expanded') === 'true';
-        setOpen(!isOpen);
+        if (!panel.hidden) {
+            root.dataset.inside = '0';
+            endOpenSequence();
+            return;
+        }
+        if (root.dataset.inside === '1') return;
+        root.dataset.clickOpen = '1';
+        beginOpenSequence();
     });
 
     document.addEventListener('click', (event) => {
         if (panel.hidden) return;
-        if (panel.contains(event.target) || toggleBtn.contains(event.target)) return;
-        setOpen(false);
+        if (root.contains(event.target)) return;
+        root.dataset.inside = '0';
+        endOpenSequence();
     });
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') setOpen(false);
+        if (event.key !== 'Escape' || panel.hidden) return;
+        root.dataset.inside = '0';
+        endOpenSequence();
     });
 }
 

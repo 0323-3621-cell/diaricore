@@ -36,6 +36,13 @@
     
     /* Layout */
     --sidebar-width: 280px;
+
+    /* Mood key + chart colors (wired together) */
+    --mood-happy: #E3A263;
+    --mood-sad: #6FA6C9;
+    --mood-angry: #D97B7B;
+    --mood-anxious: #B59AD9;
+    --mood-neutral: #9AA9A1;
 }
 
 * {
@@ -473,20 +480,53 @@ body {
     .recent-entry-card {
         margin-bottom: 0;
     }
-
-    .wellness-quote.wellness-quote--card {
-        margin: 0;
-        padding: 1rem 1.15rem;
-        border: 1px solid var(--border-color);
-        border-radius: 14px;
-        background: var(--card-background);
-        text-align: left;
-    }
-
-    .wellness-quote.wellness-quote--card .wellness-quote-mark {
-        margin-bottom: 0.25rem;
-    }
 }
+
+/* Mood Key card (right column) */
+.mood-key-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--card-background);
+    padding: 1rem 1.15rem;
+}
+
+.mood-key-title {
+    margin: 0 0 0.75rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.mood-key-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+}
+
+.mood-key-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.mood-key-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.mood-key-dot--happy { background: var(--mood-happy); }
+.mood-key-dot--sad { background: var(--mood-sad); }
+.mood-key-dot--angry { background: var(--mood-angry); }
+.mood-key-dot--anxious { background: var(--mood-anxious); }
+.mood-key-dot--neutral { background: var(--mood-neutral); }
 
 /* Weekly week-strip (reference-style day dots above chart) */
 .weekly-weekstrip {

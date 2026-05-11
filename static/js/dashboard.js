@@ -528,6 +528,27 @@ function renderWeeklyChart(entries) {
         }).join('');
     }
 
+    // Pick a chart color based on the most recent in-week mood
+    const moodColorFromCss = (name, fallback) => {
+        const v = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    };
+    const MOOD_COLORS = {
+        happy: moodColorFromCss('--mood-happy', '#E3A263'),
+        sad: moodColorFromCss('--mood-sad', '#6FA6C9'),
+        angry: moodColorFromCss('--mood-angry', '#D97B7B'),
+        anxious: moodColorFromCss('--mood-anxious', '#B59AD9'),
+        neutral: moodColorFromCss('--mood-neutral', '#9AA9A1'),
+    };
+    const latestIdxWithData = (() => {
+        for (let i = 6; i >= 0; i -= 1) {
+            if ((dayFeelings[i] || []).length) return i;
+        }
+        return -1;
+    })();
+    const latestMood = latestIdxWithData >= 0 ? String((dayFeelings[latestIdxWithData] || []).slice(-1)[0] || '').toLowerCase() : '';
+    const chartColor = MOOD_COLORS[latestMood] || '#1D9E75';
+
     const w = 640;
     const h = 120;
     const padX = 12;
@@ -544,13 +565,13 @@ function renderWeeklyChart(entries) {
         <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
             <defs>
                 <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.15"></stop>
-                    <stop offset="100%" stop-color="#1D9E75" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="${chartColor}" stop-opacity="0.15"></stop>
+                    <stop offset="100%" stop-color="${chartColor}" stop-opacity="0"></stop>
                 </linearGradient>
             </defs>
             <path d="${areaD}" fill="url(#dashMoodFill)"></path>
-            <path d="${lineD}" fill="none" stroke="#1D9E75" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
-            <circle cx="${points[6].x.toFixed(2)}" cy="${points[6].y.toFixed(2)}" r="3.8" fill="#1D9E75"></circle>
+            <path d="${lineD}" fill="none" stroke="${chartColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="${points[6].x.toFixed(2)}" cy="${points[6].y.toFixed(2)}" r="3.8" fill="${chartColor}"></circle>
         </svg>`;
 }
 

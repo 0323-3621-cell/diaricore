@@ -715,6 +715,51 @@ body {
     margin-bottom: 1.9rem;
 }
 
+/* Desktop spacing rhythm (match reference dashboard density) */
+@media (min-width: 992px) {
+    .header-section {
+        margin-bottom: 1.25rem;
+    }
+
+    .stats-cards {
+        margin-bottom: 1.05rem;
+    }
+
+    .daily-prompt {
+        margin-bottom: 0.65rem;
+    }
+
+    .quick-actions {
+        margin-bottom: 1.25rem;
+    }
+
+    .dashboard-lower-grid {
+        margin-bottom: 1.25rem;
+    }
+
+    .weekly-snapshot-wrap {
+        margin-bottom: 0; /* grid controls spacing */
+    }
+
+    /* Slightly tighter internal spacing where the reference is compact */
+    .weekly-snapshot-card {
+        padding: 1.1rem 1.4rem 1.05rem;
+    }
+
+    .weekly-snapshot-head {
+        gap: 0.75rem;
+    }
+
+    .weekly-sparkline-wrap {
+        margin-top: 0.4rem;
+    }
+
+    .weekly-snapshot-stats {
+        margin-top: 0.6rem;
+        padding-top: 0.55rem;
+    }
+}
+
 .weekly-snapshot-card {
     border: 1px solid var(--border-color);
     border-radius: 14px;

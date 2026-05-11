@@ -331,7 +331,7 @@
     padding: 1.5rem;
     border: none;
     resize: vertical;
-    font-family: var(--font-reading, 'Lora', Georgia, serif);
+    font-family: 'Inter', sans-serif;
     font-size: 16px;
     line-height: 1.6;
     color: var(--text-dark);

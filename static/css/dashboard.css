@@ -164,8 +164,8 @@ body {
 }
 
 .floating-streak-book {
-    width: 48px;
-    height: 48px;
+    width: 58px;
+    height: 58px;
     padding: 0;
     border: none;
     border-radius: 10px;
@@ -1348,14 +1348,14 @@ body {
     }
     
     .floating-streak-book {
-        width: 44px;
-        height: 44px;
+        width: 52px;
+        height: 52px;
         border-radius: 8px;
     }
 
     .floating-streak-book__lottie {
-        width: 40px;
-        height: 40px;
+        width: 48px;
+        height: 48px;
     }
 
     .floating-streak-panel {

@@ -130,19 +130,72 @@ function calculateEntryStreak(entries) {
 }
 
 function initializeStreakBook() {
+    const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
     const panel = document.getElementById('floatingStreakPanel');
-    const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
-    if (!toggleBtn || !panel || !icon || toggleBtn.dataset.bound === '1') return;
+    const chromeLabel = document.getElementById('floatingStreakChromeLabel');
+    const player = document.getElementById('floatingStreakBookLottie');
+    if (!toggleBtn || !panel || !root || !chromeLabel || !player || toggleBtn.dataset.bound === '1') return;
     toggleBtn.dataset.bound = '1';
+
+    const freezeClosed = () => {
+        try {
+            player.loop = false;
+            player.pause();
+            if (typeof player.seek === 'function') player.seek(0);
+            else if (typeof player.stop === 'function') player.stop();
+            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
+            if (anim && typeof anim.goToAndStop === 'function') anim.goToAndStop(0, true);
+        } catch (e) {
+            /* ignore */
+        }
+    };
+
+    const syncStreakChrome = () => {
+        const hovering = root.dataset.hover === '1';
+        const panelOpen = !panel.hidden;
+        const active = hovering || panelOpen;
+        chromeLabel.hidden = !active;
+        chromeLabel.setAttribute('aria-hidden', active ? 'false' : 'true');
+        if (active) {
+            try {
+                player.loop = true;
+                player.play();
+            } catch (e) {
+                /* ignore */
+            }
+        } else {
+            freezeClosed();
+        }
+    };
 
     const setOpen = (open) => {
         panel.hidden = !open;
         toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
         toggleBtn.setAttribute('aria-label', open ? 'Close streak book' : 'Open streak book');
-        icon.classList.toggle('bi-book', !open);
-        icon.classList.toggle('bi-book-half', open);
+        syncStreakChrome();
     };
+
+    let streakLottieFramed = false;
+    const onPlayerReady = () => {
+        if (streakLottieFramed) return;
+        streakLottieFramed = true;
+        freezeClosed();
+    };
+    player.addEventListener('ready', onPlayerReady, { once: true });
+    player.addEventListener('load', onPlayerReady, { once: true });
+    setTimeout(() => {
+        if (!streakLottieFramed) onPlayerReady();
+    }, 600);
+
+    root.addEventListener('mouseenter', () => {
+        root.dataset.hover = '1';
+        syncStreakChrome();
+    });
+    root.addEventListener('mouseleave', () => {
+        root.dataset.hover = '0';
+        syncStreakChrome();
+    });
 
     toggleBtn.addEventListener('click', (event) => {
         event.stopPropagation();

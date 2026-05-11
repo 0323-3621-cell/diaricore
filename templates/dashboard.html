@@ -55,7 +55,8 @@
         <!-- Main Content Area -->
         <div class="main-content">
             <!-- Floating Streak Counter -->
-            <div class="floating-streak">
+            <div class="floating-streak" id="floatingStreakRoot">
+                <span id="floatingStreakChromeLabel" class="floating-streak-chrome-label" hidden aria-hidden="true">CURRENT STREAK</span>
                 <button
                     type="button"
                     class="floating-streak-book"
@@ -65,7 +66,13 @@
                     aria-label="Open streak book"
                     title="Open streak book"
                 >
-                    <i class="bi bi-book"></i>
+                    <lottie-player
+                        id="floatingStreakBookLottie"
+                        class="floating-streak-book__lottie"
+                        src="books_open.json"
+                        background="transparent"
+                        speed="1"
+                    ></lottie-player>
                 </button>
                 <div class="floating-streak-panel" id="floatingStreakPanel" hidden>
                     <p class="floating-streak-panel__label">Current Streak</p>

@@ -22,7 +22,7 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-ui, 'DM Sans', ui-sans-serif, system-ui, sans-serif);
     background-color: var(--background-color);
     color: var(--text-dark);
     line-height: 1.6;
@@ -285,7 +285,7 @@ body {
     color: var(--text-dark);
     background-color: var(--card-background);
     transition: all 0.3s ease;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui, 'DM Sans', ui-sans-serif, system-ui, sans-serif);
     height: 44px;
     line-height: 44px;
 }

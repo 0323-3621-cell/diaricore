@@ -49,7 +49,7 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-ui, 'DM Sans', ui-sans-serif, system-ui, sans-serif);
     background-color: var(--background-color);
     color: var(--text-dark);
 }

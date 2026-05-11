@@ -209,13 +209,12 @@
 /* User Profile Section */
 .user-profile {
     margin-top: auto; /* pin to bottom */
-    padding: 0.75rem 1.15rem 0; /* flush to bottom edge */
+    padding: 0.75rem 1.15rem 0.75rem; /* include area below logout inside this container */
     border-top: 1px solid rgba(224, 230, 227, 0.65); /* subtler separator */
     background: var(--card-background); /* same surface as sidebar */
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
-    overflow: hidden; /* prevent tiny bottom sliver below logout row */
 }
 
 .profile-left {
@@ -271,7 +270,7 @@
 .logout-section {
     display: flex;
     justify-content: center;
-    margin-bottom: -1px; /* pull row down to remove visible strip */
+    margin-bottom: 0;
     padding-bottom: 0;
 }
 
@@ -291,8 +290,6 @@
     width: 100%;
     box-shadow: none;
     margin-bottom: 0;
-    position: relative;
-    bottom: -1px; /* eliminate remaining 1px gap under button */
 }
 
 .logout-btn:hover {

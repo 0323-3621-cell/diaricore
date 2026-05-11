@@ -519,12 +519,12 @@ function renderWeeklyChart(entries) {
     // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
     if (weekStripEl) {
         const MOOD_LOTTIE_URLS = {
-            // Public LottieFiles CDN JSONs (Bodymovin). Kept lightweight + CDN-cacheable.
-            happy: 'https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json',
-            sad: 'https://assets3.lottiefiles.com/packages/lf20_RItkEz.json',
-            angry: 'https://assets4.lottiefiles.com/packages/lf20_gb5bmwlm.json',
-            anxious: 'https://assets3.lottiefiles.com/packages/lf20_0apkn3k1.json',
-            neutral: 'https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json',
+            // Local mood animations provided by user (static/img).
+            happy: 'img/smiley%20emoji.json',
+            sad: 'img/Sad%20look.json',
+            angry: 'img/Angry.json',
+            anxious: 'img/Concerned.json',
+            neutral: 'img/Neutral%20face.json',
         };
 
         const feelingToLottieSrc = (feeling) => {

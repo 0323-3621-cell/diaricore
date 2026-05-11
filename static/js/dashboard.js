@@ -388,32 +388,13 @@ function resolveEntryFeeling(entry) {
     return 'neutral';
 }
 
-function feelingToEmoji(feelingRaw) {
-    const feeling = (feelingRaw || '').toLowerCase();
-    const emojiMap = {
-        happy: '😊',
-        peaceful: '😌',
-        calm: '😌',
-        grateful: '🙏',
-        excited: '🤩',
-        content: '🙂',
-        neutral: '😐',
-        unspecified: '🙂',
-        anxious: '😰',
-        stressed: '😟',
-        sad: '😔',
-        angry: '😠'
-    };
-    return emojiMap[feeling] ?? '🙂';
-}
-
-/** Static Noto Emoji PNG (same art as weekly Lottie; single-frame — WebP from CDN can be animated). */
+/** Vendored static mood art under static/img/noto-emoji-static/ (single-frame PNG). */
 const STAT_NOTO_MOOD_SRC = {
-    happy: '/noto-emoji-static/noto-happy.png',
-    sad: '/noto-emoji-static/noto-sad.png',
-    angry: '/noto-emoji-static/noto-angry.png',
-    anxious: '/noto-emoji-static/noto-anxious.png',
-    neutral: '/noto-emoji-static/noto-neutral.png',
+    happy: '/noto-emoji-static/3591-laughter.png',
+    sad: '/noto-emoji-static/9946_sobbing.png',
+    angry: '/noto-emoji-static/8712_visibly_disgusted.png',
+    anxious: '/noto-emoji-static/3591-concern.png',
+    neutral: '/noto-emoji-static/3563-lookat.png',
 };
 
 function feelingToStatNotoKey(feelingRaw) {
@@ -666,23 +647,8 @@ function renderWeeklyChart(entries) {
             : `<i class="bi bi-arrow-left-right"></i>Steady`;
     }
 
-    // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
+    // Week strip (reference-style day dots). Same static PNG set as Today's Mood stat card.
     if (weekStripEl) {
-        // Google Noto Animated Emoji (vendored under static/img/noto-emoji) for offline / PWA.
-        // Source: https://fonts.gstatic.com/s/e/notoemoji/latest/<codepoint>/lottie.json — browse https://googlefonts.github.io/noto-emoji-animation/
-        const MOOD_LOTTIE_URLS = {
-            happy: 'noto-emoji/noto-happy.json', // U+1F604
-            sad: 'noto-emoji/noto-sad.json', // U+1F622
-            angry: 'noto-emoji/noto-angry.json', // U+1F620
-            anxious: 'noto-emoji/noto-anxious.json', // U+1F630
-            neutral: 'noto-emoji/noto-neutral.json', // U+1F610
-        };
-
-        const feelingToLottieSrc = (feeling) => {
-            const key = String(feeling || '').trim().toLowerCase();
-            return MOOD_LOTTIE_URLS[key] || '';
-        };
-
         const now = new Date();
         const todayIdx = (() => {
             const t = new Date(now);
@@ -693,15 +659,14 @@ function renderWeeklyChart(entries) {
         weekStripEl.innerHTML = labels.map((lbl, idx) => {
             const feelings = dayFeelings[idx] || [];
             const lastFeeling = feelings.length ? feelings[feelings.length - 1] : '';
-            const lottieSrc = feelingToLottieSrc(lastFeeling);
-            const emoji = lastFeeling ? feelingToEmoji(lastFeeling) : '';
+            const moodSrc = lastFeeling ? statNotoSrcForFeeling(lastFeeling) : '';
             const isToday = idx === todayIdx;
             return `
                 <div class="weekly-weekday${isToday ? ' is-today' : ''}">
                     <div class="weekly-weekday__dot" aria-hidden="true">
-                        ${lottieSrc
-                            ? `<lottie-player class="weekly-weekday__lottie" autoplay loop src="${lottieSrc}"></lottie-player>`
-                            : (emoji || '')}
+                        ${moodSrc
+                            ? `<img class="weekly-weekday__mood-img" src="${moodSrc}" alt="" width="34" height="34" decoding="async" />`
+                            : ''}
                     </div>
                     <div class="weekly-weekday__label">${lbl}</div>
                 </div>

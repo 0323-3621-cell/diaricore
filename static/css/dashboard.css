@@ -645,12 +645,13 @@ body {
         overflow: hidden;
     }
 
-    .weekly-weekday__lottie {
+    .weekly-weekday__mood-img {
         width: 34px;
         height: 34px;
         display: block;
         pointer-events: none;
         flex-shrink: 0;
+        object-fit: contain;
     }
 
     .weekly-weekday.is-today .weekly-weekday__dot {

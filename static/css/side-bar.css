@@ -215,6 +215,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
+    overflow: hidden; /* prevent tiny bottom sliver below logout row */
 }
 
 .profile-left {
@@ -270,7 +271,7 @@
 .logout-section {
     display: flex;
     justify-content: center;
-    margin-bottom: 0;
+    margin-bottom: -1px; /* pull row down to remove visible strip */
     padding-bottom: 0;
 }
 
@@ -290,6 +291,8 @@
     width: 100%;
     box-shadow: none;
     margin-bottom: 0;
+    position: relative;
+    bottom: -1px; /* eliminate remaining 1px gap under button */
 }
 
 .logout-btn:hover {

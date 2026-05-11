@@ -229,6 +229,28 @@ html.theme-dark .time-input::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+/* Streak book: lift off dark main background + glow on Lottie line art */
+html.theme-dark .floating-streak-book {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow:
+        0 6px 22px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html.theme-dark .floating-streak-book:hover {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border-color: rgba(143, 184, 165, 0.42) !important;
+}
+
+html.theme-dark .floating-streak-book__lottie {
+    filter:
+        drop-shadow(0 0 10px rgba(255, 255, 255, 0.4))
+        drop-shadow(0 0 3px rgba(143, 184, 165, 0.45))
+        brightness(1.12)
+        contrast(1.05);
+}
+
 .theme-toggle-fab {
     position: fixed;
     right: 1.15rem;

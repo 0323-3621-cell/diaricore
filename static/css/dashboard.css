@@ -161,18 +161,69 @@ body {
     justify-content: center;
     cursor: pointer;
     box-shadow: none;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition: opacity 0.2s ease;
     overflow: visible;
 }
 
 .floating-streak-book:hover {
-    transform: translateY(-2px);
     opacity: 0.95;
+}
+
+.floating-streak-book:hover .floating-streak-book__motion {
+    animation-play-state: paused;
 }
 
 .floating-streak-book:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 3px;
+}
+
+.floating-streak-book__motion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    animation: streakBookMotion 5s ease-in-out infinite;
+    will-change: transform;
+}
+
+@keyframes streakBookMotion {
+    0%, 5% {
+        transform: translateY(0);
+    }
+    10% {
+        transform: translateY(-5px);
+    }
+    15% {
+        transform: translateY(0);
+    }
+    20% {
+        transform: translateY(-4px);
+    }
+    25%, 38% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-2px) rotate(0deg);
+    }
+    42% {
+        transform: translateY(-2px) rotate(-9deg);
+    }
+    44% {
+        transform: translateY(-2px) rotate(9deg);
+    }
+    46% {
+        transform: translateY(-2px) rotate(-6deg);
+    }
+    48% {
+        transform: translateY(-2px) rotate(0deg);
+    }
+    54% {
+        transform: translateY(-5px);
+    }
+    60%, 100% {
+        transform: translateY(0);
+    }
 }
 
 .floating-streak-book__lottie {

@@ -65,13 +65,15 @@
                     aria-label="Open streak book"
                     title="Open streak book"
                 >
-                    <lottie-player
-                        id="floatingStreakBookLottie"
-                        class="floating-streak-book__lottie"
-                        src="/BOOK.json"
-                        background="transparent"
-                        speed="1"
-                    ></lottie-player>
+                    <span class="floating-streak-book__motion" aria-hidden="true">
+                        <lottie-player
+                            id="floatingStreakBookLottie"
+                            class="floating-streak-book__lottie"
+                            src="/BOOK.json"
+                            background="transparent"
+                            speed="1"
+                        ></lottie-player>
+                    </span>
                 </button>
                 <div class="floating-streak-panel" id="floatingStreakPanel" hidden>
                     <p class="floating-streak-panel__label">Current Streak</p>

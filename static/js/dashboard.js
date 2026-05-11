@@ -105,15 +105,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 });
 
+const MS_PER_DAY = 86400000;
+
+/**
+ * Parse entry `date` from API or localStorage. Plain `YYYY-MM-DD` is treated as a
+ * local calendar day (not UTC midnight), so week columns match the user's timezone.
+ */
+function parseEntryDate(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (dateOnly) {
+        const y = parseInt(dateOnly[1], 10);
+        const mo = parseInt(dateOnly[2], 10) - 1;
+        const d = parseInt(dateOnly[3], 10);
+        return new Date(y, mo, d, 12, 0, 0, 0);
+    }
+    const normalized = s.includes('T') ? s : s.replace(' ', 'T');
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Local midnight timestamp for the calendar day of this entry. */
+function startOfLocalDayMsFromEntry(raw) {
+    const dt = parseEntryDate(raw);
+    if (!dt) return null;
+    const local = new Date(dt);
+    local.setHours(0, 0, 0, 0);
+    return local.getTime();
+}
+
 function calculateEntryStreak(entries) {
     if (!Array.isArray(entries) || entries.length === 0) return 0;
     const uniqueDays = Array.from(new Set(entries
         .filter((entry) => entry?.date)
-        .map((entry) => {
-            const d = new Date(entry.date);
-            d.setHours(0, 0, 0, 0);
-            return d.getTime();
-        })))
+        .map((entry) => startOfLocalDayMsFromEntry(entry.date))
+        .filter((t) => t != null)))
         .sort((a, b) => b - a);
 
     let streak = 0;
@@ -443,7 +471,7 @@ function getLatestEntry(entries) {
     if (!Array.isArray(entries) || entries.length === 0) return null;
     return [...entries]
         .filter((e) => e?.date)
-        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null;
+        .sort((a, b) => (parseEntryDate(b.date)?.getTime() ?? 0) - (parseEntryDate(a.date)?.getTime() ?? 0))[0] || null;
 }
 
 function updateDashboardCards(entries) {
@@ -458,7 +486,10 @@ function updateDashboardCards(entries) {
     const streakCount = document.querySelector('.floating-streak-panel .streak-count');
 
     const latest = getLatestEntry(entries);
-    const weeklyEntries = (entries || []).filter((e) => e?.date && isWithinLast7Days(new Date(e.date)));
+    const weeklyEntries = (entries || []).filter((e) => {
+        const d = parseEntryDate(e.date);
+        return d && isWithinLast7Days(d);
+    });
     const weeklyScores = weeklyEntries.map((e) => feelingToScore(resolveEntryFeeling(e)));
     const streak = calculateEntryStreak(entries || []);
     if (streakCount) streakCount.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
@@ -527,8 +558,8 @@ function updateDailyPrompt() {
 }
 
 function formatRecentEntryDate(rawDate) {
-    const d = new Date(rawDate);
-    if (Number.isNaN(d.getTime())) return '';
+    const d = parseEntryDate(rawDate);
+    if (!d || Number.isNaN(d.getTime())) return '';
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(d);
@@ -621,11 +652,16 @@ function renderWeeklyChart(entries) {
 
     const dayScores = new Array(7).fill(null).map(() => []);
     const dayFeelings = new Array(7).fill(null).map(() => []);
-    (entries || []).forEach((entry) => {
-        if (!entry?.date) return;
-        const d = new Date(entry.date);
-        if (d < monday) return;
-        const idx = Math.floor((d - monday) / (1000 * 60 * 60 * 24));
+    const mondayMs = monday.getTime();
+    const sortedForWeek = [...(entries || [])]
+        .filter((e) => e?.date)
+        .sort((a, b) => (parseEntryDate(a.date)?.getTime() ?? 0) - (parseEntryDate(b.date)?.getTime() ?? 0));
+
+    sortedForWeek.forEach((entry) => {
+        const dayStartMs = startOfLocalDayMsFromEntry(entry.date);
+        if (dayStartMs == null) return;
+        if (dayStartMs < mondayMs) return;
+        const idx = Math.round((dayStartMs - mondayMs) / MS_PER_DAY);
         if (idx < 0 || idx > 6) return;
         const feeling = resolveEntryFeeling(entry);
         dayScores[idx].push(feelingToScore(feeling));
@@ -667,7 +703,7 @@ function renderWeeklyChart(entries) {
         const todayIdx = (() => {
             const t = new Date(now);
             t.setHours(0, 0, 0, 0);
-            return Math.floor((t - monday) / 86400000);
+            return Math.round((t.getTime() - mondayMs) / MS_PER_DAY);
         })();
 
         weekStripEl.innerHTML = labels.map((lbl, idx) => {

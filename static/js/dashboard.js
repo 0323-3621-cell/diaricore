@@ -484,37 +484,29 @@ function renderWeeklyChart(entries) {
         if (scores.length === 0) return null;
         return scores.reduce((sum, s) => sum + s, 0) / scores.length;
     });
-    const hasFullWeekData = chartData.every((v) => v !== null);
-    // Static preview: show all five moods across the week + a believable sparkline.
-    const staticSevenDayFeelings = ['happy', 'sad', 'angry', 'anxious', 'neutral', 'happy', 'sad'];
-    const staticSevenDayProfile = [7.4, 4.2, 3.6, 4.4, 5.5, 7.0, 4.6];
-    const useStaticPreview = !hasFullWeekData;
-    const firstKnown = chartData.find((v) => v !== null) ?? 5;
-    let series = useStaticPreview
-        ? staticSevenDayProfile.slice()
-        : chartData.map((v) => (v === null ? firstKnown : v));
     const hasData = chartData.some((v) => v !== null);
-    const hasDisplayData = hasData || useStaticPreview;
+    const firstKnown = chartData.find((v) => v !== null) ?? 5;
+    const series = hasData ? chartData.map((v) => (v === null ? firstKnown : v)) : [];
 
     const valid = series.filter((v) => Number.isFinite(v));
     const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
     const maxVal = valid.length ? Math.max(...valid) : 0;
-    const maxIndex = series.findIndex((v) => v === maxVal);
+    const maxIndex = series.length ? series.findIndex((v) => v === maxVal) : -1;
     const bestDay = maxIndex >= 0 ? labels[maxIndex] : '--';
-    const firstAvg = (series[0] + series[1] + series[2]) / 3;
-    const secondAvg = (series[4] + series[5] + series[6]) / 3;
+    const firstAvg = series.length === 7 ? (series[0] + series[1] + series[2]) / 3 : 0;
+    const secondAvg = series.length === 7 ? (series[4] + series[5] + series[6]) / 3 : 0;
     const delta = secondAvg - firstAvg;
-    if (avgEl) avgEl.textContent = hasDisplayData ? `${avg.toFixed(1)}/10` : '--';
-    if (bestDayEl) bestDayEl.textContent = hasDisplayData ? bestDay : '--';
+    if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
+    if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
     if (trendEl) {
-        trendEl.textContent = hasDisplayData
-            ? (useStaticPreview ? '↑ Improving' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`)
-            : '--';
+        trendEl.textContent = hasData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
     }
     if (trendBadge) {
         const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
         trendBadge.classList.toggle('is-up', delta > 0.15);
-        trendBadge.innerHTML = `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`;
+        trendBadge.innerHTML = hasData
+            ? `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`
+            : `<i class="bi bi-arrow-left-right"></i>Steady`;
     }
 
     // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
@@ -543,9 +535,7 @@ function renderWeeklyChart(entries) {
 
         weekStripEl.innerHTML = labels.map((lbl, idx) => {
             const feelings = dayFeelings[idx] || [];
-            const lastFeeling = useStaticPreview
-                ? staticSevenDayFeelings[idx]
-                : (feelings.length ? feelings[feelings.length - 1] : '');
+            const lastFeeling = feelings.length ? feelings[feelings.length - 1] : '';
             const lottieSrc = feelingToLottieSrc(lastFeeling);
             const emoji = lastFeeling ? feelingToEmoji(lastFeeling) : '';
             const isToday = idx === todayIdx;
@@ -588,6 +578,15 @@ function renderWeeklyChart(entries) {
     const padX = 12;
     const padY = 12;
     const step = (w - padX * 2) / 6;
+
+    if (!hasData) {
+        sparklineEl.innerHTML = `
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
+                <text class="weekly-sparkline-empty" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-family="inherit">No mood data for this week yet</text>
+            </svg>`;
+        return;
+    }
+
     // Dynamic y-range so real jumps don't look flat.
     // Clamp to [0,10] and keep a minimum span to avoid extreme zoom.
     const visibleMin = Math.min(...series);
@@ -597,7 +596,6 @@ function renderWeeklyChart(entries) {
     const yMin = Math.max(0, visibleMin - pad);
     const yMax = Math.min(10, visibleMax + pad);
     const safeSpan = Math.max(yMax - yMin, 1);
-    const toY = (v) => h - padY - ((v - yMin) / (yMax - yMin)) * (h - padY * 2);
     const toYSafe = (v) => h - padY - ((v - yMin) / safeSpan) * (h - padY * 2);
     const points = series.map((v, i) => ({ x: padX + i * step, y: toYSafe(v) }));
     const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');

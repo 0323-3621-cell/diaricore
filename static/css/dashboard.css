@@ -902,6 +902,10 @@ body {
     display: block;
 }
 
+.weekly-sparkline-wrap .weekly-sparkline-empty {
+    fill: var(--text-muted);
+}
+
 .weekly-snapshot-stats {
     margin-top: 0.75rem;
     padding-top: 0.65rem;

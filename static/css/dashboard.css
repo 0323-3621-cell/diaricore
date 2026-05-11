@@ -938,6 +938,7 @@ body {
     align-items: center;
     gap: 0.35rem;
     cursor: pointer;
+    transform: translateY(3px); /* lower button slightly without resizing chart container */
 }
 
 /* Desktop override MUST come after base button rule */
@@ -958,12 +959,12 @@ body {
 
     .weekly-snapshot-card .weekly-full-view-btn:hover {
         background: rgba(111, 143, 127, 0.22);
-        transform: translateY(-1px);
+        transform: translateY(2px);
         box-shadow: 0 10px 28px rgba(111, 143, 127, 0.18);
     }
 
     .weekly-snapshot-card .weekly-full-view-btn:active {
-        transform: translateY(0) scale(0.99);
+        transform: translateY(3px) scale(0.99);
         box-shadow: 0 6px 18px rgba(111, 143, 127, 0.14);
     }
 }

@@ -192,8 +192,9 @@ html.theme-dark .theme-palette-panel {
 }
 
 html.theme-dark .user-profile {
-    border-top-color: transparent !important; /* remove visible separator line in dark mode */
-    background: var(--card-background) !important;
+    border-top-color: rgba(47, 59, 66, 0.55) !important;
+    background: var(--card-background) !important; /* continuous panel in dark mode */
+    padding-bottom: 0 !important; /* no visible dead space below logout */
 }
 
 html.theme-dark .logout-btn {

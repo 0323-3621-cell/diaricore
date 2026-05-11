@@ -164,30 +164,35 @@ body {
 }
 
 .floating-streak-book {
-    width: 50px;
-    height: 50px;
-    border-radius: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    background: linear-gradient(140deg, #f39a32 0%, #e9782a 100%);
-    color: #ffffff;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.35rem;
     cursor: pointer;
-    box-shadow: 0 6px 18px rgba(233, 120, 42, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    overflow: hidden;
+    box-shadow: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    overflow: visible;
 }
 
 .floating-streak-book:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(233, 120, 42, 0.42);
+    opacity: 0.95;
+}
+
+.floating-streak-book:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
 }
 
 .floating-streak-book__lottie {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     display: block;
     pointer-events: none;
 }
@@ -1345,13 +1350,12 @@ body {
     .floating-streak-book {
         width: 44px;
         height: 44px;
-        border-radius: 12px;
-        font-size: 1.15rem;
+        border-radius: 8px;
     }
 
     .floating-streak-book__lottie {
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
     }
 
     .floating-streak-panel {

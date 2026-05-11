@@ -222,6 +222,36 @@ def _serialize_value(v):
     return v
 
 
+def entry_created_at_iso_utc(created_at):
+    """
+    Journal entries must expose `date` as an absolute instant (UTC + Z).
+    Naive datetimes from Postgres TIMESTAMP (no tz) / SQLite are treated as UTC wall time
+    so browsers do not mis-read them as *local* and shift the calendar day.
+    """
+    if created_at is None:
+        return ""
+    if isinstance(created_at, datetime):
+        dt = created_at
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    if isinstance(created_at, date):
+        dt = datetime.combine(created_at, datetime.min.time(), tzinfo=timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
+    s = str(created_at).strip()
+    if not s:
+        return s
+    norm = s.replace(" ", "T", 1)
+    parse_s = norm[:-1] + "+00:00" if norm.endswith("Z") or norm.endswith("z") else norm
+    try:
+        dt = datetime.fromisoformat(parse_s)
+    except ValueError:
+        return s
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def serialize_user(row):
     if not row:
         return None
@@ -258,7 +288,7 @@ def serialize_entry(row):
         except Exception:
             tags = []
     created_at = row.get("created_at")
-    date_value = created_at.isoformat() if isinstance(created_at, (datetime, date)) else str(created_at)
+    date_value = entry_created_at_iso_utc(created_at)
     emotion_label = (row.get("emotion_label") or "neutral").lower()
     return {
         "id": row.get("id"),

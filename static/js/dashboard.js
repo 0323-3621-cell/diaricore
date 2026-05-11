@@ -123,6 +123,14 @@ function parseEntryDate(raw) {
         return new Date(y, mo, d, 12, 0, 0, 0);
     }
     const normalized = s.includes('T') ? s : s.replace(' ', 'T');
+    // API / DB legacy: naive `YYYY-MM-DDTHH:mm:ss` was UTC from the server; without Z, JS treats as local.
+    const naiveDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d{1,9})?$/.test(normalized);
+    const tail = normalized.includes('T') ? normalized.slice(normalized.indexOf('T') + 1) : '';
+    const hasTz = /[zZ]$/.test(normalized) || /[+-][0-9]{2}/.test(tail);
+    if (naiveDateTime && !hasTz) {
+        const parsedUtc = new Date(`${normalized}Z`);
+        return Number.isNaN(parsedUtc.getTime()) ? null : parsedUtc;
+    }
     const parsed = new Date(normalized);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

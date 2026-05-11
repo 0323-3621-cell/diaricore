@@ -567,10 +567,18 @@ function renderWeeklyChart(entries) {
     const padX = 12;
     const padY = 12;
     const step = (w - padX * 2) / 6;
-    const yMin = 0;
-    const yMax = 10;
+    // Dynamic y-range so real jumps don't look flat.
+    // Clamp to [0,10] and keep a minimum span to avoid extreme zoom.
+    const visibleMin = Math.min(...series);
+    const visibleMax = Math.max(...series);
+    const span = Math.max(visibleMax - visibleMin, 2.5);
+    const pad = span * 0.18;
+    const yMin = Math.max(0, visibleMin - pad);
+    const yMax = Math.min(10, visibleMax + pad);
+    const safeSpan = Math.max(yMax - yMin, 1);
     const toY = (v) => h - padY - ((v - yMin) / (yMax - yMin)) * (h - padY * 2);
-    const points = series.map((v, i) => ({ x: padX + i * step, y: toY(v) }));
+    const toYSafe = (v) => h - padY - ((v - yMin) / safeSpan) * (h - padY * 2);
+    const points = series.map((v, i) => ({ x: padX + i * step, y: toYSafe(v) }));
     const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
     const areaD = `${lineD} L ${(padX + 6 * step).toFixed(2)} ${(h - padY).toFixed(2)} L ${padX.toFixed(2)} ${(h - padY).toFixed(2)} Z`;
 

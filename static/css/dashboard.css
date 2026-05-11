@@ -666,8 +666,17 @@ body {
 }
 
 .mood-emoji {
-    font-size: 1.5rem;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+}
+
+.stat-card-mood .mood-emoji__img {
+    width: 36px;
+    height: 36px;
+    display: block;
+    object-fit: contain;
 }
 
 /* Quick Actions */
@@ -1533,9 +1542,9 @@ body {
         font-size: 1.05rem;
     }
     
-    .mood-emoji {
-        font-size: 1.15rem;
-        line-height: 1;
+    .stat-card-mood .mood-emoji__img {
+        width: 32px;
+        height: 32px;
     }
     
     /* Write/Voice quick actions hidden on mobile (use bottom nav / FAB) */

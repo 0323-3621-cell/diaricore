@@ -407,6 +407,29 @@ function feelingToEmoji(feelingRaw) {
     return emojiMap[feeling] ?? '🙂';
 }
 
+/** Static Noto Emoji art (same family as weekly Lottie), vendored under /noto-emoji-static/. */
+const STAT_NOTO_MOOD_SRC = {
+    happy: '/noto-emoji-static/noto-happy.webp',
+    sad: '/noto-emoji-static/noto-sad.webp',
+    angry: '/noto-emoji-static/noto-angry.webp',
+    anxious: '/noto-emoji-static/noto-anxious.webp',
+    neutral: '/noto-emoji-static/noto-neutral.webp',
+};
+
+function feelingToStatNotoKey(feelingRaw) {
+    const f = String(feelingRaw || '').toLowerCase();
+    if (f === 'happy' || f === 'excited' || f === 'grateful') return 'happy';
+    if (f === 'sad') return 'sad';
+    if (f === 'angry') return 'angry';
+    if (f === 'anxious' || f === 'stressed') return 'anxious';
+    return 'neutral';
+}
+
+function statNotoSrcForFeeling(feelingRaw) {
+    const k = feelingToStatNotoKey(feelingRaw);
+    return STAT_NOTO_MOOD_SRC[k] || STAT_NOTO_MOOD_SRC.neutral;
+}
+
 function titleCase(value) {
     const v = (value || '').trim();
     if (!v) return '';
@@ -429,7 +452,7 @@ function getLatestEntry(entries) {
 }
 
 function updateDashboardCards(entries) {
-    const moodEmoji = document.querySelector('.stat-card-mood .mood-emoji');
+    const moodImg = document.querySelector('.stat-card-mood .mood-emoji__img');
     const moodValue = document.querySelector('.stat-card-mood .stat-value');
     const moodDescription = document.querySelector('.stat-card-mood .stat-description');
     const avgNum = document.querySelector('.stat-card-average .stat-value__num');
@@ -446,7 +469,10 @@ function updateDashboardCards(entries) {
     if (streakCount) streakCount.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
 
     if (!latest) {
-        if (moodEmoji) moodEmoji.textContent = '🙂';
+        if (moodImg) {
+            moodImg.src = STAT_NOTO_MOOD_SRC.neutral;
+            moodImg.alt = 'No mood data yet';
+        }
         if (moodValue) moodValue.textContent = 'No mood data yet';
         if (moodDescription) moodDescription.textContent = 'Write your first entry to track your mood.';
         if (avgNum) avgNum.textContent = '--';
@@ -458,8 +484,12 @@ function updateDashboardCards(entries) {
     }
 
     const latestFeeling = resolveEntryFeeling(latest);
-    if (moodEmoji) moodEmoji.textContent = feelingToEmoji(latestFeeling);
-    if (moodValue) moodValue.textContent = titleCase(latestFeeling) || 'Recorded';
+    const moodLabel = titleCase(latestFeeling) || 'Recorded';
+    if (moodImg) {
+        moodImg.src = statNotoSrcForFeeling(latestFeeling);
+        moodImg.alt = `${moodLabel} mood`;
+    }
+    if (moodValue) moodValue.textContent = moodLabel;
     if (moodDescription) moodDescription.textContent = 'Based on your most recent entry.';
 
     if (weeklyScores.length === 0) {

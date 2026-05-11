@@ -75,6 +75,17 @@
     margin-bottom: 0.5rem;
 }
 
+.nav-divider {
+    height: 1px;
+    margin: 0.8rem 2rem;
+    background: var(--border-color);
+    opacity: 0.95;
+}
+
+.nav-divider + .nav-item {
+    margin-top: 0.1rem;
+}
+
 .nav-link {
     display: flex;
     align-items: center;

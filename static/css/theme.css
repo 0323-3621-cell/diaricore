@@ -191,16 +191,21 @@ html.theme-dark .theme-palette-panel {
     color: #dce8ed !important;
 }
 
+html.theme-dark .user-profile {
+    border-top-color: transparent !important; /* remove visible separator line in dark mode */
+    background: var(--card-background) !important;
+}
+
 html.theme-dark .logout-btn {
-    background: #1b262c !important;
-    border-color: var(--primary-color) !important;
+    background: var(--card-background) !important;
+    border-color: rgba(143, 184, 165, 0.45) !important;
     color: var(--text-dark) !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28) !important;
+    box-shadow: none !important;
 }
 
 html.theme-dark .logout-btn:hover {
-    background: var(--primary-color) !important;
-    color: #ffffff !important;
+    background: rgba(143, 184, 165, 0.18) !important;
+    color: var(--text-dark) !important;
 }
 
 html.theme-dark .logout-btn i,
@@ -209,7 +214,7 @@ html.theme-dark .logout-btn:hover i {
 }
 
 html.theme-dark .logout-btn:hover i {
-    color: #ffffff !important;
+    color: var(--primary-color) !important;
 }
 
 html.theme-dark .time-input::-webkit-calendar-picker-indicator {

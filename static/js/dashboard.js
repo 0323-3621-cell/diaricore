@@ -136,6 +136,58 @@ function startOfLocalDayMsFromEntry(raw) {
     return local.getTime();
 }
 
+/** Monday 00:00 local for the week (Mon–Sun) that contains `ref`. */
+function mondayOfWeekContaining(ref = new Date()) {
+    const t = new Date(ref);
+    t.setHours(0, 0, 0, 0);
+    const dow = t.getDay();
+    const daysFromMonday = dow === 0 ? 6 : dow - 1;
+    const monday = new Date(t);
+    monday.setDate(t.getDate() - daysFromMonday);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+}
+
+/** 0–6 index within the week starting at `mondayMs`, or null if outside that week. */
+function weekDayIndexSinceMonday(entryDateRaw, mondayMs) {
+    const dayStartMs = startOfLocalDayMsFromEntry(entryDateRaw);
+    if (dayStartMs == null) return null;
+    const idx = Math.round((dayStartMs - mondayMs) / MS_PER_DAY);
+    if (idx < 0 || idx > 6) return null;
+    return idx;
+}
+
+/**
+ * Mon–Sun calendar week (local): per-day mean mood score, feelings list, and entry count.
+ * Used by the Weekly Average stat card and the Weekly Mood chart so numbers match.
+ */
+function aggregateCalendarWeekMood(entries) {
+    const monday = mondayOfWeekContaining();
+    const mondayMs = monday.getTime();
+    const dayScores = new Array(7).fill(null).map(() => []);
+    const dayFeelings = new Array(7).fill(null).map(() => []);
+    const sortedForWeek = [...(entries || [])]
+        .filter((e) => e?.date)
+        .sort((a, b) => (parseEntryDate(a.date)?.getTime() ?? 0) - (parseEntryDate(b.date)?.getTime() ?? 0));
+
+    let entriesInWeek = 0;
+    sortedForWeek.forEach((entry) => {
+        const idx = weekDayIndexSinceMonday(entry.date, mondayMs);
+        if (idx == null) return;
+        entriesInWeek += 1;
+        const feeling = resolveEntryFeeling(entry);
+        dayScores[idx].push(feelingToScore(feeling));
+        dayFeelings[idx].push(String(feeling || '').toLowerCase());
+    });
+
+    const chartData = dayScores.map((scores) => {
+        if (scores.length === 0) return null;
+        return scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    });
+
+    return { mondayMs, dayScores, dayFeelings, chartData, entriesInWeek };
+}
+
 function calculateEntryStreak(entries) {
     if (!Array.isArray(entries) || entries.length === 0) return 0;
     const uniqueDays = Array.from(new Set(entries
@@ -459,14 +511,6 @@ function titleCase(value) {
     return v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
 }
 
-function isWithinLast7Days(dateObj) {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setDate(now.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    return dateObj >= sevenDaysAgo && dateObj <= now;
-}
-
 function getLatestEntry(entries) {
     if (!Array.isArray(entries) || entries.length === 0) return null;
     return [...entries]
@@ -486,11 +530,8 @@ function updateDashboardCards(entries) {
     const streakCount = document.querySelector('.floating-streak-panel .streak-count');
 
     const latest = getLatestEntry(entries);
-    const weeklyEntries = (entries || []).filter((e) => {
-        const d = parseEntryDate(e.date);
-        return d && isWithinLast7Days(d);
-    });
-    const weeklyScores = weeklyEntries.map((e) => feelingToScore(resolveEntryFeeling(e)));
+    const weekAgg = aggregateCalendarWeekMood(entries || []);
+    const dailyMeans = weekAgg.chartData.filter((v) => v != null);
     const streak = calculateEntryStreak(entries || []);
     if (streakCount) streakCount.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
 
@@ -518,15 +559,20 @@ function updateDashboardCards(entries) {
     if (moodValue) moodValue.textContent = moodLabel;
     if (moodDescription) moodDescription.textContent = 'Based on your most recent entry.';
 
-    if (weeklyScores.length === 0) {
+    if (dailyMeans.length === 0) {
         if (avgNum) avgNum.textContent = '--';
         if (avgDenom) avgDenom.textContent = '/10';
-        if (avgDescription) avgDescription.textContent = 'No weekly entries yet.';
+        if (avgDescription) avgDescription.textContent = 'No entries Mon–Sun this week yet.';
     } else {
-        const avg = weeklyScores.reduce((sum, score) => sum + score, 0) / weeklyScores.length;
+        const avg = dailyMeans.reduce((sum, score) => sum + score, 0) / dailyMeans.length;
         if (avgNum) avgNum.textContent = avg.toFixed(1);
         if (avgDenom) avgDenom.textContent = '/10';
-        if (avgDescription) avgDescription.textContent = `${weeklyScores.length} mood entr${weeklyScores.length === 1 ? 'y' : 'ies'} this week`;
+        const n = weekAgg.entriesInWeek;
+        if (avgDescription) {
+            avgDescription.textContent = n === 1
+                ? '1 mood entry this week (Mon–Sun)'
+                : `${n} mood entries this week (Mon–Sun)`;
+        }
     }
 
     if (insightValue) {
@@ -643,58 +689,51 @@ function renderWeeklyChart(entries) {
     const weekStripEl = document.getElementById('dashboardWeekStrip');
 
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const today = new Date();
-    const monday = new Date(today);
-    const day = monday.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    monday.setDate(today.getDate() - diff);
-    monday.setHours(0, 0, 0, 0);
+    const {
+        mondayMs,
+        dayFeelings,
+        chartData,
+    } = aggregateCalendarWeekMood(entries);
 
-    const dayScores = new Array(7).fill(null).map(() => []);
-    const dayFeelings = new Array(7).fill(null).map(() => []);
-    const mondayMs = monday.getTime();
-    const sortedForWeek = [...(entries || [])]
-        .filter((e) => e?.date)
-        .sort((a, b) => (parseEntryDate(a.date)?.getTime() ?? 0) - (parseEntryDate(b.date)?.getTime() ?? 0));
+    const presentVals = chartData.filter((v) => v != null);
+    const hasData = presentVals.length > 0;
+    const avg = hasData ? presentVals.reduce((a, b) => a + b, 0) / presentVals.length : 0;
 
-    sortedForWeek.forEach((entry) => {
-        const dayStartMs = startOfLocalDayMsFromEntry(entry.date);
-        if (dayStartMs == null) return;
-        if (dayStartMs < mondayMs) return;
-        const idx = Math.round((dayStartMs - mondayMs) / MS_PER_DAY);
-        if (idx < 0 || idx > 6) return;
-        const feeling = resolveEntryFeeling(entry);
-        dayScores[idx].push(feelingToScore(feeling));
-        dayFeelings[idx].push(String(feeling || '').toLowerCase());
+    let bestIdx = -1;
+    let bestVal = -Infinity;
+    chartData.forEach((v, i) => {
+        if (v == null) return;
+        if (v > bestVal || (v === bestVal && i > bestIdx)) {
+            bestVal = v;
+            bestIdx = i;
+        }
     });
+    const bestDay = bestIdx >= 0 ? labels[bestIdx] : '--';
 
-    const chartData = dayScores.map((scores) => {
-        if (scores.length === 0) return null;
-        return scores.reduce((sum, s) => sum + s, 0) / scores.length;
-    });
-    const hasData = chartData.some((v) => v !== null);
-    const firstKnown = chartData.find((v) => v !== null) ?? 5;
-    const series = hasData ? chartData.map((v) => (v === null ? firstKnown : v)) : [];
+    const earlyVals = chartData.slice(0, 3).filter((v) => v != null);
+    const lateVals = chartData.slice(3, 7).filter((v) => v != null);
+    const canTrend = earlyVals.length > 0 && lateVals.length > 0;
+    const firstAvg = canTrend ? earlyVals.reduce((a, b) => a + b, 0) / earlyVals.length : 0;
+    const secondAvg = canTrend ? lateVals.reduce((a, b) => a + b, 0) / lateVals.length : 0;
+    const delta = canTrend ? secondAvg - firstAvg : 0;
 
-    const valid = series.filter((v) => Number.isFinite(v));
-    const avg = valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) : 0;
-    const maxVal = valid.length ? Math.max(...valid) : 0;
-    const maxIndex = series.length ? series.findIndex((v) => v === maxVal) : -1;
-    const bestDay = maxIndex >= 0 ? labels[maxIndex] : '--';
-    const firstAvg = series.length === 7 ? (series[0] + series[1] + series[2]) / 3 : 0;
-    const secondAvg = series.length === 7 ? (series[4] + series[5] + series[6]) / 3 : 0;
-    const delta = secondAvg - firstAvg;
     if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
     if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
     if (trendEl) {
-        trendEl.textContent = hasData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
+        trendEl.textContent = hasData && canTrend ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : (hasData ? '—' : '--');
     }
     if (trendBadge) {
-        const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
-        trendBadge.classList.toggle('is-up', delta > 0.15);
-        trendBadge.innerHTML = hasData
-            ? `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`
-            : `<i class="bi bi-arrow-left-right"></i>Steady`;
+        if (!hasData) {
+            trendBadge.classList.remove('is-up');
+            trendBadge.innerHTML = `<i class="bi bi-arrow-left-right"></i>Steady`;
+        } else if (!canTrend) {
+            trendBadge.classList.remove('is-up');
+            trendBadge.innerHTML = `<i class="bi bi-calendar-week"></i>Partial week`;
+        } else {
+            const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
+            trendBadge.classList.toggle('is-up', delta > 0.15);
+            trendBadge.innerHTML = `<i class="bi ${icon}"></i>${delta > 0.15 ? 'Improving' : (delta < -0.15 ? 'Declining' : 'Steady')}`;
+        }
     }
 
     // Week strip: animated Noto Lottie (Today's Mood stat card stays static PNG).
@@ -759,19 +798,44 @@ function renderWeeklyChart(entries) {
         return;
     }
 
-    // Dynamic y-range so real jumps don't look flat.
-    // Clamp to [0,10] and keep a minimum span to avoid extreme zoom.
-    const visibleMin = Math.min(...series);
-    const visibleMax = Math.max(...series);
+    // Y-scale from real daily means only (no padding fake points for empty weekdays).
+    const visibleMin = Math.min(...presentVals);
+    const visibleMax = Math.max(...presentVals);
     const span = Math.max(visibleMax - visibleMin, 2.5);
-    const pad = span * 0.18;
-    const yMin = Math.max(0, visibleMin - pad);
-    const yMax = Math.min(10, visibleMax + pad);
+    const padYr = span * 0.18;
+    const yMin = Math.max(0, visibleMin - padYr);
+    const yMax = Math.min(10, visibleMax + padYr);
     const safeSpan = Math.max(yMax - yMin, 1);
     const toYSafe = (v) => h - padY - ((v - yMin) / safeSpan) * (h - padY * 2);
-    const points = series.map((v, i) => ({ x: padX + i * step, y: toYSafe(v) }));
-    const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ');
-    const areaD = `${lineD} L ${(padX + 6 * step).toFixed(2)} ${(h - padY).toFixed(2)} L ${padX.toFixed(2)} ${(h - padY).toFixed(2)} Z`;
+
+    const points = [];
+    chartData.forEach((v, i) => {
+        if (v == null) return;
+        points.push({ x: padX + i * step, y: toYSafe(v), i });
+    });
+
+    let lineD = '';
+    points.forEach((p, segIdx) => {
+        lineD += `${segIdx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)} `;
+    });
+    lineD = lineD.trim();
+
+    const baseY = (h - padY).toFixed(2);
+    let areaD = '';
+    if (points.length >= 2) {
+        const lx = points[points.length - 1].x.toFixed(2);
+        const fx = points[0].x.toFixed(2);
+        areaD = `${lineD} L ${lx} ${baseY} L ${fx} ${baseY} Z`;
+    } else if (points.length === 1) {
+        const p = points[0];
+        const wdg = 10;
+        areaD = `M ${(p.x - wdg).toFixed(2)} ${baseY} L ${(p.x + wdg).toFixed(2)} ${baseY} L ${p.x.toFixed(2)} ${p.y.toFixed(2)} Z`;
+    }
+
+    const lastPt = points[points.length - 1];
+    const endDot = lastPt
+        ? `<circle cx="${lastPt.x.toFixed(2)}" cy="${lastPt.y.toFixed(2)}" r="3.8" fill="${chartColor}"></circle>`
+        : '';
 
     sparklineEl.innerHTML = `
         <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
@@ -781,9 +845,9 @@ function renderWeeklyChart(entries) {
                     <stop offset="100%" stop-color="${chartColor}" stop-opacity="0"></stop>
                 </linearGradient>
             </defs>
-            <path d="${areaD}" fill="url(#dashMoodFill)"></path>
-            <path d="${lineD}" fill="none" stroke="${chartColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
-            <circle cx="${points[6].x.toFixed(2)}" cy="${points[6].y.toFixed(2)}" r="3.8" fill="${chartColor}"></circle>
+            ${areaD ? `<path d="${areaD}" fill="url(#dashMoodFill)"></path>` : ''}
+            ${lineD ? `<path d="${lineD}" fill="none" stroke="${chartColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
+            ${endDot}
         </svg>`;
 }
 

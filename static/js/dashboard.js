@@ -407,13 +407,13 @@ function feelingToEmoji(feelingRaw) {
     return emojiMap[feeling] ?? '🙂';
 }
 
-/** Static Noto Emoji art (same family as weekly Lottie), vendored under /noto-emoji-static/. */
+/** Static Noto Emoji PNG (same art as weekly Lottie; single-frame — WebP from CDN can be animated). */
 const STAT_NOTO_MOOD_SRC = {
-    happy: '/noto-emoji-static/noto-happy.webp',
-    sad: '/noto-emoji-static/noto-sad.webp',
-    angry: '/noto-emoji-static/noto-angry.webp',
-    anxious: '/noto-emoji-static/noto-anxious.webp',
-    neutral: '/noto-emoji-static/noto-neutral.webp',
+    happy: '/noto-emoji-static/noto-happy.png',
+    sad: '/noto-emoji-static/noto-sad.png',
+    angry: '/noto-emoji-static/noto-angry.png',
+    anxious: '/noto-emoji-static/noto-anxious.png',
+    neutral: '/noto-emoji-static/noto-neutral.png',
 };
 
 function feelingToStatNotoKey(feelingRaw) {

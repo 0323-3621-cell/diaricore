@@ -811,6 +811,7 @@ def static_files(filename):
     static_dir_map = {
         ".css": "css",
         ".js": "js",
+        ".json": "img",
         ".png": "img",
         ".jpg": "img",
         ".jpeg": "img",

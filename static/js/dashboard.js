@@ -520,11 +520,11 @@ function renderWeeklyChart(entries) {
     if (weekStripEl) {
         const MOOD_LOTTIE_URLS = {
             // Local mood animations provided by user (static/img).
-            happy: 'img/smiley%20emoji.json',
-            sad: 'img/Sad%20look.json',
-            angry: 'img/Angry.json',
-            anxious: 'img/Concerned.json',
-            neutral: 'img/Neutral%20face.json',
+            happy: 'smiley%20emoji.json',
+            sad: 'Sad%20look.json',
+            angry: 'Angry.json',
+            anxious: 'Concerned.json',
+            neutral: 'Neutral%20face.json',
         };
 
         const feelingToLottieSrc = (feeling) => {

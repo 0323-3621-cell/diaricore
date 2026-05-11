@@ -34,7 +34,7 @@
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 1.5rem 0;
+    padding: 1.5rem 0 0; /* no extra gap below footer */
     position: fixed;
     height: 100vh;
     overflow-y: auto;
@@ -208,7 +208,8 @@
 
 /* User Profile Section */
 .user-profile {
-    padding: 1rem 2rem 1.5rem;
+    margin-top: auto; /* pin to bottom */
+    padding: 1rem 2rem 1rem; /* flush bottom like reference */
     border-top: 1px solid var(--border-color);
     background: linear-gradient(135deg, var(--card-background) 0%, var(--background-soft) 100%);
     display: flex;
@@ -244,7 +245,20 @@
     font-size: 16px;
     font-weight: 600;
     color: var(--text-dark);
-    margin-bottom: 0.25rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* one line, no wrap */
+}
+
+.user-member-since {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin: 0.15rem 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-email {

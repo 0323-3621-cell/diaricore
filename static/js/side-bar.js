@@ -365,17 +365,25 @@ class SidebarComponent {
         if (!user) return;
 
         const sidebarName = document.querySelector('.user-name');
-        const sidebarEmail = document.querySelector('.user-email');
+        const memberSinceEl = document.querySelector('.user-member-since');
 
         const fullName = [user.firstName, user.lastName]
             .filter((part) => typeof part === 'string' && part.trim())
             .map((part) => part.trim())
             .join(' ');
         const displayName = fullName || user.nickname || 'User';
-        const displayEmail = user.email || 'No email available';
 
         if (sidebarName) sidebarName.textContent = displayName;
-        if (sidebarEmail) sidebarEmail.textContent = displayEmail;
+        if (memberSinceEl) {
+            const raw = user.createdAt || user.created_at || user.created || '';
+            const d = new Date(raw);
+            if (!Number.isNaN(d.getTime())) {
+                const monthYear = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                memberSinceEl.textContent = `Member since ${monthYear}`;
+            } else {
+                memberSinceEl.textContent = 'Member since --';
+            }
+        }
     }
 
     upsertGuestNotice(target, message) {

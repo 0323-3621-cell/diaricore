@@ -518,6 +518,20 @@ function renderWeeklyChart(entries) {
 
     // Week strip (reference-style dots/emoji). Only visible on desktop via CSS.
     if (weekStripEl) {
+        const MOOD_LOTTIE_URLS = {
+            // Public LottieFiles CDN JSONs (Bodymovin). Kept lightweight + CDN-cacheable.
+            happy: 'https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json',
+            sad: 'https://assets3.lottiefiles.com/packages/lf20_RItkEz.json',
+            angry: 'https://assets4.lottiefiles.com/packages/lf20_gb5bmwlm.json',
+            anxious: 'https://assets3.lottiefiles.com/packages/lf20_0apkn3k1.json',
+            neutral: 'https://assets3.lottiefiles.com/packages/lf20_UJNc2t.json',
+        };
+
+        const feelingToLottieSrc = (feeling) => {
+            const key = String(feeling || '').trim().toLowerCase();
+            return MOOD_LOTTIE_URLS[key] || '';
+        };
+
         const now = new Date();
         const todayIdx = (() => {
             const t = new Date(now);
@@ -530,11 +544,16 @@ function renderWeeklyChart(entries) {
             const lastFeeling = useStaticPreview
                 ? staticSevenDayFeelings[idx]
                 : (feelings.length ? feelings[feelings.length - 1] : '');
+            const lottieSrc = feelingToLottieSrc(lastFeeling);
             const emoji = lastFeeling ? feelingToEmoji(lastFeeling) : '';
             const isToday = idx === todayIdx;
             return `
                 <div class="weekly-weekday${isToday ? ' is-today' : ''}">
-                    <div class="weekly-weekday__dot" aria-hidden="true">${emoji || ''}</div>
+                    <div class="weekly-weekday__dot" aria-hidden="true">
+                        ${lottieSrc
+                            ? `<lottie-player class="weekly-weekday__lottie" autoplay loop src="${lottieSrc}"></lottie-player>`
+                            : (emoji || '')}
+                    </div>
                     <div class="weekly-weekday__label">${lbl}</div>
                 </div>
             `;

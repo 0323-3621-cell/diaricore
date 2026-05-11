@@ -597,17 +597,18 @@ body {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
+        font-size: 1.1rem;
         line-height: 1;
         color: var(--text-dark);
         overflow: hidden;
     }
 
     .weekly-weekday__lottie {
-        width: 48px;
-        height: 48px;
+        width: 34px;
+        height: 34px;
         display: block;
         pointer-events: none;
+        flex-shrink: 0;
     }
 
     .weekly-weekday.is-today .weekly-weekday__dot {

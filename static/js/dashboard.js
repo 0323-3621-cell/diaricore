@@ -485,8 +485,9 @@ function renderWeeklyChart(entries) {
         return scores.reduce((sum, s) => sum + s, 0) / scores.length;
     });
     const hasFullWeekData = chartData.every((v) => v !== null);
-    const staticSevenDayProfile = [6.2, 5.9, 5.1, 5.5, 5.8, 6.8, 6.6];
-    const staticSevenDayFeelings = ['happy', 'sad', 'sad', 'neutral', 'neutral', 'happy', 'happy'];
+    // Static preview: show all five moods across the week + a believable sparkline.
+    const staticSevenDayFeelings = ['happy', 'sad', 'angry', 'anxious', 'neutral', 'happy', 'sad'];
+    const staticSevenDayProfile = [7.4, 4.2, 3.6, 4.4, 5.5, 7.0, 4.6];
     const useStaticPreview = !hasFullWeekData;
     const firstKnown = chartData.find((v) => v !== null) ?? 5;
     let series = useStaticPreview

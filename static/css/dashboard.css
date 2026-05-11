@@ -665,6 +665,71 @@ body {
     cursor: pointer;
 }
 
+/* Desktop (PC) only: match reference dashboard chart card layout */
+@media (min-width: 769px) {
+    .weekly-snapshot-head {
+        align-items: center;
+        margin-bottom: 0.75rem; /* ~12px */
+    }
+
+    .weekly-snapshot-title {
+        font-size: 0.8125rem; /* ~13px */
+    }
+
+    .weekly-snapshot-range {
+        font-size: 0.6875rem; /* ~11px */
+        margin-top: 0.05rem;
+    }
+
+    .weekly-snapshot-card {
+        border-radius: 10px;
+        padding: 1rem 1.125rem 0.95rem; /* ~16px 18px 14px */
+    }
+
+    .weekly-sparkline-wrap {
+        height: 4.5rem; /* ~72px */
+        margin-top: 0;
+        margin-bottom: 0.625rem; /* ~10px */
+        background-image: none; /* remove subtle grid lines */
+        border-radius: 8px 8px 0 0;
+    }
+
+    .weekly-snapshot-stats {
+        margin-top: 0;
+        padding-top: 0.625rem; /* ~10px */
+        gap: 0;
+    }
+
+    .weekly-snapshot-stats .snapshot-stat {
+        text-align: center;
+    }
+
+    .snapshot-stat-value {
+        font-size: 0.875rem; /* ~14px */
+        font-weight: 600;
+    }
+
+    .snapshot-stat-label {
+        font-size: 0.625rem; /* ~10px */
+        margin-top: 0.125rem; /* ~2px */
+    }
+
+    .weekly-snapshot-footer {
+        margin-top: 0.5rem; /* ~8px */
+    }
+
+    .weekly-full-view-btn {
+        background: transparent;
+        border-radius: 6px;
+        padding: 0.25rem 0.625rem; /* ~4px 10px */
+        font-size: 0.6875rem; /* ~11px */
+        font-weight: 600;
+        border: 1px solid rgba(111, 143, 127, 0.6);
+        color: var(--primary-color);
+        gap: 0.25rem; /* ~4px */
+    }
+}
+
 .recent-entry-card {
     margin-bottom: 2.6rem;
     border: 1px solid var(--border-color);

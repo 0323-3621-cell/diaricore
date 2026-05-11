@@ -588,13 +588,17 @@ body {
     .weekly-full-view-btn {
         width: 100%;
         justify-content: center;
-        background: rgba(111, 143, 127, 0.08);
-        color: var(--primary-color);
-        border-color: rgba(111, 143, 127, 0.22);
+        background: #1f2523; /* retain black */
+        color: #fff;
+        border-color: #1f2523;
+        border-radius: 10px;
+        padding: 0.55rem 0.9rem;
+        font-size: 0.82rem;
+        font-weight: 600;
     }
 
     .weekly-full-view-btn:hover {
-        background: rgba(111, 143, 127, 0.14);
+        background: #141a18;
     }
 }
 
@@ -785,6 +789,11 @@ body {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.55rem;
+    justify-items: center; /* center stats under chart */
+}
+
+.weekly-snapshot-stats .snapshot-stat {
+    text-align: center;
 }
 
 .snapshot-stat-value {

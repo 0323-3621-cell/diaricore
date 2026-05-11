@@ -305,7 +305,8 @@ function updateDashboardCards(entries) {
     const moodEmoji = document.querySelector('.stat-card-mood .mood-emoji');
     const moodValue = document.querySelector('.stat-card-mood .stat-value');
     const moodDescription = document.querySelector('.stat-card-mood .stat-description');
-    const avgValue = document.querySelector('.stat-card-average .stat-value');
+    const avgNum = document.querySelector('.stat-card-average .stat-value__num');
+    const avgDenom = document.querySelector('.stat-card-average .stat-value__denom');
     const avgDescription = document.querySelector('.stat-card-average .stat-description');
     const insightValue = document.querySelector('.stat-card-insight .insight-text');
     const insightDescription = document.querySelector('.stat-card-insight .stat-description');
@@ -321,7 +322,8 @@ function updateDashboardCards(entries) {
         if (moodEmoji) moodEmoji.textContent = '🙂';
         if (moodValue) moodValue.textContent = 'No mood data yet';
         if (moodDescription) moodDescription.textContent = 'Write your first entry to track your mood.';
-        if (avgValue) avgValue.textContent = '--/10';
+        if (avgNum) avgNum.textContent = '--';
+        if (avgDenom) avgDenom.textContent = '/10';
         if (avgDescription) avgDescription.textContent = 'No weekly entries yet.';
         if (insightValue) insightValue.textContent = 'No insights yet. Start journaling to discover patterns.';
         if (insightDescription) insightDescription.textContent = 'Based on your recent entries';
@@ -334,11 +336,13 @@ function updateDashboardCards(entries) {
     if (moodDescription) moodDescription.textContent = 'Based on your most recent entry.';
 
     if (weeklyScores.length === 0) {
-        if (avgValue) avgValue.textContent = '--/10';
+        if (avgNum) avgNum.textContent = '--';
+        if (avgDenom) avgDenom.textContent = '/10';
         if (avgDescription) avgDescription.textContent = 'No weekly entries yet.';
     } else {
         const avg = weeklyScores.reduce((sum, score) => sum + score, 0) / weeklyScores.length;
-        if (avgValue) avgValue.textContent = `${avg.toFixed(1)}/10`;
+        if (avgNum) avgNum.textContent = avg.toFixed(1);
+        if (avgDenom) avgDenom.textContent = '/10';
         if (avgDescription) avgDescription.textContent = `${weeklyScores.length} mood entr${weeklyScores.length === 1 ? 'y' : 'ies'} this week`;
     }
 

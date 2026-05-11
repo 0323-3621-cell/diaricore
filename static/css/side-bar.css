@@ -165,19 +165,6 @@
 
 /* Ensure desktop elements are always visible on desktop */
 @media (min-width: 769px) {
-    .dashboard-container,
-    .entries-container,
-    .insights-container,
-    .suggestions-container,
-    .profile-container,
-    .write-entry-container,
-    .voice-entry-container {
-        display: flex !important;
-        align-items: stretch !important;
-        position: relative !important;
-        min-height: 100% !important;
-    }
-
     .mobile-app-topbar {
         display: none !important;
     }
@@ -200,14 +187,13 @@
     
     .sidebar {
         display: flex !important; /* Always show sidebar on desktop */
-        position: absolute !important;
+        position: fixed !important;
         top: 0 !important;
         bottom: 0 !important;
         left: 0 !important;
         height: auto !important;
-        min-height: 100% !important;
-        align-self: stretch !important;
-        overflow-y: visible !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
     }
 
     .profile-left {

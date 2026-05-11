@@ -486,6 +486,7 @@ function renderWeeklyChart(entries) {
     });
     const hasFullWeekData = chartData.every((v) => v !== null);
     const staticSevenDayProfile = [6.2, 5.9, 5.1, 5.5, 5.8, 6.8, 6.6];
+    const staticSevenDayFeelings = ['happy', 'sad', 'sad', 'neutral', 'neutral', 'happy', 'happy'];
     const useStaticPreview = !hasFullWeekData;
     const firstKnown = chartData.find((v) => v !== null) ?? 5;
     let series = useStaticPreview
@@ -504,7 +505,11 @@ function renderWeeklyChart(entries) {
     const delta = secondAvg - firstAvg;
     if (avgEl) avgEl.textContent = hasDisplayData ? `${avg.toFixed(1)}/10` : '--';
     if (bestDayEl) bestDayEl.textContent = hasDisplayData ? bestDay : '--';
-    if (trendEl) trendEl.textContent = hasDisplayData ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
+    if (trendEl) {
+        trendEl.textContent = hasDisplayData
+            ? (useStaticPreview ? '↑ Improving' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`)
+            : '--';
+    }
     if (trendBadge) {
         const icon = delta > 0.15 ? 'bi-arrow-up-right' : (delta < -0.15 ? 'bi-arrow-down-right' : 'bi-arrow-left-right');
         trendBadge.classList.toggle('is-up', delta > 0.15);
@@ -522,7 +527,9 @@ function renderWeeklyChart(entries) {
 
         weekStripEl.innerHTML = labels.map((lbl, idx) => {
             const feelings = dayFeelings[idx] || [];
-            const lastFeeling = feelings.length ? feelings[feelings.length - 1] : '';
+            const lastFeeling = useStaticPreview
+                ? staticSevenDayFeelings[idx]
+                : (feelings.length ? feelings[feelings.length - 1] : '');
             const emoji = lastFeeling ? feelingToEmoji(lastFeeling) : '';
             const isToday = idx === todayIdx;
             return `

@@ -196,7 +196,7 @@ body {
 }
 
 .header-section {
-    margin-bottom: 3rem;
+    margin-bottom: 2.1rem;
 }
 
 .header-row {
@@ -358,7 +358,7 @@ body {
 .stats-cards {
     display: flex;
     gap: 1.5rem;
-    margin-bottom: 3rem;
+    margin-bottom: 1.9rem;
 }
 
 .stat-card {
@@ -455,7 +455,7 @@ body {
 /* Lower dashboard layout (Weekly Mood left, side stack right) */
 .dashboard-lower-grid {
     display: block;
-    margin-bottom: 2.6rem;
+    margin-bottom: 1.8rem;
 }
 
 @media (min-width: 992px) {
@@ -640,11 +640,11 @@ body {
 
 /* Quick Actions */
 .quick-actions {
-    margin-bottom: 3rem;
+    margin-bottom: 1.9rem;
 }
 
 .daily-prompt {
-    margin: 0 0 1.1rem;
+    margin: 0 0 0.75rem;
     padding: 0.2rem 0 0.2rem 0.75rem;
     border-left: 2px solid #1D9E75;
     color: #888888;
@@ -712,7 +712,7 @@ body {
 
 /* Weekly mood snapshot (dashboard) */
 .weekly-snapshot-wrap {
-    margin-bottom: 3rem;
+    margin-bottom: 1.9rem;
 }
 
 .weekly-snapshot-card {

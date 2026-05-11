@@ -76,10 +76,10 @@
 }
 
 .nav-divider {
-    height: 1px;
+    height: 1.5px;
     margin: 0.8rem 2rem;
-    background: var(--border-color);
-    opacity: 0.95;
+    background: rgba(107, 124, 116, 0.42); /* clearer in light mode */
+    opacity: 1;
 }
 
 .nav-divider + .nav-item {

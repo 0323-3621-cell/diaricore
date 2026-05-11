@@ -162,11 +162,34 @@ body {
     cursor: pointer;
     box-shadow: 0 6px 18px rgba(233, 120, 42, 0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: streakBookPrompt 3.2s ease-in-out infinite;
 }
 
 .floating-streak-book:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(233, 120, 42, 0.42);
+    animation-play-state: paused;
+}
+
+@keyframes streakBookPrompt {
+    0%, 16%, 32% {
+        transform: translateY(0);
+    }
+    8%, 24% {
+        transform: translateY(-4px);
+    }
+    40%, 44%, 48%, 52%, 56% {
+        transform: translateY(0) rotate(0deg);
+    }
+    42%, 50% {
+        transform: translateY(0) rotate(-6deg);
+    }
+    46%, 54% {
+        transform: translateY(0) rotate(6deg);
+    }
+    62%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
 }
 
 .floating-streak-panel {

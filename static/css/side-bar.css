@@ -61,7 +61,7 @@
 }
 
 .navigation-menu {
-    flex: 1;
+    flex: 0 0 auto;
     padding: 1.5rem 0;
 }
 
@@ -208,7 +208,9 @@
 
 /* User Profile Section */
 .user-profile {
-    margin-top: auto; /* pin to bottom */
+    margin-top: 0;
+    flex: 1 1 auto; /* absorb remaining sidebar height */
+    justify-content: flex-end; /* keep avatar/name/logout at bottom */
     padding: 0.75rem 1.15rem 0; /* flush to bottom edge */
     border-top: 1px solid rgba(224, 230, 227, 0.65); /* subtler separator */
     background: var(--card-background); /* same surface as sidebar */

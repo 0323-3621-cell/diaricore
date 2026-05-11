@@ -183,13 +183,13 @@ function initializeGreetingClock() {
         minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
         secondHand.style.transform = `rotate(${secondAngle}deg)`;
         timeLabel.textContent = now.toLocaleTimeString([], {
-            hour: '2-digit',
+            hour: 'numeric',
             minute: '2-digit',
-            second: '2-digit'
+            hour12: true
         });
         dateLabel.textContent = now.toLocaleDateString('en-US', {
             weekday: 'long',
-            month: 'short',
+            month: 'long',
             day: 'numeric',
             year: 'numeric'
         });

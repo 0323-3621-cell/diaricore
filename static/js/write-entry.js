@@ -1042,28 +1042,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Incomplete/future values are discarded — revert to last accepted baseline (not forced to “now” unless that was the baseline).
-     * Avoid clamp on input events so partial edits aren’t rewritten mid-keystroke.
+     * Only validates when value is a complete datetime-local string (yyyy-mm-ddThh:mm).
+     * Incomplete values are left alone so typing / native picker aren’t wiped on blur.
+     * Future values revert to last baseline or current max (never mid-keystroke — no input listener).
      */
-    function finalizeJournalDateTimeInput(commitBaseline) {
+    function clampFutureJournalDateTimeLocal() {
         if (!journalDateTimeInput) return;
         const maxStr = nowLocalInputValue();
         journalDateTimeInput.max = maxStr;
         const v = (journalDateTimeInput.value || '').trim();
-        const complete = v.length >= 16;
-        const overMax = complete && v > maxStr;
-        const incomplete = !complete;
-        const hasRevertAnchor = Boolean(journalDateTimeBaselineLocal || pickerOpenedAtLocalStr);
-
-        if (incomplete || overMax) {
-            if (incomplete && !hasRevertAnchor) return;
+        if (v.length < 16) return;
+        if (v > maxStr) {
             const fb = journalDateTimeBaselineLocal || pickerOpenedAtLocalStr || maxStr;
             journalDateTimeInput.value = fb;
+            journalDateTimeBaselineLocal = fb;
             applyCommittedLocalDatetime(fb);
             return;
         }
-        if (commitBaseline) journalDateTimeBaselineLocal = v;
+        journalDateTimeBaselineLocal = v;
         applyCommittedLocalDatetime(v);
+    }
+
+    let journalDateTimeBlurHideTimer = null;
+
+    function hideJournalDateTimeEditor() {
+        clearTimeout(journalDateTimeBlurHideTimer);
+        journalDateTimeBlurHideTimer = null;
+        clampFutureJournalDateTimeLocal();
+        if (journalDateTimeInput) journalDateTimeInput.style.display = 'none';
+    }
+
+    function journalDateTimeEditorIsOpen() {
+        return journalDateTimeInput && journalDateTimeInput.style.display === 'inline-block';
     }
 
     if (journalDateTimeInput) {
@@ -1078,6 +1088,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (journalDateTimeBtn && journalDateTimeInput) {
         journalDateTimeBtn.addEventListener('click', () => {
+            if (journalDateTimeEditorIsOpen()) {
+                hideJournalDateTimeEditor();
+                return;
+            }
             priorManualDateTimeOnPickerOpen = manualDateTime;
             const baseDate = manualDateTime || new Date();
             journalDateTimeInput.max = nowLocalInputValue();
@@ -1092,19 +1106,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         journalDateTimeInput.addEventListener('focus', () => {
+            clearTimeout(journalDateTimeBlurHideTimer);
+            journalDateTimeBlurHideTimer = null;
             journalDateTimeInput.max = nowLocalInputValue();
         });
         journalDateTimeInput.addEventListener('change', () => {
-            finalizeJournalDateTimeInput(true);
+            clampFutureJournalDateTimeLocal();
         });
 
-        const hideDateInput = () => {
-            finalizeJournalDateTimeInput(true);
-            journalDateTimeInput.style.display = 'none';
-        };
-        journalDateTimeInput.addEventListener('blur', hideDateInput);
+        journalDateTimeInput.addEventListener('blur', () => {
+            clearTimeout(journalDateTimeBlurHideTimer);
+            journalDateTimeBlurHideTimer = setTimeout(() => {
+                journalDateTimeBlurHideTimer = null;
+                if (!journalDateTimeEditorIsOpen()) return;
+                if (document.activeElement === journalDateTimeInput) return;
+                hideJournalDateTimeEditor();
+            }, 200);
+        });
         journalDateTimeInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' || event.key === 'Enter') hideDateInput();
+            if (event.key === 'Escape' || event.key === 'Enter') hideJournalDateTimeEditor();
         });
     }
 
@@ -1135,8 +1155,8 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSaveEntry() {
         const entryText = journalText.value.trim();
         const entryTitle = normalizeTag(journalTitleInput?.value || '');
-        if (journalDateTimeInput && journalDateTimeInput.value.length >= 16) {
-            finalizeJournalDateTimeInput(false);
+        if (journalDateTimeInput && journalDateTimeInput.value.trim().length >= 16) {
+            clampFutureJournalDateTimeLocal();
         }
         const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
         if (!entryText) {

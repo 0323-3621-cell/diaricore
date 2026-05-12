@@ -1381,7 +1381,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function ensureAnalysisOverlay() {
         let overlay = document.getElementById('moodAnalysisOverlay');
-        if (overlay) return overlay;
+        if (overlay) {
+            const card = overlay.querySelector('.mood-analysis-card');
+            const footer = card?.querySelector('.mood-analysis-card__footer');
+            if (footer && footer.querySelector('#moodAnalysisContinueBtn') && !footer.querySelector('#moodAnalysisSaveExitBtn')) {
+                footer.className = 'mood-analysis-card__footer mood-analysis-card__footer--dual';
+                footer.id = 'moodAnalysisFooter';
+                footer.innerHTML = `
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--outline" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisContinueBtn">Continue</button>
+                `;
+            }
+            return overlay;
+        }
 
         overlay = document.createElement('div');
         overlay.id = 'moodAnalysisOverlay';
@@ -1393,8 +1405,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h3 class="mood-analysis-card__title">Mood Analysis</h3>
                 </div>
                 <div class="mood-analysis-card__body" id="moodAnalysisBody"></div>
-                <div class="mood-analysis-card__footer">
-                    <button type="button" class="mood-analysis-btn" id="moodAnalysisContinueBtn">Continue</button>
+                <div class="mood-analysis-card__footer mood-analysis-card__footer--dual" id="moodAnalysisFooter">
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--outline" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisContinueBtn">Continue</button>
                 </div>
             </div>
         `;
@@ -1462,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', function() {
         wrap.appendChild(progressWrap);
         body.appendChild(wrap);
 
+        overlay.querySelector('.mood-analysis-card')?.classList.remove('mood-analysis-card--result');
         overlay.querySelector('.mood-analysis-card')?.classList.add('mood-analysis-card--analyzing');
 
         footer.style.display = 'none';
@@ -1538,48 +1552,121 @@ document.addEventListener('DOMContentLoaded', function() {
     function showAnalysisResult(overlay, entry, isFallback = false) {
         clearMoodAnalysisProgressTimer();
         parkMoodAnalysisBookMount();
-        overlay.querySelector('.mood-analysis-card')?.classList.remove('mood-analysis-card--analyzing');
+        const analysisCard = overlay.querySelector('.mood-analysis-card');
+        analysisCard?.classList.remove('mood-analysis-card--analyzing');
+        analysisCard?.classList.add('mood-analysis-card--result');
 
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
-        if (header) header.style.display = '';
-        const continueBtn = overlay.querySelector('#moodAnalysisContinueBtn');
+        if (header) header.style.display = 'none';
+
         const emotion = (entry.emotionLabel || entry.feeling || 'neutral').toString().toLowerCase();
         const score = Number(entry.emotionScore || entry.sentimentScore || 0.5);
         const sentiment = (entry.sentimentLabel || 'neutral').toString().toLowerCase();
         const valence = sentiment === 'positive' ? 'Positive' : sentiment === 'negative' ? 'Negative' : 'Balanced';
         const pairs = buildSignalPairs(entry, emotion, score);
         const secondary = pairs[1] && Number(pairs[1][1]) >= 0.15 ? pairs[1] : null;
-        const signalsHtml = pairs
-            .map(([label, prob]) => `<div class="mood-analysis-signal-row"><span>${label}</span><span>${formatPct(prob)}</span></div>`)
+        const interpretationText = computeInterpretation(score);
+        const energyLabel = computeEnergy(score);
+
+        const confidencePct = Math.max(0, Math.min(100, Math.round(score * 100)));
+        const secondaryConfidencePct =
+            secondary != null ? Math.max(0, Math.min(100, Math.round(Number(secondary[1]) * 100))) : null;
+
+        const signalsBarsHtml = pairs
+            .map(([label, prob]) => {
+                const pct = Math.max(0, Math.min(100, Math.round(Number(prob) * 100)));
+                const slug = String(label || '').toLowerCase();
+                return `
+                    <div class="mood-result-signal">
+                        <div class="mood-result-signal__row">
+                            <span class="mood-result-signal__name">${escapeHtml(toTitleCase(slug))}</span>
+                            <span class="mood-result-signal__pct">${formatPct(prob)}</span>
+                        </div>
+                        <div class="mood-result-signal__track" aria-hidden="true">
+                            <div class="mood-result-signal__fill mood-result-signal__fill--${escapeHtml(slug)}" data-pct="${pct}" style="width: 0%"></div>
+                        </div>
+                    </div>`;
+            })
             .join('');
 
+        const secondaryBlock = secondary
+            ? `
+                <div class="mood-result-emotion mood-result-emotion--secondary">
+                    <span class="mood-result-emotion__label">Secondary</span>
+                    <p class="mood-result-emotion__value">${escapeHtml(toTitleCase(String(secondary[0])))}</p>
+                    <span class="mood-result-badge mood-result-badge--amber">${secondaryConfidencePct}% Confidence</span>
+                </div>`
+            : `
+                <div class="mood-result-emotion mood-result-emotion--secondary mood-result-emotion--empty">
+                    <span class="mood-result-emotion__label">Secondary</span>
+                    <p class="mood-result-emotion__value mood-result-emotion__value--muted">None detected</p>
+                    <span class="mood-result-badge mood-result-badge--muted">No strong secondary signal</span>
+                </div>`;
+
         body.innerHTML = `
-            <div class="mood-analysis-result">
-                <div class="mood-analysis-group">
-                    <div class="mood-analysis-row"><span class="mood-analysis-label">Primary Mood</span><span class="mood-analysis-value">${toTitleCase(emotion)} (${formatPct(score)})</span></div>
-                    <div class="mood-analysis-row"><span class="mood-analysis-label">Secondary Mood</span><span class="mood-analysis-value">${secondary ? `${toTitleCase(secondary[0])} (${formatPct(secondary[1])})` : 'None (no strong secondary signal)'}</span></div>
-                </div>
-                <div class="mood-analysis-group">
-                    <div class="mood-analysis-row mood-analysis-row--stack">
-                        <span class="mood-analysis-label">Emotional Signals</span>
-                        <div class="mood-analysis-signals">${signalsHtml}</div>
+            <div class="mood-result-v2">
+                <header class="mood-result-v2__hero">
+                    <h2 class="mood-result-v2__title">Analysis Complete</h2>
+                    <p class="mood-result-v2__subtitle">Here's what we observed from your entry.</p>
+                </header>
+                <div class="mood-result-v2__grid">
+                    <div class="mood-result-v2__col mood-result-v2__col--primary">
+                        <section class="mood-result-panel mood-result-panel--emotions" aria-labelledby="mood-result-emotions-heading">
+                            <p id="mood-result-emotions-heading" class="mood-result-panel__eyebrow">Detected emotions</p>
+                            <div class="mood-result-emotion mood-result-emotion--primary-block">
+                                <span class="mood-result-emotion__label">Primary</span>
+                                <p class="mood-result-emotion__value">${escapeHtml(toTitleCase(emotion))}</p>
+                                <span class="mood-result-badge mood-result-badge--green">${confidencePct}% Confidence</span>
+                            </div>
+                            ${secondaryBlock}
+                        </section>
+                    </div>
+                    <div class="mood-result-v2__col mood-result-v2__col--secondary">
+                        <section class="mood-result-panel mood-result-panel--signals" aria-labelledby="mood-result-signals-heading">
+                            <h3 id="mood-result-signals-heading" class="mood-result-panel__title mood-result-panel__title--icon">
+                                <i class="bi bi-activity" aria-hidden="true"></i>
+                                Emotional Signals
+                            </h3>
+                            <div class="mood-result-signal-list">${signalsBarsHtml}</div>
+                        </section>
+                        <section class="mood-result-panel mood-result-panel--insights" aria-labelledby="mood-result-insights-heading">
+                            <h3 id="mood-result-insights-heading" class="visually-hidden">Valence, energy, and interpretation</h3>
+                            <div class="mood-result-insights__pair">
+                                <div class="mood-result-kv">
+                                    <span class="mood-result-kv__label">Valence</span>
+                                    <p class="mood-result-kv__value">${escapeHtml(valence)}</p>
+                                </div>
+                                <div class="mood-result-kv">
+                                    <span class="mood-result-kv__label">Energy</span>
+                                    <p class="mood-result-kv__value">${escapeHtml(energyLabel)}</p>
+                                </div>
+                            </div>
+                            <p class="mood-result-insights__text">${escapeHtml(interpretationText)}</p>
+                        </section>
                     </div>
                 </div>
-                <div class="mood-analysis-group">
-                    <div class="mood-analysis-row"><span class="mood-analysis-label">Valence</span><span class="mood-analysis-value">${valence}</span></div>
-                    <div class="mood-analysis-row"><span class="mood-analysis-label">Energy</span><span class="mood-analysis-value">${computeEnergy(score)}</span></div>
-                    <div class="mood-analysis-row"><span class="mood-analysis-label">Interpretation</span><span class="mood-analysis-value">${computeInterpretation(score)}</span></div>
-                </div>
-                ${isFallback ? '<div class="mood-analysis-note">Saved with fallback analysis</div>' : ''}
+                ${isFallback ? '<p class="mood-result-fallback-note">Saved with fallback analysis</p>' : ''}
             </div>
         `;
+
+        requestAnimationFrame(() => {
+            body.querySelectorAll('.mood-result-signal__fill').forEach((el) => {
+                const p = el.getAttribute('data-pct');
+                if (p != null) el.style.width = `${p}%`;
+            });
+        });
+
         footer.style.display = 'flex';
-        continueBtn.onclick = () => {
+        const goDashboard = () => {
             overlay.hidden = true;
             window.location.href = 'dashboard.html';
         };
+        const continueBtn = overlay.querySelector('#moodAnalysisContinueBtn');
+        const saveExitBtn = overlay.querySelector('#moodAnalysisSaveExitBtn');
+        if (continueBtn) continueBtn.onclick = goDashboard;
+        if (saveExitBtn) saveExitBtn.onclick = goDashboard;
     }
 
     function setSavingState(isSaving) {

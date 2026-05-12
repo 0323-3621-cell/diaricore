@@ -1300,21 +1300,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
         if (header) header.style.display = 'none';
-        body.innerHTML = `
-            <div class="mood-analysis-loading mood-analysis-loading--book">
-                <lottie-player
-                    class="mood-analysis-book-lottie"
-                    src="/noto-emoji/Book-Loader.json"
-                    background="transparent"
-                    speed="1"
-                    loop
-                    autoplay
-                    aria-label="Loading animation"
-                ></lottie-player>
-                <h4 class="mood-analysis-loading__title">Analyzing your entry...</h4>
-                <p class="mood-analysis-loading__subtitle">Detecting mood patterns and insights...</p>
-            </div>
-        `;
+        body.innerHTML = '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'mood-analysis-loading mood-analysis-loading--book';
+
+        const player = document.createElement('lottie-player');
+        player.className = 'mood-analysis-book-lottie';
+        player.setAttribute('src', '/noto-emoji/Book-Loader.json');
+        player.setAttribute('background', 'transparent');
+        player.setAttribute('speed', '1');
+        player.setAttribute('loop', '');
+        player.setAttribute('autoplay', '');
+        player.setAttribute('aria-label', 'Loading animation');
+
+        const titleEl = document.createElement('h4');
+        titleEl.className = 'mood-analysis-loading__title';
+        titleEl.textContent = 'Analyzing your entry...';
+
+        const subEl = document.createElement('p');
+        subEl.className = 'mood-analysis-loading__subtitle';
+        subEl.textContent = 'Detecting mood patterns and insights...';
+
+        wrap.appendChild(player);
+        wrap.appendChild(titleEl);
+        wrap.appendChild(subEl);
+        body.appendChild(wrap);
+
         footer.style.display = 'none';
         overlay.hidden = false;
     }

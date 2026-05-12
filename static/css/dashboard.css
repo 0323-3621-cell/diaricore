@@ -637,6 +637,13 @@ body {
     margin-bottom: 1.8rem;
 }
 
+.dashboard-side-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
 @media (min-width: 992px) {
     .dashboard-lower-grid {
         display: grid;
@@ -651,10 +658,7 @@ body {
     }
 
     .dashboard-side-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem; /* tighter gap so combined height matches */
-        min-width: 0;
+        gap: 0.28rem; /* Last Entry ↔ Mood key (tight vs Weekly Mood row height) */
         height: 100%;
     }
 
@@ -674,7 +678,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 1rem 1.05rem 1rem;
+    padding: 0.85rem 1.05rem 0.95rem;
     flex: 0 1 auto;
     display: flex;
     flex-direction: column;
@@ -1214,7 +1218,8 @@ body {
 }
 
 .recent-entry-card {
-    margin-bottom: 2.6rem;
+    /* Spacing from Mood key is .dashboard-side-stack gap only (avoid extra row height) */
+    margin-bottom: 0;
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);

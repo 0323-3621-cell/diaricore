@@ -22,23 +22,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const CUSTOM_TAGS_BATCH_SIZE = 100;
     const ICON_SEARCH_ALIASES = {
-        money: ['bank', 'banknote', 'coins', 'coin', 'wallet', 'receipt', 'credit-card', 'piggy-bank', 'hand-coins'],
-        bills: ['receipt', 'banknote', 'wallet', 'coins', 'credit-card'],
-        budget: ['wallet', 'piggy-bank', 'coins', 'receipt', 'chart-column'],
-        finance: ['bank', 'banknote', 'coins', 'wallet', 'credit-card', 'receipt'],
-        payment: ['credit-card', 'wallet', 'banknote', 'coins', 'receipt'],
-        food: ['utensils', 'utensils-crossed', 'pizza', 'sandwich', 'coffee', 'cooking-pot'],
-        fitness: ['dumbbell', 'activity', 'heart-pulse', 'bike', 'footprints'],
-        travel: ['plane', 'car', 'bus', 'train', 'map-pin', 'luggage'],
-        study: ['book', 'book-open', 'pen', 'pencil', 'graduation-cap', 'notebook-pen'],
-        work: ['briefcase', 'building', 'laptop', 'monitor', 'clipboard-list'],
-        home: ['house', 'sofa', 'bed', 'lamp', 'home'],
-        family: ['users', 'baby', 'heart', 'house-heart'],
+        money: ['cash', 'coin', 'wallet', 'credit-card', 'bank', 'piggy-bank', 'currency'],
+        bills: ['receipt', 'cash', 'credit-card', 'wallet', 'currency'],
+        budget: ['wallet', 'piggy-bank', 'cash', 'graph', 'calculator'],
+        finance: ['bank', 'cash', 'coin', 'wallet', 'credit-card', 'currency'],
+        payment: ['credit-card', 'wallet', 'cash', 'coin', 'receipt'],
+        food: ['cup', 'egg', 'apple', 'basket', 'cake', 'cup-hot'],
+        fitness: ['heart-pulse', 'activity', 'bicycle', 'trophy', 'stopwatch'],
+        travel: ['airplane', 'car', 'bus', 'train', 'geo', 'suitcase'],
+        study: ['book', 'journal', 'pen', 'pencil', 'mortarboard', 'backpack'],
+        work: ['briefcase', 'building', 'laptop', 'display', 'clipboard'],
+        home: ['house', 'lamp', 'door', 'window', 'shop'],
+        family: ['people', 'person', 'heart', 'house-heart', 'emoji-smile'],
     };
-    let lucideIconNames = [];
+    let pickerIconNames = [];
     let customTagPage = 0;
     let customTagSearch = '';
-    let selectedLucideIconName = '';
+    let selectedPickerIconName = '';
 
     function escapeHtml(text) {
         return String(text)
@@ -55,18 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function iconMarkup(iconName, iconType = 'bi') {
-        if (iconType === 'lucide' && iconName) {
-            return `<i class="tag-btn__icon-svg" data-lucide="${escapeHtml(iconName)}"></i>`;
+        if (iconType === 'bi') {
+            const normalized = String(iconName || '').trim();
+            const cls = normalized.startsWith('bi ') ? normalized : `bi bi-${normalized || 'hash'}`;
+            return `<i class="${escapeHtml(cls)}"></i>`;
         }
-        return `<i class="${escapeHtml(iconName || 'bi bi-hash')}"></i>`;
-    }
-
-    function renderLucideIcons(scope) {
-        if (!window.lucide || typeof window.lucide.createIcons !== 'function') return;
-        window.lucide.createIcons({ attrs: { 'stroke-width': 2 }, nameAttr: 'data-lucide' });
-        if (!scope) return;
-        const svgs = scope.querySelectorAll('svg.lucide');
-        svgs.forEach((svg) => svg.classList.add('tag-btn__icon-svg'));
+        return `<i class="bi bi-hash"></i>`;
     }
 
     async function syncUserTagsIntoUI() {
@@ -92,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             json.tagItems.map((x) => ({
                                 tag: normalizeTag(x?.tag),
                                 iconName: String(x?.iconName || '').trim().toLowerCase(),
-                                iconType: x?.iconName ? 'lucide' : 'bi',
+                                iconType: 'bi',
                             }))
                         );
                     } else if (Array.isArray(json.tags)) {
@@ -135,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.dataset.tag = item.tag;
             btn.dataset.iconName = item.iconName || '';
             btn.dataset.iconType = item.iconType || 'bi';
-            const resolvedBi = item.iconType === 'bi' ? (item.iconName || iconClassForTag(item.tag)) : '';
-            btn.innerHTML = `${iconMarkup(item.iconType === 'lucide' ? item.iconName : resolvedBi, item.iconType)}<span>${escapeHtml(item.tag)}</span>`;
+            const resolvedBi = item.iconName || iconClassForTag(item.tag);
+            btn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(item.tag)}</span>`;
             btn.addEventListener('click', function() {
                 const tag = normalizeTag(this.dataset.tag);
                 if (!tag) return;
@@ -151,8 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (addBtn) container.insertBefore(btn, addBtn);
             else container.appendChild(btn);
         });
-        renderLucideIcons(container);
-
         // Re-run your existing visibility logic now that buttons changed
         updateTagVisibility();
     }
@@ -428,11 +420,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const customTagIconMeta = document.getElementById('customTagIconMeta');
     const customTagSaveBtn = document.getElementById('customTagSaveBtn');
 
-    function filteredLucideIcons() {
+    function filteredPickerIcons() {
         const q = customTagSearch.trim().toLowerCase();
-        if (!q) return lucideIconNames;
+        if (!q) return pickerIconNames;
         const aliasTerms = ICON_SEARCH_ALIASES[q] || [];
-        return lucideIconNames.filter((name) => {
+        return pickerIconNames.filter((name) => {
             if (name.includes(q)) return true;
             return aliasTerms.some((term) => name.includes(term));
         });
@@ -440,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderCustomTagIconPage() {
         if (!customTagIconsGrid || !customTagPagination || !customTagIconMeta) return;
-        const filtered = filteredLucideIcons();
+        const filtered = filteredPickerIcons();
         const pageCount = Math.max(1, Math.ceil(filtered.length / CUSTOM_TAGS_BATCH_SIZE));
         customTagPage = Math.max(0, Math.min(customTagPage, pageCount - 1));
         const start = customTagPage * CUSTOM_TAGS_BATCH_SIZE;
@@ -448,13 +440,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const items = filtered.slice(start, end);
         customTagIconsGrid.innerHTML = items
             .map((iconName) => `
-                <button type="button" class="custom-tag-icon-btn${selectedLucideIconName === iconName ? ' is-selected' : ''}" data-icon-name="${escapeHtml(iconName)}">
-                    <i data-lucide="${escapeHtml(iconName)}"></i>
+                <button type="button" class="custom-tag-icon-btn${selectedPickerIconName === iconName ? ' is-selected' : ''}" data-icon-name="${escapeHtml(iconName)}">
+                    <i class="bi bi-${escapeHtml(iconName)}"></i>
                     <span>${escapeHtml(iconName)}</span>
                 </button>
             `)
             .join('');
-        renderLucideIcons(customTagIconsGrid);
         customTagIconMeta.textContent = `${filtered.length} icons • page ${customTagPage + 1}/${pageCount}`;
 
         customTagPagination.innerHTML = `
@@ -465,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         customTagIconsGrid.querySelectorAll('.custom-tag-icon-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
-                selectedLucideIconName = btn.dataset.iconName || '';
+                selectedPickerIconName = btn.dataset.iconName || '';
                 renderCustomTagIconPage();
                 updateCustomTagSaveState();
             });
@@ -482,35 +473,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateCustomTagSaveState() {
         if (!customTagSaveBtn) return;
         const validName = normalizeTag(customTagNameInput?.value || '');
-        customTagSaveBtn.disabled = !(validName && selectedLucideIconName);
+        customTagSaveBtn.disabled = !(validName && selectedPickerIconName);
     }
 
-    async function ensureLucideIconNamesLoaded() {
-        if (lucideIconNames.length) return;
-        const toKebab = (s) => String(s || '')
-            .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-            .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
-            .toLowerCase();
-        const runtimeIcons = window.lucide && window.lucide.icons ? window.lucide.icons : null;
-        const runtimeSet = new Set(
-            runtimeIcons
-                ? Object.keys(runtimeIcons).map(toKebab).filter((x) => /^[a-z0-9-]+$/.test(x))
-                : []
-        );
-        const res = await fetch('/lucide-icon-names.json');
+    async function ensurePickerIconNamesLoaded() {
+        if (pickerIconNames.length) return;
+        const res = await fetch('/bootstrap-icon-names.json');
         const json = await res.json();
         if (!Array.isArray(json)) throw new Error('Invalid icon list');
-        const fetched = json
+        pickerIconNames = json
             .map((x) => String(x || '').trim().toLowerCase())
             .filter((x) => /^[a-z0-9-]+$/.test(x));
-        // Only keep icons the loaded Lucide runtime can actually render.
-        lucideIconNames = runtimeSet.size
-            ? fetched.filter((name) => runtimeSet.has(name))
-            : fetched;
-        // If fetch list mismatches runtime bundle, fall back to runtime-derived names.
-        if (!lucideIconNames.length && runtimeSet.size) {
-            lucideIconNames = Array.from(runtimeSet).sort();
-        }
     }
 
     async function openCustomTagModal() {
@@ -518,14 +491,14 @@ document.addEventListener('DOMContentLoaded', function() {
         customTagNameInput.value = '';
         customTagIconSearch.value = '';
         customTagSearch = '';
-        selectedLucideIconName = '';
+        selectedPickerIconName = '';
         customTagPage = 0;
         customTagSaveBtn.disabled = true;
         customTagModal.hidden = false;
         document.body.style.overflow = 'hidden';
         customTagIconMeta.textContent = 'Loading icons...';
         try {
-            await ensureLucideIconNamesLoaded();
+            await ensurePickerIconNamesLoaded();
             renderCustomTagIconPage();
         } catch (e) {
             customTagIconMeta.textContent = 'Could not load icons. Try again.';
@@ -566,8 +539,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (customTagSaveBtn) {
         customTagSaveBtn.addEventListener('click', () => {
             const tagName = normalizeTag(customTagNameInput?.value || '');
-            if (!tagName || !selectedLucideIconName) return;
-            createNewTag(tagName, selectedLucideIconName, 'lucide');
+            if (!tagName || !selectedPickerIconName) return;
+            createNewTag(tagName, selectedPickerIconName, 'bi');
             closeCustomTagModal();
         });
     }
@@ -587,9 +560,8 @@ document.addEventListener('DOMContentLoaded', function() {
         newTagBtn.dataset.tag = normalizedName;
         newTagBtn.dataset.iconName = iconName || '';
         newTagBtn.dataset.iconType = iconType || 'bi';
-        const resolvedBi = iconType === 'bi' ? (iconName || iconClassForTag(normalizedName)) : '';
-        newTagBtn.innerHTML = `${iconMarkup(iconType === 'lucide' ? iconName : resolvedBi, iconType)}<span>${escapeHtml(normalizedName)}</span>`;
-        renderLucideIcons(newTagBtn);
+        const resolvedBi = iconType === 'bi' ? (iconName || iconClassForTag(normalizedName)) : iconClassForTag(normalizedName);
+        newTagBtn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(normalizedName)}</span>`;
 
         // Persist to user account (best-effort)
         (async () => {
@@ -600,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await fetch('/api/tags', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'lucide' ? iconName : '' })
+                    body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'bi' ? iconName : '' })
                 });
             } catch (e) {
                 console.error('Failed to save tag:', e);

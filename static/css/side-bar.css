@@ -885,3 +885,46 @@
     font-size: 0.95rem;
     font-weight: 500;
 }
+
+.sync-status-badge {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1400;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid rgba(111, 143, 127, 0.4);
+    background: rgba(255, 255, 255, 0.96);
+    color: #355244;
+    border-radius: 999px;
+    padding: 0.36rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sync-status-badge i {
+    font-size: 0.85rem;
+}
+
+.sync-status-badge.is-offline {
+    border-color: rgba(185, 109, 76, 0.42);
+    color: #8f4d2b;
+    background: rgba(255, 247, 242, 0.96);
+}
+
+.sync-status-badge.is-pending {
+    border-color: rgba(199, 154, 62, 0.45);
+    color: #7a5b0f;
+    background: rgba(255, 249, 231, 0.96);
+}
+
+@media (max-width: 768px) {
+    .sync-status-badge {
+        right: 10px;
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+        font-size: 0.72rem;
+        padding: 0.32rem 0.62rem;
+    }
+}

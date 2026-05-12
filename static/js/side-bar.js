@@ -8,10 +8,13 @@ class SidebarComponent {
         this.sidebarElement = null;
         this.mobileToggle = null;
         this.overlay = null;
+        this.syncBadgeEl = null;
+        this.syncBadgePoller = null;
         this.init();
     }
 
     init() {
+        this.initSyncStatusBadge();
         this.loadSidebar();
         this.setupMobileToggle();
         this.setupEventListeners();
@@ -331,6 +334,105 @@ class SidebarComponent {
 
         // Handle window resize
         window.addEventListener('resize', () => this.handleResize());
+
+        window.addEventListener('online', () => this.refreshSyncStatusBadge());
+        window.addEventListener('offline', () => this.refreshSyncStatusBadge());
+        window.addEventListener('storage', () => this.refreshSyncStatusBadge());
+    }
+
+    initSyncStatusBadge() {
+        if (document.querySelector('.sync-status-badge')) {
+            this.syncBadgeEl = document.querySelector('.sync-status-badge');
+            this.refreshSyncStatusBadge();
+            return;
+        }
+        const el = document.createElement('div');
+        el.className = 'sync-status-badge';
+        el.hidden = true;
+        el.innerHTML = `
+            <i class="bi bi-cloud-slash"></i>
+            <span>Offline mode</span>
+        `;
+        document.body.appendChild(el);
+        this.syncBadgeEl = el;
+        this.refreshSyncStatusBadge();
+        if (this.syncBadgePoller) clearInterval(this.syncBadgePoller);
+        this.syncBadgePoller = setInterval(() => this.refreshSyncStatusBadge(), 12000);
+    }
+
+    readTagPendingCount() {
+        try {
+            const raw = localStorage.getItem('diariCoreTagSyncQueue');
+            if (!raw) return 0;
+            const arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr.length : 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    async readOfflineEntryPendingCount() {
+        if (typeof indexedDB === 'undefined') return 0;
+        try {
+            const db = await new Promise((resolve, reject) => {
+                const req = indexedDB.open('diariCoreOfflineMedia', 1);
+                req.onupgradeneeded = () => {
+                    const dbX = req.result;
+                    if (!dbX.objectStoreNames.contains('pendingEntries')) {
+                        dbX.createObjectStore('pendingEntries', { keyPath: 'id' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+            });
+            const count = await new Promise((resolve, reject) => {
+                const tx = db.transaction('pendingEntries', 'readonly');
+                const req = tx.objectStore('pendingEntries').count();
+                req.onsuccess = () => resolve(Number(req.result || 0));
+                req.onerror = () => reject(req.error || new Error('IndexedDB count failed'));
+            });
+            db.close();
+            return count;
+        } catch {
+            return 0;
+        }
+    }
+
+    async refreshSyncStatusBadge() {
+        if (!this.syncBadgeEl) return;
+        const isOnline = navigator.onLine !== false;
+        const pendingTags = this.readTagPendingCount();
+        const pendingEntries = await this.readOfflineEntryPendingCount();
+        const totalPending = pendingTags + pendingEntries;
+
+        const icon = this.syncBadgeEl.querySelector('i');
+        const label = this.syncBadgeEl.querySelector('span');
+        if (!icon || !label) return;
+
+        if (!isOnline) {
+            this.syncBadgeEl.hidden = false;
+            this.syncBadgeEl.classList.add('is-offline');
+            this.syncBadgeEl.classList.remove('is-pending');
+            icon.className = 'bi bi-cloud-slash';
+            label.textContent = totalPending > 0
+                ? `Offline mode • ${totalPending} pending sync`
+                : 'Offline mode';
+            return;
+        }
+
+        if (totalPending > 0) {
+            this.syncBadgeEl.hidden = false;
+            this.syncBadgeEl.classList.remove('is-offline');
+            this.syncBadgeEl.classList.add('is-pending');
+            icon.className = 'bi bi-arrow-repeat';
+            label.textContent = `Sync pending • ${totalPending} item${totalPending === 1 ? '' : 's'}`;
+            return;
+        }
+
+        this.syncBadgeEl.hidden = true;
+        this.syncBadgeEl.classList.remove('is-offline', 'is-pending');
+        icon.className = 'bi bi-cloud-check';
+        label.textContent = 'All changes synced';
     }
 
     // Logout button setup

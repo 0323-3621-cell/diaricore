@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedPickerIconName = '';
     let tagItemsState = [];
     let tagExpanded = localStorage.getItem(TAG_EXPANDED_KEY) === '1';
+    const OFFLINE_DB_NAME = 'diariCoreOfflineMedia';
+    const OFFLINE_DB_STORE = 'pendingEntries';
+    const MAX_IMAGE_WARN = 10;
+    const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    let attachedImages = [];
+    let lightboxIndex = 0;
+    let dragDepth = 0;
 
     function escapeHtml(text) {
         return String(text)
@@ -75,6 +82,279 @@ document.addEventListener('DOMContentLoaded', function() {
             return `<i class="${escapeHtml(cls)}"></i>`;
         }
         return `<i class="bi bi-hash"></i>`;
+    }
+
+    function openOfflineDb() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains(OFFLINE_DB_STORE)) {
+                    db.createObjectStore(OFFLINE_DB_STORE, { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+        });
+    }
+
+    async function idbPut(value) {
+        const db = await openOfflineDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(OFFLINE_DB_STORE, 'readwrite');
+            tx.objectStore(OFFLINE_DB_STORE).put(value);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error('IndexedDB put failed'));
+        });
+        db.close();
+    }
+
+    async function idbGetAll() {
+        const db = await openOfflineDb();
+        const result = await new Promise((resolve, reject) => {
+            const tx = db.transaction(OFFLINE_DB_STORE, 'readonly');
+            const req = tx.objectStore(OFFLINE_DB_STORE).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error || new Error('IndexedDB read failed'));
+        });
+        db.close();
+        return result;
+    }
+
+    async function idbDelete(id) {
+        const db = await openOfflineDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(OFFLINE_DB_STORE, 'readwrite');
+            tx.objectStore(OFFLINE_DB_STORE).delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error('IndexedDB delete failed'));
+        });
+        db.close();
+    }
+
+    function formatPhotoCount(n) {
+        return `${n} photo${n === 1 ? '' : 's'} attached`;
+    }
+
+    function updatePhotoBadge() {
+        const badge = document.getElementById('photoCountBadge');
+        if (!badge) return;
+        const count = attachedImages.length;
+        badge.hidden = count <= 0;
+        badge.textContent = formatPhotoCount(count);
+    }
+
+    function updateImageProgress(id, progress) {
+        attachedImages = attachedImages.map((img) => (img.id === id ? { ...img, progress } : img));
+        renderImageGallery();
+    }
+
+    async function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error || new Error('Could not read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function dataUrlToBlob(dataUrl) {
+        const [meta, base64] = String(dataUrl || '').split(',');
+        const mimeMatch = /data:(.*?);base64/.exec(meta || '');
+        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const bytes = Uint8Array.from(atob(base64 || ''), (c) => c.charCodeAt(0));
+        return new Blob([bytes], { type: mime });
+    }
+
+    async function uploadImageOnline(file, userId, localId) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('userId', String(userId));
+        updateImageProgress(localId, 30);
+        const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+        updateImageProgress(localId, 85);
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json?.success || !json?.url) {
+            throw new Error(json?.error || 'Upload failed');
+        }
+        return String(json.url);
+    }
+
+    function makeImageItem({ url = '', dataUrl = '', name = '' } = {}) {
+        return {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+            url,
+            dataUrl,
+            name,
+            progress: 0,
+        };
+    }
+
+    function renderImageGallery() {
+        const gallery = document.getElementById('entryGallery');
+        if (!gallery) return;
+        const count = attachedImages.length;
+        updatePhotoBadge();
+        if (!count) {
+            gallery.className = 'entry-gallery is-empty';
+            gallery.innerHTML = `
+                <button type="button" class="entry-gallery-empty" id="entryGalleryEmptyTrigger">
+                    <i class="bi bi-image"></i>
+                    <span>Add photos to your entry</span>
+                </button>
+            `;
+            const trigger = document.getElementById('entryGalleryEmptyTrigger');
+            trigger?.addEventListener('click', () => document.getElementById('imageFileInput')?.click());
+            return;
+        }
+        gallery.className = 'entry-gallery';
+        let mode = 'mode-4';
+        if (count === 1) mode = 'mode-1';
+        else if (count === 2) mode = 'mode-2';
+        else if (count === 3) mode = 'mode-3';
+        const baseCells = attachedImages.map((img, idx) => {
+            const src = img.url || img.dataUrl;
+            const cls = mode === 'mode-3' && idx === 0 ? 'entry-gallery-item is-primary' : 'entry-gallery-item';
+            const progress = img.progress > 0 && img.progress < 100
+                ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
+                : '';
+            return `
+                <div class="${cls}" data-image-id="${img.id}">
+                    <img src="${escapeHtml(src)}" alt="Attached image" />
+                    ${progress}
+                    <div class="entry-gallery-item-actions">
+                        <button type="button" class="entry-gallery-action-btn" data-action="preview" data-index="${idx}" aria-label="Preview image"><i class="bi bi-search"></i></button>
+                        <button type="button" class="entry-gallery-action-btn" data-action="delete" data-id="${escapeHtml(img.id)}" aria-label="Delete image"><i class="bi bi-trash3"></i></button>
+                    </div>
+                </div>
+            `;
+        });
+        const addMoreCell = (count >= 4)
+            ? `<button type="button" class="entry-gallery-add-cell" id="entryGalleryAddMore"><i class="bi bi-plus-lg"></i><span>Add more photos</span></button>`
+            : '';
+        gallery.innerHTML = `<div class="entry-gallery-grid ${mode}">${baseCells.join('')}${addMoreCell}</div>`;
+        gallery.querySelectorAll('[data-action="preview"]').forEach((btn) => {
+            btn.addEventListener('click', () => openLightbox(Number(btn.dataset.index || 0)));
+        });
+        gallery.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = String(btn.dataset.id || '');
+                if (!id) return;
+                if (!confirm('Remove this photo?')) return;
+                attachedImages = attachedImages.filter((img) => img.id !== id);
+                renderImageGallery();
+            });
+        });
+        document.getElementById('entryGalleryAddMore')?.addEventListener('click', () => {
+            document.getElementById('imageFileInput')?.click();
+        });
+    }
+
+    function openLightbox(index) {
+        if (!attachedImages.length) return;
+        lightboxIndex = Math.max(0, Math.min(index, attachedImages.length - 1));
+        const modal = document.getElementById('photoLightbox');
+        const img = document.getElementById('photoLightboxImage');
+        if (!modal || !img) return;
+        const current = attachedImages[lightboxIndex];
+        img.src = current.url || current.dataUrl || '';
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+        const modal = document.getElementById('photoLightbox');
+        if (!modal) return;
+        modal.hidden = true;
+        document.body.style.overflow = '';
+    }
+
+    function moveLightbox(step) {
+        if (!attachedImages.length) return;
+        const next = (lightboxIndex + step + attachedImages.length) % attachedImages.length;
+        openLightbox(next);
+    }
+
+    async function addImagesFromFiles(fileList) {
+        const files = Array.from(fileList || []).filter((f) => ACCEPTED_IMAGE_TYPES.has(String(f.type || '').toLowerCase()));
+        if (!files.length) return;
+        const userId = getCurrentUserId();
+        if (attachedImages.length + files.length > MAX_IMAGE_WARN) {
+            alert('You added more than 10 images. This is okay, but it may affect upload speed.');
+        }
+        for (const file of files) {
+            const item = makeImageItem({ name: file.name });
+            attachedImages.push(item);
+            renderImageGallery();
+            try {
+                if (isOnlineNow() && userId) {
+                    const url = await uploadImageOnline(file, userId, item.id);
+                    attachedImages = attachedImages.map((img) => (
+                        img.id === item.id ? { ...img, url, progress: 100 } : img
+                    ));
+                } else {
+                    updateImageProgress(item.id, 20);
+                    const dataUrl = await fileToDataUrl(file);
+                    attachedImages = attachedImages.map((img) => (
+                        img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
+                    ));
+                }
+            } catch (e) {
+                console.error('Image add failed:', e);
+                attachedImages = attachedImages.filter((img) => img.id !== item.id);
+                alert(`Could not add image: ${e.message || 'Unknown error'}`);
+            }
+            renderImageGallery();
+        }
+    }
+
+    async function flushOfflineEntryQueue() {
+        if (!isOnlineNow()) return;
+        const userId = getCurrentUserId();
+        if (!userId) return;
+        let pending = [];
+        try {
+            pending = await idbGetAll();
+        } catch (e) {
+            console.warn('Unable to read pending offline entries:', e);
+            return;
+        }
+        for (const item of pending) {
+            try {
+                const imageUrls = [];
+                for (const img of item.images || []) {
+                    if (img.url) {
+                        imageUrls.push(img.url);
+                        continue;
+                    }
+                    if (img.dataUrl) {
+                        const blob = dataUrlToBlob(img.dataUrl);
+                        const ext = (blob.type || 'image/png').split('/')[1] || 'png';
+                        const file = new File([blob], `offline-${Date.now()}.${ext}`, { type: blob.type || 'image/png' });
+                        const url = await uploadImageOnline(file, userId, `offline_${Math.random()}`);
+                        imageUrls.push(url);
+                    }
+                }
+                const response = await fetch('/api/entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId,
+                        title: item.title || '',
+                        text: item.text || '',
+                        tags: item.tags || [],
+                        imageUrls,
+                    }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result?.success || !result?.entry) {
+                    throw new Error(result?.error || 'Offline sync entry save failed');
+                }
+                await idbDelete(item.id);
+            } catch (e) {
+                console.warn('Offline entry sync failed for item:', item?.id, e);
+            }
+        }
     }
 
     function isOnlineNow() {
@@ -448,6 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('online', () => {
         flushTagSyncQueue();
         syncUserTagsIntoUI();
+        flushOfflineEntryQueue();
     });
     
     const customTagModal = document.getElementById('customTagModal');
@@ -673,8 +954,60 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return true;
     }
+
+    const imageFileInput = document.getElementById('imageFileInput');
+    const addPhotosBtn = document.getElementById('addPhotosBtn');
+    const entrySplitLayout = document.getElementById('entrySplitLayout');
+    const entryDropOverlay = document.getElementById('entryDropOverlay');
+    const photoLightbox = document.getElementById('photoLightbox');
+    const photoLightboxClose = document.getElementById('photoLightboxClose');
+    const photoLightboxPrev = document.getElementById('photoLightboxPrev');
+    const photoLightboxNext = document.getElementById('photoLightboxNext');
+
+    addPhotosBtn?.addEventListener('click', () => imageFileInput?.click());
+    imageFileInput?.addEventListener('change', async () => {
+        await addImagesFromFiles(imageFileInput.files);
+        imageFileInput.value = '';
+    });
+
+    if (entrySplitLayout) {
+        const hasImageDrag = (evt) => Array.from(evt.dataTransfer?.types || []).includes('Files');
+        entrySplitLayout.addEventListener('dragenter', (event) => {
+            if (!hasImageDrag(event)) return;
+            event.preventDefault();
+            dragDepth += 1;
+            if (entryDropOverlay) entryDropOverlay.hidden = false;
+        });
+        entrySplitLayout.addEventListener('dragover', (event) => {
+            if (!hasImageDrag(event)) return;
+            event.preventDefault();
+        });
+        entrySplitLayout.addEventListener('dragleave', (event) => {
+            if (!hasImageDrag(event)) return;
+            event.preventDefault();
+            dragDepth = Math.max(0, dragDepth - 1);
+            if (dragDepth === 0 && entryDropOverlay) entryDropOverlay.hidden = true;
+        });
+        entrySplitLayout.addEventListener('drop', async (event) => {
+            if (!hasImageDrag(event)) return;
+            event.preventDefault();
+            dragDepth = 0;
+            if (entryDropOverlay) entryDropOverlay.hidden = true;
+            await addImagesFromFiles(event.dataTransfer?.files || []);
+        });
+    }
+
+    photoLightboxClose?.addEventListener('click', closeLightbox);
+    photoLightboxPrev?.addEventListener('click', () => moveLightbox(-1));
+    photoLightboxNext?.addEventListener('click', () => moveLightbox(1));
+    photoLightbox?.addEventListener('click', (event) => {
+        if (event.target === photoLightbox) closeLightbox();
+    });
+
+    renderImageGallery();
     
     const journalText = document.getElementById('journalText');
+    const journalTitleInput = document.getElementById('journalTitleInput');
     const charCount = document.getElementById('charCount');
     const journalDateTimeBtn = document.getElementById('journalDateTimeBtn');
     const journalDateTimeInput = document.getElementById('journalDateTimeInput');
@@ -737,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function handleSaveEntry() {
         const entryText = journalText.value.trim();
+        const entryTitle = normalizeTag(journalTitleInput?.value || '');
         if (!entryText) {
             alert('Please write something in your journal entry.');
             return;
@@ -751,13 +1085,27 @@ document.addEventListener('DOMContentLoaded', function() {
         showAnalysisLoading(analysisOverlay);
 
         try {
+            let imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
+            if (isOnlineNow() && userId) {
+                const pendingUploads = attachedImages.filter((img) => !img.url && img.dataUrl);
+                for (const item of pendingUploads) {
+                    const blob = dataUrlToBlob(item.dataUrl);
+                    const ext = (blob.type || 'image/png').split('/')[1] || 'png';
+                    const file = new File([blob], `queued-${Date.now()}.${ext}`, { type: blob.type || 'image/png' });
+                    const url = await uploadImageOnline(file, userId, item.id);
+                    attachedImages = attachedImages.map((img) => (img.id === item.id ? { ...img, url, progress: 100 } : img));
+                }
+                imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
+            }
             const response = await fetch('/api/entries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId,
+                    title: entryTitle,
                     text: entryText,
-                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean)
+                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
+                    imageUrls
                 })
             });
             const result = await response.json();
@@ -768,6 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const savedEntry = {
                 ...result.entry,
+                title: result.entry.title || entryTitle,
                 characterCount: entryText.length,
                 moodScoringOffline: false,
             };
@@ -778,16 +1127,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback');
             localStorage.removeItem('diariCoreDraft');
+            attachedImages = [];
+            renderImageGallery();
         } catch (error) {
             console.error('Failed to save entry via API:', error);
             const fallbackEntry = {
+                title: entryTitle,
                 feeling: 'unspecified',
                 tags: Array.from(selectedTags),
                 text: entryText,
+                imageUrls: attachedImages.map((img) => img.url || img.dataUrl).filter(Boolean),
                 date: new Date().toISOString(),
                 characterCount: entryText.length,
                 moodScoringOffline: true,
             };
+            try {
+                await idbPut({
+                    id: `offline_entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                    userId,
+                    title: entryTitle,
+                    text: entryText,
+                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
+                    images: attachedImages.map((img) => ({ url: img.url || '', dataUrl: img.dataUrl || '' })),
+                    createdAt: new Date().toISOString(),
+                });
+            } catch (queueError) {
+                console.warn('Could not queue offline entry:', queueError);
+            }
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(fallbackEntry);
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
@@ -1004,5 +1370,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load draft on page load
     loadDraft();
+    flushOfflineEntryQueue();
     
 });

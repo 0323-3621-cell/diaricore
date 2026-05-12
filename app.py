@@ -5,6 +5,7 @@ Deploy on Railway with PostgreSQL (DATABASE_URL). Local dev uses SQLite.
 
 import os
 import json
+import uuid
 import random
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -122,6 +123,8 @@ def _trigger_query_user_id():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+UPLOADS_DIR = os.path.join(STATIC_DIR, "img", "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
@@ -299,11 +302,22 @@ def serialize_entry(row):
                 all_probs = parsed
         except Exception:
             all_probs = {}
+    image_urls = []
+    image_raw = row.get("image_urls_json")
+    if image_raw:
+        try:
+            parsed = json.loads(image_raw)
+            if isinstance(parsed, list):
+                image_urls = [str(x) for x in parsed if isinstance(x, str)]
+        except Exception:
+            image_urls = []
     return {
         "id": row.get("id"),
         "userId": row.get("user_id"),
         "text": row.get("text_content") or "",
+        "title": row.get("title") or "",
         "tags": tags,
+        "imageUrls": image_urls,
         "date": date_value,
         "sentimentLabel": (row.get("sentiment_label") or "neutral").lower(),
         "sentimentScore": float(row.get("sentiment_score") or 0.5),
@@ -313,6 +327,11 @@ def serialize_entry(row):
         # Keep existing UI compatibility
         "feeling": emotion_label,
     }
+
+
+def _allowed_image_extension(filename: str) -> bool:
+    ext = os.path.splitext(str(filename or ""))[1].lower()
+    return ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 @app.before_request
@@ -824,8 +843,10 @@ def api_triggers_summary():
 def api_entries_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
+    title = (data.get("title") or "").strip()
     text = (data.get("text") or "").strip()
     tags = data.get("tags") or []
+    image_urls = data.get("imageUrls") or []
 
     if not isinstance(user_id, int) or user_id <= 0:
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
@@ -833,6 +854,9 @@ def api_entries_post():
         return jsonify({"success": False, "error": "Entry text is required."}), 400
     if not isinstance(tags, list):
         tags = []
+    if not isinstance(image_urls, list):
+        image_urls = []
+    clean_images = [str(x).strip() for x in image_urls if isinstance(x, str) and str(x).strip()]
 
     user = db.get_user_by_id(user_id) if hasattr(db, "get_user_by_id") else None
     if not user:
@@ -842,7 +866,9 @@ def api_entries_post():
     row = db.create_journal_entry(
         user_id=user_id,
         text_content=text,
+        title=title,
         tags_json=json.dumps(tags),
+        image_urls_json=json.dumps(clean_images),
         sentiment_label=analysis["sentimentLabel"],
         sentiment_score=float(analysis["sentimentScore"]),
         emotion_label=analysis["emotionLabel"],
@@ -852,6 +878,36 @@ def api_entries_post():
     response_entry = serialize_entry(row)
     response_entry["secondaryMood"] = analysis.get("secondaryMood")
     return jsonify({"success": True, "entry": response_entry, "analysisEngine": analysis.get("engine", "hf-custom")}), 201
+
+
+@app.route("/api/uploads/image", methods=["POST"])
+def api_upload_image():
+    user_id = request.form.get("userId", type=int)
+    if not user_id or user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    file = request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "error": "Image file is required."}), 400
+    if not _allowed_image_extension(file.filename):
+        return jsonify({"success": False, "error": "Unsupported file type."}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    safe_name = f"entry_{user_id}_{uuid.uuid4().hex}{ext}"
+    abs_path = os.path.join(UPLOADS_DIR, safe_name)
+    file.save(abs_path)
+    return jsonify({"success": True, "url": f"/uploads/{safe_name}"}), 201
+
+
+@app.route("/uploads/<path:filename>")
+def uploaded_images(filename):
+    safe = os.path.normpath(filename)
+    if ".." in safe or safe.startswith(os.sep):
+        abort(404)
+    if not _allowed_image_extension(safe):
+        abort(404)
+    return send_from_directory(UPLOADS_DIR, safe)
 
 
 @app.route("/")

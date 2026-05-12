@@ -144,16 +144,38 @@
                             <i class="bi bi-mic"></i>
                         </button>
                     </div>
-                    <textarea 
-                        id="journalText"
-                        class="journal-textarea" 
-                        placeholder="Start writing..."
-                        maxlength="5000"
-                    ></textarea>
+                    <div class="entry-split-layout" id="entrySplitLayout">
+                        <div class="entry-main-pane">
+                            <input id="journalTitleInput" class="journal-title-input" type="text" maxlength="180" placeholder="Give your entry a title..." />
+                            <div class="entry-toolbar">
+                                <button type="button" class="entry-toolbar-btn" id="addPhotosBtn">
+                                    <i class="bi bi-images"></i>
+                                    <span>Add photos</span>
+                                </button>
+                                <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+                            </div>
+                            <textarea
+                                id="journalText"
+                                class="journal-textarea"
+                                placeholder="Start writing..."
+                                maxlength="5000"
+                            ></textarea>
+                            <div class="entry-drop-overlay" id="entryDropOverlay" hidden>
+                                <div class="entry-drop-overlay__box">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                    <span>Drop images here</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="entry-gallery-pane">
+                            <div class="entry-gallery" id="entryGallery"></div>
+                        </div>
+                    </div>
                     <div class="journal-footer">
                         <div class="character-counter">
                             <span id="charCount">0</span> characters
                         </div>
+                        <div class="photo-count-badge" id="photoCountBadge" hidden>0 photos attached</div>
                     </div>
                 </div>
             </div>
@@ -170,6 +192,19 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <div class="photo-lightbox" id="photoLightbox" hidden>
+        <button type="button" class="photo-lightbox__close" id="photoLightboxClose" aria-label="Close preview">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <button type="button" class="photo-lightbox__nav photo-lightbox__nav--prev" id="photoLightboxPrev" aria-label="Previous image">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <img id="photoLightboxImage" alt="Entry image preview" />
+        <button type="button" class="photo-lightbox__nav photo-lightbox__nav--next" id="photoLightboxNext" aria-label="Next image">
+            <i class="bi bi-chevron-right"></i>
+        </button>
     </div>
 
     <!-- Custom Tag Modal -->

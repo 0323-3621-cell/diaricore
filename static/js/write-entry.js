@@ -25,7 +25,12 @@ document.addEventListener('DOMContentLoaded', function() {
         { name: 'Family', icon: 'bi bi-heart', iconType: 'bi' },
         { name: 'Health', icon: 'bi bi-heart-pulse', iconType: 'bi' },
         { name: 'Money', icon: 'bi bi-currency-dollar', iconType: 'bi' },
+        { name: 'Bills', icon: 'bi bi-receipt', iconType: 'bi' },
     ];
+    const DEFAULT_TAG_SET = new Set(DEFAULT_TAGS.map((x) => normalizeTag(x.name).toLowerCase()));
+    const TAG_USAGE_KEY = 'diariCoreTagUsage';
+    const TAG_EXPANDED_KEY = 'diariCoreTagsExpanded';
+    const TAG_SYNC_QUEUE_KEY = 'diariCoreTagSyncQueue';
 
     const CUSTOM_TAGS_BATCH_SIZE = 100;
     const ICON_SEARCH_ALIASES = {
@@ -46,6 +51,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let customTagPage = 0;
     let customTagSearch = '';
     let selectedPickerIconName = '';
+    let tagItemsState = [];
+    let tagExpanded = localStorage.getItem(TAG_EXPANDED_KEY) === '1';
 
     function escapeHtml(text) {
         return String(text)
@@ -70,74 +77,194 @@ document.addEventListener('DOMContentLoaded', function() {
         return `<i class="bi bi-hash"></i>`;
     }
 
-    async function syncUserTagsIntoUI() {
+    function isOnlineNow() {
+        return navigator.onLine !== false;
+    }
+
+    function readJsonStorage(key, fallbackValue) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallbackValue;
+            const parsed = JSON.parse(raw);
+            return parsed ?? fallbackValue;
+        } catch {
+            return fallbackValue;
+        }
+    }
+
+    function writeJsonStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.warn(`Failed to persist ${key}:`, e);
+        }
+    }
+
+    function getTagUsageMap() {
+        const raw = readJsonStorage(TAG_USAGE_KEY, {});
+        return raw && typeof raw === 'object' ? raw : {};
+    }
+
+    function setTagUsage(tagName, ts = Date.now()) {
+        const key = normalizeTag(tagName).toLowerCase();
+        if (!key) return;
+        const usage = getTagUsageMap();
+        usage[key] = ts;
+        writeJsonStorage(TAG_USAGE_KEY, usage);
+    }
+
+    function getTagSyncQueue() {
+        const queue = readJsonStorage(TAG_SYNC_QUEUE_KEY, []);
+        return Array.isArray(queue) ? queue : [];
+    }
+
+    function setTagSyncQueue(queue) {
+        writeJsonStorage(TAG_SYNC_QUEUE_KEY, Array.isArray(queue) ? queue : []);
+    }
+
+    function queueTagOperation(op) {
+        const queue = getTagSyncQueue();
+        queue.push({ ...op, queuedAt: Date.now() });
+        setTagSyncQueue(queue);
+    }
+
+    async function flushTagSyncQueue() {
         const userId = getCurrentUserId();
-        const container = document.querySelector('.tags-container');
-        if (!container) return;
-
-        // Start from defaults with icon metadata
-        let tags = DEFAULT_TAGS.map((x) => ({
-            tag: x.name,
-            iconName: x.icon,
-            iconType: 'bi',
-        }));
-
-        if (userId) {
+        if (!userId || !isOnlineNow()) return;
+        const queue = getTagSyncQueue();
+        if (!queue.length) return;
+        const remaining = [];
+        for (const op of queue) {
             try {
-                const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
-                const json = await res.json();
-                if (res.ok && json.success) {
-                    if (Array.isArray(json.tagItems) && json.tagItems.length) {
-                        tags = tags.concat(
-                            json.tagItems.map((x) => ({
-                                tag: normalizeTag(x?.tag),
-                                iconName: String(x?.iconName || '').trim().toLowerCase(),
-                                iconType: 'bi',
-                            }))
-                        );
-                    } else if (Array.isArray(json.tags)) {
-                        tags = tags.concat(
-                            json.tags.map((name) => ({
-                                tag: normalizeTag(name),
-                                iconName: '',
-                                iconType: 'bi',
-                            }))
-                        );
-                    }
+                if (op?.type === 'add') {
+                    const res = await fetch('/api/tags', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId,
+                            tag: op.tag,
+                            iconName: op.iconName || '',
+                        }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json?.success) throw new Error(json?.error || 'Add sync failed');
+                } else if (op?.type === 'delete') {
+                    const res = await fetch('/api/tags', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId,
+                            tag: op.tag,
+                        }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json?.success) throw new Error(json?.error || 'Delete sync failed');
                 }
             } catch (e) {
-                console.error('Failed to load user tags:', e);
+                console.warn('Deferred tag sync failed, keeping in queue:', e);
+                remaining.push(op);
             }
         }
+        setTagSyncQueue(remaining);
+    }
 
-        // Dedup, normalize, keep order (defaults first)
-        const seen = new Set();
-        const merged = [];
-        tags.forEach((item) => {
-            const n = normalizeTag(item?.tag);
-            const key = n.toLowerCase();
-            if (!n || seen.has(key)) return;
-            seen.add(key);
-            merged.push({
-                tag: n,
-                iconName: String(item?.iconName || '').trim(),
-                iconType: item?.iconType || 'bi',
-            });
+    function getOrderedTags(items) {
+        const usage = getTagUsageMap();
+        return [...items].sort((a, b) => {
+            const aUsed = Number(usage[normalizeTag(a.tag).toLowerCase()] || 0);
+            const bUsed = Number(usage[normalizeTag(b.tag).toLowerCase()] || 0);
+            if (aUsed !== bUsed) return bUsed - aUsed;
+            return Number(a.baseOrder || 0) - Number(b.baseOrder || 0);
         });
+    }
 
-        // Preserve the existing "Add Tag" button
+    function setTagExpanded(nextValue) {
+        tagExpanded = !!nextValue;
+        localStorage.setItem(TAG_EXPANDED_KEY, tagExpanded ? '1' : '0');
+    }
+
+    function updateMoreButton(extraCount) {
+        const moreBtn = document.getElementById('moreTagsBtn');
+        if (!moreBtn) return;
+        const textEl = moreBtn.querySelector('span');
+        if (!extraCount || extraCount <= 0) {
+            moreBtn.style.display = 'none';
+            moreBtn.classList.remove('expanded');
+            if (textEl) textEl.textContent = 'more';
+            return;
+        }
+        moreBtn.style.display = 'inline-flex';
+        moreBtn.classList.toggle('expanded', tagExpanded);
+        if (textEl) {
+            textEl.textContent = tagExpanded ? 'less' : `+ ${extraCount} more tags`;
+        }
+    }
+
+    function applyTagCollapse() {
+        const container = document.querySelector('.tags-container');
+        const addBtn = container?.querySelector('.tag-btn.add-tag');
+        if (!container || !addBtn) return;
+
+        const tagButtons = Array.from(container.querySelectorAll('.tag-btn:not(.add-tag)'));
+        tagButtons.forEach((btn) => {
+            btn.classList.remove('extra-row');
+            btn.classList.remove('is-hidden-row');
+            btn.style.display = 'flex';
+        });
+        addBtn.style.display = 'flex';
+
+        if (!tagButtons.length) {
+            updateMoreButton(0);
+            return;
+        }
+
+        const rowTop = tagButtons[0].offsetTop;
+        const firstRowTags = tagButtons.filter((btn) => Math.abs(btn.offsetTop - rowTop) <= 2);
+        const firstRowSet = new Set(firstRowTags);
+        const extras = tagButtons.filter((btn) => !firstRowSet.has(btn));
+        extras.forEach((btn) => btn.classList.add('extra-row'));
+
+        if (!tagExpanded) {
+            const firstHidden = extras[0] || null;
+            if (firstHidden) container.insertBefore(addBtn, firstHidden);
+            extras.forEach((btn) => {
+                btn.classList.add('is-hidden-row');
+            });
+            container.classList.add('is-collapsed');
+            container.classList.remove('is-expanded');
+        } else {
+            container.appendChild(addBtn);
+            extras.forEach((btn) => {
+                btn.classList.remove('is-hidden-row');
+            });
+            container.classList.add('is-expanded');
+            container.classList.remove('is-collapsed');
+        }
+        updateMoreButton(extras.length);
+    }
+
+    function renderTagButtons() {
+        const container = document.querySelector('.tags-container');
+        if (!container) return;
         const addBtn = container.querySelector('.tag-btn.add-tag');
         container.querySelectorAll('.tag-btn:not(.add-tag)').forEach((el) => el.remove());
 
-        merged.forEach((item) => {
+        const ordered = getOrderedTags(tagItemsState);
+        ordered.forEach((item) => {
             const btn = document.createElement('button');
             btn.className = 'tag-btn';
             btn.dataset.tag = item.tag;
             btn.dataset.iconName = item.iconName || '';
-            btn.dataset.iconType = item.iconType || 'bi';
+            btn.dataset.iconType = 'bi';
+            btn.dataset.custom = item.isDefault ? '0' : '1';
             const resolvedBi = item.iconName || iconClassForTag(item.tag);
-            btn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(item.tag)}</span>`;
-            btn.addEventListener('click', function() {
+            const deleteMarkup = item.isDefault
+                ? ''
+                : `<button type="button" class="tag-delete-btn" aria-label="Delete ${escapeHtml(item.tag)} tag" title="Delete tag">&times;</button>`;
+            btn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(item.tag)}</span>${deleteMarkup}`;
+            btn.addEventListener('click', function(event) {
+                const deleteBtn = event.target.closest('.tag-delete-btn');
+                if (deleteBtn) return;
                 const tag = normalizeTag(this.dataset.tag);
                 if (!tag) return;
                 if (selectedTags.has(tag)) {
@@ -146,13 +273,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     selectedTags.add(tag);
                     this.classList.add('selected');
+                    setTagUsage(tag);
                 }
+                applyTagCollapse();
             });
+            const deleteBtn = btn.querySelector('.tag-delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const tag = normalizeTag(btn.dataset.tag);
+                    if (!tag) return;
+                    const ok = confirm('Delete this tag?');
+                    if (!ok) return;
+                    await deleteCustomTag(tag);
+                });
+            }
+            if (selectedTags.has(item.tag)) btn.classList.add('selected');
             if (addBtn) container.insertBefore(btn, addBtn);
             else container.appendChild(btn);
         });
-        // Re-run your existing visibility logic now that buttons changed
-        updateTagVisibility();
+
+        applyTagCollapse();
+    }
+
+    async function syncUserTagsIntoUI() {
+        const userId = getCurrentUserId();
+        const defaults = DEFAULT_TAGS.map((x, idx) => ({
+            tag: normalizeTag(x.name),
+            iconName: x.icon,
+            isDefault: true,
+            baseOrder: idx,
+        }));
+        let merged = [...defaults];
+
+        if (userId && isOnlineNow()) {
+            try {
+                const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
+                const json = await res.json();
+                if (res.ok && json.success) {
+                    const custom = Array.isArray(json.tagItems)
+                        ? json.tagItems.map((x, idx) => ({
+                            tag: normalizeTag(x?.tag),
+                            iconName: String(x?.iconName || '').trim().toLowerCase(),
+                            isDefault: false,
+                            baseOrder: defaults.length + idx,
+                        }))
+                        : [];
+                    merged = defaults.concat(custom);
+                }
+            } catch (e) {
+                console.warn('Using local tag fallback due to sync error:', e);
+            }
+        }
+
+        // Apply offline queue effects optimistically in UI.
+        const queue = getTagSyncQueue();
+        queue.forEach((op) => {
+            const key = normalizeTag(op?.tag).toLowerCase();
+            if (!key) return;
+            if (op.type === 'add') {
+                if (!merged.some((x) => normalizeTag(x.tag).toLowerCase() === key)) {
+                    merged.push({
+                        tag: normalizeTag(op.tag),
+                        iconName: String(op.iconName || '').trim().toLowerCase(),
+                        isDefault: DEFAULT_TAG_SET.has(key),
+                        baseOrder: merged.length,
+                    });
+                }
+            } else if (op.type === 'delete') {
+                merged = merged.filter((x) => normalizeTag(x.tag).toLowerCase() !== key || x.isDefault);
+            }
+        });
+
+        const seen = new Set();
+        tagItemsState = merged.filter((item, idx) => {
+            const key = normalizeTag(item?.tag).toLowerCase();
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            item.baseOrder = Number(item.baseOrder ?? idx);
+            item.isDefault = DEFAULT_TAG_SET.has(key);
+            if (!item.iconName) item.iconName = iconClassForTag(item.tag);
+            return true;
+        });
+        renderTagButtons();
+        await flushTagSyncQueue();
     }
 
     function updateJournalDateTime() {
@@ -231,164 +436,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Desktop more button functionality - show/hide second row
-    function setupDesktopMoreButton() {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) return;
-        
-        const moreBtn = document.getElementById('moreTagsBtn');
-        let expanded = false;
-        
-        // Function to update second row tags
-        function updateSecondRowTags() {
-            const allTags = document.querySelectorAll('.tags-container .tag-btn');
-            const allTagsArray = Array.from(allTags); // Convert NodeList to array
-            const firstRowTags = allTagsArray.slice(0, 7); // First 7 tags
-            const secondRowTags = allTagsArray.slice(7); // All tags after 7
-            
-            console.log('Desktop - Total tags:', allTagsArray.length, 'First row:', firstRowTags.length, 'Second row:', secondRowTags.length, 'Expanded:', expanded);
-            
-            // Remove existing second-row classes
-            allTagsArray.forEach(tag => tag.classList.remove('second-row'));
-            
-            // Add second-row class to tags beyond 7th
-            secondRowTags.forEach(tag => {
-                tag.classList.add('second-row');
-                console.log('Adding second-row class to:', tag.dataset.tag || 'Add Tag');
-            });
-            
-            // Show more button if there are second row tags
-            if (secondRowTags.length > 0) {
-                moreBtn.style.display = 'flex';
-                console.log('Showing more button');
-            } else {
-                moreBtn.style.display = 'none';
-                console.log('Hiding more button');
-            }
-            
-            // Set initial visibility based on expanded state
-            secondRowTags.forEach(tag => {
-                if (expanded) {
-                    tag.style.display = 'flex';
-                    console.log('Showing second row tag:', tag.dataset.tag || 'Add Tag');
-                } else {
-                    tag.style.display = 'none';
-                    console.log('Hiding second row tag:', tag.dataset.tag || 'Add Tag');
-                }
-            });
-            
-            return secondRowTags;
-        }
-        
-        // Initial setup
-        const secondRowTags = updateSecondRowTags();
-        
-        // Remove all existing event listeners by cloning and replacing
-        const newMoreBtn = moreBtn.cloneNode(true);
-        moreBtn.parentNode.replaceChild(newMoreBtn, moreBtn);
-        
-        // Add desktop-specific event listener with higher priority
-        newMoreBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log('Desktop more button clicked');
-            expanded = !expanded;
-            const currentSecondRowTags = updateSecondRowTags();
-            
-            // Update button state
-            if (expanded) {
-                newMoreBtn.classList.add('expanded');
-                newMoreBtn.querySelector('span').textContent = 'less';
-                console.log('Button state: less');
-            } else {
-                newMoreBtn.classList.remove('expanded');
-                newMoreBtn.querySelector('span').textContent = 'more';
-                console.log('Button state: more');
-            }
-        }, true); // Use capture phase for higher priority
-        
-        // Store update function for external use
-        window.updateDesktopTags = updateSecondRowTags;
-    }
-    
-    // Mobile more tags functionality (show first row of 4, hide rest)
-    function setupMobileMoreButton() {
-        const isMobile = window.innerWidth <= 768;
-        if (!isMobile) return;
-        
-        const moreBtn = document.getElementById('moreTagsBtn');
-        let mobileExpanded = false; // Start with collapsed state
-        
-        // Function to update mobile tag rows
-        function updateMobileTagRows() {
-            const allTags = document.querySelectorAll('.tags-container .tag-btn');
-            const allTagsArray = Array.from(allTags); // Convert NodeList to array
-            const firstRowTags = allTagsArray.slice(0, 4); // First 4 tags
-            const otherRowsTags = allTagsArray.slice(4); // All tags after 4
-            
-            console.log('Mobile - Total tags:', allTagsArray.length, 'First row:', firstRowTags.length, 'Other rows:', otherRowsTags.length, 'Expanded:', mobileExpanded);
-            
-            // Show more button if there are tags beyond first 4
-            if (otherRowsTags.length > 0) {
-                moreBtn.style.display = 'flex';
-            } else {
-                moreBtn.style.display = 'none';
-            }
-            
-            // Always show first row
-            firstRowTags.forEach(tag => {
-                tag.style.display = 'flex';
-                console.log('Showing first row tag:', tag.dataset.tag || 'Add Tag');
-            });
-            
-            // Hide/show other rows based on expanded state
-            otherRowsTags.forEach(tag => {
-                if (mobileExpanded) {
-                    tag.style.display = 'flex';
-                    console.log('Showing other row tag:', tag.dataset.tag || 'Add Tag');
-                } else {
-                    tag.style.display = 'none';
-                    console.log('Hiding other row tag:', tag.dataset.tag || 'Add Tag');
-                }
-            });
-        }
-        
-        // Initial setup - force collapsed state
-        mobileExpanded = false;
-        updateMobileTagRows();
-        
-        // Remove any existing event listeners and set mobile onclick
-        moreBtn.onclick = function() {
-            mobileExpanded = !mobileExpanded;
-            updateMobileTagRows();
-            
-            // Update button state
-            if (mobileExpanded) {
-                moreBtn.classList.add('expanded');
-                moreBtn.querySelector('span').textContent = 'less';
-            } else {
-                moreBtn.classList.remove('expanded');
-                moreBtn.querySelector('span').textContent = 'more';
-            }
-        };
-    }
-    
-    // Update tag visibility based on platform
     function updateTagVisibility() {
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile) {
-            // Mobile: Clear any desktop interference first
-            const moreBtn = document.getElementById('moreTagsBtn');
-            if (moreBtn) {
-                moreBtn.removeEventListener('click', arguments.callee);
-            }
-            setupMobileMoreButton();
-        } else {
-            // Desktop: Run after a small delay to ensure mobile doesn't override
-            setTimeout(() => {
-                setupDesktopMoreButton();
-            }, 10);
-        }
+        applyTagCollapse();
     }
     
     // Initialize tags (defaults + user tags) then apply visibility rules
@@ -396,26 +445,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update on window resize
     window.addEventListener('resize', updateTagVisibility);
-    
-    // Tag selection functionality
-    const tagButtons = document.querySelectorAll('.tag-btn:not(.add-tag)');
-    tagButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tag = normalizeTag(this.dataset.tag);
-            if (!tag) return;
-            
-            if (selectedTags.has(tag)) {
-                // Remove tag if already selected
-                selectedTags.delete(tag);
-                this.classList.remove('selected');
-            } else {
-                // Add tag if not selected
-                selectedTags.add(tag);
-                this.classList.add('selected');
-            }
-            
-            console.log('Selected tags:', Array.from(selectedTags));
-        });
+    window.addEventListener('online', () => {
+        flushTagSyncQueue();
+        syncUserTagsIntoUI();
     });
     
     const customTagModal = document.getElementById('customTagModal');
@@ -523,6 +555,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add tag functionality
     const addTagBtn = document.querySelector('.tag-btn.add-tag');
     addTagBtn.addEventListener('click', openCustomTagModal);
+    const moreTagsBtn = document.getElementById('moreTagsBtn');
+    if (moreTagsBtn) {
+        moreTagsBtn.addEventListener('click', () => {
+            setTagExpanded(!tagExpanded);
+            applyTagCollapse();
+        });
+    }
 
     if (customTagModal) {
         customTagModal.querySelectorAll('[data-role="close-modal"]').forEach((el) => {
@@ -557,38 +596,41 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function createNewTag(tagName, iconName = '', iconType = 'bi') {
-        const tagsContainer = document.querySelector('.tags-container');
-        const addTagBtn = document.querySelector('.tag-btn.add-tag');
-        
         const normalizedName = normalizeTag(tagName);
-        if (!normalizedName) return;
-        const existingTags = Array.from(document.querySelectorAll('.tag-btn:not(.add-tag)'))
-            .map((btn) => normalizeTag(btn.dataset.tag).toLowerCase());
-        if (existingTags.includes(normalizedName.toLowerCase())) {
+        if (!normalizedName) return false;
+        const normalizedKey = normalizedName.toLowerCase();
+        if (tagItemsState.some((item) => normalizeTag(item.tag).toLowerCase() === normalizedKey)) {
             alert('This tag already exists. Please choose a different name.');
             return false;
         }
 
-        const newTagBtn = document.createElement('button');
-        newTagBtn.className = 'tag-btn';
-        newTagBtn.dataset.tag = normalizedName;
-        newTagBtn.dataset.iconName = iconName || '';
-        newTagBtn.dataset.iconType = iconType || 'bi';
-        const resolvedBi = iconType === 'bi' ? (iconName || iconClassForTag(normalizedName)) : iconClassForTag(normalizedName);
-        newTagBtn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(normalizedName)}</span>`;
+        const nextTag = {
+            tag: normalizedName,
+            iconName: (iconType === 'bi' ? iconName : '') || iconClassForTag(normalizedName),
+            isDefault: false,
+            baseOrder: tagItemsState.length + DEFAULT_TAGS.length + 10,
+        };
+        tagItemsState.push(nextTag);
+        setTagUsage(normalizedName);
+        setTagExpanded(true);
+        renderTagButtons();
 
-        // Persist to user account and rollback on failure to prevent false-success UI.
         const userId = getCurrentUserId();
         if (!userId) {
-            newTagBtn.remove();
-            alert('Could not save tag: missing user session. Please log in again.');
-            return false;
+            queueTagOperation({ type: 'add', tag: normalizedName, iconName: nextTag.iconName });
+            return true;
         }
+
+        if (!isOnlineNow()) {
+            queueTagOperation({ type: 'add', tag: normalizedName, iconName: nextTag.iconName });
+            return true;
+        }
+
         try {
             const response = await fetch('/api/tags', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'bi' ? iconName : '' })
+                body: JSON.stringify({ userId, tag: normalizedName, iconName: nextTag.iconName }),
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result?.success) {
@@ -596,48 +638,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (e) {
             console.error('Failed to save tag:', e);
-            newTagBtn.remove();
-            alert(`Could not save tag: ${e.message || 'Unknown error'}`);
-            updateTagVisibility();
-            return false;
+            queueTagOperation({ type: 'add', tag: normalizedName, iconName: nextTag.iconName });
         }
-        
-        // Add click event to new tag
-        newTagBtn.addEventListener('click', function() {
-            const tag = normalizeTag(this.dataset.tag);
-            if (!tag) return;
-            
-            if (selectedTags.has(tag)) {
-                selectedTags.delete(tag);
-                this.classList.remove('selected');
-            } else {
-                selectedTags.add(tag);
-                this.classList.add('selected');
-            }
-            
-            console.log('Selected tags:', Array.from(selectedTags));
-        });
-        
-        // Insert new tag before add button
-        tagsContainer.insertBefore(newTagBtn, addTagBtn);
-        
-        // Update tag layout based on platform
-        if (window.innerWidth > 768 && window.updateDesktopTags) {
-            window.updateDesktopTags();
-        } else if (window.innerWidth <= 768) {
-            // Trigger mobile update
-            setupMobileMoreButton();
-        }
-        
-        // Animate new tag
-        newTagBtn.style.opacity = '0';
-        newTagBtn.style.transform = 'scale(0.8)';
-        setTimeout(() => {
-            newTagBtn.style.transition = 'all 0.3s ease';
-            newTagBtn.style.opacity = '1';
-            newTagBtn.style.transform = 'scale(1)';
-        }, 10);
 
+        return true;
+    }
+
+    async function deleteCustomTag(tagName) {
+        const normalized = normalizeTag(tagName);
+        const key = normalized.toLowerCase();
+        if (!normalized || DEFAULT_TAG_SET.has(key)) return false;
+        tagItemsState = tagItemsState.filter((x) => normalizeTag(x.tag).toLowerCase() !== key);
+        selectedTags.delete(normalized);
+        renderTagButtons();
+
+        const userId = getCurrentUserId();
+        if (!userId || !isOnlineNow()) {
+            queueTagOperation({ type: 'delete', tag: normalized });
+            return true;
+        }
+        try {
+            const response = await fetch('/api/tags', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, tag: normalized }),
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.success) {
+                throw new Error(result?.error || 'Failed to delete tag.');
+            }
+        } catch (e) {
+            console.warn('Delete will sync later:', e);
+            queueTagOperation({ type: 'delete', tag: normalized });
+        }
         return true;
     }
     
@@ -708,6 +741,8 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Please write something in your journal entry.');
             return;
         }
+        Array.from(selectedTags).forEach((tag) => setTagUsage(tag));
+        renderTagButtons();
 
         const userId = getCurrentUserId();
 

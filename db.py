@@ -313,6 +313,32 @@ def add_user_tag(*, user_id: int, tag: str, icon_name: str | None = None) -> boo
         conn.close()
 
 
+def delete_user_tag(*, user_id: int, tag: str) -> bool:
+    t = _normalize_tag_value(tag)
+    if not t or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "DELETE FROM user_tags WHERE user_id = %s AND tag = %s",
+                (user_id, t),
+            )
+        else:
+            cur.execute(
+                "DELETE FROM user_tags WHERE user_id = ? AND tag = ?",
+                (user_id, t),
+            )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
 def get_user_by_email(email: str):
     conn = get_conn()
     cur = conn.cursor()

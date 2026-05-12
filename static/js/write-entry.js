@@ -1296,12 +1296,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisLoading(overlay) {
+        const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
+        if (header) header.style.display = 'none';
         body.innerHTML = `
-            <div class="mood-analysis-loading">
-                <span class="mood-analysis-spinner" aria-hidden="true"></span>
-                <span>Analyzing mood...</span>
+            <div class="mood-analysis-loading mood-analysis-loading--book">
+                <lottie-player
+                    class="mood-analysis-book-lottie"
+                    src="/noto-emoji/Book-Loader.json"
+                    background="transparent"
+                    speed="1"
+                    loop
+                    autoplay
+                    aria-label="Loading animation"
+                ></lottie-player>
+                <h4 class="mood-analysis-loading__title">Analyzing your entry...</h4>
+                <p class="mood-analysis-loading__subtitle">Detecting mood patterns and insights...</p>
             </div>
         `;
         footer.style.display = 'none';
@@ -1355,8 +1366,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisResult(overlay, entry, isFallback = false) {
+        const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
+        if (header) header.style.display = '';
         const continueBtn = overlay.querySelector('#moodAnalysisContinueBtn');
         const emotion = (entry.emotionLabel || entry.feeling || 'neutral').toString().toLowerCase();
         const score = Number(entry.emotionScore || entry.sentimentScore || 0.5);

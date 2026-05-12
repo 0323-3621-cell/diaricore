@@ -991,6 +991,41 @@
     font-weight: 600;
 }
 
+.mood-analysis-loading--book {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 0.5rem 0 0.35rem;
+    min-height: 220px;
+}
+
+.mood-analysis-book-lottie {
+    width: 132px;
+    height: 132px;
+    max-width: 42vw;
+    max-height: 42vw;
+}
+
+.mood-analysis-loading__title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.mood-analysis-loading__subtitle {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.45;
+    max-width: 22rem;
+}
+
 .mood-analysis-spinner {
     width: 22px;
     height: 22px;

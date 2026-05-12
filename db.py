@@ -47,6 +47,17 @@ def _ensure_journal_all_probs_column(cur):
             cur.execute("ALTER TABLE journal_entries ADD COLUMN all_probs_json TEXT")
 
 
+def _ensure_user_tags_icon_column(cur):
+    """Add icon_name to user_tags on existing deployments."""
+    if USE_POSTGRES:
+        cur.execute("ALTER TABLE user_tags ADD COLUMN IF NOT EXISTS icon_name TEXT")
+    else:
+        cur.execute("PRAGMA table_info(user_tags)")
+        cols = [r[1] for r in cur.fetchall()]
+        if "icon_name" not in cols:
+            cur.execute("ALTER TABLE user_tags ADD COLUMN icon_name TEXT")
+
+
 def row_to_dict(row):
     if row is None:
         return None
@@ -122,6 +133,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS user_tags (
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     tag VARCHAR(128) NOT NULL,
+                    icon_name TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (user_id, tag)
                 );
@@ -194,6 +206,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS user_tags (
                     user_id INTEGER NOT NULL,
                     tag TEXT NOT NULL,
+                    icon_name TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     PRIMARY KEY (user_id, tag),
                     FOREIGN KEY(user_id) REFERENCES users(id)
@@ -202,6 +215,7 @@ def init_db():
             )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_tags_user_id ON user_tags (user_id);")
         _ensure_journal_all_probs_column(cur)
+        _ensure_user_tags_icon_column(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -240,7 +254,7 @@ def list_user_tags(user_id: int):
         if USE_POSTGRES:
             cur.execute(
                 """
-                SELECT tag, created_at
+                SELECT tag, icon_name, created_at
                 FROM user_tags
                 WHERE user_id = %s
                 ORDER BY created_at ASC, tag ASC
@@ -250,7 +264,7 @@ def list_user_tags(user_id: int):
         else:
             cur.execute(
                 """
-                SELECT tag, created_at
+                SELECT tag, icon_name, created_at
                 FROM user_tags
                 WHERE user_id = ?
                 ORDER BY datetime(created_at) ASC, tag ASC
@@ -262,8 +276,9 @@ def list_user_tags(user_id: int):
         conn.close()
 
 
-def add_user_tag(*, user_id: int, tag: str) -> bool:
+def add_user_tag(*, user_id: int, tag: str, icon_name: str | None = None) -> bool:
     t = _normalize_tag_value(tag)
+    icon = str(icon_name or "").strip().lower()[:96] or None
     if not t or user_id <= 0:
         return False
     conn = get_conn()
@@ -272,20 +287,22 @@ def add_user_tag(*, user_id: int, tag: str) -> bool:
         if USE_POSTGRES:
             cur.execute(
                 """
-                INSERT INTO user_tags (user_id, tag)
-                VALUES (%s, %s)
-                ON CONFLICT (user_id, tag) DO NOTHING
+                INSERT INTO user_tags (user_id, tag, icon_name)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (user_id, tag) DO UPDATE SET
+                    icon_name = COALESCE(EXCLUDED.icon_name, user_tags.icon_name)
                 """,
-                (user_id, t),
+                (user_id, t, icon),
             )
         else:
             cur.execute(
                 """
-                INSERT INTO user_tags (user_id, tag, created_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id, tag) DO NOTHING
+                INSERT INTO user_tags (user_id, tag, icon_name, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, tag) DO UPDATE SET
+                    icon_name = COALESCE(excluded.icon_name, user_tags.icon_name)
                 """,
-                (user_id, t),
+                (user_id, t, icon),
             )
         conn.commit()
         return True

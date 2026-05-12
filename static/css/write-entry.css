@@ -251,6 +251,13 @@
     font-size: 16px;
 }
 
+.tag-btn__icon-svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    flex-shrink: 0;
+}
+
 /* More button styling */
 .more-btn {
     background: transparent;
@@ -793,4 +800,188 @@
     font-size: 0.9rem;
     padding: 0.55rem 0.9rem;
     cursor: pointer;
+}
+
+/* Custom tag modal */
+.custom-tag-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+}
+
+.custom-tag-modal[hidden] {
+    display: none;
+}
+
+.custom-tag-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 22, 19, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.custom-tag-modal__dialog {
+    position: relative;
+    width: min(940px, calc(100vw - 1.5rem));
+    margin: 3.5vh auto;
+    max-height: 93vh;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.custom-tag-modal__header,
+.custom-tag-modal__footer {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-tag-modal__footer {
+    border-bottom: none;
+    border-top: 1px solid var(--border-color);
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.custom-tag-modal__header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.custom-tag-modal__close {
+    border: 1px solid var(--border-color);
+    background: var(--background-soft);
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.custom-tag-modal__body {
+    padding: 0.9rem 1rem;
+    overflow: auto;
+}
+
+.custom-tag-modal__label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.38rem;
+    color: var(--text-secondary);
+}
+
+.custom-tag-modal__input {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.6rem 0.72rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.7rem;
+}
+
+.custom-tag-modal__hint {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin: 0.1rem 0 0.55rem;
+}
+
+.custom-tag-icons-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.custom-tag-icon-btn {
+    border: 1px solid var(--border-color);
+    background: var(--background-soft);
+    color: var(--text-secondary);
+    border-radius: 12px;
+    height: 58px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    cursor: pointer;
+    font-size: 0.64rem;
+    font-weight: 500;
+}
+
+.custom-tag-icon-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.custom-tag-icon-btn.is-selected {
+    border-color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 14%, var(--background-soft));
+    color: var(--primary-color);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 45%, transparent) inset;
+}
+
+.custom-tag-pagination {
+    margin-top: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+}
+
+.custom-tag-page-btn {
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    color: var(--text-secondary);
+    border-radius: 10px;
+    padding: 0.42rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.custom-tag-page-btn:disabled {
+    opacity: 0.45;
+}
+
+.custom-tag-page-meta {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.custom-tag-btn {
+    border-radius: 10px;
+    padding: 0.55rem 0.9rem;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border: 1px solid var(--border-color);
+}
+
+.custom-tag-btn--ghost {
+    background: var(--background-soft);
+    color: var(--text-secondary);
+}
+
+.custom-tag-btn--primary {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.custom-tag-btn--primary:disabled {
+    opacity: 0.5;
+}
+
+@media (max-width: 900px) {
+    .custom-tag-icons-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
 }

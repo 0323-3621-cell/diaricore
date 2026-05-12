@@ -704,8 +704,19 @@ def api_tags_get():
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
     rows = db.list_user_tags(uid)
-    tags = [r.get("tag") for r in rows if r and r.get("tag")]
-    return jsonify({"success": True, "tags": tags}), 200
+    items = []
+    for r in rows:
+        if not r or not r.get("tag"):
+            continue
+        items.append(
+            {
+                "tag": r.get("tag"),
+                "iconName": (r.get("icon_name") or "").strip().lower() or None,
+            }
+        )
+    # Keep legacy `tags` for old clients while returning richer `tagItems`.
+    tags = [x["tag"] for x in items]
+    return jsonify({"success": True, "tags": tags, "tagItems": items}), 200
 
 
 @app.route("/api/tags", methods=["POST"])
@@ -713,13 +724,14 @@ def api_tags_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
     tag = (data.get("tag") or "").strip()
+    icon_name = (data.get("iconName") or "").strip().lower()
     if not isinstance(user_id, int) or user_id <= 0:
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not tag:
         return jsonify({"success": False, "error": "Tag is required."}), 400
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
-    ok = db.add_user_tag(user_id=user_id, tag=tag)
+    ok = db.add_user_tag(user_id=user_id, tag=tag, icon_name=icon_name or None)
     if not ok:
         return jsonify({"success": False, "error": "Could not save tag."}), 500
     return jsonify({"success": True}), 201

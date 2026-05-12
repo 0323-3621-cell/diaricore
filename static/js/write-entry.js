@@ -11,14 +11,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const DEFAULT_TAGS = [
-        { name: 'School', icon: 'bi bi-book' },
-        { name: 'Home', icon: 'bi bi-house' },
-        { name: 'Friends', icon: 'bi bi-people' },
-        { name: 'Work', icon: 'bi bi-briefcase' },
-        { name: 'Family', icon: 'bi bi-heart' },
-        { name: 'Health', icon: 'bi bi-heart-pulse' },
-        { name: 'Money', icon: 'bi bi-currency-dollar' },
+        { name: 'School', icon: 'bi bi-book', iconType: 'bi' },
+        { name: 'Home', icon: 'bi bi-house', iconType: 'bi' },
+        { name: 'Friends', icon: 'bi bi-people', iconType: 'bi' },
+        { name: 'Work', icon: 'bi bi-briefcase', iconType: 'bi' },
+        { name: 'Family', icon: 'bi bi-heart', iconType: 'bi' },
+        { name: 'Health', icon: 'bi bi-heart-pulse', iconType: 'bi' },
+        { name: 'Money', icon: 'bi bi-currency-dollar', iconType: 'bi' },
     ];
+
+    const CUSTOM_TAGS_BATCH_SIZE = 100;
+    let lucideIconNames = [];
+    let customTagPage = 0;
+    let customTagSearch = '';
+    let selectedLucideIconName = '';
 
     function escapeHtml(text) {
         return String(text)
@@ -34,21 +40,56 @@ document.addEventListener('DOMContentLoaded', function() {
         return match ? match.icon : 'bi bi-hash';
     }
 
+    function iconMarkup(iconName, iconType = 'bi') {
+        if (iconType === 'lucide' && iconName) {
+            return `<i class="tag-btn__icon-svg" data-lucide="${escapeHtml(iconName)}"></i>`;
+        }
+        return `<i class="${escapeHtml(iconName || 'bi bi-hash')}"></i>`;
+    }
+
+    function renderLucideIcons(scope) {
+        if (!window.lucide || typeof window.lucide.createIcons !== 'function') return;
+        window.lucide.createIcons({ attrs: { 'stroke-width': 2 }, nameAttr: 'data-lucide' });
+        if (!scope) return;
+        const svgs = scope.querySelectorAll('svg.lucide');
+        svgs.forEach((svg) => svg.classList.add('tag-btn__icon-svg'));
+    }
+
     async function syncUserTagsIntoUI() {
         const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
         const userId = Number(user?.id || 0);
         const container = document.querySelector('.tags-container');
         if (!container) return;
 
-        // Start from defaults
-        let tags = DEFAULT_TAGS.map((x) => x.name);
+        // Start from defaults with icon metadata
+        let tags = DEFAULT_TAGS.map((x) => ({
+            tag: x.name,
+            iconName: x.icon,
+            iconType: 'bi',
+        }));
 
         if (userId) {
             try {
                 const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
                 const json = await res.json();
-                if (res.ok && json.success && Array.isArray(json.tags)) {
-                    tags = tags.concat(json.tags);
+                if (res.ok && json.success) {
+                    if (Array.isArray(json.tagItems) && json.tagItems.length) {
+                        tags = tags.concat(
+                            json.tagItems.map((x) => ({
+                                tag: normalizeTag(x?.tag),
+                                iconName: String(x?.iconName || '').trim().toLowerCase(),
+                                iconType: x?.iconName ? 'lucide' : 'bi',
+                            }))
+                        );
+                    } else if (Array.isArray(json.tags)) {
+                        tags = tags.concat(
+                            json.tags.map((name) => ({
+                                tag: normalizeTag(name),
+                                iconName: '',
+                                iconType: 'bi',
+                            }))
+                        );
+                    }
                 }
             } catch (e) {
                 console.error('Failed to load user tags:', e);
@@ -58,23 +99,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Dedup, normalize, keep order (defaults first)
         const seen = new Set();
         const merged = [];
-        tags.forEach((t) => {
-            const n = normalizeTag(t);
+        tags.forEach((item) => {
+            const n = normalizeTag(item?.tag);
             const key = n.toLowerCase();
             if (!n || seen.has(key)) return;
             seen.add(key);
-            merged.push(n);
+            merged.push({
+                tag: n,
+                iconName: String(item?.iconName || '').trim(),
+                iconType: item?.iconType || 'bi',
+            });
         });
 
         // Preserve the existing "Add Tag" button
         const addBtn = container.querySelector('.tag-btn.add-tag');
         container.querySelectorAll('.tag-btn:not(.add-tag)').forEach((el) => el.remove());
 
-        merged.forEach((name) => {
+        merged.forEach((item) => {
             const btn = document.createElement('button');
             btn.className = 'tag-btn';
-            btn.dataset.tag = name;
-            btn.innerHTML = `<i class="${escapeHtml(iconClassForTag(name))}"></i><span>${escapeHtml(name)}</span>`;
+            btn.dataset.tag = item.tag;
+            btn.dataset.iconName = item.iconName || '';
+            btn.dataset.iconType = item.iconType || 'bi';
+            const resolvedBi = item.iconType === 'bi' ? (item.iconName || iconClassForTag(item.tag)) : '';
+            btn.innerHTML = `${iconMarkup(item.iconType === 'lucide' ? item.iconName : resolvedBi, item.iconType)}<span>${escapeHtml(item.tag)}</span>`;
             btn.addEventListener('click', function() {
                 const tag = normalizeTag(this.dataset.tag);
                 if (!tag) return;
@@ -89,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (addBtn) container.insertBefore(btn, addBtn);
             else container.appendChild(btn);
         });
+        renderLucideIcons(container);
 
         // Re-run your existing visibility logic now that buttons changed
         updateTagVisibility();
@@ -357,16 +406,137 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    const customTagModal = document.getElementById('customTagModal');
+    const customTagNameInput = document.getElementById('customTagNameInput');
+    const customTagIconSearch = document.getElementById('customTagIconSearch');
+    const customTagIconsGrid = document.getElementById('customTagIconsGrid');
+    const customTagPagination = document.getElementById('customTagPagination');
+    const customTagIconMeta = document.getElementById('customTagIconMeta');
+    const customTagSaveBtn = document.getElementById('customTagSaveBtn');
+
+    function filteredLucideIcons() {
+        const q = customTagSearch.trim().toLowerCase();
+        if (!q) return lucideIconNames;
+        return lucideIconNames.filter((name) => name.includes(q));
+    }
+
+    function renderCustomTagIconPage() {
+        if (!customTagIconsGrid || !customTagPagination || !customTagIconMeta) return;
+        const filtered = filteredLucideIcons();
+        const pageCount = Math.max(1, Math.ceil(filtered.length / CUSTOM_TAGS_BATCH_SIZE));
+        customTagPage = Math.max(0, Math.min(customTagPage, pageCount - 1));
+        const start = customTagPage * CUSTOM_TAGS_BATCH_SIZE;
+        const end = Math.min(filtered.length, start + CUSTOM_TAGS_BATCH_SIZE);
+        const items = filtered.slice(start, end);
+        customTagIconsGrid.innerHTML = items
+            .map((iconName) => `
+                <button type="button" class="custom-tag-icon-btn${selectedLucideIconName === iconName ? ' is-selected' : ''}" data-icon-name="${escapeHtml(iconName)}">
+                    <i data-lucide="${escapeHtml(iconName)}"></i>
+                    <span>${escapeHtml(iconName)}</span>
+                </button>
+            `)
+            .join('');
+        renderLucideIcons(customTagIconsGrid);
+        customTagIconMeta.textContent = `${filtered.length} icons • page ${customTagPage + 1}/${pageCount}`;
+
+        customTagPagination.innerHTML = `
+            <button type="button" class="custom-tag-page-btn" data-page="prev" ${customTagPage <= 0 ? 'disabled' : ''}>Previous</button>
+            <span class="custom-tag-page-meta">Showing ${filtered.length ? (start + 1) : 0}–${end} of ${filtered.length}</span>
+            <button type="button" class="custom-tag-page-btn" data-page="next" ${customTagPage >= pageCount - 1 ? 'disabled' : ''}>Next</button>
+        `;
+
+        customTagIconsGrid.querySelectorAll('.custom-tag-icon-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                selectedLucideIconName = btn.dataset.iconName || '';
+                renderCustomTagIconPage();
+                updateCustomTagSaveState();
+            });
+        });
+        customTagPagination.querySelectorAll('.custom-tag-page-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (btn.dataset.page === 'prev') customTagPage -= 1;
+                if (btn.dataset.page === 'next') customTagPage += 1;
+                renderCustomTagIconPage();
+            });
+        });
+    }
+
+    function updateCustomTagSaveState() {
+        if (!customTagSaveBtn) return;
+        const validName = normalizeTag(customTagNameInput?.value || '');
+        customTagSaveBtn.disabled = !(validName && selectedLucideIconName);
+    }
+
+    async function ensureLucideIconNamesLoaded() {
+        if (lucideIconNames.length) return;
+        const res = await fetch('/lucide-icon-names.json');
+        const json = await res.json();
+        if (!Array.isArray(json)) throw new Error('Invalid icon list');
+        lucideIconNames = json
+            .map((x) => String(x || '').trim().toLowerCase())
+            .filter((x) => /^[a-z0-9-]+$/.test(x));
+    }
+
+    async function openCustomTagModal() {
+        if (!customTagModal) return;
+        customTagNameInput.value = '';
+        customTagIconSearch.value = '';
+        customTagSearch = '';
+        selectedLucideIconName = '';
+        customTagPage = 0;
+        customTagSaveBtn.disabled = true;
+        customTagModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        customTagIconMeta.textContent = 'Loading icons...';
+        try {
+            await ensureLucideIconNamesLoaded();
+            renderCustomTagIconPage();
+        } catch (e) {
+            customTagIconMeta.textContent = 'Could not load icons. Try again.';
+            customTagIconsGrid.innerHTML = '';
+            customTagPagination.innerHTML = '';
+            console.error(e);
+        }
+    }
+
+    function closeCustomTagModal() {
+        if (!customTagModal) return;
+        customTagModal.hidden = true;
+        document.body.style.overflow = '';
+    }
+
     // Add tag functionality
     const addTagBtn = document.querySelector('.tag-btn.add-tag');
-    addTagBtn.addEventListener('click', function() {
-            const tagName = normalizeTag(prompt('Enter new tag name:'));
-        if (tagName) {
-            createNewTag(tagName);
-        }
-    });
-    
-    function createNewTag(tagName) {
+    addTagBtn.addEventListener('click', openCustomTagModal);
+
+    if (customTagModal) {
+        customTagModal.querySelectorAll('[data-role="close-modal"]').forEach((el) => {
+            el.addEventListener('click', closeCustomTagModal);
+        });
+        customTagModal.addEventListener('click', (event) => {
+            if (event.target === customTagModal) closeCustomTagModal();
+        });
+    }
+    if (customTagIconSearch) {
+        customTagIconSearch.addEventListener('input', () => {
+            customTagSearch = String(customTagIconSearch.value || '');
+            customTagPage = 0;
+            renderCustomTagIconPage();
+        });
+    }
+    if (customTagNameInput) {
+        customTagNameInput.addEventListener('input', updateCustomTagSaveState);
+    }
+    if (customTagSaveBtn) {
+        customTagSaveBtn.addEventListener('click', () => {
+            const tagName = normalizeTag(customTagNameInput?.value || '');
+            if (!tagName || !selectedLucideIconName) return;
+            createNewTag(tagName, selectedLucideIconName, 'lucide');
+            closeCustomTagModal();
+        });
+    }
+
+    function createNewTag(tagName, iconName = '', iconType = 'bi') {
         const tagsContainer = document.querySelector('.tags-container');
         const addTagBtn = document.querySelector('.tag-btn.add-tag');
         
@@ -379,10 +549,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const newTagBtn = document.createElement('button');
         newTagBtn.className = 'tag-btn';
         newTagBtn.dataset.tag = normalizedName;
-        newTagBtn.innerHTML = `
-            <i class="${iconClassForTag(normalizedName)}"></i>
-            <span>${normalizedName}</span>
-        `;
+        newTagBtn.dataset.iconName = iconName || '';
+        newTagBtn.dataset.iconType = iconType || 'bi';
+        const resolvedBi = iconType === 'bi' ? (iconName || iconClassForTag(normalizedName)) : '';
+        newTagBtn.innerHTML = `${iconMarkup(iconType === 'lucide' ? iconName : resolvedBi, iconType)}<span>${escapeHtml(normalizedName)}</span>`;
+        renderLucideIcons(newTagBtn);
 
         // Persist to user account (best-effort)
         (async () => {
@@ -393,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await fetch('/api/tags', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, tag: normalizedName })
+                    body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'lucide' ? iconName : '' })
                 });
             } catch (e) {
                 console.error('Failed to save tag:', e);

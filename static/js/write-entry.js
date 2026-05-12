@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /** Book-Loader via lottie-web (plain div — avoids lottie-player freezing off-screen/hidden animations). */
-    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
+    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json';
     let moodAnalysisBookMountEl = null;
     let moodAnalysisBookAnim = null;
     let moodAnalysisBookPrimePromise = null;

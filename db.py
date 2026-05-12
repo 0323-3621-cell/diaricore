@@ -36,6 +36,17 @@ def get_conn():
     return _connect_sqlite()
 
 
+def _ensure_journal_all_probs_column(cur):
+    """Add all_probs_json to journal_entries on existing deployments."""
+    if USE_POSTGRES:
+        cur.execute("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS all_probs_json TEXT")
+    else:
+        cur.execute("PRAGMA table_info(journal_entries)")
+        cols = [r[1] for r in cur.fetchall()]
+        if "all_probs_json" not in cols:
+            cur.execute("ALTER TABLE journal_entries ADD COLUMN all_probs_json TEXT")
+
+
 def row_to_dict(row):
     if row is None:
         return None
@@ -101,6 +112,7 @@ def init_db():
                     sentiment_score REAL NOT NULL,
                     emotion_label VARCHAR(32) NOT NULL,
                     emotion_score REAL NOT NULL,
+                    all_probs_json TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 """
@@ -171,6 +183,7 @@ def init_db():
                     sentiment_score REAL NOT NULL,
                     emotion_label TEXT NOT NULL,
                     emotion_score REAL NOT NULL,
+                    all_probs_json TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
@@ -188,6 +201,7 @@ def init_db():
                 """
             )
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_tags_user_id ON user_tags (user_id);")
+        _ensure_journal_all_probs_column(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -770,7 +784,9 @@ def create_journal_entry(
     sentiment_score: float,
     emotion_label: str,
     emotion_score: float,
+    all_probs_json: str | None = None,
 ):
+    probs = all_probs_json if all_probs_json is not None else "{}"
     conn = get_conn()
     cur = conn.cursor()
     try:
@@ -778,11 +794,11 @@ def create_journal_entry(
             cur.execute(
                 """
                 INSERT INTO journal_entries
-                (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, created_at
+                (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
                 """,
-                (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score),
+                (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs),
             )
             row = cur.fetchone()
             conn.commit()
@@ -791,16 +807,16 @@ def create_journal_entry(
         cur.execute(
             """
             INSERT INTO journal_entries
-            (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score),
+            (user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs),
         )
         entry_id = cur.lastrowid
         conn.commit()
         cur.execute(
             """
-            SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, created_at
+            SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
             FROM journal_entries
             WHERE id = ?
             """,
@@ -818,7 +834,7 @@ def get_journal_entries_by_user(user_id: int):
         if USE_POSTGRES:
             cur.execute(
                 """
-                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, created_at
+                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
                 FROM journal_entries
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -828,7 +844,7 @@ def get_journal_entries_by_user(user_id: int):
         else:
             cur.execute(
                 """
-                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, created_at
+                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
                 FROM journal_entries
                 WHERE user_id = ?
                 ORDER BY datetime(created_at) DESC

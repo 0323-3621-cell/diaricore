@@ -290,6 +290,15 @@ def serialize_entry(row):
     created_at = row.get("created_at")
     date_value = entry_created_at_iso_utc(created_at)
     emotion_label = (row.get("emotion_label") or "neutral").lower()
+    all_probs = {}
+    probs_raw = row.get("all_probs_json")
+    if probs_raw:
+        try:
+            parsed = json.loads(probs_raw)
+            if isinstance(parsed, dict):
+                all_probs = parsed
+        except Exception:
+            all_probs = {}
     return {
         "id": row.get("id"),
         "userId": row.get("user_id"),
@@ -300,6 +309,7 @@ def serialize_entry(row):
         "sentimentScore": float(row.get("sentiment_score") or 0.5),
         "emotionLabel": emotion_label,
         "emotionScore": float(row.get("emotion_score") or 0.5),
+        "all_probs": all_probs,
         # Keep existing UI compatibility
         "feeling": emotion_label,
     }
@@ -808,9 +818,9 @@ def api_entries_post():
         sentiment_score=float(analysis["sentimentScore"]),
         emotion_label=analysis["emotionLabel"],
         emotion_score=float(analysis["emotionScore"]),
+        all_probs_json=json.dumps(analysis.get("all_probs") or {}),
     )
     response_entry = serialize_entry(row)
-    response_entry["all_probs"]     = analysis.get("all_probs") or {}
     response_entry["secondaryMood"] = analysis.get("secondaryMood")
     return jsonify({"success": True, "entry": response_entry, "analysisEngine": analysis.get("engine", "hf-custom")}), 201
 

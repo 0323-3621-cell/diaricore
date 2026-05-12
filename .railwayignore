@@ -1,0 +1,13 @@
+__pycache__/
+.cursor/
+.venv/
+venv/
+reference_design/
+hf_space/
+hf_space_clone/
+ml-service/
+scripts/
+model/
+*.db
+*.pdf
+agent-transcripts/

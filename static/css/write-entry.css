@@ -224,6 +224,7 @@
     font-size: 14px;
     font-weight: 500;
     color: var(--text-dark);
+    line-height: 1;
 }
 
 .tag-btn:hover {
@@ -248,7 +249,19 @@
 }
 
 .tag-btn i {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    top: 1px;
+    flex-shrink: 0;
+}
+
+.tag-btn span {
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 .tag-btn__icon-svg {
@@ -551,6 +564,7 @@
     
     .tag-btn i {
         font-size: 0.8rem !important; /* Even smaller icon */
+        top: 1px;
     }
     
     .tag-btn span {

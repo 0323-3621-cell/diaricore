@@ -148,24 +148,6 @@ async function syncInsightsEntriesFromApi() {
     }
 }
 
-function feelingToScore(feelingRaw) {
-    const feeling = (feelingRaw || '').toLowerCase();
-    const scoreMap = {
-        happy: 9, excited: 8.8, peaceful: 8.5, calm: 8, grateful: 8.6, content: 7.8,
-        neutral: 6.2, unspecified: 6, anxious: 4.2, stressed: 3.8, sad: 3.5, angry: 2.8
-    };
-    return scoreMap[feeling] ?? 6;
-}
-
-function resolveEntryFeeling(entry) {
-    const feeling = (entry?.feeling || '').toLowerCase();
-    if (feeling && feeling !== 'unspecified') return feeling;
-    const sentiment = (entry?.sentimentLabel || '').toLowerCase();
-    if (sentiment === 'positive') return 'happy';
-    if (sentiment === 'negative') return 'stressed';
-    return 'neutral';
-}
-
 function resolveDetectedMood(entry) {
     const raw = (entry?.emotionLabel || entry?.feeling || '').toLowerCase();
     const allowed = new Set(['happy', 'sad', 'angry', 'anxious', 'neutral']);
@@ -189,7 +171,7 @@ function weeklyScoresFromEntries() {
     INSIGHTS_ENTRIES.forEach((entry) => {
         const d = new Date(entry.date);
         const idx = Math.floor((d - monday) / (1000 * 60 * 60 * 24));
-        if (idx >= 0 && idx <= 6) dayScores[idx].push(feelingToScore(resolveEntryFeeling(entry)));
+        if (idx >= 0 && idx <= 6) dayScores[idx].push(entryMoodScore10(entry));
     });
     return {
         labels,
@@ -235,7 +217,7 @@ function weeklyScoresForRange(days) {
 
     const series = buckets.map((dayEntries) => {
         if (!dayEntries.length) return { score: null, emotionTag: 'No entries' };
-        const scores = dayEntries.map((e) => feelingToScore(resolveEntryFeeling(e)));
+        const scores = dayEntries.map((e) => entryMoodScore10(e));
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
         const emotionCount = {};
         dayEntries.forEach((e) => {

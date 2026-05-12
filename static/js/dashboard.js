@@ -184,7 +184,7 @@ function aggregateCalendarWeekMood(entries) {
         if (idx == null) return;
         entriesInWeek += 1;
         const feeling = resolveEntryFeeling(entry);
-        dayScores[idx].push(feelingToScore(feeling));
+        dayScores[idx].push(entryMoodScore10(entry));
         dayFeelings[idx].push(String(feeling || '').toLowerCase());
     });
 
@@ -502,34 +502,6 @@ function updateGreeting(user) {
     titleEl.textContent = `Good Morning, ${firstName}`;
 }
 
-function feelingToScore(feelingRaw) {
-    const feeling = (feelingRaw || '').toLowerCase();
-    const scoreMap = {
-        happy: 9,
-        peaceful: 8.5,
-        calm: 8,
-        grateful: 8.6,
-        excited: 8.8,
-        content: 7.8,
-        neutral: 6.2,
-        unspecified: 6,
-        anxious: 4.2,
-        stressed: 3.8,
-        sad: 3.5,
-        angry: 2.8
-    };
-    return scoreMap[feeling] ?? 6;
-}
-
-function resolveEntryFeeling(entry) {
-    const feeling = (entry?.feeling || '').toLowerCase();
-    if (feeling && feeling !== 'unspecified') return feeling;
-    const sentiment = (entry?.sentimentLabel || '').toLowerCase();
-    if (sentiment === 'positive') return 'happy';
-    if (sentiment === 'negative') return 'stressed';
-    return 'neutral';
-}
-
 /** Vendored static mood art under static/img/noto-emoji-static/ (single-frame PNG). */
 const STAT_NOTO_MOOD_SRC = {
     happy: '/noto-emoji-static/3591-laughter.png',
@@ -638,7 +610,7 @@ function updateDashboardCards(entries) {
     }
 
     if (insightValue) {
-        const score = feelingToScore(latestFeeling);
+        const score = entryMoodScore10(latest);
         insightValue.textContent = score >= 7
             ? 'You are showing a positive emotional trend. Keep it up.'
             : 'Your recent mood looks lower than usual. Try a short reflective entry.';
@@ -694,7 +666,7 @@ function updateRecentEntrySnapshot(entries) {
 
     const rawText = String(latest.text || latest.textContent || '').trim();
     const snippet = rawText || 'No text content available for this entry.';
-    const score = feelingToScore(resolveEntryFeeling(latest));
+    const score = entryMoodScore10(latest);
 
     dateEl.textContent = formatRecentEntryDate(latest.date);
     textEl.textContent = snippet;

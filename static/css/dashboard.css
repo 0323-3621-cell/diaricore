@@ -662,19 +662,28 @@ body {
         margin-bottom: 0;
         flex: 1 1 auto; /* let Last Entry grow to match Weekly card height */
     }
+
+    .mood-key-card {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
 }
 
-/* Mood Key card (right column) */
+/* Mood Key card (right column): Noto PNG tiles + scoring footnote */
 .mood-key-card {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 1rem 1.15rem;
-    flex: 0 0 auto;
+    padding: 1rem 1.05rem 1rem;
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-height: 0;
 }
 
 .mood-key-title {
-    margin: 0 0 0.75rem;
+    margin: 0;
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -682,34 +691,95 @@ body {
     color: var(--text-muted);
 }
 
-.mood-key-list {
+.mood-key-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 0.45rem;
+    flex: 1 1 auto;
+    align-content: start;
 }
 
-.mood-key-item {
+.mood-key-tile {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 0.5rem;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
+    min-width: 0;
+    padding: 0.45rem 0.5rem 0.5rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--background-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
-.mood-key-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    display: inline-block;
+.mood-key-tile--full {
+    grid-column: 1 / -1;
+}
+
+.mood-key-tile__img {
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
 }
 
-.mood-key-dot--happy { background: var(--mood-happy); }
-.mood-key-dot--sad { background: var(--mood-sad); }
-.mood-key-dot--angry { background: var(--mood-angry); }
-.mood-key-dot--anxious { background: var(--mood-anxious); }
-.mood-key-dot--neutral { background: var(--mood-neutral); }
+.mood-key-tile__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.mood-key-tile__name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.mood-key-tile__anchor {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.25;
+}
+
+.mood-key-tile--happy { border-left: 3px solid var(--mood-happy); }
+.mood-key-tile--sad { border-left: 3px solid var(--mood-sad); }
+.mood-key-tile--angry { border-left: 3px solid var(--mood-angry); }
+.mood-key-tile--anxious { border-left: 3px solid var(--mood-anxious); }
+.mood-key-tile--neutral { border-left: 3px solid var(--mood-neutral); }
+
+.mood-key-foot {
+    margin-top: auto;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--divider-color);
+}
+
+.mood-key-foot-text {
+    margin: 0;
+    font-size: 0.68rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.mood-key-foot-text strong {
+    color: var(--text-dark);
+    font-weight: 700;
+}
+
+@media (max-width: 520px) {
+    .mood-key-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mood-key-tile--full {
+        grid-column: 1;
+    }
+}
 
 /* Weekly week-strip (reference-style day dots above chart) */
 .weekly-weekstrip {

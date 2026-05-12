@@ -18,6 +18,20 @@ const DAILY_PROMPTS = [
     "What boundary would help you feel safer today?",
 ];
 
+/** Anchor labels from static/js/mood-scoring.js feelingToScore(). */
+function hydrateMoodKeyAnchors() {
+    const nodes = document.querySelectorAll('.mood-key-tile__anchor[data-mood]');
+    if (!nodes.length || typeof window.feelingToScore !== 'function') return;
+    nodes.forEach((el) => {
+        const mood = el.getAttribute('data-mood');
+        if (!mood) return;
+        const v = window.feelingToScore(mood);
+        if (!Number.isFinite(v)) return;
+        const shown = Number.isInteger(v) ? String(v) : v.toFixed(1);
+        el.textContent = `Anchor ${shown} / 10`;
+    });
+}
+
 const WELLNESS_QUOTES = [
     { text: "You yourself, as much as anybody in the universe, deserve your love.", author: "Buddha" },
     { text: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
@@ -42,6 +56,7 @@ const WELLNESS_QUOTES = [
 ];
 
 document.addEventListener('DOMContentLoaded', async function() {
+    hydrateMoodKeyAnchors();
     await syncEntriesFromApi();
     initializeDashboardFromUserData();
     initializeGreetingClock();

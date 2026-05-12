@@ -232,15 +232,48 @@
                         </div>
                     </section>
 
-                    <!-- Mood Key (legend only; numeric scoring stays in mood-scoring.js + chart) -->
+                    <!-- Mood key: Noto static PNGs + anchors from mood-scoring.js (hydrateMoodKeyAnchors) -->
                     <section class="mood-key-card" aria-label="Mood key">
-                        <h2 class="mood-key-title">Mood Key</h2>
-                        <div class="mood-key-list" role="list">
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--happy" aria-hidden="true"></span><span>Happy</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--sad" aria-hidden="true"></span><span>Sad</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--angry" aria-hidden="true"></span><span>Angry</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--anxious" aria-hidden="true"></span><span>Anxious</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--neutral" aria-hidden="true"></span><span>Neutral</span></div>
+                        <h2 class="mood-key-title">Mood key</h2>
+                        <div class="mood-key-grid" role="list">
+                            <div class="mood-key-tile mood-key-tile--happy" role="listitem">
+                                <img class="mood-key-tile__img" src="/noto-emoji-static/3591-laughter.png" alt="" width="40" height="40" decoding="async" />
+                                <div class="mood-key-tile__text">
+                                    <span class="mood-key-tile__name">Happy</span>
+                                    <span class="mood-key-tile__anchor" data-mood="happy">Anchor — / 10</span>
+                                </div>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--sad" role="listitem">
+                                <img class="mood-key-tile__img" src="/noto-emoji-static/9946_sobbing.png" alt="" width="40" height="40" decoding="async" />
+                                <div class="mood-key-tile__text">
+                                    <span class="mood-key-tile__name">Sad</span>
+                                    <span class="mood-key-tile__anchor" data-mood="sad">Anchor — / 10</span>
+                                </div>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--angry" role="listitem">
+                                <img class="mood-key-tile__img" src="/noto-emoji-static/8712_visibly_disgusted.png" alt="" width="40" height="40" decoding="async" />
+                                <div class="mood-key-tile__text">
+                                    <span class="mood-key-tile__name">Angry</span>
+                                    <span class="mood-key-tile__anchor" data-mood="angry">Anchor — / 10</span>
+                                </div>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--anxious" role="listitem">
+                                <img class="mood-key-tile__img" src="/noto-emoji-static/3591-concern.png" alt="" width="40" height="40" decoding="async" />
+                                <div class="mood-key-tile__text">
+                                    <span class="mood-key-tile__name">Anxious</span>
+                                    <span class="mood-key-tile__anchor" data-mood="anxious">Anchor — / 10</span>
+                                </div>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--neutral mood-key-tile--full" role="listitem">
+                                <img class="mood-key-tile__img" src="/noto-emoji-static/3563-lookat.png" alt="" width="40" height="40" decoding="async" />
+                                <div class="mood-key-tile__text">
+                                    <span class="mood-key-tile__name">Neutral</span>
+                                    <span class="mood-key-tile__anchor" data-mood="neutral">Anchor — / 10</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mood-key-foot">
+                            <p class="mood-key-foot-text"><strong>Blended</strong> — emotion probability × anchor = 0–10 score. <strong>Label-only</strong> when offline. Score ≠ model confidence.</p>
                         </div>
                     </section>
                 </div>

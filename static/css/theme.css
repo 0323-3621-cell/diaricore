@@ -300,6 +300,16 @@ html.theme-dark .floating-streak-panel__dow--idle {
     opacity: 0.88;
 }
 
+html.theme-dark .mood-key-tile {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html.theme-dark .mood-key-foot-text strong {
+    color: var(--text-dark) !important;
+}
+
 .theme-toggle-fab {
     position: fixed;
     right: 1.15rem;

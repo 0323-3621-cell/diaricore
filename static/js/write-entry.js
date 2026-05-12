@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let moodAnalysisLoadingShownAt = 0;
     let moodAnalysisBookReadyAt = null;
 
+    /** Single Book-Loader instance: created on load, parked off-screen, moved into overlay on Save (instant pixels). */
+    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
+    let moodAnalysisSharedBookPlayer = null;
+    let moodAnalysisBookWireDone = false;
+
+    ensureMoodAnalysisBookPlayer();
+
     function normalizeTag(tag) {
         return String(tag || '').trim().replace(/\s+/g, ' ');
     }
@@ -1292,20 +1299,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
+    function getMoodAnalysisBookPool() {
+        let el = document.getElementById('moodAnalysisBookPool');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'moodAnalysisBookPool';
+            el.className = 'mood-analysis-book-pool';
+            el.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(el);
+        }
+        return el;
+    }
 
-    function preloadMoodAnalysisBookLottie() {
-        fetch(MOOD_ANALYSIS_BOOK_LOTTIE_SRC, { credentials: 'same-origin' }).catch(() => {});
-        if (!customElements.get('lottie-player')) return;
-        const warm = document.createElement('lottie-player');
-        warm.className = 'mood-analysis-book-preload';
-        warm.setAttribute('aria-hidden', 'true');
-        warm.tabIndex = -1;
-        warm.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
-        warm.background = 'transparent';
-        warm.loop = true;
-        warm.autoplay = true;
-        document.body.appendChild(warm);
+    function parkMoodAnalysisBookPlayer() {
+        if (!moodAnalysisSharedBookPlayer) return;
+        const pool = getMoodAnalysisBookPool();
+        moodAnalysisSharedBookPlayer.classList.remove('mood-analysis-book-lottie--in-overlay');
+        moodAnalysisSharedBookPlayer.setAttribute('aria-hidden', 'true');
+        pool.appendChild(moodAnalysisSharedBookPlayer);
+    }
+
+    function wireSharedMoodAnalysisBookPlayer(player) {
+        if (moodAnalysisBookWireDone || !player) return;
+        moodAnalysisBookWireDone = true;
+        player.addEventListener(
+            'ready',
+            () => {
+                if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
+                kickMoodAnalysisBookPlayback(player);
+            },
+            { once: true }
+        );
+        player.addEventListener(
+            'error',
+            () => console.warn('Mood analysis Book-Loader failed to load'),
+            { once: true }
+        );
+        requestAnimationFrame(() => requestAnimationFrame(() => kickMoodAnalysisBookPlayback(player)));
+        setTimeout(() => kickMoodAnalysisBookPlayback(player), 150);
+    }
+
+    /** Start loading immediately on write-entry; animation runs off-screen until Save.moved into overlay */
+    function ensureMoodAnalysisBookPlayer() {
+        if (moodAnalysisSharedBookPlayer) return moodAnalysisSharedBookPlayer;
+        if (!customElements.get('lottie-player')) return null;
+        const pool = getMoodAnalysisBookPool();
+        const player = document.createElement('lottie-player');
+        player.className = 'mood-analysis-book-lottie mood-analysis-book-lottie--shared';
+        player.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
+        player.background = 'transparent';
+        player.speed = 1;
+        player.loop = true;
+        player.autoplay = true;
+        player.setAttribute('aria-hidden', 'true');
+        pool.appendChild(player);
+        moodAnalysisSharedBookPlayer = player;
+        wireSharedMoodAnalysisBookPlayer(player);
+        return player;
     }
 
     function kickMoodAnalysisBookPlayback(player) {
@@ -1316,26 +1366,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (_) {
             /* lottie may still be attaching */
         }
-    }
-
-    /** Ensures the mood overlay book animation actually renders (same URL pattern as dashboard BOOK.json). */
-    function attachMoodAnalysisBookPlayerPlayback(player) {
-        const kick = () => kickMoodAnalysisBookPlayback(player);
-        player.addEventListener(
-            'ready',
-            () => {
-                moodAnalysisBookReadyAt = Date.now();
-                kick();
-            },
-            { once: true }
-        );
-        player.addEventListener(
-            'error',
-            () => console.warn('Mood analysis Book-Loader failed to load'),
-            { once: true }
-        );
-        requestAnimationFrame(() => requestAnimationFrame(kick));
-        setTimeout(kick, 150);
     }
 
     function ensureAnalysisOverlay() {
@@ -1362,7 +1392,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisLoading(overlay) {
-        moodAnalysisBookReadyAt = null;
+        parkMoodAnalysisBookPlayer();
+        const player = ensureMoodAnalysisBookPlayer();
+
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
@@ -1372,15 +1404,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const wrap = document.createElement('div');
         wrap.className = 'mood-analysis-loading mood-analysis-loading--book';
 
-        const player = document.createElement('lottie-player');
-        player.className = 'mood-analysis-book-lottie';
-        player.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
-        player.background = 'transparent';
-        player.speed = 1;
-        player.loop = true;
-        player.autoplay = true;
-        player.setAttribute('aria-label', 'Loading animation');
-        attachMoodAnalysisBookPlayerPlayback(player);
+        if (player) {
+            player.classList.add('mood-analysis-book-lottie--in-overlay');
+            player.removeAttribute('aria-hidden');
+            player.setAttribute('aria-label', 'Loading animation');
+            wrap.appendChild(player);
+            kickMoodAnalysisBookPlayback(player);
+            requestAnimationFrame(() => kickMoodAnalysisBookPlayback(player));
+        }
 
         const titleEl = document.createElement('h4');
         titleEl.className = 'mood-analysis-loading__title';
@@ -1390,7 +1421,6 @@ document.addEventListener('DOMContentLoaded', function() {
         subEl.className = 'mood-analysis-loading__subtitle';
         subEl.textContent = 'Detecting mood patterns and insights...';
 
-        wrap.appendChild(player);
         wrap.appendChild(titleEl);
         wrap.appendChild(subEl);
         body.appendChild(wrap);
@@ -1447,6 +1477,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisResult(overlay, entry, isFallback = false) {
+        parkMoodAnalysisBookPlayer();
+
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
@@ -1555,10 +1587,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load draft on page load
     loadDraft();
     flushOfflineEntryQueue();
-
-    const schedulePreload =
-        typeof window.requestIdleCallback === 'function'
-            ? (cb) => window.requestIdleCallback(cb, { timeout: 4000 })
-            : (cb) => setTimeout(cb, 1);
-    schedulePreload(() => preloadMoodAnalysisBookLottie());
 });

@@ -1012,8 +1012,8 @@
     background: rgba(111, 138, 165, 0.14);
 }
 
-/* Warm hidden player so the overlay instance loads from cache quickly */
-.mood-analysis-book-preload {
+/* Off-screen pool for shared Book-Loader (loads on page init, moves into overlay on Save) */
+.mood-analysis-book-pool {
     position: fixed;
     width: 1px;
     height: 1px;

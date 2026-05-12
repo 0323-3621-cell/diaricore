@@ -1012,14 +1012,13 @@
     background: rgba(111, 138, 165, 0.14);
 }
 
-/* Off-screen pool for shared Book-Loader (loads on page init, moves into overlay on Save) */
+/* Off-screen pool for Book-Loader mount (real pixel size so SVG renders; not 1×1 — that broke WebKit painting) */
 .mood-analysis-book-pool {
     position: fixed;
-    width: 1px;
-    height: 1px;
+    width: 132px;
+    height: 132px;
     margin: 0;
     padding: 0;
-    opacity: 0;
     pointer-events: none;
     left: -9999px;
     top: 0;

@@ -18,12 +18,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let moodAnalysisLoadingShownAt = 0;
     let moodAnalysisBookReadyAt = null;
 
-    /** Single Book-Loader instance: created on load, parked off-screen, moved into overlay on Save (instant pixels). */
+    /** Book-Loader via lottie-web (plain div — avoids lottie-player freezing off-screen/hidden animations). */
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
-    let moodAnalysisSharedBookPlayer = null;
-    let moodAnalysisBookWireDone = false;
+    let moodAnalysisBookMountEl = null;
+    let moodAnalysisBookAnim = null;
+    let moodAnalysisBookPrimePromise = null;
 
-    ensureMoodAnalysisBookPlayer();
+    primeMoodAnalysisBookLottie();
 
     function normalizeTag(tag) {
         return String(tag || '').trim().replace(/\s+/g, ' ');
@@ -1185,6 +1186,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setSavingState(true);
         const analysisOverlay = ensureAnalysisOverlay();
+        try {
+            await primeMoodAnalysisBookLottie();
+        } catch (_) {
+            /* overlay still shows copy-only loading */
+        }
         showAnalysisLoading(analysisOverlay);
 
         try {
@@ -1311,61 +1317,57 @@ document.addEventListener('DOMContentLoaded', function() {
         return el;
     }
 
-    function parkMoodAnalysisBookPlayer() {
-        if (!moodAnalysisSharedBookPlayer) return;
+    /** Fetch JSON once + lottie-web loadAnimation into off-screen mount (no IntersectionObserver freeze). */
+    function primeMoodAnalysisBookLottie() {
+        if (moodAnalysisBookPrimePromise) return moodAnalysisBookPrimePromise;
+        moodAnalysisBookPrimePromise = (async () => {
+            if (typeof window.lottie === 'undefined' || typeof window.lottie.loadAnimation !== 'function') {
+                console.warn('Book-Loader: lottie-web not loaded');
+                return null;
+            }
+            if (moodAnalysisBookMountEl && moodAnalysisBookAnim) return moodAnalysisBookAnim;
+            try {
+                const res = await fetch(MOOD_ANALYSIS_BOOK_LOTTIE_SRC, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const pool = getMoodAnalysisBookPool();
+                const mount = document.createElement('div');
+                mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount';
+                mount.setAttribute('aria-hidden', 'true');
+                pool.appendChild(mount);
+                moodAnalysisBookMountEl = mount;
+                const anim = window.lottie.loadAnimation({
+                    container: mount,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: data,
+                });
+                moodAnalysisBookAnim = anim;
+                anim.addEventListener('DOMLoaded', () => {
+                    if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
+                });
+                requestAnimationFrame(() => {
+                    if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
+                });
+                return anim;
+            } catch (e) {
+                console.warn('Book-Loader preload:', e);
+                return null;
+            }
+        })();
+        return moodAnalysisBookPrimePromise;
+    }
+
+    function parkMoodAnalysisBookMount() {
+        if (!moodAnalysisBookMountEl) return;
         const pool = getMoodAnalysisBookPool();
-        moodAnalysisSharedBookPlayer.classList.remove('mood-analysis-book-lottie--in-overlay');
-        moodAnalysisSharedBookPlayer.setAttribute('aria-hidden', 'true');
-        pool.appendChild(moodAnalysisSharedBookPlayer);
-    }
-
-    function wireSharedMoodAnalysisBookPlayer(player) {
-        if (moodAnalysisBookWireDone || !player) return;
-        moodAnalysisBookWireDone = true;
-        player.addEventListener(
-            'ready',
-            () => {
-                if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
-                kickMoodAnalysisBookPlayback(player);
-            },
-            { once: true }
-        );
-        player.addEventListener(
-            'error',
-            () => console.warn('Mood analysis Book-Loader failed to load'),
-            { once: true }
-        );
-        requestAnimationFrame(() => requestAnimationFrame(() => kickMoodAnalysisBookPlayback(player)));
-        setTimeout(() => kickMoodAnalysisBookPlayback(player), 150);
-    }
-
-    /** Start loading immediately on write-entry; animation runs off-screen until Save.moved into overlay */
-    function ensureMoodAnalysisBookPlayer() {
-        if (moodAnalysisSharedBookPlayer) return moodAnalysisSharedBookPlayer;
-        if (!customElements.get('lottie-player')) return null;
-        const pool = getMoodAnalysisBookPool();
-        const player = document.createElement('lottie-player');
-        player.className = 'mood-analysis-book-lottie mood-analysis-book-lottie--shared';
-        player.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
-        player.background = 'transparent';
-        player.speed = 1;
-        player.loop = true;
-        player.autoplay = true;
-        player.setAttribute('aria-hidden', 'true');
-        pool.appendChild(player);
-        moodAnalysisSharedBookPlayer = player;
-        wireSharedMoodAnalysisBookPlayer(player);
-        return player;
-    }
-
-    function kickMoodAnalysisBookPlayback(player) {
-        if (!player || !player.isConnected) return;
+        moodAnalysisBookMountEl.classList.remove('mood-analysis-book-lottie--in-overlay');
+        moodAnalysisBookMountEl.setAttribute('aria-hidden', 'true');
+        pool.appendChild(moodAnalysisBookMountEl);
         try {
-            if (typeof player.setLooping === 'function') player.setLooping(true);
-            if (typeof player.play === 'function') player.play();
-        } catch (_) {
-            /* lottie may still be attaching */
-        }
+            if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+        } catch (_) {}
     }
 
     function ensureAnalysisOverlay() {
@@ -1392,8 +1394,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisLoading(overlay) {
-        parkMoodAnalysisBookPlayer();
-        const player = ensureMoodAnalysisBookPlayer();
+        parkMoodAnalysisBookMount();
 
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
@@ -1404,13 +1405,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const wrap = document.createElement('div');
         wrap.className = 'mood-analysis-loading mood-analysis-loading--book';
 
-        if (player) {
-            player.classList.add('mood-analysis-book-lottie--in-overlay');
-            player.removeAttribute('aria-hidden');
-            player.setAttribute('aria-label', 'Loading animation');
-            wrap.appendChild(player);
-            kickMoodAnalysisBookPlayback(player);
-            requestAnimationFrame(() => kickMoodAnalysisBookPlayback(player));
+        const mount = moodAnalysisBookMountEl;
+        if (mount) {
+            mount.classList.add('mood-analysis-book-lottie--in-overlay');
+            mount.removeAttribute('aria-hidden');
+            mount.setAttribute('aria-label', 'Loading animation');
+            wrap.appendChild(mount);
+            try {
+                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.play === 'function') moodAnalysisBookAnim.play();
+                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+            } catch (_) {}
         }
 
         const titleEl = document.createElement('h4');
@@ -1428,6 +1432,11 @@ document.addEventListener('DOMContentLoaded', function() {
         footer.style.display = 'none';
         overlay.hidden = false;
         moodAnalysisLoadingShownAt = Date.now();
+        requestAnimationFrame(() => {
+            try {
+                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+            } catch (_) {}
+        });
     }
 
     function computeEnergy(score) {
@@ -1477,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisResult(overlay, entry, isFallback = false) {
-        parkMoodAnalysisBookPlayer();
+        parkMoodAnalysisBookMount();
 
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');

@@ -21,6 +21,20 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
 
     const CUSTOM_TAGS_BATCH_SIZE = 100;
+    const ICON_SEARCH_ALIASES = {
+        money: ['bank', 'banknote', 'coins', 'coin', 'wallet', 'receipt', 'credit-card', 'piggy-bank', 'hand-coins'],
+        bills: ['receipt', 'banknote', 'wallet', 'coins', 'credit-card'],
+        budget: ['wallet', 'piggy-bank', 'coins', 'receipt', 'chart-column'],
+        finance: ['bank', 'banknote', 'coins', 'wallet', 'credit-card', 'receipt'],
+        payment: ['credit-card', 'wallet', 'banknote', 'coins', 'receipt'],
+        food: ['utensils', 'utensils-crossed', 'pizza', 'sandwich', 'coffee', 'cooking-pot'],
+        fitness: ['dumbbell', 'activity', 'heart-pulse', 'bike', 'footprints'],
+        travel: ['plane', 'car', 'bus', 'train', 'map-pin', 'luggage'],
+        study: ['book', 'book-open', 'pen', 'pencil', 'graduation-cap', 'notebook-pen'],
+        work: ['briefcase', 'building', 'laptop', 'monitor', 'clipboard-list'],
+        home: ['house', 'sofa', 'bed', 'lamp', 'home'],
+        family: ['users', 'baby', 'heart', 'house-heart'],
+    };
     let lucideIconNames = [];
     let customTagPage = 0;
     let customTagSearch = '';
@@ -417,7 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function filteredLucideIcons() {
         const q = customTagSearch.trim().toLowerCase();
         if (!q) return lucideIconNames;
-        return lucideIconNames.filter((name) => name.includes(q));
+        const aliasTerms = ICON_SEARCH_ALIASES[q] || [];
+        return lucideIconNames.filter((name) => {
+            if (name.includes(q)) return true;
+            return aliasTerms.some((term) => name.includes(term));
+        });
     }
 
     function renderCustomTagIconPage() {

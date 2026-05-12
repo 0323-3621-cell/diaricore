@@ -404,6 +404,7 @@
         footer.style.display = 'flex';
         const saveExitBtn = overlay.querySelector('#moodAnalysisSaveExitBtn');
         if (saveExitBtn) {
+            saveExitBtn.textContent = opts.footerCloseLabel ? String(opts.footerCloseLabel) : 'Save & Exit';
             saveExitBtn.onclick = () => {
                 overlay.hidden = true;
                 if (typeof opts.onSaveExit === 'function') opts.onSaveExit();

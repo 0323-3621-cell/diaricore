@@ -1078,6 +1078,29 @@ def update_journal_entry(
         conn.close()
 
 
+def delete_journal_entry(entry_id: int, user_id: int) -> bool:
+    """Delete a journal row if it belongs to the user. Returns True if a row was removed."""
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "DELETE FROM journal_entries WHERE id = %s AND user_id = %s RETURNING id",
+                (entry_id, user_id),
+            )
+            deleted = cur.fetchone() is not None
+        else:
+            cur.execute("DELETE FROM journal_entries WHERE id = ? AND user_id = ?", (entry_id, user_id))
+            deleted = cur.rowcount > 0
+        conn.commit()
+        return bool(deleted)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def get_tag_trigger_summary(user_id: int, min_entries_per_bucket: int = 3):
     """
     Build top tag triggers from saved entry tags (not NLP keywords).

@@ -40,6 +40,12 @@
         localStorage.setItem('diariCoreEntries', JSON.stringify(list));
     }
 
+    function removeEntryFromList(id) {
+        const list = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        const next = list.filter((e) => Number(e?.id) !== Number(id));
+        localStorage.setItem('diariCoreEntries', JSON.stringify(next));
+    }
+
     function readQueue() {
         try {
             const raw = localStorage.getItem(QUEUE_KEY);
@@ -83,6 +89,8 @@
     /** Re-measure body height after the editor is visible (hidden ancestors yield wrong scrollHeight). */
     function reflowEditorLayout() {
         if (!activeController || activeController.signal.aborted) return;
+        const editPane = document.getElementById('entryViewEditPane');
+        if (editPane && editPane.hidden) return;
         const el = document.getElementById('entryViewBody');
         if (!el) return;
         autoResizeTextarea(el);
@@ -94,19 +102,39 @@
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
         const dateLine = document.getElementById('entryViewDateLine');
+        const dateLineRead = document.getElementById('entryViewDateLineRead');
         const tagsRow = document.getElementById('entryViewTagsRow');
+        const tagsRead = document.getElementById('entryViewTagsRead');
+        const titleRead = document.getElementById('entryViewTitleRead');
+        const bodyRead = document.getElementById('entryViewBodyRead');
+        const readPane = document.getElementById('entryViewReadPane');
+        const editPane = document.getElementById('entryViewEditPane');
+        const readToolbar = document.getElementById('entryViewReadToolbar');
+        const cancelBtn = document.getElementById('entryViewCancelBtn');
+        const actionsEl = document.getElementById('entryViewActions');
         const saveBtn = document.getElementById('entryViewSaveBtn');
         const saveAnalyzeBtn = document.getElementById('entryViewSaveAnalyzeBtn');
+        const loadingHtml =
+            '<span class="entry-view-loading-line" style="color:var(--text-muted);font-size:0.8rem;">Loading entry…</span>';
         if (titleEl) titleEl.value = '';
         if (bodyEl) {
             bodyEl.value = '';
             bodyEl.style.height = 'auto';
         }
         if (tagsRow) tagsRow.innerHTML = '';
-        if (dateLine) {
-            dateLine.innerHTML =
-                '<span class="entry-view-loading-line" style="color:var(--text-muted);font-size:0.8rem;">Loading entry…</span>';
+        if (tagsRead) tagsRead.innerHTML = '';
+        if (titleRead) {
+            titleRead.textContent = '';
+            titleRead.classList.remove('entry-view-title-read--muted');
         }
+        if (bodyRead) bodyRead.textContent = '';
+        if (dateLine) dateLine.innerHTML = loadingHtml;
+        if (dateLineRead) dateLineRead.innerHTML = loadingHtml;
+        if (readPane) readPane.hidden = false;
+        if (editPane) editPane.hidden = true;
+        if (readToolbar) readToolbar.hidden = false;
+        if (cancelBtn) cancelBtn.hidden = true;
+        if (actionsEl) actionsEl.hidden = true;
         if (saveBtn) saveBtn.disabled = true;
         if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
     }
@@ -135,7 +163,19 @@
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
         const dateLine = document.getElementById('entryViewDateLine');
+        const dateLineRead = document.getElementById('entryViewDateLineRead');
         const tagsRow = document.getElementById('entryViewTagsRow');
+        const readPane = document.getElementById('entryViewReadPane');
+        const editPane = document.getElementById('entryViewEditPane');
+        const tagsRead = document.getElementById('entryViewTagsRead');
+        const titleRead = document.getElementById('entryViewTitleRead');
+        const bodyRead = document.getElementById('entryViewBodyRead');
+        const readToolbar = document.getElementById('entryViewReadToolbar');
+        const editBtn = document.getElementById('entryViewEditBtn');
+        const deleteBtn = document.getElementById('entryViewDeleteBtn');
+        const viewDetailsBtn = document.getElementById('entryViewViewDetailsBtn');
+        const aiEmotionLabel = document.getElementById('entryViewAiEmotionLabel');
+        const actionsEl = document.getElementById('entryViewActions');
         const backBtn = document.getElementById('entryViewBackBtn');
         const cancelBtn = document.getElementById('entryViewCancelBtn');
         const saveBtn = document.getElementById('entryViewSaveBtn');
@@ -144,7 +184,47 @@
         const unsavedStay = document.getElementById('entryUnsavedStayBtn');
         const unsavedDiscard = document.getElementById('entryUnsavedDiscardBtn');
 
-        if (!entryId || !userId || !titleEl || !bodyEl || !tagsRow || !backBtn || !cancelBtn) {
+        function setBothDateLines(innerHtml) {
+            if (dateLine) dateLine.innerHTML = innerHtml;
+            if (dateLineRead) dateLineRead.innerHTML = innerHtml;
+        }
+
+        function toTitleCaseEmotion(raw) {
+            const s = String(raw || 'neutral').trim().toLowerCase();
+            if (!s) return 'Neutral';
+            return s.replace(/\b\w/g, (c) => c.toUpperCase());
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        let editMode = false;
+
+        if (
+            !entryId ||
+            !userId ||
+            !titleEl ||
+            !bodyEl ||
+            !tagsRow ||
+            !backBtn ||
+            !cancelBtn ||
+            !readPane ||
+            !editPane ||
+            !tagsRead ||
+            !titleRead ||
+            !bodyRead ||
+            !dateLineRead ||
+            !readToolbar ||
+            !editBtn ||
+            !deleteBtn ||
+            !viewDetailsBtn ||
+            !aiEmotionLabel
+        ) {
             onLeavePanel();
             unmount();
             return;
@@ -154,8 +234,9 @@
         let entry = listEntry;
 
         if (!entry && isOnline()) {
-            tagsRow.innerHTML =
+            const loadingTags =
                 '<span class="entry-view-tags-await" style="color:var(--text-muted);font-size:0.85rem;">Loading…</span>';
+            tagsRead.innerHTML = loadingTags;
             try {
                 const res = await fetch(`/api/entries/${entryId}?userId=${encodeURIComponent(String(userId))}`);
                 const data = await res.json();
@@ -200,11 +281,52 @@
         }
 
         const displayDate = entry.date || entry.createdAt;
-        dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+        const dateMarkup = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+        setBothDateLines(dateMarkup);
 
         autoResizeTextarea(bodyEl);
 
         let baseline = serializeEditor(titleEl, bodyEl, tags);
+
+        function syncReadPane() {
+            let p = { title: '', text: '', tags: [] };
+            try {
+                p = JSON.parse(baseline);
+            } catch (_) {}
+            tagsRead.innerHTML = '';
+            const tagArr = Array.isArray(p.tags) ? p.tags : [];
+            if (!tagArr.length) {
+                const span = document.createElement('span');
+                span.className = 'entry-view-tags-read-empty';
+                span.textContent = 'No tags yet';
+                tagsRead.appendChild(span);
+            } else {
+                tagArr.forEach((raw) => {
+                    const tag = normalizeTag(raw);
+                    if (!tag) return;
+                    const pill = document.createElement('span');
+                    pill.className = 'entry-view-tag-pill entry-view-tag-pill--readonly';
+                    pill.textContent = tag.startsWith('#') ? tag : `#${tag}`;
+                    tagsRead.appendChild(pill);
+                });
+            }
+            const t = (p.title || '').trim();
+            titleRead.textContent = t || 'Give your entry a title...';
+            titleRead.classList.toggle('entry-view-title-read--muted', !t);
+            bodyRead.textContent = p.text || '';
+            aiEmotionLabel.textContent = toTitleCaseEmotion(entry.emotionLabel || entry.feeling || 'neutral');
+        }
+
+        function setEditMode(on) {
+            editMode = Boolean(on);
+            readPane.hidden = editMode;
+            editPane.hidden = !editMode;
+            readToolbar.hidden = editMode;
+            cancelBtn.hidden = !editMode;
+            if (actionsEl) actionsEl.hidden = !editMode;
+        }
+
+        syncReadPane();
 
         function isDirty() {
             return serializeEditor(titleEl, bodyEl, tags) !== baseline;
@@ -264,14 +386,6 @@
         addWrap.appendChild(addBtn);
         addWrap.appendChild(picker);
 
-        function escapeHtml(text) {
-            return String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
         function fillPicker() {
             picker.innerHTML = '';
             const applied = new Set([...tags].map((t) => t.toLowerCase()));
@@ -324,6 +438,17 @@
             fillPicker();
         }
 
+        function restoreEditorFromBaseline() {
+            try {
+                const p = JSON.parse(baseline);
+                titleEl.value = p.title || '';
+                bodyEl.value = p.text || '';
+                tags = new Set((Array.isArray(p.tags) ? p.tags : []).map(normalizeTag).filter(Boolean));
+                renderTags();
+                autoResizeTextarea(bodyEl);
+            } catch (_) {}
+        }
+
         addBtn.addEventListener(
             'click',
             (e) => {
@@ -354,6 +479,7 @@
 
         renderTags();
         autoResizeTextarea(bodyEl);
+        setEditMode(false);
 
         void loadTagChoices().then(() => {
             if (signal.aborted) return;
@@ -379,12 +505,15 @@
                     titleEl.value = entry.title || '';
                     bodyEl.value = entry.text || '';
                     const dRefresh = entry.date || entry.createdAt;
-                    dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(dRefresh)}</span>`;
+                    setBothDateLines(
+                        `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(dRefresh)}</span>`
+                    );
                     tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
                     seedTagChoicesSync();
                     renderTags();
                     autoResizeTextarea(bodyEl);
                     baseline = serializeEditor(titleEl, bodyEl, tags);
+                    syncReadPane();
                     void loadTagChoices().then(() => {
                         if (!signal.aborted) fillPicker();
                     });
@@ -408,6 +537,88 @@
             { signal }
         );
 
+        function moodOptions(overlay) {
+            return {
+                onSaveExit() {
+                    overlay.hidden = true;
+                    onLeavePanel();
+                },
+                fetchRerunAnalysis: async () => {
+                    const t = bodyEl.value.trim();
+                    if (!t) throw new Error('empty');
+                    const res = await fetch('/api/entries/analyze-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, text: t }),
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.success) throw new Error(result.error || 'analyze failed');
+                    const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
+                    return {
+                        entry: {
+                            emotionLabel: result.emotionLabel,
+                            emotionScore: result.emotionScore,
+                            sentimentLabel: result.sentimentLabel,
+                            sentimentScore: result.sentimentScore,
+                            all_probs: result.all_probs || {},
+                            feeling: result.emotionLabel,
+                        },
+                        isFallback: fb,
+                    };
+                },
+            };
+        }
+
+        async function runToolbarViewAnalysis() {
+            const text = (bodyEl.value || '').trim() || (entry.text || '').trim();
+            if (!text) {
+                window.alert('This entry has no text to analyze.');
+                return;
+            }
+            if (!isOnline()) {
+                window.alert('Connect to the internet to run analysis.');
+                return;
+            }
+            global.DiariMoodAnalysis.resetSession();
+            const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
+            try {
+                await global.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+            } catch (_) {}
+            global.DiariMoodAnalysis.showAnalysisLoading(overlay);
+            try {
+                const res = await fetch('/api/entries/analyze-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, text }),
+                });
+                const result = await res.json();
+                if (!res.ok || !result.success) throw new Error(result.error || 'Analyze failed');
+                const previewEntry = {
+                    ...entry,
+                    emotionLabel: result.emotionLabel,
+                    emotionScore: result.emotionScore,
+                    sentimentLabel: result.sentimentLabel,
+                    sentimentScore: result.sentimentScore,
+                    all_probs: result.all_probs || {},
+                    feeling: result.emotionLabel,
+                };
+                const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
+                await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                const mo = moodOptions(overlay);
+                global.DiariMoodAnalysis.showAnalysisResult(overlay, previewEntry, fb, {
+                    fetchRerunAnalysis: mo.fetchRerunAnalysis,
+                    footerCloseLabel: 'Close',
+                    onSaveExit() {
+                        overlay.hidden = true;
+                    },
+                });
+            } catch (e) {
+                console.error(e);
+                overlay.hidden = true;
+                window.alert(e.message || 'Could not analyze this entry.');
+            }
+        }
+
         function openUnsaved(next) {
             if (!isDirty()) {
                 next();
@@ -419,12 +630,82 @@
 
         backBtn.addEventListener(
             'click',
-            () => openUnsaved(onLeavePanel),
+            () => {
+                if (!editMode) {
+                    onLeavePanel();
+                    return;
+                }
+                openUnsaved(onLeavePanel);
+            },
             { signal }
         );
         cancelBtn.addEventListener(
             'click',
-            () => openUnsaved(onLeavePanel),
+            () => {
+                if (!editMode) return;
+                if (!isDirty()) {
+                    setEditMode(false);
+                    return;
+                }
+                pendingNavigate = () => {
+                    restoreEditorFromBaseline();
+                    setEditMode(false);
+                    syncReadPane();
+                };
+                if (unsavedDialog) unsavedDialog.hidden = false;
+            },
+            { signal }
+        );
+        editBtn.addEventListener(
+            'click',
+            () => {
+                if (signal.aborted) return;
+                setEditMode(true);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => reflowEditorLayout());
+                });
+            },
+            { signal }
+        );
+        deleteBtn.addEventListener(
+            'click',
+            async () => {
+                if (signal.aborted) return;
+                if (!window.confirm('Delete this journal entry? This cannot be undone.')) return;
+                if (!isOnline()) {
+                    window.alert('Connect to the internet to delete entries.');
+                    return;
+                }
+                try {
+                    const res = await fetch(`/api/entries/${entryId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId }),
+                    });
+                    let data = {};
+                    try {
+                        data = await res.json();
+                    } catch (_) {}
+                    if (!res.ok || !data.success) {
+                        window.alert(data.error || 'Could not delete this entry.');
+                        return;
+                    }
+                    removeEntryFromList(entryId);
+                    clearDraft();
+                    onLeavePanel();
+                } catch (e) {
+                    console.error(e);
+                    window.alert('Could not delete this entry.');
+                }
+            },
+            { signal }
+        );
+        viewDetailsBtn.addEventListener(
+            'click',
+            () => {
+                if (signal.aborted) return;
+                void runToolbarViewAnalysis();
+            },
             { signal }
         );
         if (unsavedStay) {
@@ -555,38 +836,6 @@
         };
         window.addEventListener('online', onOnline, { signal });
 
-        function moodOptions(overlay) {
-            return {
-                onSaveExit() {
-                    overlay.hidden = true;
-                    onLeavePanel();
-                },
-                fetchRerunAnalysis: async () => {
-                    const t = bodyEl.value.trim();
-                    if (!t) throw new Error('empty');
-                    const res = await fetch('/api/entries/analyze-text', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, text: t }),
-                    });
-                    const result = await res.json();
-                    if (!res.ok || !result.success) throw new Error(result.error || 'analyze failed');
-                    const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
-                    return {
-                        entry: {
-                            emotionLabel: result.emotionLabel,
-                            emotionScore: result.emotionScore,
-                            sentimentLabel: result.sentimentLabel,
-                            sentimentScore: result.sentimentScore,
-                            all_probs: result.all_probs || {},
-                            feeling: result.emotionLabel,
-                        },
-                        isFallback: fb,
-                    };
-                },
-            };
-        }
-
         async function runSave(reanalyze) {
             const text = bodyEl.value.trim();
             if (!text) {
@@ -638,6 +887,7 @@
                         const merged = offlineMergedEntry(true);
                         replaceEntryInList(merged);
                         entry = merged;
+                        baseline = serializeEditor(titleEl, bodyEl, tags);
                         await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
                     }
@@ -662,6 +912,7 @@
             } finally {
                 saveBtn.disabled = false;
                 saveAnalyzeBtn.disabled = false;
+                if (!signal.aborted) syncReadPane();
             }
         }
 

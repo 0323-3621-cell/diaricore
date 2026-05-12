@@ -1009,6 +1009,22 @@ def api_entries_patch(entry_id: int):
     return jsonify({"success": True, "entry": response_entry, "analysisEngine": engine if reanalyze else None}), 200
 
 
+@app.route("/api/entries/<int:entry_id>", methods=["DELETE"])
+def api_entries_delete(entry_id: int):
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int) or user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    existing = db.get_journal_entry_by_id(entry_id, user_id)
+    if not existing:
+        return jsonify({"success": False, "error": "Entry not found."}), 404
+    if not db.delete_journal_entry(entry_id, user_id):
+        return jsonify({"success": False, "error": "Could not delete entry."}), 500
+    return jsonify({"success": True}), 200
+
+
 @app.route("/api/uploads/image", methods=["POST"])
 def api_upload_image():
     user_id = request.form.get("userId", type=int)

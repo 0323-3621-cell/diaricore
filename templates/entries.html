@@ -184,21 +184,50 @@
                                 <i class="bi bi-arrow-left" aria-hidden="true"></i>
                                 <span>Back</span>
                             </button>
-                            <button type="button" class="entry-view-toolbar__cancel" id="entryViewCancelBtn">
-                                <i class="bi bi-x-lg" aria-hidden="true"></i>
-                                <span>Cancel</span>
-                            </button>
+                            <div class="entry-view-toolbar__trailing">
+                                <div class="entry-view-toolbar__read-actions" id="entryViewReadToolbar">
+                                    <span class="entry-view-ai-pill" id="entryViewAiPill" aria-live="polite">
+                                        <i class="bi bi-stars" aria-hidden="true"></i>
+                                        <span>AI Analysis: <strong id="entryViewAiEmotionLabel">—</strong></span>
+                                    </span>
+                                    <button type="button" class="entry-view-toolbar__link" id="entryViewViewDetailsBtn">View details</button>
+                                    <button type="button" class="entry-view-toolbar__edit" id="entryViewEditBtn">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        Edit
+                                    </button>
+                                    <button type="button" class="entry-view-toolbar__delete" id="entryViewDeleteBtn">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                                <button type="button" class="entry-view-toolbar__cancel" id="entryViewCancelBtn" hidden>
+                                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    <span>Cancel</span>
+                                </button>
+                            </div>
                         </header>
 
                         <div class="entry-view-card" id="entryViewCard">
-                            <div class="entry-view-tags-block">
-                                <span class="entry-view-tags-label">Tags:</span>
-                                <div class="tags-container entry-view-tags-inner" id="entryViewTagsRow"></div>
+                            <div class="entry-view-read-pane" id="entryViewReadPane">
+                                <div class="entry-view-tags-block">
+                                    <span class="entry-view-tags-label">Tags:</span>
+                                    <div class="entry-view-tags-read" id="entryViewTagsRead" aria-label="Tags"></div>
+                                </div>
+                                <hr class="entry-view-divider" />
+                                <p class="entry-view-datetime" id="entryViewDateLineRead"></p>
+                                <h1 class="entry-view-title-read" id="entryViewTitleRead"></h1>
+                                <div class="entry-view-body-read" id="entryViewBodyRead"></div>
                             </div>
-                            <hr class="entry-view-divider" />
-                            <p class="entry-view-datetime" id="entryViewDateLine"></p>
-                            <input type="text" class="entry-view-title-input" id="entryViewTitle" maxlength="180" placeholder="Give your entry a title..." autocomplete="off" />
-                            <textarea class="entry-view-body-input" id="entryViewBody" rows="8" placeholder="Start writing..." spellcheck="true"></textarea>
+                            <div class="entry-view-edit-pane" id="entryViewEditPane" hidden>
+                                <div class="entry-view-tags-block">
+                                    <span class="entry-view-tags-label">Tags:</span>
+                                    <div class="tags-container entry-view-tags-inner" id="entryViewTagsRow"></div>
+                                </div>
+                                <hr class="entry-view-divider" />
+                                <p class="entry-view-datetime" id="entryViewDateLine"></p>
+                                <input type="text" class="entry-view-title-input" id="entryViewTitle" maxlength="180" placeholder="Give your entry a title..." autocomplete="off" />
+                                <textarea class="entry-view-body-input" id="entryViewBody" rows="8" placeholder="Start writing..." spellcheck="true"></textarea>
+                            </div>
                         </div>
 
                         <div class="entry-view-actions" id="entryViewActions">

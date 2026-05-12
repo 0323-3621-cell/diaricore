@@ -835,9 +835,9 @@ function renderWeeklyChart(entries) {
     const chartTheme = buildChartThemeFromCss();
 
     const w = 640;
-    const h = 182;
+    const h = 196;
     const padX = 12;
-    const padY = 16;
+    const padY = 17;
     const step = (w - padX * 2) / 6;
 
     if (!hasData) {

@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(tag || '').trim().replace(/\s+/g, ' ');
     }
 
+    function getCurrentUserId() {
+        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+        const raw = user?.id ?? user?.userId ?? 0;
+        const parsed = Number(raw);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+    }
+
     const DEFAULT_TAGS = [
         { name: 'School', icon: 'bi bi-book', iconType: 'bi' },
         { name: 'Home', icon: 'bi bi-house', iconType: 'bi' },
@@ -64,8 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function syncUserTagsIntoUI() {
-        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-        const userId = Number(user?.id || 0);
+        const userId = getCurrentUserId();
         const container = document.querySelector('.tags-container');
         if (!container) return;
 
@@ -537,15 +543,15 @@ document.addEventListener('DOMContentLoaded', function() {
         customTagNameInput.addEventListener('input', updateCustomTagSaveState);
     }
     if (customTagSaveBtn) {
-        customTagSaveBtn.addEventListener('click', () => {
+        customTagSaveBtn.addEventListener('click', async () => {
             const tagName = normalizeTag(customTagNameInput?.value || '');
             if (!tagName || !selectedPickerIconName) return;
-            createNewTag(tagName, selectedPickerIconName, 'bi');
-            closeCustomTagModal();
+            const ok = await createNewTag(tagName, selectedPickerIconName, 'bi');
+            if (ok) closeCustomTagModal();
         });
     }
 
-    function createNewTag(tagName, iconName = '', iconType = 'bi') {
+    async function createNewTag(tagName, iconName = '', iconType = 'bi') {
         const tagsContainer = document.querySelector('.tags-container');
         const addTagBtn = document.querySelector('.tag-btn.add-tag');
         
@@ -553,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!normalizedName) return;
         const existingTags = Array.from(document.querySelectorAll('.tag-btn:not(.add-tag)'))
             .map((btn) => normalizeTag(btn.dataset.tag).toLowerCase());
-        if (existingTags.includes(normalizedName.toLowerCase())) return;
+        if (existingTags.includes(normalizedName.toLowerCase())) return false;
 
         const newTagBtn = document.createElement('button');
         newTagBtn.className = 'tag-btn';
@@ -563,21 +569,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const resolvedBi = iconType === 'bi' ? (iconName || iconClassForTag(normalizedName)) : iconClassForTag(normalizedName);
         newTagBtn.innerHTML = `${iconMarkup(resolvedBi, 'bi')}<span>${escapeHtml(normalizedName)}</span>`;
 
-        // Persist to user account (best-effort)
-        (async () => {
-            const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-            const userId = Number(user?.id || 0);
-            if (!userId) return;
-            try {
-                await fetch('/api/tags', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'bi' ? iconName : '' })
-                });
-            } catch (e) {
-                console.error('Failed to save tag:', e);
+        // Persist to user account and rollback on failure to prevent false-success UI.
+        const userId = getCurrentUserId();
+        if (!userId) {
+            newTagBtn.remove();
+            alert('Could not save tag: missing user session. Please log in again.');
+            return false;
+        }
+        try {
+            const response = await fetch('/api/tags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, tag: normalizedName, iconName: iconType === 'bi' ? iconName : '' })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.success) {
+                throw new Error(result?.error || 'Failed to save tag.');
             }
-        })();
+        } catch (e) {
+            console.error('Failed to save tag:', e);
+            newTagBtn.remove();
+            alert(`Could not save tag: ${e.message || 'Unknown error'}`);
+            updateTagVisibility();
+            return false;
+        }
         
         // Add click event to new tag
         newTagBtn.addEventListener('click', function() {
@@ -614,6 +629,8 @@ document.addEventListener('DOMContentLoaded', function() {
             newTagBtn.style.opacity = '1';
             newTagBtn.style.transform = 'scale(1)';
         }, 10);
+
+        return true;
     }
     
     const journalText = document.getElementById('journalText');
@@ -684,8 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const currentUser = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-        const userId = Number(currentUser?.id || 0);
+        const userId = getCurrentUserId();
 
         setSavingState(true);
         const analysisOverlay = ensureAnalysisOverlay();

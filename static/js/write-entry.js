@@ -530,7 +530,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const savedEntry = {
                 ...result.entry,
-                characterCount: entryText.length
+                characterCount: entryText.length,
+                moodScoringOffline: false,
             };
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(savedEntry);
@@ -546,7 +547,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 tags: Array.from(selectedTags),
                 text: entryText,
                 date: new Date().toISOString(),
-                characterCount: entryText.length
+                characterCount: entryText.length,
+                moodScoringOffline: true,
             };
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(fallbackEntry);

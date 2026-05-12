@@ -1,10 +1,26 @@
 /**
  * Shared mood → numeric scale for charts and summaries.
- * Uses model `all_probs` (softmax) when stored on the entry; otherwise the
- * resolved emotion label only. `emotionScore` alone is class confidence, not valence.
+ *
+ * Path A (distribution): weighted average of anchors using model `all_probs` softmax
+ * when the browser is online and the entry is not marked as offline-only scoring.
+ *
+ * Path B (label fallback): `feelingToScore(resolveEntryFeeling(entry))` when offline,
+ * when `all_probs` is missing/empty, or when the entry was saved without server analysis.
+ *
+ * `emotionScore` alone is class confidence, not valence — not used as a 0–10 mood line.
  */
 (function () {
     'use strict';
+
+    /** Browser reports no network — use label-only scoring even if stale `all_probs` exists. */
+    function isBrowserOffline() {
+        return typeof navigator !== 'undefined' && navigator.onLine === false;
+    }
+
+    /** Client-only / failed-save rows: never use distribution. */
+    function isEntryOfflineScoring(entry) {
+        return Boolean(entry?.moodScoringOffline);
+    }
 
     function feelingToScore(feelingRaw) {
         const feeling = String(feelingRaw || '').toLowerCase();
@@ -62,8 +78,12 @@
 
     /**
      * Single 0–10 mood score for an entry for aggregation / sparklines.
+     * Path A vs B is chosen automatically from connectivity + entry metadata.
      */
     function entryMoodScore10(entry) {
+        if (isBrowserOffline() || isEntryOfflineScoring(entry)) {
+            return feelingToScore(resolveEntryFeeling(entry));
+        }
         const fromProbs = expectedMoodScoreFromAllProbs(entry?.all_probs);
         if (fromProbs != null) return fromProbs;
         return feelingToScore(resolveEntryFeeling(entry));

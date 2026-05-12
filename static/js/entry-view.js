@@ -135,6 +135,8 @@
         if (cancelBtn) cancelBtn.hidden = true;
         if (actionsEl) actionsEl.hidden = true;
         if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
+        const delDlg = document.getElementById('entryDeleteDialog');
+        if (delDlg) delDlg.hidden = true;
     }
 
     function unmount() {
@@ -180,6 +182,11 @@
         const unsavedDialog = document.getElementById('entryUnsavedDialog');
         const unsavedStay = document.getElementById('entryUnsavedStayBtn');
         const unsavedDiscard = document.getElementById('entryUnsavedDiscardBtn');
+        const deleteDialog = document.getElementById('entryDeleteDialog');
+        const deletePreviewTitleEl = document.getElementById('entryDeletePreviewTitle');
+        const deletePreviewDateEl = document.getElementById('entryDeletePreviewDate');
+        const deleteCancelBtn = document.getElementById('entryDeleteCancelBtn');
+        const deleteConfirmBtn = document.getElementById('entryDeleteConfirmBtn');
 
         function setBothDateLines(innerHtml) {
             if (dateLine) dateLine.innerHTML = innerHtml;
@@ -220,7 +227,12 @@
             !editBtn ||
             !deleteBtn ||
             !viewDetailsBtn ||
-            !aiEmotionLabel
+            !aiEmotionLabel ||
+            !deleteDialog ||
+            !deletePreviewTitleEl ||
+            !deletePreviewDateEl ||
+            !deleteCancelBtn ||
+            !deleteConfirmBtn
         ) {
             onLeavePanel();
             unmount();
@@ -257,6 +269,66 @@
         let allTagChoices = [];
         let tagPickerOpen = false;
         let pendingNavigate = null;
+        let deleteRequestPending = false;
+
+        function previewTitleForEntry(ent) {
+            const t = (ent.title && String(ent.title).trim()) ? String(ent.title).trim() : '';
+            if (t) return t.length > 140 ? `${t.slice(0, 137)}…` : t;
+            const body = String(ent.text || '').trim();
+            if (body) {
+                const line = body.split('\n')[0].trim();
+                if (line) return line.length > 140 ? `${line.slice(0, 137)}…` : line;
+            }
+            return 'Journal entry';
+        }
+
+        function closeDeleteDialog() {
+            deleteDialog.hidden = true;
+            deleteConfirmBtn.disabled = false;
+        }
+
+        function openDeleteDialog() {
+            deletePreviewTitleEl.textContent = previewTitleForEntry(entry);
+            const displayDate = entry.date || entry.createdAt;
+            deletePreviewDateEl.textContent = formatEntryDateLine(displayDate) || '—';
+            deleteDialog.hidden = false;
+        }
+
+        async function runConfirmedDelete() {
+            if (signal.aborted || deleteRequestPending) return;
+            if (!isOnline()) {
+                closeDeleteDialog();
+                window.alert('Connect to the internet to delete entries.');
+                return;
+            }
+            deleteRequestPending = true;
+            deleteConfirmBtn.disabled = true;
+            try {
+                const res = await fetch(`/api/entries/${entryId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId }),
+                });
+                let data = {};
+                try {
+                    data = await res.json();
+                } catch (_) {}
+                if (!res.ok || !data.success) {
+                    window.alert(data.error || 'Could not delete this entry.');
+                    return;
+                }
+                closeDeleteDialog();
+                removeEntryFromList(entryId);
+                clearDraft();
+                onLeavePanel();
+            } catch (e) {
+                console.error(e);
+                window.alert('Could not delete this entry.');
+            } finally {
+                deleteRequestPending = false;
+                deleteConfirmBtn.disabled = false;
+            }
+        }
 
         function applyDraftFromStorage() {
             try {
@@ -666,37 +738,17 @@
         );
         deleteBtn.addEventListener(
             'click',
-            async () => {
+            () => {
                 if (signal.aborted) return;
-                if (!window.confirm('Delete this journal entry? This cannot be undone.')) return;
-                if (!isOnline()) {
-                    window.alert('Connect to the internet to delete entries.');
-                    return;
-                }
-                try {
-                    const res = await fetch(`/api/entries/${entryId}`, {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId }),
-                    });
-                    let data = {};
-                    try {
-                        data = await res.json();
-                    } catch (_) {}
-                    if (!res.ok || !data.success) {
-                        window.alert(data.error || 'Could not delete this entry.');
-                        return;
-                    }
-                    removeEntryFromList(entryId);
-                    clearDraft();
-                    onLeavePanel();
-                } catch (e) {
-                    console.error(e);
-                    window.alert('Could not delete this entry.');
-                }
+                openDeleteDialog();
             },
             { signal }
         );
+        deleteCancelBtn.addEventListener('click', () => closeDeleteDialog(), { signal });
+        deleteDialog.querySelectorAll('[data-entry-delete-dismiss]').forEach((el) => {
+            el.addEventListener('click', () => closeDeleteDialog(), { signal });
+        });
+        deleteConfirmBtn.addEventListener('click', () => void runConfirmedDelete(), { signal });
         viewDetailsBtn.addEventListener(
             'click',
             () => {

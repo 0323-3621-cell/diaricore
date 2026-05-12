@@ -469,12 +469,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function ensureLucideIconNamesLoaded() {
         if (lucideIconNames.length) return;
+        const toKebab = (s) => String(s || '')
+            .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+            .replace(/([A-Z])([A-Z][a-z])/g, '$1-$2')
+            .toLowerCase();
+        const runtimeIcons = window.lucide && window.lucide.icons ? window.lucide.icons : null;
+        const runtimeSet = new Set(
+            runtimeIcons
+                ? Object.keys(runtimeIcons).map(toKebab).filter((x) => /^[a-z0-9-]+$/.test(x))
+                : []
+        );
         const res = await fetch('/lucide-icon-names.json');
         const json = await res.json();
         if (!Array.isArray(json)) throw new Error('Invalid icon list');
-        lucideIconNames = json
+        const fetched = json
             .map((x) => String(x || '').trim().toLowerCase())
             .filter((x) => /^[a-z0-9-]+$/.test(x));
+        // Only keep icons the loaded Lucide runtime can actually render.
+        lucideIconNames = runtimeSet.size
+            ? fetched.filter((name) => runtimeSet.has(name))
+            : fetched;
+        // If fetch list mismatches runtime bundle, fall back to runtime-derived names.
+        if (!lucideIconNames.length && runtimeSet.size) {
+            lucideIconNames = Array.from(runtimeSet).sort();
+        }
     }
 
     async function openCustomTagModal() {

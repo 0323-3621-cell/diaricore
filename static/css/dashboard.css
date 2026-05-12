@@ -670,12 +670,16 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 1rem 1.15rem;
-    flex: 0 0 auto;
+    padding: 1rem 1.15rem 1.1rem;
+    flex: 0 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
 }
 
 .mood-key-title {
-    margin: 0 0 0.75rem;
+    margin: 0;
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -683,34 +687,97 @@ body {
     color: var(--text-muted);
 }
 
-.mood-key-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.45rem;
-}
-
-.mood-key-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.mood-key-lede {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-weight: 400;
+}
+
+.mood-key-lede strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.mood-key-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+}
+
+.mood-key-tile {
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--background-soft);
+    padding: 0.55rem 0.6rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    min-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mood-key-tile--full {
+    grid-column: 1 / -1;
+}
+
+.mood-key-tile-emoji {
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-bottom: 0.1rem;
+}
+
+.mood-key-tile-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: 0.01em;
+}
+
+.mood-key-tile-anchor {
+    font-size: 0.72rem;
     font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.3;
 }
 
-.mood-key-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    display: inline-block;
+.mood-key-tile--happy { border-left: 3px solid var(--mood-happy); }
+.mood-key-tile--sad { border-left: 3px solid var(--mood-sad); }
+.mood-key-tile--angry { border-left: 3px solid var(--mood-angry); }
+.mood-key-tile--anxious { border-left: 3px solid var(--mood-anxious); }
+.mood-key-tile--neutral { border-left: 3px solid var(--mood-neutral); }
+
+.mood-key-foot {
+    margin-top: 0.1rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--divider-color);
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.mood-key-foot-icon {
     flex-shrink: 0;
+    font-size: 1rem;
+    color: var(--info-color);
+    margin-top: 0.1rem;
 }
 
-.mood-key-dot--happy { background: var(--mood-happy); }
-.mood-key-dot--sad { background: var(--mood-sad); }
-.mood-key-dot--angry { background: var(--mood-angry); }
-.mood-key-dot--anxious { background: var(--mood-anxious); }
-.mood-key-dot--neutral { background: var(--mood-neutral); }
+.mood-key-foot-text {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.mood-key-foot-text strong {
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
 
 /* Weekly week-strip (reference-style day dots above chart) */
 .weekly-weekstrip {

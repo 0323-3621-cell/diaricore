@@ -236,15 +236,40 @@
                         </div>
                     </section>
 
-                    <!-- Mood Key -->
-                    <section class="mood-key-card" aria-label="Mood key">
-                        <h2 class="mood-key-title">Mood Key</h2>
-                        <div class="mood-key-list" role="list">
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--happy" aria-hidden="true"></span><span>Happy</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--sad" aria-hidden="true"></span><span>Sad</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--angry" aria-hidden="true"></span><span>Angry</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--anxious" aria-hidden="true"></span><span>Anxious</span></div>
-                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--neutral" aria-hidden="true"></span><span>Neutral</span></div>
+                    <!-- Mood key: anchors match static/js/mood-scoring.js (hydrated on load) -->
+                    <section class="mood-key-card" aria-label="How mood scores map to the chart">
+                        <h2 class="mood-key-title">Mood key</h2>
+                        <p class="mood-key-lede">Each mood has a <strong>valence anchor</strong> on the 0–10 scale. Your chart blends them using the model&rsquo;s emotion probabilities when you&rsquo;re online with a synced entry.</p>
+                        <div class="mood-key-grid" role="list">
+                            <div class="mood-key-tile mood-key-tile--happy" role="listitem">
+                                <span class="mood-key-tile-emoji" aria-hidden="true">😊</span>
+                                <span class="mood-key-tile-name">Happy</span>
+                                <span class="mood-key-tile-anchor" data-mood="happy" aria-live="polite">Anchor — / 10</span>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--sad" role="listitem">
+                                <span class="mood-key-tile-emoji" aria-hidden="true">😢</span>
+                                <span class="mood-key-tile-name">Sad</span>
+                                <span class="mood-key-tile-anchor" data-mood="sad" aria-live="polite">Anchor — / 10</span>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--angry" role="listitem">
+                                <span class="mood-key-tile-emoji" aria-hidden="true">😠</span>
+                                <span class="mood-key-tile-name">Angry</span>
+                                <span class="mood-key-tile-anchor" data-mood="angry" aria-live="polite">Anchor — / 10</span>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--anxious" role="listitem">
+                                <span class="mood-key-tile-emoji" aria-hidden="true">😰</span>
+                                <span class="mood-key-tile-name">Anxious</span>
+                                <span class="mood-key-tile-anchor" data-mood="anxious" aria-live="polite">Anchor — / 10</span>
+                            </div>
+                            <div class="mood-key-tile mood-key-tile--neutral mood-key-tile--full" role="listitem">
+                                <span class="mood-key-tile-emoji" aria-hidden="true">😐</span>
+                                <span class="mood-key-tile-name">Neutral</span>
+                                <span class="mood-key-tile-anchor" data-mood="neutral" aria-live="polite">Anchor — / 10</span>
+                            </div>
+                        </div>
+                        <div class="mood-key-foot">
+                            <i class="bi bi-info-circle mood-key-foot-icon" aria-hidden="true"></i>
+                            <p class="mood-key-foot-text"><strong>Blended score (online, synced):</strong> each emotion&rsquo;s share from your saved analysis is multiplied by that mood&rsquo;s anchor, then combined into one 0–10 score—so a mostly sad entry can land between anchors (for example about 3.6 instead of exactly 3.5 for sad alone). <strong>Label-only:</strong> when you&rsquo;re offline or the entry wasn&rsquo;t analyzed on the server, we use only the main mood&rsquo;s anchor. Single-class confidence is not this 0–10 line.</p>
                         </div>
                     </section>
                 </div>

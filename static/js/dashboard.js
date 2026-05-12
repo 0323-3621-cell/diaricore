@@ -61,6 +61,11 @@ const DASHBOARD_INSIGHT_POSITIVE = [
     "Your mood has been leaning brighter this week. Great consistency.",
     "You seem to be in a healthier rhythm recently. Keep nurturing it.",
     "Your journal reflects stronger emotional balance right now. Nice progress.",
+    "You are showing stronger emotional recovery lately. Keep building on it.",
+    "Your latest pattern looks lighter and more hopeful. Nice direction.",
+    "Your mood signals have improved this week. Keep your supportive routines going.",
+    "You are handling recent days with more balance. That's meaningful progress.",
+    "Recent entries point to healthier emotional momentum. Stay consistent.",
 ];
 
 const DASHBOARD_INSIGHT_MID = [
@@ -69,6 +74,11 @@ const DASHBOARD_INSIGHT_MID = [
     "Your entries show a mixed but stable pattern. Try one intentional check-in today.",
     "Your emotional trend is moderate right now. A quick mindful pause may help.",
     "You seem steady overall, with room to improve. One small win can shift the day.",
+    "Your mood is holding in the middle range. A brief reset could help raise it.",
+    "You're fairly stable right now. One intentional action can improve today's tone.",
+    "Recent logs suggest a neutral trend. A short gratitude note may help nudge upward.",
+    "Your pattern is balanced but variable. A quick emotional check-in could help.",
+    "You are maintaining a moderate baseline. Small routines can make it steadier.",
 ];
 
 const DASHBOARD_INSIGHT_LOW = [
@@ -77,6 +87,11 @@ const DASHBOARD_INSIGHT_LOW = [
     "Your recent entries suggest added strain. Writing briefly may ease the load.",
     "Your mood trend has dipped a bit. Try naming one feeling and one need today.",
     "Recent logs show tougher moments. A small grounding step could help right now.",
+    "Your recent pattern looks emotionally heavy. Try one small self-support step today.",
+    "You may be carrying extra stress this week. A brief pause and journal check-in can help.",
+    "Recent entries reflect lower energy. Keep today light and focus on one manageable step.",
+    "Your mood trend is under pressure right now. Try a short breath-and-write reset.",
+    "You're going through a tougher stretch. One gentle routine can help you stabilize.",
 ];
 
 document.addEventListener('DOMContentLoaded', async function() {

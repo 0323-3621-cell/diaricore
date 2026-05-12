@@ -1162,6 +1162,31 @@ html.theme-dark .mood-analysis-card.mood-analysis-card--analyzing .mood-analysis
     color: var(--text-dark);
 }
 
+.mood-result-v2__actions {
+    margin: 0.75rem 0 0;
+}
+
+.mood-result-v2__view-details {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.mood-result-v2__view-details:hover {
+    opacity: 0.9;
+}
+
+.mood-result-v2__view-details:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .mood-result-v2__subtitle {
     margin: 0;
     font-size: 0.98rem;

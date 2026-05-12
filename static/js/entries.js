@@ -266,6 +266,9 @@ function moodDisplayLabel(feelingRaw) {
 function createStoredEntryCard(entry) {
     const article = document.createElement('article');
     article.className = 'entry-card';
+    if (entry.id != null && entry.id !== '') {
+        article.dataset.entryId = String(entry.id);
+    }
     const date = new Date(entry.date);
     const dateText = Number.isNaN(date.getTime())
         ? 'Unknown date'
@@ -515,13 +518,15 @@ function initializeEntryCards() {
     });
 }
 
-// Show Entry Details (Mock Function)
+// Show Entry Details — opens full entry view page
 function showEntryDetails(card) {
-    const title = card.querySelector('.entry-title').textContent;
-    showNotification(`Opening entry: ${title}`, 'info');
-    
-    // In a real application, this would open a modal or navigate to entry detail page
-    console.log('Entry clicked:', title);
+    const id = card.dataset.entryId;
+    if (!id) {
+        const title = card.querySelector('.entry-title')?.textContent || 'Entry';
+        showNotification(`This entry cannot be opened (missing id): ${title}`, 'error');
+        return;
+    }
+    window.location.href = `entry-view.html?id=${encodeURIComponent(id)}`;
 }
 
 // Legacy load-more UI removed from Entries page (month dropdown + pagination replace it).

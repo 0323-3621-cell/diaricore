@@ -64,6 +64,19 @@ def _ensure_journal_entry_extras_columns(cur):
             cur.execute("ALTER TABLE journal_entries ADD COLUMN entry_datetime_utc TEXT")
 
 
+def _ensure_journal_updated_at_column(cur):
+    """Add updated_at to journal_entries; set on every UPDATE from application code."""
+    if USE_POSTGRES:
+        cur.execute(
+            "ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP"
+        )
+    else:
+        cur.execute("PRAGMA table_info(journal_entries)")
+        cols = {str(r[1]).lower() for r in (cur.fetchall() or [])}
+        if "updated_at" not in cols:
+            cur.execute("ALTER TABLE journal_entries ADD COLUMN updated_at TEXT")
+
+
 def _ensure_user_tags_icon_column(cur):
     """Add icon_name to user_tags on existing deployments."""
     if USE_POSTGRES:
@@ -144,7 +157,8 @@ def init_db():
                     emotion_score REAL NOT NULL,
                     all_probs_json TEXT,
                     image_urls_json TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP
                 );
                 """
             )
@@ -220,6 +234,7 @@ def init_db():
                     all_probs_json TEXT,
                     image_urls_json TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
                 """
@@ -239,6 +254,7 @@ def init_db():
             cur.execute("CREATE INDEX IF NOT EXISTS idx_user_tags_user_id ON user_tags (user_id);")
         _ensure_journal_all_probs_column(cur)
         _ensure_journal_entry_extras_columns(cur)
+        _ensure_journal_updated_at_column(cur)
         _ensure_user_tags_icon_column(cur)
         if USE_POSTGRES:
             cur.execute(
@@ -869,7 +885,7 @@ def create_journal_entry(
                 INSERT INTO journal_entries
                 (user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
+                RETURNING id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at, updated_at
                 """,
                 (user_id, title_clean, entry_dt_clean, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs, images_clean),
             )
@@ -889,7 +905,7 @@ def create_journal_entry(
         conn.commit()
         cur.execute(
             """
-            SELECT id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
+            SELECT id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at, updated_at
             FROM journal_entries
             WHERE id = ?
             """,
@@ -908,7 +924,7 @@ def get_journal_entries_by_user(user_id: int):
             cur.execute(
                 """
                 SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
-                , title, image_urls_json, entry_datetime_utc
+                , title, image_urls_json, entry_datetime_utc, updated_at
                 FROM journal_entries
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -919,7 +935,7 @@ def get_journal_entries_by_user(user_id: int):
             cur.execute(
                 """
                 SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
-                , title, image_urls_json, entry_datetime_utc
+                , title, image_urls_json, entry_datetime_utc, updated_at
                 FROM journal_entries
                 WHERE user_id = ?
                 ORDER BY datetime(created_at) DESC
@@ -927,6 +943,137 @@ def get_journal_entries_by_user(user_id: int):
                 (user_id,),
             )
         return [row_to_dict(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def get_journal_entry_by_id(entry_id: int, user_id: int):
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
+                , title, image_urls_json, entry_datetime_utc, updated_at
+                FROM journal_entries
+                WHERE id = %s AND user_id = %s
+                LIMIT 1
+                """,
+                (entry_id, user_id),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
+                , title, image_urls_json, entry_datetime_utc, updated_at
+                FROM journal_entries
+                WHERE id = ? AND user_id = ?
+                LIMIT 1
+                """,
+                (entry_id, user_id),
+            )
+        row = cur.fetchone()
+        return row_to_dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_journal_entry(
+    entry_id: int,
+    user_id: int,
+    *,
+    title: str | None,
+    text_content: str,
+    tags_json: str,
+    sentiment_label: str,
+    sentiment_score: float,
+    emotion_label: str,
+    emotion_score: float,
+    all_probs_json: str | None = None,
+):
+    """Update entry fields; never modifies created_at. Sets updated_at to now."""
+    probs = all_probs_json if all_probs_json is not None else "{}"
+    title_clean = str(title or "").strip()[:180] or None
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                UPDATE journal_entries
+                SET title = %s,
+                    text_content = %s,
+                    tags_json = %s,
+                    sentiment_label = %s,
+                    sentiment_score = %s,
+                    emotion_label = %s,
+                    emotion_score = %s,
+                    all_probs_json = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s AND user_id = %s
+                RETURNING id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at, updated_at
+                """,
+                (
+                    title_clean,
+                    text_content,
+                    tags_json,
+                    sentiment_label,
+                    sentiment_score,
+                    emotion_label,
+                    emotion_score,
+                    probs,
+                    entry_id,
+                    user_id,
+                ),
+            )
+            row = cur.fetchone()
+            conn.commit()
+            return row_to_dict(row) if row else None
+
+        cur.execute(
+            """
+            UPDATE journal_entries
+            SET title = ?,
+                text_content = ?,
+                tags_json = ?,
+                sentiment_label = ?,
+                sentiment_score = ?,
+                emotion_label = ?,
+                emotion_score = ?,
+                all_probs_json = ?,
+                updated_at = datetime('now')
+            WHERE id = ? AND user_id = ?
+            """,
+            (
+                title_clean,
+                text_content,
+                tags_json,
+                sentiment_label,
+                sentiment_score,
+                emotion_label,
+                emotion_score,
+                probs,
+                entry_id,
+                user_id,
+            ),
+        )
+        if cur.rowcount <= 0:
+            conn.rollback()
+            return None
+        conn.commit()
+        cur.execute(
+            """
+            SELECT id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at, updated_at
+            FROM journal_entries
+            WHERE id = ? AND user_id = ?
+            """,
+            (entry_id, user_id),
+        )
+        return row_to_dict(cur.fetchone())
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

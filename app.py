@@ -321,6 +321,7 @@ def serialize_entry(row):
         "imageUrls": image_urls,
         "date": date_value,
         "createdAt": entry_created_at_iso_utc(created_at),
+        "updatedAt": entry_created_at_iso_utc(row.get("updated_at")) if row.get("updated_at") else None,
         "sentimentLabel": (row.get("sentiment_label") or "neutral").lower(),
         "sentimentScore": float(row.get("sentiment_score") or 0.5),
         "emotionLabel": emotion_label,
@@ -904,6 +905,108 @@ def api_entries_post():
     response_entry = serialize_entry(row)
     response_entry["secondaryMood"] = analysis.get("secondaryMood")
     return jsonify({"success": True, "entry": response_entry, "analysisEngine": analysis.get("engine", "hf-custom")}), 201
+
+
+@app.route("/api/entries/analyze-text", methods=["POST"])
+def api_entries_analyze_text():
+    """Run mood/NLP on text only (no DB write). Used by entry view / modal re-run."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    text = (data.get("text") or "").strip()
+    if not isinstance(user_id, int) or user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not text:
+        return jsonify({"success": False, "error": "Entry text is required."}), 400
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    analysis = space_nlp.analyze(text)
+    return (
+        jsonify(
+            {
+                "success": True,
+                "sentimentLabel": (analysis.get("sentimentLabel") or "neutral"),
+                "sentimentScore": float(analysis.get("sentimentScore") or 0.5),
+                "emotionLabel": (analysis.get("emotionLabel") or "neutral"),
+                "emotionScore": float(analysis.get("emotionScore") or 0.5),
+                "all_probs": analysis.get("all_probs") or {},
+                "analysisEngine": analysis.get("engine", "hf-custom"),
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/api/entries/<int:entry_id>", methods=["GET"])
+def api_entries_one(entry_id: int):
+    user_id_raw = (request.args.get("userId") or "").strip()
+    if not user_id_raw.isdigit():
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id = int(user_id_raw)
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+    row = db.get_journal_entry_by_id(entry_id, user_id)
+    if not row:
+        return jsonify({"success": False, "error": "Entry not found."}), 404
+    return jsonify({"success": True, "entry": serialize_entry(row)}), 200
+
+
+@app.route("/api/entries/<int:entry_id>", methods=["PATCH"])
+def api_entries_patch(entry_id: int):
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    title = (data.get("title") or "").strip()
+    text = (data.get("text") or "").strip()
+    tags = data.get("tags") or []
+    reanalyze = bool(data.get("reanalyze"))
+
+    if not isinstance(user_id, int) or user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not text:
+        return jsonify({"success": False, "error": "Entry text is required."}), 400
+    if not isinstance(tags, list):
+        tags = []
+    clean_tags = [str(t).strip() for t in tags if str(t or "").strip()]
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    existing = db.get_journal_entry_by_id(entry_id, user_id)
+    if not existing:
+        return jsonify({"success": False, "error": "Entry not found."}), 404
+
+    engine = None
+    if reanalyze:
+        analysis = space_nlp.analyze(text)
+        sentiment_label = analysis["sentimentLabel"]
+        sentiment_score = float(analysis["sentimentScore"])
+        emotion_label = analysis["emotionLabel"]
+        emotion_score = float(analysis["emotionScore"])
+        all_probs_json = json.dumps(analysis.get("all_probs") or {})
+        engine = analysis.get("engine", "hf-custom")
+    else:
+        sentiment_label = existing.get("sentiment_label") or "neutral"
+        sentiment_score = float(existing.get("sentiment_score") or 0.5)
+        emotion_label = existing.get("emotion_label") or "neutral"
+        emotion_score = float(existing.get("emotion_score") or 0.5)
+        all_probs_json = existing.get("all_probs_json") or "{}"
+
+    row = db.update_journal_entry(
+        entry_id,
+        user_id,
+        title=title,
+        text_content=text,
+        tags_json=json.dumps(clean_tags),
+        sentiment_label=str(sentiment_label).lower()[:32],
+        sentiment_score=sentiment_score,
+        emotion_label=str(emotion_label).lower()[:32],
+        emotion_score=emotion_score,
+        all_probs_json=all_probs_json,
+    )
+    if not row:
+        return jsonify({"success": False, "error": "Could not update entry."}), 500
+    response_entry = serialize_entry(row)
+    if reanalyze:
+        response_entry["secondaryMood"] = None
+    return jsonify({"success": True, "entry": response_entry, "analysisEngine": engine if reanalyze else None}), 200
 
 
 @app.route("/api/uploads/image", methods=["POST"])

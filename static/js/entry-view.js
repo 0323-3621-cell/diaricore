@@ -1,0 +1,509 @@
+(function () {
+    'use strict';
+
+    const QUEUE_KEY = 'diariCoreEntryEditQueue';
+
+    function draftKey(entryId) {
+        return `diariCoreEntryEditDraft_${entryId}`;
+    }
+
+    function getUserId() {
+        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+        const raw = user?.id ?? user?.userId ?? 0;
+        const parsed = Number(raw);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+    }
+
+    function normalizeTag(tag) {
+        return String(tag || '').trim().replace(/\s+/g, ' ');
+    }
+
+    const DEFAULT_TAG_NAMES = ['School', 'Home', 'Friends', 'Work', 'Family', 'Health', 'Money', 'Bills'];
+
+    function parseQueryId() {
+        const q = new URLSearchParams(window.location.search);
+        const raw = q.get('id');
+        const n = Number(raw);
+        return Number.isInteger(n) && n > 0 ? n : 0;
+    }
+
+    function loadEntryFromList(entryId) {
+        const list = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        return list.find((e) => Number(e?.id) === entryId) || null;
+    }
+
+    function replaceEntryInList(updated) {
+        const list = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        const idx = list.findIndex((e) => Number(e?.id) === Number(updated.id));
+        if (idx >= 0) list[idx] = { ...list[idx], ...updated };
+        else list.unshift(updated);
+        localStorage.setItem('diariCoreEntries', JSON.stringify(list));
+    }
+
+    function readQueue() {
+        try {
+            const raw = localStorage.getItem(QUEUE_KEY);
+            const arr = JSON.parse(raw || '[]');
+            return Array.isArray(arr) ? arr : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function writeQueue(arr) {
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(arr));
+    }
+
+    function isOnline() {
+        return navigator.onLine !== false;
+    }
+
+    function serializeEditor(titleEl, bodyEl, tagSet) {
+        const title = (titleEl?.value || '').trim();
+        const text = (bodyEl?.value || '').trim();
+        const t = [...tagSet].map(normalizeTag).filter(Boolean).sort((a, b) => a.localeCompare(b));
+        return JSON.stringify({ title, text, tags: t });
+    }
+
+    function formatEntryDateLine(isoDate) {
+        const d = new Date(isoDate);
+        if (Number.isNaN(d.getTime())) return '';
+        const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+        const rest = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return `${weekday}, ${rest} · ${time}`;
+    }
+
+    function autoResizeTextarea(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${Math.max(200, el.scrollHeight)}px`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const entryId = parseQueryId();
+        const userId = getUserId();
+        const titleEl = document.getElementById('entryViewTitle');
+        const bodyEl = document.getElementById('entryViewBody');
+        const dateLine = document.getElementById('entryViewDateLine');
+        const tagsRow = document.getElementById('entryViewTagsRow');
+        const backBtn = document.getElementById('entryViewBackBtn');
+        const cancelBtn = document.getElementById('entryViewCancelBtn');
+        const saveBtn = document.getElementById('entryViewSaveBtn');
+        const saveAnalyzeBtn = document.getElementById('entryViewSaveAnalyzeBtn');
+        const unsavedDialog = document.getElementById('entryUnsavedDialog');
+        const unsavedStay = document.getElementById('entryUnsavedStayBtn');
+        const unsavedDiscard = document.getElementById('entryUnsavedDiscardBtn');
+
+        if (!entryId || !userId) {
+            window.location.href = 'entries.html';
+            return;
+        }
+
+        let entry = loadEntryFromList(entryId);
+        if (isOnline()) {
+            try {
+                const res = await fetch(`/api/entries/${entryId}?userId=${encodeURIComponent(String(userId))}`);
+                const data = await res.json();
+                if (res.ok && data.success && data.entry) {
+                    entry = data.entry;
+                    replaceEntryInList(entry);
+                }
+            } catch (_) {}
+        }
+
+        if (!entry) {
+            window.location.href = 'entries.html';
+            return;
+        }
+
+        let tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
+        let allTagChoices = [];
+        let tagPickerOpen = false;
+        let pendingNavigate = null;
+
+        function applyDraftFromStorage() {
+            try {
+                const raw = localStorage.getItem(draftKey(entryId));
+                if (!raw) return;
+                const d = JSON.parse(raw);
+                if (!d || typeof d !== 'object') return;
+                if (d.title != null) titleEl.value = String(d.title);
+                if (d.text != null) bodyEl.value = String(d.text);
+                if (Array.isArray(d.tags)) tags = new Set(d.tags.map(normalizeTag).filter(Boolean));
+            } catch (_) {}
+        }
+
+        applyDraftFromStorage();
+
+        titleEl.value = entry.title || '';
+        if (!localStorage.getItem(draftKey(entryId))) {
+            bodyEl.value = entry.text || '';
+        }
+
+        const displayDate = entry.date || entry.createdAt;
+        dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+
+        let baseline = serializeEditor(titleEl, bodyEl, tags);
+
+        function isDirty() {
+            return serializeEditor(titleEl, bodyEl, tags) !== baseline;
+        }
+
+        function persistDraft() {
+            localStorage.setItem(
+                draftKey(entryId),
+                JSON.stringify({
+                    title: titleEl.value,
+                    text: bodyEl.value,
+                    tags: Array.from(tags),
+                    savedAt: new Date().toISOString(),
+                })
+            );
+        }
+
+        function clearDraft() {
+            localStorage.removeItem(draftKey(entryId));
+        }
+
+        async function loadTagChoices() {
+            const fromApi = new Set();
+            try {
+                if (isOnline()) {
+                    const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
+                    const data = await res.json();
+                    if (res.ok && data.success && Array.isArray(data.tags)) {
+                        data.tags.forEach((t) => fromApi.add(normalizeTag(t)));
+                    }
+                }
+            } catch (_) {}
+            DEFAULT_TAG_NAMES.forEach((t) => fromApi.add(t));
+            tags.forEach((t) => fromApi.add(t));
+            allTagChoices = Array.from(fromApi).sort((a, b) => a.localeCompare(b));
+        }
+
+        await loadTagChoices();
+
+        const addWrap = document.createElement('div');
+        addWrap.className = 'entry-view-add-tag-wrap';
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'tag-btn add-tag entry-view-add-tag';
+        addBtn.innerHTML = '<i class="bi bi-plus-lg" aria-hidden="true"></i><span>Add tag</span>';
+        const picker = document.createElement('div');
+        picker.className = 'entry-view-tag-picker';
+        picker.hidden = true;
+        addWrap.appendChild(addBtn);
+        addWrap.appendChild(picker);
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function fillPicker() {
+            picker.innerHTML = '';
+            const applied = new Set([...tags].map((t) => t.toLowerCase()));
+            const avail = allTagChoices.filter((t) => !applied.has(t.toLowerCase()));
+            if (!avail.length) {
+                const empty = document.createElement('p');
+                empty.style.cssText = 'margin:0.5rem;padding:0.25rem;font-size:0.85rem;color:var(--text-muted)';
+                empty.textContent = 'No more tags to add.';
+                picker.appendChild(empty);
+                return;
+            }
+            avail.forEach((tag) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = tag;
+                b.addEventListener('click', () => {
+                    tags.add(normalizeTag(tag));
+                    tagPickerOpen = false;
+                    picker.hidden = true;
+                    renderTags();
+                });
+                picker.appendChild(b);
+            });
+        }
+
+        function renderTags() {
+            tagsRow.innerHTML = '';
+            tags.forEach((tag) => {
+                const pill = document.createElement('span');
+                pill.className = 'entry-view-tag-pill';
+                pill.innerHTML = `<span>${escapeHtml(tag)}</span><button type="button" aria-label="Remove ${escapeHtml(tag)}">×</button>`;
+                pill.querySelector('button').addEventListener('click', () => {
+                    tags.delete(tag);
+                    renderTags();
+                    loadTagChoices().then(fillPicker);
+                });
+                tagsRow.appendChild(pill);
+            });
+            tagsRow.appendChild(addWrap);
+            fillPicker();
+        }
+
+        addBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tagPickerOpen = !tagPickerOpen;
+            picker.hidden = !tagPickerOpen;
+            if (tagPickerOpen) loadTagChoices().then(() => fillPicker());
+        });
+
+        document.addEventListener('click', () => {
+            if (tagPickerOpen) {
+                tagPickerOpen = false;
+                picker.hidden = true;
+            }
+        });
+
+        picker.addEventListener('click', (e) => e.stopPropagation());
+
+        renderTags();
+        autoResizeTextarea(bodyEl);
+
+        bodyEl.addEventListener('input', () => {
+            autoResizeTextarea(bodyEl);
+            if (!isOnline()) persistDraft();
+        });
+        titleEl.addEventListener('input', () => {
+            if (!isOnline()) persistDraft();
+        });
+
+        function goEntries() {
+            window.location.href = 'entries.html';
+        }
+
+        function openUnsaved(next) {
+            if (!isDirty()) {
+                next();
+                return;
+            }
+            pendingNavigate = next;
+            unsavedDialog.hidden = false;
+        }
+
+        backBtn.addEventListener('click', () => openUnsaved(goEntries));
+        cancelBtn.addEventListener('click', () => openUnsaved(goEntries));
+        unsavedStay.addEventListener('click', () => {
+            unsavedDialog.hidden = true;
+            pendingNavigate = null;
+        });
+        unsavedDiscard.addEventListener('click', () => {
+            unsavedDialog.hidden = true;
+            const fn = pendingNavigate;
+            pendingNavigate = null;
+            if (fn) fn();
+        });
+        unsavedDialog.querySelector('[data-close="1"]').addEventListener('click', () => {
+            unsavedDialog.hidden = true;
+            pendingNavigate = null;
+        });
+
+        async function patchRemote(reanalyze) {
+            const payload = {
+                userId,
+                title: titleEl.value.trim(),
+                text: bodyEl.value.trim(),
+                tags: Array.from(tags).map(normalizeTag).filter(Boolean),
+                reanalyze: Boolean(reanalyze),
+            };
+            const res = await fetch(`/api/entries/${entryId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success || !data.entry) {
+                throw new Error(data.error || 'Save failed');
+            }
+            return data;
+        }
+
+        function offlineMergedEntry(reanalyze) {
+            const base = { ...entry, id: entryId };
+            base.title = titleEl.value.trim();
+            base.text = bodyEl.value.trim();
+            base.tags = Array.from(tags).map(normalizeTag).filter(Boolean);
+            if (reanalyze) {
+                base.feeling = 'neutral';
+                base.emotionLabel = 'neutral';
+                base.emotionScore = 0.55;
+                base.sentimentLabel = 'neutral';
+                base.sentimentScore = 0.55;
+                base.all_probs = { neutral: 0.55, happy: 0.1, sad: 0.1, anxious: 0.1, angry: 0.15 };
+                base.moodScoringOffline = true;
+            }
+            return base;
+        }
+
+        function pushOfflineQueue(reanalyze) {
+            const record = {
+                entryId,
+                userId,
+                title: titleEl.value.trim(),
+                text: bodyEl.value.trim(),
+                tags: Array.from(tags).map(normalizeTag).filter(Boolean),
+                reanalyze: Boolean(reanalyze),
+                queuedAt: new Date().toISOString(),
+            };
+            const q = readQueue();
+            q.push(record);
+            writeQueue(q);
+        }
+
+        async function flushEditQueue() {
+            if (!isOnline()) return;
+            const q = readQueue();
+            const next = [];
+            for (const row of q) {
+                try {
+                    const res = await fetch(`/api/entries/${row.entryId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: row.userId,
+                            title: row.title,
+                            text: row.text,
+                            tags: row.tags,
+                            reanalyze: row.reanalyze,
+                        }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success && data.entry) {
+                        replaceEntryInList(data.entry);
+                        try {
+                            localStorage.removeItem(draftKey(Number(row.entryId)));
+                        } catch (_) {}
+                        continue;
+                    }
+                } catch (_) {}
+                next.push(row);
+            }
+            writeQueue(next);
+        }
+
+        window.addEventListener('online', () => {
+            flushEditQueue();
+            loadTagChoices().then(() => fillPicker());
+        });
+
+        function moodOptions(overlay) {
+            return {
+                onSaveExit() {
+                    overlay.hidden = true;
+                    goEntries();
+                },
+                fetchRerunAnalysis: async () => {
+                    const t = bodyEl.value.trim();
+                    if (!t) throw new Error('empty');
+                    const res = await fetch('/api/entries/analyze-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, text: t }),
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.success) throw new Error(result.error || 'analyze failed');
+                    const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
+                    return {
+                        entry: {
+                            emotionLabel: result.emotionLabel,
+                            emotionScore: result.emotionScore,
+                            sentimentLabel: result.sentimentLabel,
+                            sentimentScore: result.sentimentScore,
+                            all_probs: result.all_probs || {},
+                            feeling: result.emotionLabel,
+                        },
+                        isFallback: fb,
+                    };
+                },
+            };
+        }
+
+        async function runSave(reanalyze) {
+            const text = bodyEl.value.trim();
+            if (!text) {
+                window.alert('Please add some text to your entry.');
+                return;
+            }
+            saveBtn.disabled = true;
+            saveAnalyzeBtn.disabled = true;
+            try {
+                if (!isOnline()) {
+                    pushOfflineQueue(reanalyze);
+                    const merged = offlineMergedEntry(reanalyze);
+                    replaceEntryInList(merged);
+                    entry = merged;
+                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    clearDraft();
+                    if (reanalyze) {
+                        window.DiariMoodAnalysis.resetSession();
+                        const overlay = window.DiariMoodAnalysis.ensureAnalysisOverlay();
+                        try {
+                            await window.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+                        } catch (_) {}
+                        window.DiariMoodAnalysis.showAnalysisLoading(overlay);
+                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        window.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
+                    }
+                    return;
+                }
+
+                if (reanalyze) {
+                    window.DiariMoodAnalysis.resetSession();
+                    const overlay = window.DiariMoodAnalysis.ensureAnalysisOverlay();
+                    try {
+                        await window.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+                    } catch (_) {}
+                    window.DiariMoodAnalysis.showAnalysisLoading(overlay);
+                    try {
+                        const data = await patchRemote(true);
+                        entry = data.entry;
+                        replaceEntryInList(entry);
+                        const engine = (data.analysisEngine || '').toString().toLowerCase();
+                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        window.DiariMoodAnalysis.showAnalysisResult(overlay, data.entry, engine === 'fallback', moodOptions(overlay));
+                        clearDraft();
+                        baseline = serializeEditor(titleEl, bodyEl, tags);
+                    } catch (err) {
+                        console.error(err);
+                        pushOfflineQueue(true);
+                        const merged = offlineMergedEntry(true);
+                        replaceEntryInList(merged);
+                        entry = merged;
+                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        window.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
+                    }
+                    return;
+                }
+
+                try {
+                    const data = await patchRemote(false);
+                    entry = data.entry;
+                    replaceEntryInList(entry);
+                    clearDraft();
+                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                } catch (err) {
+                    console.error(err);
+                    pushOfflineQueue(false);
+                    const merged = offlineMergedEntry(false);
+                    replaceEntryInList(merged);
+                    entry = merged;
+                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    window.alert('Saved offline. We will sync when you are back online.');
+                }
+            } finally {
+                saveBtn.disabled = false;
+                saveAnalyzeBtn.disabled = false;
+            }
+        }
+
+        saveBtn.addEventListener('click', () => runSave(false));
+        saveAnalyzeBtn.addEventListener('click', () => runSave(true));
+
+        flushEditQueue();
+    });
+})();

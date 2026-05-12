@@ -368,13 +368,13 @@
     outline: none;
 }
 
-.entry-toolbar {
+.entry-gallery-toolbar {
     display: flex;
-    justify-content: flex-start;
-    margin-bottom: 0.45rem;
+    justify-content: flex-end;
+    margin-bottom: 0.4rem;
 }
 
-.entry-toolbar-btn {
+.entry-gallery-toolbar__btn {
     border: 1px solid var(--border-color);
     border-radius: 999px;
     padding: 0.34rem 0.72rem;
@@ -384,9 +384,10 @@
     display: inline-flex;
     align-items: center;
     gap: 0.38rem;
+    cursor: pointer;
 }
 
-.entry-toolbar-btn:hover {
+.entry-gallery-toolbar__btn:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);
 }

@@ -147,13 +147,7 @@
                     <div class="entry-split-layout" id="entrySplitLayout">
                         <div class="entry-main-pane">
                             <input id="journalTitleInput" class="journal-title-input" type="text" maxlength="180" placeholder="Give your entry a title..." />
-                            <div class="entry-toolbar">
-                                <button type="button" class="entry-toolbar-btn" id="addPhotosBtn">
-                                    <i class="bi bi-images"></i>
-                                    <span>Add photos</span>
-                                </button>
-                                <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
-                            </div>
+                            <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
                             <textarea
                                 id="journalText"
                                 class="journal-textarea"
@@ -168,6 +162,12 @@
                             </div>
                         </div>
                         <div class="entry-gallery-pane">
+                            <div class="entry-gallery-toolbar">
+                                <button type="button" class="entry-gallery-toolbar__btn" id="addPhotosBtn">
+                                    <i class="bi bi-images"></i>
+                                    <span>Add photos</span>
+                                </button>
+                            </div>
                             <div class="entry-gallery" id="entryGallery"></div>
                         </div>
                     </div>

@@ -138,7 +138,7 @@ function createStoredEntryCard(entry) {
         <div class="entry-content-wrapper">
             <div class="entry-header">
                 <div class="entry-meta">
-                    <span class="entry-date">${dateText}</span>
+                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${dateText}</span></span>
                     <span class="entry-time">${timeText}</span>
                     <h3 class="entry-title">${title || 'Journal Entry'}</h3>
                 </div>
@@ -148,9 +148,7 @@ function createStoredEntryCard(entry) {
             </div>
             <div class="entry-content">
                 <p class="entry-excerpt">${excerpt || 'No details provided.'}</p>
-                <div class="entry-tags">
-                    ${(tags.length ? tags : ['Journal']).map((tag) => `<span class="tag">${tag}</span>`).join('')}
-                </div>
+                ${tags.length ? `<div class="entry-tags">${tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}</div>` : ''}
             </div>
         </div>
     `;

@@ -1408,7 +1408,14 @@ body {
         min-width: 0;
         font-size: 0.95rem;
         font-weight: 500;
-        align-items: flex-start;
+        align-items: center;
+        display: inline-flex;
+        gap: 0.4rem;
+    }
+
+    .entries-section .entry-card .entry-date i {
+        font-size: 0.9rem;
+        color: var(--text-muted);
     }
 
     .entries-section .entry-card .entry-time {
@@ -1418,9 +1425,11 @@ body {
     }
 
     .entries-section .entry-card .entry-mood {
-        background: transparent;
-        padding: 0;
+        background: transparent !important;
+        padding: 0 !important;
         border-radius: 0;
+        border: none !important;
+        box-shadow: none !important;
     }
 
     .entries-section .entry-card .mood-label {
@@ -1449,9 +1458,9 @@ body {
     }
 
     .entries-section .entry-card .entry-content {
-        margin-top: 0.5rem;
-        padding-top: 0.5rem;
-        border-top: 1px solid #edf1ef;
+        margin-top: 0.12rem;
+        padding-top: 0.28rem;
+        border-top: none;
     }
 
     .entries-section .entry-card .entry-excerpt {

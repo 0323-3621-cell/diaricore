@@ -142,18 +142,12 @@
             return;
         }
 
-        let entry = loadEntryFromList(entryId);
-        if (entry) {
-            titleEl.value = entry.title || '';
-            if (!localStorage.getItem(draftKey(entryId))) {
-                bodyEl.value = entry.text || '';
-            }
-            const displayDate = entry.date || entry.createdAt;
-            dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
-            autoResizeTextarea(bodyEl);
-        }
+        const listEntry = loadEntryFromList(entryId);
+        let entry = listEntry;
 
-        if (isOnline()) {
+        if (!entry && isOnline()) {
+            tagsRow.innerHTML =
+                '<span class="entry-view-tags-await" style="color:var(--text-muted);font-size:0.85rem;">Loading…</span>';
             try {
                 const res = await fetch(`/api/entries/${entryId}?userId=${encodeURIComponent(String(userId))}`);
                 const data = await res.json();
@@ -199,6 +193,8 @@
 
         const displayDate = entry.date || entry.createdAt;
         dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+
+        autoResizeTextarea(bodyEl);
 
         let baseline = serializeEditor(titleEl, bodyEl, tags);
 
@@ -355,6 +351,38 @@
             if (signal.aborted) return;
             fillPicker();
         });
+
+        if (isOnline() && listEntry) {
+            void (async () => {
+                try {
+                    const res = await fetch(`/api/entries/${entryId}?userId=${encodeURIComponent(String(userId))}`);
+                    const data = await res.json();
+                    if (signal.aborted) return;
+                    if (!res.ok || !data.success || !data.entry) return;
+                    const incoming = data.entry;
+                    replaceEntryInList(incoming);
+                    if (localStorage.getItem(draftKey(entryId))) {
+                        void loadTagChoices().then(() => {
+                            if (!signal.aborted) fillPicker();
+                        });
+                        return;
+                    }
+                    entry = incoming;
+                    titleEl.value = entry.title || '';
+                    bodyEl.value = entry.text || '';
+                    const dRefresh = entry.date || entry.createdAt;
+                    dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(dRefresh)}</span>`;
+                    tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
+                    seedTagChoicesSync();
+                    renderTags();
+                    autoResizeTextarea(bodyEl);
+                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    void loadTagChoices().then(() => {
+                        if (!signal.aborted) fillPicker();
+                    });
+                } catch (_) {}
+            })();
+        }
 
         bodyEl.addEventListener(
             'input',

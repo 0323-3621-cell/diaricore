@@ -1462,6 +1462,8 @@ document.addEventListener('DOMContentLoaded', function() {
         wrap.appendChild(progressWrap);
         body.appendChild(wrap);
 
+        overlay.querySelector('.mood-analysis-card')?.classList.add('mood-analysis-card--analyzing');
+
         footer.style.display = 'none';
         overlay.hidden = false;
         moodAnalysisLoadingShownAt = Date.now();
@@ -1536,6 +1538,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showAnalysisResult(overlay, entry, isFallback = false) {
         clearMoodAnalysisProgressTimer();
         parkMoodAnalysisBookMount();
+        overlay.querySelector('.mood-analysis-card')?.classList.remove('mood-analysis-card--analyzing');
 
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');

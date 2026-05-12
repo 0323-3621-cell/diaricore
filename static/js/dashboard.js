@@ -55,6 +55,30 @@ const WELLNESS_QUOTES = [
     { text: "Rest is not idleness.", author: "John Lubbock" },
 ];
 
+const DASHBOARD_INSIGHT_POSITIVE = [
+    "Your recent entries show a positive emotional trend. Keep the momentum going.",
+    "You're carrying more steady energy lately. Keep doing what supports you.",
+    "Your mood has been leaning brighter this week. Great consistency.",
+    "You seem to be in a healthier rhythm recently. Keep nurturing it.",
+    "Your journal reflects stronger emotional balance right now. Nice progress.",
+];
+
+const DASHBOARD_INSIGHT_MID = [
+    "Your recent mood looks fairly steady. A short reflection can keep you grounded.",
+    "You're in a balanced range lately. Small positive habits can lift it further.",
+    "Your entries show a mixed but stable pattern. Try one intentional check-in today.",
+    "Your emotional trend is moderate right now. A quick mindful pause may help.",
+    "You seem steady overall, with room to improve. One small win can shift the day.",
+];
+
+const DASHBOARD_INSIGHT_LOW = [
+    "Your recent mood looks lower than usual. Try a short reflective entry.",
+    "You've had heavier emotional days lately. A gentle check-in might help.",
+    "Your recent entries suggest added strain. Writing briefly may ease the load.",
+    "Your mood trend has dipped a bit. Try naming one feeling and one need today.",
+    "Recent logs show tougher moments. A small grounding step could help right now.",
+];
+
 document.addEventListener('DOMContentLoaded', async function() {
     hydrateMoodKeyAnchors();
     await syncEntriesFromApi();
@@ -626,9 +650,7 @@ function updateDashboardCards(entries) {
 
     if (insightValue) {
         const score = entryMoodScore10(latest);
-        insightValue.textContent = score >= 7
-            ? 'You are showing a positive emotional trend. Keep it up.'
-            : 'Your recent mood looks lower than usual. Try a short reflective entry.';
+        insightValue.textContent = pickDashboardInsightLine(score);
     }
     if (insightDescription) insightDescription.textContent = 'Based on your recent entries';
 }
@@ -643,6 +665,13 @@ function pickDailyFromList(items) {
     if (!Array.isArray(items) || items.length === 0) return null;
     const idx = daySeedNumber() % items.length;
     return items[idx];
+}
+
+function pickDashboardInsightLine(score) {
+    const pool = score >= 7.5
+        ? DASHBOARD_INSIGHT_POSITIVE
+        : (score >= 5.5 ? DASHBOARD_INSIGHT_MID : DASHBOARD_INSIGHT_LOW);
+    return pickDailyFromList(pool) || "How are you feeling right now?";
 }
 
 function updateDailyPrompt() {

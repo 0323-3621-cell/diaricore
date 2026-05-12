@@ -93,20 +93,25 @@ function initializeEntriesFromStorage() {
     });
 }
 
-function resolveEntryMood(entry) {
-    const raw = (entry?.emotionLabel || entry?.feeling || entry?.sentimentLabel || 'neutral').toString().toLowerCase();
-    if (raw === 'happy') return 'happy';
-    if (raw === 'sad') return 'sad';
-    if (raw === 'angry') return 'angry';
-    if (raw === 'anxious' || raw === 'stressed') return 'anxious';
+function resolveEntryFeeling(entry) {
+    const feeling = (entry?.feeling || '').toLowerCase();
+    if (feeling && feeling !== 'unspecified') {
+        if (feeling === 'excited') return 'happy';
+        if (feeling === 'stressed' || feeling === 'calm' || feeling === 'peaceful') return 'anxious';
+        if (['happy', 'sad', 'angry', 'anxious', 'neutral'].includes(feeling)) return feeling;
+    }
+    const sentiment = (entry?.sentimentLabel || '').toLowerCase();
+    if (sentiment === 'positive') return 'happy';
+    if (sentiment === 'negative') return 'anxious';
     return 'neutral';
 }
 
-function moodLabelText(mood) {
-    if (mood === 'happy') return 'Happy';
-    if (mood === 'sad') return 'Sad';
-    if (mood === 'angry') return 'Angry';
-    if (mood === 'anxious') return 'Anxious';
+function moodDisplayLabel(feelingRaw) {
+    const feeling = (feelingRaw || '').toLowerCase();
+    if (feeling === 'happy') return 'Happy';
+    if (feeling === 'sad') return 'Sad';
+    if (feeling === 'angry') return 'Angry';
+    if (feeling === 'anxious') return 'Anxious';
     return 'Neutral';
 }
 
@@ -121,23 +126,24 @@ function createStoredEntryCard(entry) {
         ? ''
         : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-    const titleRaw = (entry?.title || '').toString().trim();
-    const title = titleRaw || (entry.text ? entry.text.trim().split('\\n')[0].slice(0, 40) : 'Journal Entry');
+    const title = (entry.title && String(entry.title).trim())
+        ? String(entry.title).trim().slice(0, 80)
+        : (entry.text ? entry.text.trim().split('\n')[0].slice(0, 80) : 'Journal Entry');
     const excerpt = entry.text || '';
     const tags = Array.isArray(entry.tags) ? entry.tags : [];
 
-    const mood = resolveEntryMood(entry);
-    const moodText = moodLabelText(mood);
+    const resolvedFeeling = resolveEntryFeeling(entry);
+    const moodLabel = moodDisplayLabel(resolvedFeeling);
     article.innerHTML = `
         <div class="entry-content-wrapper">
             <div class="entry-header">
                 <div class="entry-meta">
-                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${dateText}</span></span>
-                    ${timeText ? `<span class="entry-time">${timeText}</span>` : ''}
+                    <span class="entry-date">${dateText}</span>
+                    <span class="entry-time">${timeText}</span>
                     <h3 class="entry-title">${title || 'Journal Entry'}</h3>
                 </div>
-                <div class="entry-mood entry-mood--${mood}">
-                    <span class="mood-label">${moodText}</span>
+                <div class="entry-mood">
+                    <span class="mood-label mood-label--${resolvedFeeling}">${moodLabel}</span>
                 </div>
             </div>
             <div class="entry-content">

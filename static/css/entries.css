@@ -288,8 +288,8 @@ body {
 
 .entries-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
 }
 
 /* Desktop only: month label is inside the grid for March — span full row so it is not a “blank card” column */
@@ -319,10 +319,10 @@ body {
         color: var(--text-dark);
     }
     
-    /* Keep 4-up grid on desktop; tighten spacing slightly */
+    /* Slightly tighter min column so three cards align more often without changing mobile */
     .entries-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 1.25rem;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
     }
     
     /* April block hidden until “Load more” (JS adds .april-section--visible) */
@@ -441,13 +441,13 @@ body {
         grid-row: 1;
         align-self: start;
         justify-self: end;
-        width: auto;
-        height: auto;
+        width: 2.5rem;
+        height: 2.5rem;
         margin: 0;
-        padding: 0.34rem 0.6rem;
-        border-radius: 999px;
-        border: 1px solid var(--border-color);
+        padding: 0;
+        border-radius: 50%;
         background-color: var(--background-soft);
+        border: 1px solid var(--border-color);
         box-shadow: none;
         flex-direction: row;
         align-items: center;
@@ -455,12 +455,10 @@ body {
         gap: 0;
     }
     
-    .entries-section .entry-card .entry-mood .mood-label {
-        display: inline-flex;
-        font-size: 0.74rem;
-        font-weight: 700;
+    .entries-section .entry-card .entry-mood i {
+        font-size: 1.2rem;
+        color: var(--primary-color);
         line-height: 1;
-        letter-spacing: 0.01em;
     }
     
     /* March: body copy under a divider; flex so tags sit at bottom of tall cards */
@@ -553,66 +551,6 @@ body {
         line-height: 1.5;
         margin: 0 auto;
         max-width: 28rem;
-    }
-}
-
-.entry-meta .entry-date {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-}
-
-.entry-meta .entry-date i {
-    font-size: 0.95rem;
-    color: var(--primary-color);
-}
-
-.entry-time {
-    color: var(--text-secondary);
-    font-size: 0.78rem;
-    font-weight: 600;
-    margin-top: -0.1rem;
-}
-
-.entry-mood--happy {
-    background: var(--success-bg);
-    color: #2f6b50;
-    border-color: color-mix(in srgb, var(--success-color) 55%, var(--border-color));
-}
-
-.entry-mood--sad {
-    background: var(--info-bg);
-    color: #2f5c76;
-    border-color: color-mix(in srgb, var(--info-color) 55%, var(--border-color));
-}
-
-.entry-mood--angry {
-    background: color-mix(in srgb, #ef4444 14%, #fff);
-    color: #8b1d1d;
-    border-color: color-mix(in srgb, #ef4444 45%, var(--border-color));
-}
-
-.entry-mood--anxious {
-    background: var(--warning-bg);
-    color: #7a4a10;
-    border-color: color-mix(in srgb, var(--warning-color) 55%, var(--border-color));
-}
-
-.entry-mood--neutral {
-    background: var(--background-soft);
-    color: var(--text-secondary);
-    border-color: var(--border-color);
-}
-
-@media (max-width: 1280px) {
-    .entries-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 1024px) {
-    .entries-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -728,6 +666,11 @@ body {
     gap: 0.25rem;
 }
 
+.mood-emoji {
+    font-size: 2rem;
+    line-height: 1;
+}
+
 .mood-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
@@ -802,6 +745,19 @@ body {
     margin-bottom: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.entry-mood {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--success-bg);
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+}
+
+.mood-emoji {
+    font-size: 16px;
 }
 
 .mood-label {
@@ -1088,7 +1044,10 @@ body {
         right: 0 !important;
     }
     
-    .entry-mood i { display: none; }
+    .entry-mood i {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+    }
     
     .entry-title {
         font-size: 1rem;
@@ -1405,5 +1364,100 @@ body {
     .filter-menu {
         min-width: 200px;
         right: -50px;
+    }
+}
+
+/* Entries refresh: reference-style cards + 3 columns desktop */
+@media (min-width: 769px) {
+    .entries-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 1.3rem !important;
+    }
+
+    .entries-grid > .month-header {
+        grid-column: 1 / -1;
+    }
+
+    .entries-section .entry-card {
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        background: var(--card-background);
+        box-shadow: none;
+        padding: 1.35rem 1.25rem 1.2rem;
+        min-height: 230px;
+    }
+
+    .entries-section .entry-card .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.72rem;
+    }
+
+    .entries-section .entry-card .entry-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .entries-section .entry-card .entry-date {
+        background: transparent;
+        color: var(--text-secondary);
+        padding: 0;
+        border-radius: 0;
+        min-width: 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        align-items: flex-start;
+    }
+
+    .entries-section .entry-card .entry-time {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .entries-section .entry-card .entry-mood {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .entries-section .entry-card .mood-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem 0.62rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        line-height: 1.2;
+        text-transform: none;
+    }
+
+    .mood-label--happy { background: #e8f5ef; color: #2f8f63; }
+    .mood-label--sad { background: #eef2f7; color: #5e7a99; }
+    .mood-label--angry { background: #ffe9ea; color: #bf4a53; }
+    .mood-label--anxious { background: #fff2e6; color: #c28335; }
+    .mood-label--neutral { background: #f1f3f5; color: #6c757d; }
+
+    .entries-section .entry-card .entry-title {
+        font-size: 1.02rem;
+        font-weight: 700;
+        margin: 0.2rem 0 0;
+        line-height: 1.35;
+    }
+
+    .entries-section .entry-card .entry-content {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #edf1ef;
+    }
+
+    .entries-section .entry-card .entry-excerpt {
+        font-size: 0.94rem;
+        line-height: 1.65;
+        -webkit-line-clamp: 4;
+        margin-bottom: 0.72rem;
     }
 }

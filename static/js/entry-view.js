@@ -1,4 +1,4 @@
-(function () {
+(function (global) {
     'use strict';
 
     const QUEUE_KEY = 'diariCoreEntryEditQueue';
@@ -80,9 +80,28 @@
         el.style.height = `${Math.max(200, el.scrollHeight)}px`;
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        const entryId = parseQueryId();
-        const userId = getUserId();
+    let activeController = null;
+
+    function unmount() {
+        if (activeController) {
+            activeController.abort();
+            activeController = null;
+        }
+    }
+
+    /**
+     * @param {{ entryId: number, onLeavePanel: () => void, userId?: number }} opts
+     */
+    async function mount(opts) {
+        unmount();
+        const ac = new AbortController();
+        activeController = ac;
+        const signal = ac.signal;
+
+        const entryId = Number(opts.entryId);
+        const userId = opts.userId != null ? Number(opts.userId) : getUserId();
+        const onLeavePanel = typeof opts.onLeavePanel === 'function' ? opts.onLeavePanel : () => {};
+
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
         const dateLine = document.getElementById('entryViewDateLine');
@@ -95,8 +114,9 @@
         const unsavedStay = document.getElementById('entryUnsavedStayBtn');
         const unsavedDiscard = document.getElementById('entryUnsavedDiscardBtn');
 
-        if (!entryId || !userId) {
-            window.location.href = 'entries.html';
+        if (!entryId || !userId || !titleEl || !bodyEl || !tagsRow || !backBtn || !cancelBtn) {
+            onLeavePanel();
+            unmount();
             return;
         }
 
@@ -113,7 +133,8 @@
         }
 
         if (!entry) {
-            window.location.href = 'entries.html';
+            onLeavePanel();
+            unmount();
             return;
         }
 
@@ -219,12 +240,16 @@
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.textContent = tag;
-                b.addEventListener('click', () => {
-                    tags.add(normalizeTag(tag));
-                    tagPickerOpen = false;
-                    picker.hidden = true;
-                    renderTags();
-                });
+                b.addEventListener(
+                    'click',
+                    () => {
+                        tags.add(normalizeTag(tag));
+                        tagPickerOpen = false;
+                        picker.hidden = true;
+                        renderTags();
+                    },
+                    { signal }
+                );
                 picker.appendChild(b);
             });
         }
@@ -235,47 +260,63 @@
                 const pill = document.createElement('span');
                 pill.className = 'entry-view-tag-pill';
                 pill.innerHTML = `<span>${escapeHtml(tag)}</span><button type="button" aria-label="Remove ${escapeHtml(tag)}">×</button>`;
-                pill.querySelector('button').addEventListener('click', () => {
-                    tags.delete(tag);
-                    renderTags();
-                    loadTagChoices().then(fillPicker);
-                });
+                pill.querySelector('button').addEventListener(
+                    'click',
+                    () => {
+                        tags.delete(tag);
+                        renderTags();
+                        loadTagChoices().then(fillPicker);
+                    },
+                    { signal }
+                );
                 tagsRow.appendChild(pill);
             });
             tagsRow.appendChild(addWrap);
             fillPicker();
         }
 
-        addBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            tagPickerOpen = !tagPickerOpen;
-            picker.hidden = !tagPickerOpen;
-            if (tagPickerOpen) loadTagChoices().then(() => fillPicker());
-        });
+        addBtn.addEventListener(
+            'click',
+            (e) => {
+                e.stopPropagation();
+                tagPickerOpen = !tagPickerOpen;
+                picker.hidden = !tagPickerOpen;
+                if (tagPickerOpen) loadTagChoices().then(() => fillPicker());
+            },
+            { signal }
+        );
 
-        document.addEventListener('click', () => {
-            if (tagPickerOpen) {
-                tagPickerOpen = false;
-                picker.hidden = true;
-            }
-        });
+        document.addEventListener(
+            'click',
+            () => {
+                if (tagPickerOpen) {
+                    tagPickerOpen = false;
+                    picker.hidden = true;
+                }
+            },
+            { signal }
+        );
 
-        picker.addEventListener('click', (e) => e.stopPropagation());
+        picker.addEventListener('click', (e) => e.stopPropagation(), { signal });
 
         renderTags();
         autoResizeTextarea(bodyEl);
 
-        bodyEl.addEventListener('input', () => {
-            autoResizeTextarea(bodyEl);
-            if (!isOnline()) persistDraft();
-        });
-        titleEl.addEventListener('input', () => {
-            if (!isOnline()) persistDraft();
-        });
-
-        function goEntries() {
-            window.location.href = 'entries.html';
-        }
+        bodyEl.addEventListener(
+            'input',
+            () => {
+                autoResizeTextarea(bodyEl);
+                if (!isOnline()) persistDraft();
+            },
+            { signal }
+        );
+        titleEl.addEventListener(
+            'input',
+            () => {
+                if (!isOnline()) persistDraft();
+            },
+            { signal }
+        );
 
         function openUnsaved(next) {
             if (!isDirty()) {
@@ -283,25 +324,54 @@
                 return;
             }
             pendingNavigate = next;
-            unsavedDialog.hidden = false;
+            if (unsavedDialog) unsavedDialog.hidden = false;
         }
 
-        backBtn.addEventListener('click', () => openUnsaved(goEntries));
-        cancelBtn.addEventListener('click', () => openUnsaved(goEntries));
-        unsavedStay.addEventListener('click', () => {
-            unsavedDialog.hidden = true;
-            pendingNavigate = null;
-        });
-        unsavedDiscard.addEventListener('click', () => {
-            unsavedDialog.hidden = true;
-            const fn = pendingNavigate;
-            pendingNavigate = null;
-            if (fn) fn();
-        });
-        unsavedDialog.querySelector('[data-close="1"]').addEventListener('click', () => {
-            unsavedDialog.hidden = true;
-            pendingNavigate = null;
-        });
+        backBtn.addEventListener(
+            'click',
+            () => openUnsaved(onLeavePanel),
+            { signal }
+        );
+        cancelBtn.addEventListener(
+            'click',
+            () => openUnsaved(onLeavePanel),
+            { signal }
+        );
+        if (unsavedStay) {
+            unsavedStay.addEventListener(
+                'click',
+                () => {
+                    if (unsavedDialog) unsavedDialog.hidden = true;
+                    pendingNavigate = null;
+                },
+                { signal }
+            );
+        }
+        if (unsavedDiscard) {
+            unsavedDiscard.addEventListener(
+                'click',
+                () => {
+                    if (unsavedDialog) unsavedDialog.hidden = true;
+                    const fn = pendingNavigate;
+                    pendingNavigate = null;
+                    if (fn) fn();
+                },
+                { signal }
+            );
+        }
+        if (unsavedDialog) {
+            const bd = unsavedDialog.querySelector('[data-close="1"]');
+            if (bd) {
+                bd.addEventListener(
+                    'click',
+                    () => {
+                        unsavedDialog.hidden = true;
+                        pendingNavigate = null;
+                    },
+                    { signal }
+                );
+            }
+        }
 
         async function patchRemote(reanalyze) {
             const payload = {
@@ -386,16 +456,17 @@
             writeQueue(next);
         }
 
-        window.addEventListener('online', () => {
+        const onOnline = () => {
             flushEditQueue();
             loadTagChoices().then(() => fillPicker());
-        });
+        };
+        window.addEventListener('online', onOnline, { signal });
 
         function moodOptions(overlay) {
             return {
                 onSaveExit() {
                     overlay.hidden = true;
-                    goEntries();
+                    onLeavePanel();
                 },
                 fetchRerunAnalysis: async () => {
                     const t = bodyEl.value.trim();
@@ -440,32 +511,32 @@
                     baseline = serializeEditor(titleEl, bodyEl, tags);
                     clearDraft();
                     if (reanalyze) {
-                        window.DiariMoodAnalysis.resetSession();
-                        const overlay = window.DiariMoodAnalysis.ensureAnalysisOverlay();
+                        global.DiariMoodAnalysis.resetSession();
+                        const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
                         try {
-                            await window.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+                            await global.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
                         } catch (_) {}
-                        window.DiariMoodAnalysis.showAnalysisLoading(overlay);
-                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
-                        window.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
+                        global.DiariMoodAnalysis.showAnalysisLoading(overlay);
+                        await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
                     }
                     return;
                 }
 
                 if (reanalyze) {
-                    window.DiariMoodAnalysis.resetSession();
-                    const overlay = window.DiariMoodAnalysis.ensureAnalysisOverlay();
+                    global.DiariMoodAnalysis.resetSession();
+                    const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
                     try {
-                        await window.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+                        await global.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
                     } catch (_) {}
-                    window.DiariMoodAnalysis.showAnalysisLoading(overlay);
+                    global.DiariMoodAnalysis.showAnalysisLoading(overlay);
                     try {
                         const data = await patchRemote(true);
                         entry = data.entry;
                         replaceEntryInList(entry);
                         const engine = (data.analysisEngine || '').toString().toLowerCase();
-                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
-                        window.DiariMoodAnalysis.showAnalysisResult(overlay, data.entry, engine === 'fallback', moodOptions(overlay));
+                        await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        global.DiariMoodAnalysis.showAnalysisResult(overlay, data.entry, engine === 'fallback', moodOptions(overlay));
                         clearDraft();
                         baseline = serializeEditor(titleEl, bodyEl, tags);
                     } catch (err) {
@@ -474,8 +545,8 @@
                         const merged = offlineMergedEntry(true);
                         replaceEntryInList(merged);
                         entry = merged;
-                        await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
-                        window.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
+                        await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+                        global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
                     }
                     return;
                 }
@@ -501,9 +572,31 @@
             }
         }
 
-        saveBtn.addEventListener('click', () => runSave(false));
-        saveAnalyzeBtn.addEventListener('click', () => runSave(true));
+        saveBtn.addEventListener('click', () => runSave(false), { signal });
+        saveAnalyzeBtn.addEventListener('click', () => runSave(true), { signal });
 
         flushEditQueue();
+    }
+
+    global.DiariEntryDetail = {
+        mount,
+        unmount,
+        getUserId,
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!document.body.classList.contains('page-entry-view')) return;
+        const id = parseQueryId();
+        const uid = getUserId();
+        if (!id || !uid) {
+            window.location.href = 'entries.html';
+            return;
+        }
+        await mount({
+            entryId: id,
+            onLeavePanel: () => {
+                window.location.href = 'entries.html';
+            },
+        });
     });
-})();
+})(typeof window !== 'undefined' ? window : this);

@@ -505,6 +505,44 @@ function performSearch() {
     renderEntriesView();
 }
 
+async function openEntriesDetailInline(entryId) {
+    const shell = document.getElementById('entriesDetailShell');
+    const list = document.getElementById('entriesListShell');
+    if (!shell || !list || !window.DiariEntryDetail || typeof window.DiariEntryDetail.mount !== 'function') {
+        window.location.href = `entry-view.html?id=${encodeURIComponent(String(entryId))}`;
+        return;
+    }
+    list.hidden = true;
+    shell.hidden = false;
+    document.body.classList.add('page-entries-detail-open');
+    window.scrollTo(0, 0);
+    try {
+        await window.DiariEntryDetail.mount({
+            entryId: Number(entryId),
+            onLeavePanel: closeEntriesDetailInline,
+        });
+    } catch (err) {
+        console.error(err);
+        closeEntriesDetailInline();
+    }
+}
+
+function closeEntriesDetailInline() {
+    if (window.DiariEntryDetail && typeof window.DiariEntryDetail.unmount === 'function') {
+        window.DiariEntryDetail.unmount();
+    }
+    const shell = document.getElementById('entriesDetailShell');
+    const list = document.getElementById('entriesListShell');
+    const dlg = document.getElementById('entryUnsavedDialog');
+    if (dlg) dlg.hidden = true;
+    if (shell) shell.hidden = true;
+    if (list) list.hidden = false;
+    document.body.classList.remove('page-entries-detail-open');
+    if (document.getElementById('entriesGrid')) {
+        renderEntriesView({ skipFade: true });
+    }
+}
+
 // Entry cards: delegated clicks on dynamically rendered grid
 function initializeEntryCards() {
     const grid = document.getElementById('entriesGrid');
@@ -518,7 +556,7 @@ function initializeEntryCards() {
     });
 }
 
-// Show Entry Details — opens full entry view page
+// Show Entry Details — inline panel on Entries page (fallback: standalone entry-view.html)
 function showEntryDetails(card) {
     const id = card.dataset.entryId;
     if (!id) {
@@ -526,7 +564,7 @@ function showEntryDetails(card) {
         showNotification(`This entry cannot be opened (missing id): ${title}`, 'error');
         return;
     }
-    window.location.href = `entry-view.html?id=${encodeURIComponent(id)}`;
+    openEntriesDetailInline(Number(id));
 }
 
 // Legacy load-more UI removed from Entries page (month dropdown + pagination replace it).

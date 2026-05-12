@@ -1618,3 +1618,12 @@ body {
         margin-bottom: 0.72rem;
     }
 }
+
+/* Inline entry editor on Entries page (replaces list shell without navigation) */
+.entries-detail-shell.entry-view-layout {
+    width: 100%;
+}
+
+.page-entries-detail-open .entries-content {
+    min-height: 50vh;
+}

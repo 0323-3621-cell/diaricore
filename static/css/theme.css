@@ -300,6 +300,23 @@ html.theme-dark .floating-streak-panel__dow--idle {
     opacity: 0.88;
 }
 
+html.theme-dark .mood-key-detail {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--border-color) !important;
+}
+
+html.theme-dark .mood-key-detail-title {
+    color: var(--text-muted) !important;
+}
+
+html.theme-dark .mood-key-detail-list {
+    color: var(--text-secondary) !important;
+}
+
+html.theme-dark .mood-key-detail-list strong {
+    color: var(--text-dark) !important;
+}
+
 .theme-toggle-fab {
     position: fixed;
     right: 1.15rem;

@@ -263,6 +263,14 @@
                                 <span class="mood-key-tile-anchor" data-mood="neutral" aria-live="polite">Anchor — / 10</span>
                             </div>
                         </div>
+                        <div class="mood-key-detail">
+                            <h3 class="mood-key-detail-title">How the line is scored</h3>
+                            <ul class="mood-key-detail-list">
+                                <li><strong>Blended (online, saved analysis)</strong> — Each emotion&rsquo;s probability is multiplied by its anchor on this card, then combined into one 0–10 point for that day (for example mostly sad can read ~3.6 instead of exactly 3.5).</li>
+                                <li><strong>Label-only</strong> — If you&rsquo;re offline or the entry wasn&rsquo;t analyzed on the server, we use only the main mood&rsquo;s anchor.</li>
+                                <li><strong>Not class confidence</strong> — The model&rsquo;s confidence for one label is not the same as this mood line.</li>
+                            </ul>
+                        </div>
                     </section>
                 </div>
             </div>

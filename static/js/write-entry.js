@@ -1384,13 +1384,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (overlay) {
             const card = overlay.querySelector('.mood-analysis-card');
             const footer = card?.querySelector('.mood-analysis-card__footer');
-            if (footer && footer.querySelector('#moodAnalysisContinueBtn') && !footer.querySelector('#moodAnalysisSaveExitBtn')) {
-                footer.className = 'mood-analysis-card__footer mood-analysis-card__footer--dual';
-                footer.id = 'moodAnalysisFooter';
-                footer.innerHTML = `
-                    <button type="button" class="mood-analysis-btn mood-analysis-btn--outline" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
-                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisContinueBtn">Continue</button>
+            if (footer) {
+                const saveBtn = footer.querySelector('#moodAnalysisSaveExitBtn');
+                const contBtn = footer.querySelector('#moodAnalysisContinueBtn');
+                const needsUpgrade =
+                    contBtn ||
+                    footer.classList.contains('mood-analysis-card__footer--dual') ||
+                    (saveBtn && saveBtn.classList.contains('mood-analysis-btn--outline'));
+                if (needsUpgrade) {
+                    footer.className = 'mood-analysis-card__footer';
+                    footer.id = 'moodAnalysisFooter';
+                    footer.innerHTML = `
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
                 `;
+                }
             }
             return overlay;
         }
@@ -1405,9 +1412,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h3 class="mood-analysis-card__title">Mood Analysis</h3>
                 </div>
                 <div class="mood-analysis-card__body" id="moodAnalysisBody"></div>
-                <div class="mood-analysis-card__footer mood-analysis-card__footer--dual" id="moodAnalysisFooter">
-                    <button type="button" class="mood-analysis-btn mood-analysis-btn--outline" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
-                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisContinueBtn">Continue</button>
+                <div class="mood-analysis-card__footer" id="moodAnalysisFooter">
+                    <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="moodAnalysisSaveExitBtn">Save &amp; Exit</button>
                 </div>
             </div>
         `;
@@ -1663,9 +1669,7 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.hidden = true;
             window.location.href = 'dashboard.html';
         };
-        const continueBtn = overlay.querySelector('#moodAnalysisContinueBtn');
         const saveExitBtn = overlay.querySelector('#moodAnalysisSaveExitBtn');
-        if (continueBtn) continueBtn.onclick = goDashboard;
         if (saveExitBtn) saveExitBtn.onclick = goDashboard;
     }
 

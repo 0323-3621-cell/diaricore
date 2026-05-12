@@ -1457,16 +1457,8 @@ html.theme-dark .mood-result-badge--amber {
     justify-content: stretch;
 }
 
-.mood-analysis-card__footer--dual {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.65rem;
-}
-
-@media (max-width: 480px) {
-    .mood-analysis-card__footer--dual {
-        grid-template-columns: 1fr;
-    }
+.mood-analysis-card__footer .mood-analysis-btn:only-child {
+    width: 100%;
 }
 
 .mood-analysis-btn {

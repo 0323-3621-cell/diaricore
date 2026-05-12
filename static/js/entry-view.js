@@ -82,11 +82,33 @@
 
     let activeController = null;
 
+    function resetEntryDetailLoadingState() {
+        const titleEl = document.getElementById('entryViewTitle');
+        const bodyEl = document.getElementById('entryViewBody');
+        const dateLine = document.getElementById('entryViewDateLine');
+        const tagsRow = document.getElementById('entryViewTagsRow');
+        const saveBtn = document.getElementById('entryViewSaveBtn');
+        const saveAnalyzeBtn = document.getElementById('entryViewSaveAnalyzeBtn');
+        if (titleEl) titleEl.value = '';
+        if (bodyEl) {
+            bodyEl.value = '';
+            bodyEl.style.height = 'auto';
+        }
+        if (tagsRow) tagsRow.innerHTML = '';
+        if (dateLine) {
+            dateLine.innerHTML =
+                '<span class="entry-view-loading-line" style="color:var(--text-muted);font-size:0.8rem;">Loading entry…</span>';
+        }
+        if (saveBtn) saveBtn.disabled = true;
+        if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
+    }
+
     function unmount() {
         if (activeController) {
             activeController.abort();
             activeController = null;
         }
+        resetEntryDetailLoadingState();
     }
 
     /**
@@ -121,16 +143,29 @@
         }
 
         let entry = loadEntryFromList(entryId);
+        if (entry) {
+            titleEl.value = entry.title || '';
+            if (!localStorage.getItem(draftKey(entryId))) {
+                bodyEl.value = entry.text || '';
+            }
+            const displayDate = entry.date || entry.createdAt;
+            dateLine.innerHTML = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+            autoResizeTextarea(bodyEl);
+        }
+
         if (isOnline()) {
             try {
                 const res = await fetch(`/api/entries/${entryId}?userId=${encodeURIComponent(String(userId))}`);
                 const data = await res.json();
+                if (signal.aborted) return;
                 if (res.ok && data.success && data.entry) {
                     entry = data.entry;
                     replaceEntryInList(entry);
                 }
             } catch (_) {}
         }
+
+        if (signal.aborted) return;
 
         if (!entry) {
             onLeavePanel();
@@ -204,6 +239,8 @@
         }
 
         await loadTagChoices();
+
+        if (signal.aborted) return;
 
         const addWrap = document.createElement('div');
         addWrap.className = 'entry-view-add-tag-wrap';
@@ -574,6 +611,9 @@
 
         saveBtn.addEventListener('click', () => runSave(false), { signal });
         saveAnalyzeBtn.addEventListener('click', () => runSave(true), { signal });
+
+        saveBtn.disabled = false;
+        saveAnalyzeBtn.disabled = false;
 
         flushEditQueue();
     }

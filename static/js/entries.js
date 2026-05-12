@@ -512,6 +512,9 @@ async function openEntriesDetailInline(entryId) {
         window.location.href = `entry-view.html?id=${encodeURIComponent(String(entryId))}`;
         return;
     }
+    if (window.DiariEntryDetail && typeof window.DiariEntryDetail.unmount === 'function') {
+        window.DiariEntryDetail.unmount();
+    }
     list.hidden = true;
     shell.hidden = false;
     document.body.classList.add('page-entries-detail-open');

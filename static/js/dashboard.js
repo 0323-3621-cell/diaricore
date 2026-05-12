@@ -803,23 +803,26 @@ function renderWeeklyChart(entries) {
     });
     const bestDay = bestIdx >= 0 ? labels[bestIdx] : '--';
 
-    const earlyVals = chartData.slice(0, 3).filter((v) => v != null);
-    const lateVals = chartData.slice(3, 7).filter((v) => v != null);
-    const canTrend = earlyVals.length > 0 && lateVals.length > 0;
-    const firstAvg = canTrend ? earlyVals.reduce((a, b) => a + b, 0) / earlyVals.length : 0;
-    const secondAvg = canTrend ? lateVals.reduce((a, b) => a + b, 0) / lateVals.length : 0;
-    const delta = canTrend ? secondAvg - firstAvg : 0;
+    // Same logic as insights.js weekly chart: split days-with-data (Mon→Sun order) into halves, compare averages.
+    const valid = presentVals;
+    const half = Math.max(1, Math.floor(valid.length / 2));
+    const firstAvg = valid.length ? valid.slice(0, half).reduce((a, b) => a + b, 0) / half : 0;
+    const secondSlice = valid.slice(half);
+    const secondAvg = secondSlice.length
+        ? secondSlice.reduce((a, b) => a + b, 0) / secondSlice.length
+        : firstAvg;
+    const delta = secondAvg - firstAvg;
 
     if (avgEl) avgEl.textContent = hasData ? `${avg.toFixed(1)}/10` : '--';
     if (bestDayEl) bestDayEl.textContent = hasData ? bestDay : '--';
     if (trendEl) {
-        trendEl.textContent = hasData && canTrend ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : (hasData ? '—' : '--');
+        trendEl.textContent = valid.length ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '--';
     }
     if (trendBadge) {
         if (!hasData) {
             trendBadge.classList.remove('is-up');
             trendBadge.innerHTML = `<i class="bi bi-arrow-left-right"></i>Steady`;
-        } else if (!canTrend) {
+        } else if (valid.length < 2) {
             trendBadge.classList.remove('is-up');
             trendBadge.innerHTML = `<i class="bi bi-calendar-week"></i>Partial week`;
         } else {

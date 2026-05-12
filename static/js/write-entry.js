@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFeeling = null;
     let selectedTags = new Set();
     let manualDateTime = null;
+    /** Last-good datetime-local value while editing; reverting avoids overwriting digits with “now”. */
+    let journalDateTimeBaselineLocal = '';
+    let pickerOpenedAtLocalStr = '';
+    let priorManualDateTimeOnPickerOpen = null;
 
     function normalizeTag(tag) {
         return String(tag || '').trim().replace(/\s+/g, ' ');
@@ -1021,26 +1025,45 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     const nowLocalInputValue = () => toLocalInputValue(new Date());
 
-    /** Keeps datetime-local within current/past; no UI alerts. */
-    function clampJournalDateTimeSilent() {
-        const now = new Date();
-        if (journalDateTimeInput) {
-            journalDateTimeInput.max = nowLocalInputValue();
-            if (journalDateTimeInput.value) {
-                const picked = new Date(journalDateTimeInput.value);
-                if (!Number.isNaN(picked.getTime()) && picked.getTime() > now.getTime()) {
-                    manualDateTime = now;
-                    journalDateTimeInput.value = nowLocalInputValue();
-                    updateJournalDateTime();
-                    return;
-                }
-            }
+    function parseManualFromLocalDatetime(str) {
+        if (!str || typeof str !== 'string' || str.length < 16) return null;
+        const d = new Date(str);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    /** Respect HTML datetime-local ordering: same string shape as max ⇒ year/month/day/time constrained consistently. */
+    function applyCommittedLocalDatetime(localStr) {
+        if (priorManualDateTimeOnPickerOpen === null && localStr === pickerOpenedAtLocalStr) {
+            manualDateTime = null;
+        } else {
+            manualDateTime = parseManualFromLocalDatetime(localStr);
         }
-        if (manualDateTime && manualDateTime.getTime() > now.getTime()) {
-            manualDateTime = now;
-            if (journalDateTimeInput) journalDateTimeInput.value = nowLocalInputValue();
-            updateJournalDateTime();
+        updateJournalDateTime();
+    }
+
+    /**
+     * Incomplete/future values are discarded — revert to last accepted baseline (not forced to “now” unless that was the baseline).
+     * Avoid clamp on input events so partial edits aren’t rewritten mid-keystroke.
+     */
+    function finalizeJournalDateTimeInput(commitBaseline) {
+        if (!journalDateTimeInput) return;
+        const maxStr = nowLocalInputValue();
+        journalDateTimeInput.max = maxStr;
+        const v = (journalDateTimeInput.value || '').trim();
+        const complete = v.length >= 16;
+        const overMax = complete && v > maxStr;
+        const incomplete = !complete;
+        const hasRevertAnchor = Boolean(journalDateTimeBaselineLocal || pickerOpenedAtLocalStr);
+
+        if (incomplete || overMax) {
+            if (incomplete && !hasRevertAnchor) return;
+            const fb = journalDateTimeBaselineLocal || pickerOpenedAtLocalStr || maxStr;
+            journalDateTimeInput.value = fb;
+            applyCommittedLocalDatetime(fb);
+            return;
         }
+        if (commitBaseline) journalDateTimeBaselineLocal = v;
+        applyCommittedLocalDatetime(v);
     }
 
     if (journalDateTimeInput) {
@@ -1055,12 +1078,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (journalDateTimeBtn && journalDateTimeInput) {
         journalDateTimeBtn.addEventListener('click', () => {
+            priorManualDateTimeOnPickerOpen = manualDateTime;
             const baseDate = manualDateTime || new Date();
             journalDateTimeInput.max = nowLocalInputValue();
             const candidate = new Date(baseDate);
             const now = new Date();
             const safeBase = candidate.getTime() > now.getTime() ? now : candidate;
-            journalDateTimeInput.value = toLocalInputValue(safeBase);
+            pickerOpenedAtLocalStr = toLocalInputValue(safeBase);
+            journalDateTimeBaselineLocal = pickerOpenedAtLocalStr;
+            journalDateTimeInput.value = journalDateTimeBaselineLocal;
             journalDateTimeInput.style.display = 'inline-block';
             journalDateTimeInput.focus();
         });
@@ -1068,26 +1094,12 @@ document.addEventListener('DOMContentLoaded', function() {
         journalDateTimeInput.addEventListener('focus', () => {
             journalDateTimeInput.max = nowLocalInputValue();
         });
-        journalDateTimeInput.addEventListener('input', () => {
-            clampJournalDateTimeSilent();
-        });
         journalDateTimeInput.addEventListener('change', () => {
-            if (!journalDateTimeInput.value) return;
-            journalDateTimeInput.max = nowLocalInputValue();
-            const picked = new Date(journalDateTimeInput.value);
-            const now = new Date();
-            if (Number.isNaN(picked.getTime())) return;
-            if (picked.getTime() > now.getTime()) {
-                manualDateTime = now;
-                journalDateTimeInput.value = nowLocalInputValue();
-            } else {
-                manualDateTime = picked;
-            }
-            updateJournalDateTime();
+            finalizeJournalDateTimeInput(true);
         });
 
         const hideDateInput = () => {
-            clampJournalDateTimeSilent();
+            finalizeJournalDateTimeInput(true);
             journalDateTimeInput.style.display = 'none';
         };
         journalDateTimeInput.addEventListener('blur', hideDateInput);
@@ -1123,7 +1135,9 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSaveEntry() {
         const entryText = journalText.value.trim();
         const entryTitle = normalizeTag(journalTitleInput?.value || '');
-        clampJournalDateTimeSilent();
+        if (journalDateTimeInput && journalDateTimeInput.value.length >= 16) {
+            finalizeJournalDateTimeInput(false);
+        }
         const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
         if (!entryText) {
             alert('Please write something in your journal entry.');

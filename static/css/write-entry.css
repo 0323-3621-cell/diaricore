@@ -1034,6 +1034,39 @@
     line-height: 1.25;
 }
 
+.mood-analysis-progress {
+    width: 100%;
+    max-width: 280px;
+    margin-top: 0.15rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+}
+
+.mood-analysis-progress__track {
+    height: 9px;
+    border-radius: 999px;
+    background: rgba(111, 138, 165, 0.2);
+    overflow: hidden;
+}
+
+.mood-analysis-progress__fill {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary-color, #1d9e75), var(--primary-hover, #159f72));
+    box-shadow: 0 0 12px rgba(29, 158, 117, 0.25);
+}
+
+.mood-analysis-progress__pct {
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    text-align: center;
+}
+
 .mood-analysis-loading__subtitle {
     margin: 0;
     font-size: 0.92rem;

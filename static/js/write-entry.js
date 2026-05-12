@@ -10,13 +10,21 @@ document.addEventListener('DOMContentLoaded', function() {
     let pickerOpenedAtLocalStr = '';
     let priorManualDateTimeOnPickerOpen = null;
 
-    /** Minimum time the analysis overlay stays up after it is shown (before results). */
-    const MOOD_ANALYSIS_MIN_MS = 3800;
-    /** After the book Lottie fires `ready`, keep it on screen at least this long (so it is not a flash). */
-    const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 2400;
+    /** Progress bar 0→100% duration and minimum time before results (same value keeps bar and gate aligned). */
+    const MOOD_ANALYSIS_TOTAL_MS = 8000;
+    /** If book became ready very late, extend slightly so it is not a flash (ms after ready). */
+    const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 1200;
 
     let moodAnalysisLoadingShownAt = 0;
     let moodAnalysisBookReadyAt = null;
+    let moodAnalysisProgressTimer = null;
+
+    function clearMoodAnalysisProgressTimer() {
+        if (moodAnalysisProgressTimer != null) {
+            clearInterval(moodAnalysisProgressTimer);
+            moodAnalysisProgressTimer = null;
+        }
+    }
 
     /** Book-Loader via lottie-web (plain div — avoids lottie-player freezing off-screen/hidden animations). */
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
@@ -1297,12 +1305,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function delayUntilMoodAnalysisGate() {
         const shownAt = moodAnalysisLoadingShownAt || Date.now();
-        let wait = Math.max(0, MOOD_ANALYSIS_MIN_MS - (Date.now() - shownAt));
+        const barEnd = shownAt + MOOD_ANALYSIS_TOTAL_MS;
+        const bookEnd = moodAnalysisBookReadyAt
+            ? moodAnalysisBookReadyAt + MOOD_ANALYSIS_MIN_AFTER_BOOK_MS
+            : 0;
+        const targetEnd = Math.max(barEnd, bookEnd);
+        const wait = Math.max(0, targetEnd - Date.now());
         await new Promise((resolve) => setTimeout(resolve, wait));
-        if (moodAnalysisBookReadyAt) {
-            wait = Math.max(0, MOOD_ANALYSIS_MIN_AFTER_BOOK_MS - (Date.now() - moodAnalysisBookReadyAt));
-            await new Promise((resolve) => setTimeout(resolve, wait));
-        }
     }
 
     function getMoodAnalysisBookPool() {
@@ -1395,6 +1404,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showAnalysisLoading(overlay) {
         parkMoodAnalysisBookMount();
+        clearMoodAnalysisProgressTimer();
 
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
@@ -1425,14 +1435,52 @@ document.addEventListener('DOMContentLoaded', function() {
         subEl.className = 'mood-analysis-loading__subtitle';
         subEl.textContent = 'Detecting mood patterns and insights...';
 
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'mood-analysis-progress';
+        progressWrap.setAttribute('role', 'progressbar');
+        progressWrap.setAttribute('aria-valuemin', '0');
+        progressWrap.setAttribute('aria-valuemax', '100');
+        progressWrap.setAttribute('aria-valuenow', '0');
+        progressWrap.setAttribute('aria-label', 'Analysis progress');
+
+        const progressTrack = document.createElement('div');
+        progressTrack.className = 'mood-analysis-progress__track';
+
+        const progressFill = document.createElement('div');
+        progressFill.className = 'mood-analysis-progress__fill';
+
+        progressTrack.appendChild(progressFill);
+        progressWrap.appendChild(progressTrack);
+
+        const progressPct = document.createElement('span');
+        progressPct.className = 'mood-analysis-progress__pct';
+        progressPct.textContent = '0%';
+        progressWrap.appendChild(progressPct);
+
         wrap.appendChild(titleEl);
         wrap.appendChild(subEl);
+        wrap.appendChild(progressWrap);
         body.appendChild(wrap);
 
         footer.style.display = 'none';
         overlay.hidden = false;
         moodAnalysisLoadingShownAt = Date.now();
+
+        const totalMs = MOOD_ANALYSIS_TOTAL_MS;
+        const progressStart = Date.now();
+        moodAnalysisProgressTimer = setInterval(() => {
+            const elapsed = Date.now() - progressStart;
+            const pct = Math.min(100, Math.round((elapsed / totalMs) * 100));
+            progressPct.textContent = `${pct}%`;
+            progressWrap.setAttribute('aria-valuenow', String(pct));
+            if (pct >= 100) clearMoodAnalysisProgressTimer();
+        }, 80);
+
         requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                progressFill.style.transition = `width ${totalMs}ms linear`;
+                progressFill.style.width = '100%';
+            });
             try {
                 if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
             } catch (_) {}
@@ -1486,6 +1534,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisResult(overlay, entry, isFallback = false) {
+        clearMoodAnalysisProgressTimer();
         parkMoodAnalysisBookMount();
 
         const header = overlay.querySelector('.mood-analysis-card__header');

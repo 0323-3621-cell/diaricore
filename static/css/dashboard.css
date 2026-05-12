@@ -648,26 +648,19 @@ body {
     .weekly-snapshot-wrap {
         margin-bottom: 0;
         height: 100%;
-        min-height: 0;
     }
 
     .dashboard-side-stack {
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        gap: 0.6rem; /* tighter gap so combined height matches */
         min-width: 0;
         height: 100%;
-        min-height: 0;
     }
 
     .recent-entry-card {
         margin-bottom: 0;
-        flex: 0 1 auto;
-    }
-
-    .mood-key-card {
-        flex: 1 1 auto;
-        min-height: 0;
+        flex: 1 1 auto; /* let Last Entry grow to match Weekly card height */
     }
 }
 
@@ -676,16 +669,12 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 0.85rem 1rem 0.95rem;
-    flex: 0 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    padding: 1rem 1.15rem;
+    flex: 0 0 auto;
 }
 
 .mood-key-title {
-    margin: 0;
+    margin: 0 0 0.75rem;
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -693,108 +682,35 @@ body {
     color: var(--text-muted);
 }
 
-.mood-key-sub {
-    margin: 0;
-    font-size: 0.72rem;
-    line-height: 1.35;
-    color: var(--text-secondary);
-    font-weight: 400;
-}
-
-.mood-key-grid {
+.mood-key-list {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.45rem;
-    flex: 0 0 auto;
 }
 
-.mood-key-tile {
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    background: var(--background-soft);
-    padding: 0.55rem 0.6rem 0.6rem;
+.mood-key-item {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.15rem;
-    min-width: 0;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
-
-.mood-key-tile--full {
-    grid-column: 1 / -1;
-}
-
-.mood-key-tile-emoji {
-    font-size: 1.25rem;
-    line-height: 1;
-    margin-bottom: 0.1rem;
-}
-
-.mood-key-tile-name {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    letter-spacing: 0.01em;
-}
-
-.mood-key-tile-anchor {
-    font-size: 0.72rem;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
     font-weight: 500;
-    color: var(--text-secondary);
-    line-height: 1.3;
 }
 
-.mood-key-tile--happy { border-left: 3px solid var(--mood-happy); }
-.mood-key-tile--sad { border-left: 3px solid var(--mood-sad); }
-.mood-key-tile--angry { border-left: 3px solid var(--mood-angry); }
-.mood-key-tile--anxious { border-left: 3px solid var(--mood-anxious); }
-.mood-key-tile--neutral { border-left: 3px solid var(--mood-neutral); }
-
-.mood-key-detail {
-    flex: 1 1 auto;
-    min-height: 0;
-    margin-top: 0.15rem;
-    padding: 0.55rem 0.65rem 0.6rem;
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-    background: var(--background-soft);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+.mood-key-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
-.mood-key-detail-title {
-    margin: 0 0 0.4rem;
-    font-size: 0.62rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-muted);
-}
+.mood-key-dot--happy { background: var(--mood-happy); }
+.mood-key-dot--sad { background: var(--mood-sad); }
+.mood-key-dot--angry { background: var(--mood-angry); }
+.mood-key-dot--anxious { background: var(--mood-anxious); }
+.mood-key-dot--neutral { background: var(--mood-neutral); }
 
-.mood-key-detail-list {
-    margin: 0;
-    padding: 0 0 0 1rem;
-    font-size: 0.72rem;
-    line-height: 1.45;
-    color: var(--text-secondary);
-    font-weight: 400;
-}
-
-.mood-key-detail-list li {
-    margin-bottom: 0.35rem;
-}
-
-.mood-key-detail-list li:last-child {
-    margin-bottom: 0;
-}
-
-.mood-key-detail-list strong {
-    color: var(--text-dark);
-    font-weight: 600;
-}
 /* Weekly week-strip (reference-style day dots above chart) */
 .weekly-weekstrip {
     display: none;
@@ -1059,10 +975,8 @@ body {
         min-height: 0;
     }
 
-    .weekly-snapshot-card .weekly-sparkline-wrap {
-        flex: 1 1 auto;
-        min-height: 140px;
-        height: auto;
+    .weekly-sparkline-wrap {
+        flex: 0 0 auto;
     }
 
     .weekly-snapshot-stats {
@@ -1070,7 +984,7 @@ body {
     }
 
     .weekly-snapshot-footer {
-        margin-top: auto;
+        margin-top: auto; /* pin button to bottom like reference */
     }
 }
 

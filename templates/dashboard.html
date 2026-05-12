@@ -232,44 +232,15 @@
                         </div>
                     </section>
 
-                    <!-- Mood key: anchors from mood-scoring.js via hydrateMoodKeyAnchors() -->
-                    <section class="mood-key-card" aria-label="Mood anchors for the chart">
-                        <h2 class="mood-key-title">Mood key</h2>
-                        <p class="mood-key-sub">0–10 anchors; online entries blend by emotion mix.</p>
-                        <div class="mood-key-grid" role="list">
-                            <div class="mood-key-tile mood-key-tile--happy" role="listitem">
-                                <span class="mood-key-tile-emoji" aria-hidden="true">😊</span>
-                                <span class="mood-key-tile-name">Happy</span>
-                                <span class="mood-key-tile-anchor" data-mood="happy" aria-live="polite">Anchor — / 10</span>
-                            </div>
-                            <div class="mood-key-tile mood-key-tile--sad" role="listitem">
-                                <span class="mood-key-tile-emoji" aria-hidden="true">😢</span>
-                                <span class="mood-key-tile-name">Sad</span>
-                                <span class="mood-key-tile-anchor" data-mood="sad" aria-live="polite">Anchor — / 10</span>
-                            </div>
-                            <div class="mood-key-tile mood-key-tile--angry" role="listitem">
-                                <span class="mood-key-tile-emoji" aria-hidden="true">😠</span>
-                                <span class="mood-key-tile-name">Angry</span>
-                                <span class="mood-key-tile-anchor" data-mood="angry" aria-live="polite">Anchor — / 10</span>
-                            </div>
-                            <div class="mood-key-tile mood-key-tile--anxious" role="listitem">
-                                <span class="mood-key-tile-emoji" aria-hidden="true">😰</span>
-                                <span class="mood-key-tile-name">Anxious</span>
-                                <span class="mood-key-tile-anchor" data-mood="anxious" aria-live="polite">Anchor — / 10</span>
-                            </div>
-                            <div class="mood-key-tile mood-key-tile--neutral mood-key-tile--full" role="listitem">
-                                <span class="mood-key-tile-emoji" aria-hidden="true">😐</span>
-                                <span class="mood-key-tile-name">Neutral</span>
-                                <span class="mood-key-tile-anchor" data-mood="neutral" aria-live="polite">Anchor — / 10</span>
-                            </div>
-                        </div>
-                        <div class="mood-key-detail">
-                            <h3 class="mood-key-detail-title">How the line is scored</h3>
-                            <ul class="mood-key-detail-list">
-                                <li><strong>Blended (online, saved analysis)</strong> — Each emotion&rsquo;s probability is multiplied by its anchor on this card, then combined into one 0–10 point for that day (for example mostly sad can read ~3.6 instead of exactly 3.5).</li>
-                                <li><strong>Label-only</strong> — If you&rsquo;re offline or the entry wasn&rsquo;t analyzed on the server, we use only the main mood&rsquo;s anchor.</li>
-                                <li><strong>Not class confidence</strong> — The model&rsquo;s confidence for one label is not the same as this mood line.</li>
-                            </ul>
+                    <!-- Mood Key (legend only; numeric scoring stays in mood-scoring.js + chart) -->
+                    <section class="mood-key-card" aria-label="Mood key">
+                        <h2 class="mood-key-title">Mood Key</h2>
+                        <div class="mood-key-list" role="list">
+                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--happy" aria-hidden="true"></span><span>Happy</span></div>
+                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--sad" aria-hidden="true"></span><span>Sad</span></div>
+                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--angry" aria-hidden="true"></span><span>Angry</span></div>
+                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--anxious" aria-hidden="true"></span><span>Anxious</span></div>
+                            <div class="mood-key-item" role="listitem"><span class="mood-key-dot mood-key-dot--neutral" aria-hidden="true"></span><span>Neutral</span></div>
                         </div>
                     </section>
                 </div>

@@ -235,29 +235,134 @@ body {
 }
 
 .floating-streak-panel {
-    min-width: 126px;
-    border-radius: 12px;
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--box-shadow);
-    padding: 0.55rem 0.75rem;
-    text-align: center;
+    min-width: 272px;
+    max-width: min(320px, calc(100vw - 2rem));
+    border-radius: 14px;
+    background: linear-gradient(145deg, #eaf3ec 0%, #e2efe6 100%);
+    border: 1px solid rgba(70, 96, 85, 0.18);
+    box-shadow:
+        0 10px 28px rgba(34, 52, 44, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    padding: 0.85rem 1rem 0.95rem;
+    text-align: left;
+}
+
+.floating-streak-panel__inner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.floating-streak-panel__badge {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, var(--primary-color) 0%, #5d7d6c 100%);
+    color: #fff;
+    font-size: 1.35rem;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 4px 12px rgba(70, 96, 85, 0.28);
+}
+
+.floating-streak-panel__badge i {
+    margin-top: 1px;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.floating-streak-panel__body {
+    flex: 1;
+    min-width: 0;
 }
 
 .floating-streak-panel__label {
-    margin: 0 0 0.2rem;
-    font-size: 0.65rem;
+    margin: 0 0 0.15rem;
+    font-size: 0.62rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    color: #466055;
+    font-weight: 800;
+}
+
+.floating-streak-panel__count {
+    margin: 0 0 0.25rem;
+    line-height: 1.1;
+    color: #2c3e34;
+}
+
+.floating-streak-panel__num {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.floating-streak-panel__days {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #466055;
+    margin-left: 0.2rem;
+}
+
+.floating-streak-panel__hint {
+    margin: 0 0 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #5c6a63;
+}
+
+.floating-streak-panel__week {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+}
+
+.floating-streak-panel__dow {
+    flex: 1;
+    min-width: 0;
+    aspect-ratio: 1;
+    max-width: 32px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(70, 96, 85, 0.2);
+    background: rgba(255, 255, 255, 0.55);
+    color: #466055;
+}
+
+.floating-streak-panel__dow--done {
+    background: linear-gradient(165deg, #5d7d6c 0%, var(--primary-color) 100%);
+    color: #fff;
+    border-color: rgba(45, 62, 52, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.floating-streak-panel__dow--future {
+    background: rgba(111, 143, 127, 0.12);
+    color: #5a6d62;
+    border-color: rgba(70, 96, 85, 0.12);
     font-weight: 700;
 }
 
+.floating-streak-panel__dow--idle {
+    opacity: 0.92;
+}
+
+/* Legacy selector — some scripts still reference .streak-count */
 .streak-count {
-    color: var(--text-dark);
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 0;
+    display: none;
 }
 
 .header-section {
@@ -1409,8 +1514,25 @@ body {
     }
 
     .floating-streak-panel {
-        min-width: 110px;
-        padding: 0.45rem 0.55rem;
+        min-width: min(260px, calc(100vw - 2.5rem));
+        max-width: calc(100vw - 2.5rem);
+        padding: 0.7rem 0.75rem 0.8rem;
+    }
+
+    .floating-streak-panel__badge {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        font-size: 1.15rem;
+    }
+
+    .floating-streak-panel__num {
+        font-size: 1.55rem;
+    }
+
+    .floating-streak-panel__dow {
+        max-width: 28px;
+        font-size: 0.58rem;
     }
     
     /* Compact stat row: icon badge (left) + stacked copy (right), reference-style */

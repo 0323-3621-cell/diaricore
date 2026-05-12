@@ -217,6 +217,60 @@ function calculateEntryStreak(entries) {
     return streak;
 }
 
+function streakCalendarDayTimestamps(streak) {
+    const set = new Set();
+    if (streak <= 0) return set;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 0; i < streak; i += 1) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        set.add(d.getTime());
+    }
+    return set;
+}
+
+function streakPanelHintText(streak) {
+    if (streak <= 0) return 'Log today to start a streak.';
+    if (streak === 1) return 'Nice — journal again tomorrow to grow your streak.';
+    return "Keep journaling — you're on a roll!";
+}
+
+function updateStreakPanelUI(entries) {
+    const streak = calculateEntryStreak(entries || []);
+    const numEl = document.getElementById('floatingStreakNum');
+    const hintEl = document.getElementById('floatingStreakHint');
+    const weekEl = document.getElementById('floatingStreakWeek');
+    const legacy = document.querySelector('.streak-count');
+
+    if (numEl) numEl.textContent = String(streak);
+    const daysLbl = document.getElementById('floatingStreakDaysLabel');
+    if (daysLbl) daysLbl.textContent = streak === 1 ? 'day' : 'days';
+    if (hintEl) hintEl.textContent = streakPanelHintText(streak);
+    if (legacy) legacy.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
+
+    if (!weekEl) return;
+
+    const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const mondayMs = mondayOfWeekContaining().getTime();
+    const streakDays = streakCalendarDayTimestamps(streak);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+
+    weekEl.innerHTML = letters.map((letter, idx) => {
+        const dayMs = mondayMs + idx * MS_PER_DAY;
+        const isFuture = dayMs > todayMs;
+        const isDone = streakDays.has(dayMs);
+        let cls = 'floating-streak-panel__dow';
+        if (isDone) cls += ' floating-streak-panel__dow--done';
+        else if (isFuture) cls += ' floating-streak-panel__dow--future';
+        else cls += ' floating-streak-panel__dow--idle';
+        return `<li class="${cls}"><span>${letter}</span></li>`;
+    }).join('');
+}
+
 function initializeStreakBook() {
     const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
@@ -527,6 +581,9 @@ function getLatestEntry(entries) {
 }
 
 function updateDashboardCards(entries) {
+    const list = entries || [];
+    updateStreakPanelUI(list);
+
     const moodImg = document.querySelector('.stat-card-mood .mood-emoji__img');
     const moodValue = document.querySelector('.stat-card-mood .stat-value');
     const moodDescription = document.querySelector('.stat-card-mood .stat-description');
@@ -535,13 +592,10 @@ function updateDashboardCards(entries) {
     const avgDescription = document.querySelector('.stat-card-average .stat-description');
     const insightValue = document.querySelector('.stat-card-insight .insight-text');
     const insightDescription = document.querySelector('.stat-card-insight .stat-description');
-    const streakCount = document.querySelector('.floating-streak-panel .streak-count');
 
     const latest = getLatestEntry(entries);
     const weekAgg = aggregateCalendarWeekMood(entries || []);
     const dailyMeans = weekAgg.chartData.filter((v) => v != null);
-    const streak = calculateEntryStreak(entries || []);
-    if (streakCount) streakCount.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
 
     if (!latest) {
         if (moodImg) {

@@ -250,6 +250,52 @@ html.theme-dark .floating-streak-book__lottie {
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.14)) contrast(1.08);
 }
 
+html.theme-dark .floating-streak-panel {
+    background: linear-gradient(145deg, rgba(48, 58, 54, 0.98) 0%, rgba(32, 42, 38, 0.99) 100%) !important;
+    border: 1px solid rgba(var(--primary-rgb), 0.28) !important;
+    box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+html.theme-dark .floating-streak-panel__label {
+    color: var(--primary-light) !important;
+}
+
+html.theme-dark .floating-streak-panel__count {
+    color: var(--text-dark) !important;
+}
+
+html.theme-dark .floating-streak-panel__days {
+    color: rgba(200, 220, 210, 0.82) !important;
+}
+
+html.theme-dark .floating-streak-panel__hint {
+    color: var(--text-secondary) !important;
+}
+
+html.theme-dark .floating-streak-panel__dow {
+    background: rgba(255, 255, 255, 0.06);
+    color: #b8ccc2;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.theme-dark .floating-streak-panel__dow--done {
+    background: linear-gradient(165deg, #5d7d6c 0%, var(--primary-color) 100%) !important;
+    color: #fff !important;
+    border-color: rgba(111, 143, 127, 0.45) !important;
+}
+
+html.theme-dark .floating-streak-panel__dow--future {
+    background: rgba(111, 143, 127, 0.1);
+    color: rgba(176, 200, 188, 0.75);
+    border-color: rgba(111, 143, 127, 0.2);
+}
+
+html.theme-dark .floating-streak-panel__dow--idle {
+    opacity: 0.88;
+}
+
 .theme-toggle-fab {
     position: fixed;
     right: 1.15rem;

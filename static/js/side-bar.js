@@ -442,7 +442,20 @@ class SidebarComponent {
         if (subtitle) subtitle.textContent = 'No user logged in yet';
 
         const streakCount = document.querySelector('.streak-count');
-        if (streakCount) streakCount.textContent = '0';
+        const streakNum = document.getElementById('floatingStreakNum');
+        const streakHint = document.getElementById('floatingStreakHint');
+        const streakWeek = document.getElementById('floatingStreakWeek');
+        if (streakCount) streakCount.textContent = '0 days';
+        if (streakNum) streakNum.textContent = '0';
+        const streakDaysLbl = document.getElementById('floatingStreakDaysLabel');
+        if (streakDaysLbl) streakDaysLbl.textContent = 'days';
+        if (streakHint) streakHint.textContent = 'Log today to start a streak.';
+        if (streakWeek) {
+            const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+            streakWeek.innerHTML = letters.map((L) => (
+                `<li class="floating-streak-panel__dow floating-streak-panel__dow--idle"><span>${L}</span></li>`
+            )).join('');
+        }
 
         document.querySelectorAll('.stat-card .stat-value').forEach((el) => {
             el.textContent = 'No data yet';

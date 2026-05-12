@@ -547,7 +547,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const tagName = normalizeTag(customTagNameInput?.value || '');
             if (!tagName || !selectedPickerIconName) return;
             const ok = await createNewTag(tagName, selectedPickerIconName, 'bi');
-            if (ok) closeCustomTagModal();
+            if (ok) {
+                closeCustomTagModal();
+            } else {
+                customTagNameInput.focus();
+                customTagNameInput.select();
+            }
         });
     }
 
@@ -559,7 +564,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!normalizedName) return;
         const existingTags = Array.from(document.querySelectorAll('.tag-btn:not(.add-tag)'))
             .map((btn) => normalizeTag(btn.dataset.tag).toLowerCase());
-        if (existingTags.includes(normalizedName.toLowerCase())) return false;
+        if (existingTags.includes(normalizedName.toLowerCase())) {
+            alert('This tag already exists. Please choose a different name.');
+            return false;
+        }
 
         const newTagBtn = document.createElement('button');
         newTagBtn.className = 'tag-btn';

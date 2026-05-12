@@ -374,6 +374,10 @@
     margin-bottom: 0.4rem;
 }
 
+.entry-gallery-toolbar[hidden] {
+    display: none;
+}
+
 .entry-gallery-toolbar__btn {
     border: 1px solid var(--border-color);
     border-radius: 999px;

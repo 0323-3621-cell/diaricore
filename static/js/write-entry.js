@@ -192,8 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderImageGallery() {
         const gallery = document.getElementById('entryGallery');
+        const toolbar = document.getElementById('entryGalleryToolbar');
         if (!gallery) return;
         const count = attachedImages.length;
+        if (toolbar) toolbar.hidden = count !== 1;
         updatePhotoBadge();
         if (!count) {
             gallery.className = 'entry-gallery is-empty';

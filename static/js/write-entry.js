@@ -1284,22 +1284,29 @@ document.addEventListener('DOMContentLoaded', function() {
         return new Promise((resolve) => setTimeout(resolve, wait));
     }
 
-    async function hydrateMoodAnalysisBookPlayer(player) {
-        if (!player) return;
+    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
+
+    function kickMoodAnalysisBookPlayback(player) {
+        if (!player || !player.isConnected) return;
         try {
-            const res = await fetch('/noto-emoji/Book-Loader.json', { credentials: 'same-origin' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            if (!player.isConnected) return;
-            if (typeof player.load === 'function') {
-                await player.load(data);
-            }
-        } catch (err) {
-            console.warn('Mood analysis Book-Loader:', err);
-            if (player.isConnected) {
-                player.setAttribute('src', '/noto-emoji/Book-Loader.json');
-            }
+            if (typeof player.setLooping === 'function') player.setLooping(true);
+            if (typeof player.play === 'function') player.play();
+        } catch (_) {
+            /* lottie may still be attaching */
         }
+    }
+
+    /** Ensures the mood overlay book animation actually renders (same URL pattern as dashboard BOOK.json). */
+    function attachMoodAnalysisBookPlayerPlayback(player) {
+        const kick = () => kickMoodAnalysisBookPlayback(player);
+        player.addEventListener('ready', kick, { once: true });
+        player.addEventListener(
+            'error',
+            () => console.warn('Mood analysis Book-Loader failed to load'),
+            { once: true }
+        );
+        requestAnimationFrame(() => requestAnimationFrame(kick));
+        setTimeout(kick, 150);
     }
 
     function ensureAnalysisOverlay() {
@@ -1337,12 +1344,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const player = document.createElement('lottie-player');
         player.className = 'mood-analysis-book-lottie';
-        player.setAttribute('background', 'transparent');
-        player.setAttribute('speed', '1');
-        player.setAttribute('loop', '');
-        player.setAttribute('autoplay', '');
-        player.setAttribute('renderer', 'svg');
+        player.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
+        player.background = 'transparent';
+        player.speed = 1;
+        player.loop = true;
+        player.autoplay = true;
         player.setAttribute('aria-label', 'Loading animation');
+        attachMoodAnalysisBookPlayerPlayback(player);
 
         const titleEl = document.createElement('h4');
         titleEl.className = 'mood-analysis-loading__title';
@@ -1359,10 +1367,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         footer.style.display = 'none';
         overlay.hidden = false;
-
-        requestAnimationFrame(() => {
-            void hydrateMoodAnalysisBookPlayer(player);
-        });
     }
 
     function computeEnergy(score) {

@@ -1006,6 +1006,10 @@
     height: 132px;
     max-width: 42vw;
     max-height: 42vw;
+    display: block;
+    border-radius: 14px;
+    /* Book-Loader uses large white fills; a faint tint keeps it visible on white cards */
+    background: rgba(111, 138, 165, 0.14);
 }
 
 .mood-analysis-loading__title {

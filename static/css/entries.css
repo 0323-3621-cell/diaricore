@@ -286,6 +286,136 @@ body {
     margin-bottom: 3rem;
 }
 
+.entries-toolbar {
+    margin-bottom: 0.85rem;
+}
+
+.entries-month-select {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.45rem 2.25rem 0.45rem 0.75rem;
+    max-width: min(100%, 280px);
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.entries-month-select:hover {
+    border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+}
+
+.entries-month-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 22%, transparent);
+}
+
+.entries-grid--paged {
+    transition: opacity 0.2s ease;
+}
+
+.entries-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.entries-page-btn {
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.entries-page-btn:hover:not(:disabled) {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: var(--background-soft);
+}
+
+.entries-page-btn:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.entries-page-indicator {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    min-width: 7.5rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .entries-section.entries-section--main > .month-header.entries-month-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        margin: 0 0 0.35rem 0;
+        padding: 0 0 0.65rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .entries-section.entries-section--main > .month-header.entries-month-header i {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .entries-section.entries-section--main > .month-header.entries-month-header .month-text {
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--text-dark);
+    }
+
+    .entries-pagination {
+        margin-top: 1.5rem;
+        gap: 0.85rem;
+    }
+}
+
+@media (min-width: 769px) {
+    .entries-section.entries-section--main > .month-header.entries-month-header {
+        grid-column: unset;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        margin: 0 0 0.35rem 0;
+        padding: 0 0 1rem 0;
+        border-bottom: 1px solid var(--border-color);
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .entries-section.entries-section--main > .month-header.entries-month-header i {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+    }
+
+    .entries-section.entries-section--main > .month-header.entries-month-header .month-text {
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: var(--text-dark);
+    }
+}
+
 .entries-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -511,10 +641,14 @@ body {
         font-weight: 500;
     }
     
-    /* Search / filter: no matches — hide month grids, load more, April end note */
-    .entries-content--empty-results .entries-section,
+    /* No matches: hide legacy sections only; keep main entries block (month dropdown) visible */
+    .entries-content--empty-results .entries-section:not(.entries-section--main),
     .entries-content--empty-results .load-more-section {
         display: none !important;
+    }
+
+    .entries-content--empty-results .entries-section.entries-section--main {
+        display: block !important;
     }
     
     .entries-content--empty-results .entries-empty-state {
@@ -562,9 +696,13 @@ body {
 }
 
 @media (max-width: 768px) {
-    .entries-content--empty-results .entries-section,
+    .entries-content--empty-results .entries-section:not(.entries-section--main),
     .entries-content--empty-results .load-more-section {
         display: none !important;
+    }
+
+    .entries-content--empty-results .entries-section.entries-section--main {
+        display: block !important;
     }
     
     .entries-content--empty-results .entries-empty-state {
@@ -1089,10 +1227,6 @@ body {
         font-weight: 500;
     }
     
-    /* Hide extra entries beyond first 5 on mobile for each month section */
-    .entries-grid > .entry-card:nth-child(n+7) {
-        display: none !important;
-    }
     
     /* Desktop-only end note lives in markup; mobile keeps JS message after Load more — hide duplicate */
     .april-section__end-note {

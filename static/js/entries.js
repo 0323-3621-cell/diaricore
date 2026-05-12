@@ -1,13 +1,20 @@
 // DiariCore Entries Page JavaScript
 
+const ENTRIES_PAGE_SIZE = 6;
+
+let entriesMasterSorted = [];
+let entriesByMonthKey = {};
+let entriesMonthKeysOrdered = [];
+let entriesSelectedMonthKey = '';
+let entriesCurrentPage = 1;
+
 document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
     initializeEntriesFromStorage();
-    // Initialize components
     initializeFilterDropdown();
     initializeSearch();
     initializeEntryCards();
-    initializeLoadMore();
+    initializeEntriesPagination();
     initializeEntriesResizeEmptyState();
 });
 
@@ -25,25 +32,160 @@ async function syncEntriesFromApi() {
     }
 }
 
+function monthKeyFromDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+}
+
+function parseMonthKey(key) {
+    const [y, m] = key.split('-').map(Number);
+    return { year: y, monthIndex: m };
+}
+
+function formatMonthDropdownLabel(key) {
+    const { year, monthIndex } = parseMonthKey(key);
+    return new Date(year, monthIndex, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function formatMonthHeaderUpper(key) {
+    const { year, monthIndex } = parseMonthKey(key);
+    const monthUpper = new Date(year, monthIndex, 1).toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    return `${monthUpper} ${year}`;
+}
+
+function getCheckedFilterValues() {
+    return Array.from(document.querySelectorAll('.filter-option input[type="checkbox"]:checked')).map((cb) =>
+        String(cb.value || '').toLowerCase()
+    );
+}
+
+function partitionEmotionAndTagFilters(checked) {
+    const emotions = new Set(['happy', 'sad', 'angry', 'anxious', 'calm']);
+    const emotionVals = checked.filter((v) => emotions.has(v));
+    const tagVals = checked.filter((v) => !emotions.has(v));
+    return { emotionVals, tagVals };
+}
+
+function entryMatchesFilters(entry, checked) {
+    if (!checked.length) return true;
+    const { emotionVals, tagVals } = partitionEmotionAndTagFilters(checked);
+    const moodLabel = moodDisplayLabel(resolveEntryFeeling(entry)).toLowerCase();
+    const tags = (Array.isArray(entry.tags) ? entry.tags : []).map((t) => String(t).toLowerCase());
+    const emotionMatch = emotionVals.length === 0 || emotionVals.includes(moodLabel);
+    const tagMatch = tagVals.length === 0 || tagVals.some((ft) => tags.includes(ft.toLowerCase()));
+    return emotionMatch && tagMatch;
+}
+
+function entryMatchesSearch(entry, query) {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    const titleRaw = (entry.title && String(entry.title).trim())
+        ? String(entry.title).toLowerCase()
+        : (entry.text ? entry.text.trim().split('\n')[0].toLowerCase() : '');
+    const excerpt = String(entry.text || '').toLowerCase();
+    const tags = (entry.tags || []).map((t) => String(t).toLowerCase());
+    return titleRaw.includes(q) || excerpt.includes(q) || tags.some((t) => t.includes(q));
+}
+
+function getFilteredEntriesForSelectedMonth() {
+    const list = entriesByMonthKey[entriesSelectedMonthKey] || [];
+    const query = getEntriesSearchQuery();
+    const checked = getCheckedFilterValues();
+    return list.filter((e) => entryMatchesSearch(e, query) && entryMatchesFilters(e, checked));
+}
+
+function renderEntriesView(options = {}) {
+    const skipFade = Boolean(options.skipFade);
+    const grid = document.getElementById('entriesGrid');
+    const section = document.getElementById('entriesMainSection');
+    const monthHeaderText = document.getElementById('entriesMonthHeaderText');
+    const paginationEl = document.getElementById('entriesPagination');
+    const prevBtn = document.getElementById('entriesPagePrev');
+    const nextBtn = document.getElementById('entriesPageNext');
+    const indicator = document.getElementById('entriesPageIndicator');
+    if (!grid || !section) return;
+
+    const filtered = getFilteredEntriesForSelectedMonth();
+    const totalInMonth = (entriesByMonthKey[entriesSelectedMonthKey] || []).length;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ENTRIES_PAGE_SIZE));
+    if (entriesCurrentPage > totalPages) entriesCurrentPage = totalPages;
+    if (entriesCurrentPage < 1) entriesCurrentPage = 1;
+
+    const fillGrid = () => {
+        grid.innerHTML = '';
+        const start = (entriesCurrentPage - 1) * ENTRIES_PAGE_SIZE;
+        filtered.slice(start, start + ENTRIES_PAGE_SIZE).forEach((entry) => {
+            grid.appendChild(createStoredEntryCard(entry));
+        });
+
+        if (monthHeaderText && entriesSelectedMonthKey) {
+            monthHeaderText.textContent = formatMonthHeaderUpper(entriesSelectedMonthKey);
+        }
+
+        if (paginationEl && prevBtn && nextBtn && indicator) {
+            const showPag = filtered.length > ENTRIES_PAGE_SIZE;
+            paginationEl.hidden = !showPag;
+            indicator.textContent = `Page ${entriesCurrentPage} of ${totalPages}`;
+            prevBtn.disabled = entriesCurrentPage <= 1;
+            nextBtn.disabled = entriesCurrentPage >= totalPages;
+        }
+
+        updateResultsMessage(filtered.length, totalInMonth);
+        syncEntriesEmptyResultsLayout(filtered.length);
+
+        grid.style.opacity = '1';
+    };
+
+    if (!skipFade) {
+        grid.style.opacity = '0.45';
+        requestAnimationFrame(() => requestAnimationFrame(fillGrid));
+    } else {
+        fillGrid();
+    }
+}
+
+function initializeEntriesPagination() {
+    const prevBtn = document.getElementById('entriesPagePrev');
+    const nextBtn = document.getElementById('entriesPageNext');
+    if (!prevBtn || !nextBtn || prevBtn.dataset.entriesPaginationInit) return;
+    prevBtn.dataset.entriesPaginationInit = '1';
+    prevBtn.addEventListener('click', () => {
+        if (entriesCurrentPage > 1) {
+            entriesCurrentPage -= 1;
+            renderEntriesView();
+        }
+    });
+    nextBtn.addEventListener('click', () => {
+        const filtered = getFilteredEntriesForSelectedMonth();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / ENTRIES_PAGE_SIZE));
+        if (entriesCurrentPage < totalPages) {
+            entriesCurrentPage += 1;
+            renderEntriesView();
+        }
+    });
+}
+
 function initializeEntriesFromStorage() {
     const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
     const main = document.querySelector('.entries-content');
     const emptyState = document.getElementById('entriesEmptyState');
-    const firstSection = document.querySelector('.entries-section');
-    const aprilSection = document.querySelector('.april-section');
-    const loadMoreSection = document.querySelector('.load-more-section');
-    const firstGrid = firstSection ? firstSection.querySelector('.entries-grid') : null;
-    if (!main || !emptyState || !firstSection || !firstGrid) return;
+    const firstSection = document.getElementById('entriesMainSection');
+    const monthSelect = document.getElementById('entriesMonthSelect');
+    const toolbar = document.querySelector('.entries-toolbar');
+    const monthHeaderBlock = document.getElementById('entriesMonthHeader');
+    const paginationEl = document.getElementById('entriesPagination');
 
-    const normalize = (arr) => Array.isArray(arr) ? arr : [];
-    const userEntries = normalize(entries)
+    if (!main || !emptyState || !firstSection || !monthSelect) return;
+
+    const normalize = (arr) => (Array.isArray(arr) ? arr : []);
+    entriesMasterSorted = normalize(entries)
         .filter((e) => e && e.date)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (userEntries.length === 0) {
+    if (entriesMasterSorted.length === 0) {
         firstSection.style.display = 'none';
-        if (aprilSection) aprilSection.style.display = 'none';
-        if (loadMoreSection) loadMoreSection.style.display = 'none';
+        if (toolbar) toolbar.hidden = true;
+        if (monthHeaderBlock) monthHeaderBlock.hidden = true;
+        if (paginationEl) paginationEl.hidden = true;
         main.classList.add('entries-content--empty-results');
 
         const desktopTitle = emptyState.querySelector('.entries-empty-state__title--desktop');
@@ -59,38 +201,44 @@ function initializeEntriesFromStorage() {
 
     main.classList.remove('entries-content--empty-results');
     firstSection.style.display = '';
-    if (aprilSection) aprilSection.style.display = 'none';
-    if (loadMoreSection) loadMoreSection.style.display = 'none';
+    if (toolbar) toolbar.hidden = false;
+    if (monthHeaderBlock) monthHeaderBlock.hidden = false;
 
-    const groups = {};
-    userEntries.forEach((entry) => {
+    entriesByMonthKey = {};
+    entriesMasterSorted.forEach((entry) => {
         const d = new Date(entry.date);
         if (Number.isNaN(d.getTime())) return;
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(entry);
+        const key = monthKeyFromDate(d);
+        if (!entriesByMonthKey[key]) entriesByMonthKey[key] = [];
+        entriesByMonthKey[key].push(entry);
     });
 
-    const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-        const [aY, aM] = a.split('-').map(Number);
-        const [bY, bM] = b.split('-').map(Number);
-        return new Date(bY, bM, 1) - new Date(aY, aM, 1);
+    entriesMonthKeysOrdered = Object.keys(entriesByMonthKey).sort((a, b) => {
+        const { year: ay, monthIndex: am } = parseMonthKey(a);
+        const { year: by, monthIndex: bm } = parseMonthKey(b);
+        return new Date(by, bm, 1) - new Date(ay, am, 1);
     });
 
-    firstGrid.innerHTML = '';
-    sortedGroupKeys.forEach((key) => {
-        const [year, month] = key.split('-').map(Number);
-        const monthLabel = new Date(year, month, 1).toLocaleString('en-US', { month: 'long' }).toUpperCase();
-
-        const monthHeader = document.createElement('div');
-        monthHeader.className = 'month-header';
-        monthHeader.innerHTML = `<i class="bi bi-calendar3"></i><span class="month-text">${monthLabel} ${year}</span>`;
-        firstGrid.appendChild(monthHeader);
-
-        groups[key].forEach((entry) => {
-            firstGrid.appendChild(createStoredEntryCard(entry));
-        });
+    monthSelect.innerHTML = '';
+    entriesMonthKeysOrdered.forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = formatMonthDropdownLabel(key);
+        monthSelect.appendChild(opt);
     });
+
+    const nowKey = monthKeyFromDate(new Date());
+    entriesSelectedMonthKey = entriesMonthKeysOrdered.includes(nowKey) ? nowKey : entriesMonthKeysOrdered[0];
+    entriesCurrentPage = 1;
+    monthSelect.value = entriesSelectedMonthKey;
+
+    monthSelect.addEventListener('change', () => {
+        entriesSelectedMonthKey = monthSelect.value;
+        entriesCurrentPage = 1;
+        renderEntriesView();
+    });
+
+    renderEntriesView({ skipFade: true });
 }
 
 function resolveEntryFeeling(entry) {
@@ -156,6 +304,7 @@ function createStoredEntryCard(entry) {
 }
 
 let entriesResizeTimer;
+
 function getEntriesSearchQuery() {
     const input = document.querySelector('.search-input');
     const top = document.getElementById('mobileAppTopbarSearchInput');
@@ -168,7 +317,9 @@ function initializeEntriesResizeEmptyState() {
     window.addEventListener('resize', function () {
         clearTimeout(entriesResizeTimer);
         entriesResizeTimer = setTimeout(function () {
-            performSearch(getEntriesSearchQuery());
+            if (document.getElementById('entriesGrid')) {
+                renderEntriesView({ skipFade: true });
+            }
         }, 150);
     });
 }
@@ -224,49 +375,8 @@ function initializeFilterDropdown() {
 
 // Apply Filters
 function applyFilters() {
-    const emotionFilters = getCheckedValues('emotion');
-    const tagFilters = getCheckedValues('tags');
-    
-    const entryCards = document.querySelectorAll('.entry-card');
-    let visibleCount = 0;
-
-    entryCards.forEach(card => {
-        const shouldShow = shouldShowEntry(card, emotionFilters, tagFilters);
-        
-        if (shouldShow) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    // Update results message
-    updateResultsMessage(visibleCount, entryCards.length);
-}
-
-// Get checked values from filter checkboxes
-function getCheckedValues(filterType) {
-    const checkboxes = document.querySelectorAll(`.filter-option input[type="checkbox"]:checked`);
-    return Array.from(checkboxes).map(cb => cb.value);
-}
-
-// Check if entry should be shown based on filters
-function shouldShowEntry(card, emotionFilters, tagFilters) {
-    // If no filters are applied, show all entries
-    if (emotionFilters.length === 0 && tagFilters.length === 0) {
-        return true;
-    }
-
-    // Check emotion filter
-    const moodLabel = card.querySelector('.mood-label').textContent.toLowerCase();
-    const emotionMatch = emotionFilters.length === 0 || emotionFilters.includes(moodLabel);
-
-    // Check tag filter
-    const tags = Array.from(card.querySelectorAll('.tag')).map(tag => tag.textContent.toLowerCase());
-    const tagMatch = tagFilters.length === 0 || tagFilters.some(filterTag => tags.includes(filterTag.toLowerCase()));
-
-    return emotionMatch && tagMatch;
+    entriesCurrentPage = 1;
+    renderEntriesView();
 }
 
 // Clear All Filters
@@ -276,14 +386,8 @@ function clearAllFilters() {
         checkbox.checked = false;
     });
 
-    // Show all entries
-    const entryCards = document.querySelectorAll('.entry-card');
-    entryCards.forEach(card => {
-        card.style.display = 'block';
-    });
-
-    // Update results message
-    updateResultsMessage(entryCards.length, entryCards.length);
+    entriesCurrentPage = 1;
+    renderEntriesView();
 }
 
 function hasActiveSearchOrFilters() {
@@ -334,7 +438,7 @@ function onEntriesSearchInput(source) {
     if (topbarInput && source !== topbarInput) topbarInput.value = v;
     clearTimeout(entriesSearchDebounceTimer);
     entriesSearchDebounceTimer = setTimeout(() => {
-        performSearch(v.trim());
+        performSearch();
     }, 300);
 }
 
@@ -392,54 +496,22 @@ document.addEventListener('diari-mobile-shell-ready', function() {
     });
 });
 
-// Perform Search
-function performSearch(query) {
-    const entryCards = document.querySelectorAll('.entry-card');
-    let visibleCount = 0;
-
-    entryCards.forEach(card => {
-        const title = card.querySelector('.entry-title').textContent.toLowerCase();
-        const excerpt = card.querySelector('.entry-excerpt').textContent.toLowerCase();
-        const tags = Array.from(card.querySelectorAll('.tag')).map(tag => tag.textContent.toLowerCase());
-        
-        const searchQuery = query.toLowerCase();
-        const matchesSearch = query === '' || 
-            title.includes(searchQuery) || 
-            excerpt.includes(searchQuery) || 
-            tags.some(tag => tag.includes(searchQuery));
-
-        if (matchesSearch) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    updateResultsMessage(visibleCount, entryCards.length);
+// Perform Search (selected month only; client-side)
+function performSearch() {
+    entriesCurrentPage = 1;
+    renderEntriesView();
 }
 
-// Entry Cards Functionality
+// Entry cards: delegated clicks on dynamically rendered grid
 function initializeEntryCards() {
-    const readMoreButtons = document.querySelectorAll('.btn-read-more');
-    
-    readMoreButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const card = this.closest('.entry-card');
-            showEntryDetails(card);
-        });
-    });
+    const grid = document.getElementById('entriesGrid');
+    if (!grid || grid.dataset.entriesCardInit) return;
+    grid.dataset.entriesCardInit = '1';
 
-    // Add click event to cards
-    const entryCards = document.querySelectorAll('.entry-card');
-    entryCards.forEach(card => {
-        card.addEventListener('click', function(e) {
-            // Don't trigger if clicking on buttons or links
-            if (!e.target.closest('button')) {
-                showEntryDetails(this);
-            }
-        });
+    grid.addEventListener('click', function (e) {
+        const card = e.target.closest('.entry-card');
+        if (!card || e.target.closest('button')) return;
+        showEntryDetails(card);
     });
 }
 
@@ -452,18 +524,9 @@ function showEntryDetails(card) {
     console.log('Entry clicked:', title);
 }
 
-// Load More Functionality
-function initializeLoadMore() {
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', function() {
-            loadMoreEntries();
-        });
-    }
-}
+// Legacy load-more UI removed from Entries page (month dropdown + pagination replace it).
+function initializeLoadMore() {}
 
-// Load More Entries (Works on both mobile and desktop)
 function loadMoreEntries() {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     const entriesGrid = document.querySelector('.entries-grid');

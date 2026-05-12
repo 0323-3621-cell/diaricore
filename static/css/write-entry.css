@@ -1012,6 +1012,20 @@
     background: rgba(111, 138, 165, 0.14);
 }
 
+/* Warm hidden player so the overlay instance loads from cache quickly */
+.mood-analysis-book-preload {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    left: -9999px;
+    top: 0;
+    overflow: hidden;
+}
+
 .mood-analysis-loading__title {
     margin: 0;
     font-size: 1.2rem;

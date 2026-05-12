@@ -10,8 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let pickerOpenedAtLocalStr = '';
     let priorManualDateTimeOnPickerOpen = null;
 
-    /** Keep the loading/book animation visible at least this long before showing results. */
-    const MOOD_ANALYSIS_MIN_MS = 2600;
+    /** Minimum time the analysis overlay stays up after it is shown (before results). */
+    const MOOD_ANALYSIS_MIN_MS = 3800;
+    /** After the book Lottie fires `ready`, keep it on screen at least this long (so it is not a flash). */
+    const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 2400;
+
+    let moodAnalysisLoadingShownAt = 0;
+    let moodAnalysisBookReadyAt = null;
 
     function normalizeTag(tag) {
         return String(tag || '').trim().replace(/\s+/g, ' ');
@@ -1171,7 +1176,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const userId = getCurrentUserId();
 
-        const moodAnalysisStarted = Date.now();
         setSavingState(true);
         const analysisOverlay = ensureAnalysisOverlay();
         showAnalysisLoading(analysisOverlay);
@@ -1218,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
             console.log('Entry saved:', savedEntry);
 
-            await delayUntilMoodAnalysisMinShown(moodAnalysisStarted);
+            await delayUntilMoodAnalysisGate();
             showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback');
             localStorage.removeItem('diariCoreDraft');
             attachedImages = [];
@@ -1252,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
             entries.push(fallbackEntry);
             localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
-            await delayUntilMoodAnalysisMinShown(moodAnalysisStarted);
+            await delayUntilMoodAnalysisGate();
             showAnalysisResult(analysisOverlay, fallbackEntry, true);
             localStorage.removeItem('diariCoreDraft');
         } finally {
@@ -1278,13 +1282,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function delayUntilMoodAnalysisMinShown(startedAt) {
-        const elapsed = Date.now() - startedAt;
-        const wait = Math.max(0, MOOD_ANALYSIS_MIN_MS - elapsed);
-        return new Promise((resolve) => setTimeout(resolve, wait));
+    async function delayUntilMoodAnalysisGate() {
+        const shownAt = moodAnalysisLoadingShownAt || Date.now();
+        let wait = Math.max(0, MOOD_ANALYSIS_MIN_MS - (Date.now() - shownAt));
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        if (moodAnalysisBookReadyAt) {
+            wait = Math.max(0, MOOD_ANALYSIS_MIN_AFTER_BOOK_MS - (Date.now() - moodAnalysisBookReadyAt));
+            await new Promise((resolve) => setTimeout(resolve, wait));
+        }
     }
 
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/Book-Loader.json';
+
+    function preloadMoodAnalysisBookLottie() {
+        fetch(MOOD_ANALYSIS_BOOK_LOTTIE_SRC, { credentials: 'same-origin' }).catch(() => {});
+        if (!customElements.get('lottie-player')) return;
+        const warm = document.createElement('lottie-player');
+        warm.className = 'mood-analysis-book-preload';
+        warm.setAttribute('aria-hidden', 'true');
+        warm.tabIndex = -1;
+        warm.src = MOOD_ANALYSIS_BOOK_LOTTIE_SRC;
+        warm.background = 'transparent';
+        warm.loop = true;
+        warm.autoplay = true;
+        document.body.appendChild(warm);
+    }
 
     function kickMoodAnalysisBookPlayback(player) {
         if (!player || !player.isConnected) return;
@@ -1299,7 +1321,14 @@ document.addEventListener('DOMContentLoaded', function() {
     /** Ensures the mood overlay book animation actually renders (same URL pattern as dashboard BOOK.json). */
     function attachMoodAnalysisBookPlayerPlayback(player) {
         const kick = () => kickMoodAnalysisBookPlayback(player);
-        player.addEventListener('ready', kick, { once: true });
+        player.addEventListener(
+            'ready',
+            () => {
+                moodAnalysisBookReadyAt = Date.now();
+                kick();
+            },
+            { once: true }
+        );
         player.addEventListener(
             'error',
             () => console.warn('Mood analysis Book-Loader failed to load'),
@@ -1333,6 +1362,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showAnalysisLoading(overlay) {
+        moodAnalysisBookReadyAt = null;
         const header = overlay.querySelector('.mood-analysis-card__header');
         const body = overlay.querySelector('#moodAnalysisBody');
         const footer = overlay.querySelector('.mood-analysis-card__footer');
@@ -1367,6 +1397,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         footer.style.display = 'none';
         overlay.hidden = false;
+        moodAnalysisLoadingShownAt = Date.now();
     }
 
     function computeEnergy(score) {
@@ -1524,5 +1555,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load draft on page load
     loadDraft();
     flushOfflineEntryQueue();
-    
+
+    const schedulePreload =
+        typeof window.requestIdleCallback === 'function'
+            ? (cb) => window.requestIdleCallback(cb, { timeout: 4000 })
+            : (cb) => setTimeout(cb, 1);
+    schedulePreload(() => preloadMoodAnalysisBookLottie());
 });

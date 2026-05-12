@@ -68,6 +68,8 @@
 .entry-view-tags-inner {
     flex: 1;
     min-width: 0;
+    /* Reserve one chip row so switching entries does not collapse before pills render */
+    min-height: 2.75rem;
 }
 
 .entry-view-tag-pill {

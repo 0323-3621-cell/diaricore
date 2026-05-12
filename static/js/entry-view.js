@@ -233,14 +233,20 @@
                     }
                 }
             } catch (_) {}
-            DEFAULT_TAG_NAMES.forEach((t) => fromApi.add(t));
+            DEFAULT_TAG_NAMES.forEach((t) => fromApi.add(normalizeTag(t)));
             tags.forEach((t) => fromApi.add(t));
             allTagChoices = Array.from(fromApi).sort((a, b) => a.localeCompare(b));
         }
 
-        await loadTagChoices();
+        /** Defaults + current entry tags only — no network; keeps layout stable while API loads. */
+        function seedTagChoicesSync() {
+            const s = new Set();
+            DEFAULT_TAG_NAMES.forEach((t) => s.add(normalizeTag(t)));
+            tags.forEach((t) => s.add(normalizeTag(t)));
+            allTagChoices = Array.from(s).sort((a, b) => a.localeCompare(b));
+        }
 
-        if (signal.aborted) return;
+        seedTagChoicesSync();
 
         const addWrap = document.createElement('div');
         addWrap.className = 'entry-view-add-tag-wrap';
@@ -302,7 +308,9 @@
                     () => {
                         tags.delete(tag);
                         renderTags();
-                        loadTagChoices().then(fillPicker);
+                        void loadTagChoices().then(() => {
+                            if (!signal.aborted) fillPicker();
+                        });
                     },
                     { signal }
                 );
@@ -318,7 +326,11 @@
                 e.stopPropagation();
                 tagPickerOpen = !tagPickerOpen;
                 picker.hidden = !tagPickerOpen;
-                if (tagPickerOpen) loadTagChoices().then(() => fillPicker());
+                if (tagPickerOpen) {
+                    void loadTagChoices().then(() => {
+                        if (!signal.aborted) fillPicker();
+                    });
+                }
             },
             { signal }
         );
@@ -338,6 +350,11 @@
 
         renderTags();
         autoResizeTextarea(bodyEl);
+
+        void loadTagChoices().then(() => {
+            if (signal.aborted) return;
+            fillPicker();
+        });
 
         bodyEl.addEventListener(
             'input',
@@ -495,7 +512,10 @@
 
         const onOnline = () => {
             flushEditQueue();
-            loadTagChoices().then(() => fillPicker());
+            void loadTagChoices().then(() => {
+                if (signal.aborted) return;
+                fillPicker();
+            });
         };
         window.addEventListener('online', onOnline, { signal });
 

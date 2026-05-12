@@ -247,9 +247,9 @@ function streakCalendarDayTimestamps(streak) {
 }
 
 function streakPanelHintText(streak) {
-    if (streak <= 0) return 'Log today to start a streak.';
-    if (streak === 1) return 'Nice — journal again tomorrow to grow your streak.';
-    return "Keep journaling — you're on a roll!";
+    if (streak <= 0) return 'Journal today to start.';
+    if (streak === 1) return 'Log again tomorrow to extend it.';
+    return "You're on a roll — keep it up.";
 }
 
 function updateStreakPanelUI(entries) {

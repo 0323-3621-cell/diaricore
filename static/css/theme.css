@@ -262,8 +262,12 @@ html.theme-dark .floating-streak-panel__label {
     color: var(--primary-light) !important;
 }
 
-html.theme-dark .floating-streak-panel__count {
+html.theme-dark .floating-streak-panel__countrow {
     color: var(--text-dark) !important;
+}
+
+html.theme-dark .floating-streak-panel__icon {
+    color: var(--primary-light) !important;
 }
 
 html.theme-dark .floating-streak-panel__days {

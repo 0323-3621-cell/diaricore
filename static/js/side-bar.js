@@ -449,7 +449,7 @@ class SidebarComponent {
         if (streakNum) streakNum.textContent = '0';
         const streakDaysLbl = document.getElementById('floatingStreakDaysLabel');
         if (streakDaysLbl) streakDaysLbl.textContent = 'days';
-        if (streakHint) streakHint.textContent = 'Log today to start a streak.';
+        if (streakHint) streakHint.textContent = 'Journal today to start.';
         if (streakWeek) {
             const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
             streakWeek.innerHTML = letters.map((L) => (

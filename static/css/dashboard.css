@@ -758,19 +758,46 @@ body {
 
 .mood-key-foot {
     margin-top: auto;
-    padding-top: 0.65rem;
+    padding-top: 0.55rem;
     border-top: 1px solid var(--divider-color);
 }
 
-.mood-key-foot-text {
+.mood-key-scoring {
     margin: 0;
+    padding: 0.55rem 0.65rem 0.6rem;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--background-soft);
+}
+
+.mood-key-scoring__title {
+    margin: 0 0 0.45rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+    line-height: 1.25;
+}
+
+.mood-key-scoring__list {
+    margin: 0;
+    padding-left: 1rem;
     font-size: 0.68rem;
-    line-height: 1.45;
+    line-height: 1.42;
     color: var(--text-secondary);
     font-weight: 400;
 }
 
-.mood-key-foot-text strong {
+.mood-key-scoring__list li {
+    margin-bottom: 0.35rem;
+}
+
+.mood-key-scoring__list li:last-child {
+    margin-bottom: 0;
+}
+
+.mood-key-scoring__list strong {
     color: var(--text-dark);
     font-weight: 700;
 }
@@ -1117,8 +1144,8 @@ body {
 
 .weekly-sparkline-wrap {
     /* Taller plot area so points read as circles (SVG uses uniform scaling, see dashboard.js). */
-    height: 132px;
-    min-height: 120px;
+    height: 158px;
+    min-height: 138px;
     margin-top: 0.55rem;
     position: relative;
     background-image: linear-gradient(
@@ -1126,7 +1153,7 @@ body {
         rgba(0, 0, 0, 0.035) 1px,
         transparent 1px
     );
-    background-size: 100% 28px;
+    background-size: 100% 30px;
     border-radius: 8px 8px 0 0;
 }
 

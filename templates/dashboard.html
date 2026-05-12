@@ -273,7 +273,14 @@
                             </div>
                         </div>
                         <div class="mood-key-foot">
-                            <p class="mood-key-foot-text"><strong>Blended</strong> — emotion probability × anchor = 0–10 score. <strong>Label-only</strong> when offline. Score ≠ model confidence.</p>
+                            <div class="mood-key-scoring">
+                                <h3 class="mood-key-scoring__title">How the line is scored</h3>
+                                <ul class="mood-key-scoring__list">
+                                    <li><strong>Blended (online, saved)</strong> — Each emotion’s probability × its anchor, merged into one 0–10 for the day (e.g. mostly sad ≈ 3.6 vs 3.5 alone).</li>
+                                    <li><strong>Label-only</strong> — Offline or no server analysis: main mood’s anchor only.</li>
+                                    <li><strong>Not class confidence</strong> — Top-label confidence is not this mood line.</li>
+                                </ul>
+                            </div>
                         </div>
                     </section>
                 </div>

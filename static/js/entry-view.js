@@ -80,6 +80,14 @@
         el.style.height = `${Math.max(200, el.scrollHeight)}px`;
     }
 
+    /** Re-measure body height after the editor is visible (hidden ancestors yield wrong scrollHeight). */
+    function reflowEditorLayout() {
+        if (!activeController || activeController.signal.aborted) return;
+        const el = document.getElementById('entryViewBody');
+        if (!el) return;
+        autoResizeTextarea(el);
+    }
+
     let activeController = null;
 
     function resetEntryDetailLoadingState() {
@@ -664,12 +672,20 @@
         saveAnalyzeBtn.disabled = false;
 
         flushEditQueue();
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (signal.aborted) return;
+                reflowEditorLayout();
+            });
+        });
     }
 
     global.DiariEntryDetail = {
         mount,
         unmount,
         getUserId,
+        reflowEditorLayout,
     };
 
     document.addEventListener('DOMContentLoaded', async () => {

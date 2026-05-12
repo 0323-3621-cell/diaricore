@@ -291,7 +291,8 @@ def serialize_entry(row):
         except Exception:
             tags = []
     created_at = row.get("created_at")
-    date_value = entry_created_at_iso_utc(created_at)
+    entry_dt_raw = row.get("entry_datetime_utc")
+    date_value = entry_created_at_iso_utc(entry_dt_raw) if entry_dt_raw else entry_created_at_iso_utc(created_at)
     emotion_label = (row.get("emotion_label") or "neutral").lower()
     all_probs = {}
     probs_raw = row.get("all_probs_json")
@@ -319,6 +320,7 @@ def serialize_entry(row):
         "tags": tags,
         "imageUrls": image_urls,
         "date": date_value,
+        "createdAt": entry_created_at_iso_utc(created_at),
         "sentimentLabel": (row.get("sentiment_label") or "neutral").lower(),
         "sentimentScore": float(row.get("sentiment_score") or 0.5),
         "emotionLabel": emotion_label,
@@ -327,6 +329,20 @@ def serialize_entry(row):
         # Keep existing UI compatibility
         "feeling": emotion_label,
     }
+
+
+def _parse_ph_local_to_utc_iso(local_dt: str) -> str | None:
+    s = str(local_dt or "").strip()
+    if not s:
+        return None
+    # Expect datetime-local format like "2026-05-12T17:30"
+    try:
+        naive = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    ph_tz = timezone(timedelta(hours=8))
+    aware = naive.replace(tzinfo=ph_tz)
+    return aware.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _allowed_image_extension(filename: str) -> bool:
@@ -844,6 +860,7 @@ def api_entries_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
     title = (data.get("title") or "").strip()
+    entry_date_time_local = (data.get("entryDateTimeLocal") or "").strip()
     text = (data.get("text") or "").strip()
     tags = data.get("tags") or []
     image_urls = data.get("imageUrls") or []
@@ -863,10 +880,12 @@ def api_entries_post():
         return jsonify({"success": False, "error": "User not found."}), 404
 
     analysis = space_nlp.analyze(text)
+    entry_dt_utc = _parse_ph_local_to_utc_iso(entry_date_time_local)
     row = db.create_journal_entry(
         user_id=user_id,
         text_content=text,
         title=title,
+        entry_datetime_utc=entry_dt_utc,
         tags_json=json.dumps(tags),
         image_urls_json=json.dumps(clean_images),
         sentiment_label=analysis["sentimentLabel"],

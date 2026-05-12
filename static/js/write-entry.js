@@ -341,6 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         userId,
                         title: item.title || '',
+                        entryDateTimeLocal: item.entryDateTimeLocal || '',
                         text: item.text || '',
                         tags: item.tags || [],
                         imageUrls,
@@ -1071,6 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSaveEntry() {
         const entryText = journalText.value.trim();
         const entryTitle = normalizeTag(journalTitleInput?.value || '');
+        const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
         if (!entryText) {
             alert('Please write something in your journal entry.');
             return;
@@ -1103,6 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     userId,
                     title: entryTitle,
+                    entryDateTimeLocal,
                     text: entryText,
                     tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
                     imageUrls
@@ -1146,6 +1149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     id: `offline_entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                     userId,
                     title: entryTitle,
+                    entryDateTimeLocal,
                     text: entryText,
                     tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
                     images: attachedImages.map((img) => ({ url: img.url || '', dataUrl: img.dataUrl || '' })),

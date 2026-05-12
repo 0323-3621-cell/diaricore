@@ -48,10 +48,11 @@ def _ensure_journal_all_probs_column(cur):
 
 
 def _ensure_journal_entry_extras_columns(cur):
-    """Add title/image_urls_json to journal_entries on existing deployments."""
+    """Add title/image_urls_json/entry_datetime_utc to journal_entries on existing deployments."""
     if USE_POSTGRES:
         cur.execute("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS title TEXT")
         cur.execute("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS image_urls_json TEXT")
+        cur.execute("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS entry_datetime_utc TEXT")
     else:
         cur.execute("PRAGMA table_info(journal_entries)")
         cols = {str(r[1]).lower() for r in (cur.fetchall() or [])}
@@ -59,6 +60,8 @@ def _ensure_journal_entry_extras_columns(cur):
             cur.execute("ALTER TABLE journal_entries ADD COLUMN title TEXT")
         if "image_urls_json" not in cols:
             cur.execute("ALTER TABLE journal_entries ADD COLUMN image_urls_json TEXT")
+        if "entry_datetime_utc" not in cols:
+            cur.execute("ALTER TABLE journal_entries ADD COLUMN entry_datetime_utc TEXT")
 
 
 def _ensure_user_tags_icon_column(cur):
@@ -132,6 +135,7 @@ def init_db():
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     title TEXT,
+                    entry_datetime_utc TEXT,
                     text_content TEXT NOT NULL,
                     tags_json TEXT,
                     sentiment_label VARCHAR(32) NOT NULL,
@@ -206,6 +210,7 @@ def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     title TEXT,
+                    entry_datetime_utc TEXT,
                     text_content TEXT NOT NULL,
                     tags_json TEXT,
                     sentiment_label TEXT NOT NULL,
@@ -849,10 +854,12 @@ def create_journal_entry(
     all_probs_json: str | None = None,
     title: str | None = None,
     image_urls_json: str | None = None,
+    entry_datetime_utc: str | None = None,
 ):
     probs = all_probs_json if all_probs_json is not None else "{}"
     title_clean = str(title or "").strip()[:180] or None
     images_clean = image_urls_json if image_urls_json is not None else "[]"
+    entry_dt_clean = str(entry_datetime_utc or "").strip()[:40] or None
     conn = get_conn()
     cur = conn.cursor()
     try:
@@ -860,11 +867,11 @@ def create_journal_entry(
             cur.execute(
                 """
                 INSERT INTO journal_entries
-                (user_id, title, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, user_id, title, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
+                (user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
                 """,
-                (user_id, title_clean, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs, images_clean),
+                (user_id, title_clean, entry_dt_clean, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs, images_clean),
             )
             row = cur.fetchone()
             conn.commit()
@@ -873,16 +880,16 @@ def create_journal_entry(
         cur.execute(
             """
             INSERT INTO journal_entries
-            (user_id, title, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (user_id, title_clean, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs, images_clean),
+            (user_id, title_clean, entry_dt_clean, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, probs, images_clean),
         )
         entry_id = cur.lastrowid
         conn.commit()
         cur.execute(
             """
-            SELECT id, user_id, title, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
+            SELECT id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at
             FROM journal_entries
             WHERE id = ?
             """,
@@ -901,7 +908,7 @@ def get_journal_entries_by_user(user_id: int):
             cur.execute(
                 """
                 SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
-                , title, image_urls_json
+                , title, image_urls_json, entry_datetime_utc
                 FROM journal_entries
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -912,7 +919,7 @@ def get_journal_entries_by_user(user_id: int):
             cur.execute(
                 """
                 SELECT id, user_id, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, created_at
-                , title, image_urls_json
+                , title, image_urls_json, entry_datetime_utc
                 FROM journal_entries
                 WHERE user_id = ?
                 ORDER BY datetime(created_at) DESC

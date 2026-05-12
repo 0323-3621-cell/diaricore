@@ -817,16 +817,17 @@ function renderWeeklyChart(entries) {
     })();
     const latestMood = latestIdxWithData >= 0 ? String((dayFeelings[latestIdxWithData] || []).slice(-1)[0] || '').toLowerCase() : '';
     const chartColor = MOOD_COLORS[latestMood] || '#1D9E75';
+    const chartTheme = buildChartThemeFromCss();
 
     const w = 640;
-    const h = 120;
+    const h = 136;
     const padX = 12;
-    const padY = 12;
+    const padY = 14;
     const step = (w - padX * 2) / 6;
 
     if (!hasData) {
         sparklineEl.innerHTML = `
-            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
                 <text class="weekly-sparkline-empty" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-family="inherit">No mood data for this week yet</text>
             </svg>`;
         return;
@@ -868,11 +869,11 @@ function renderWeeklyChart(entries) {
 
     const lastPt = points[points.length - 1];
     const endDot = lastPt
-        ? `<circle cx="${lastPt.x.toFixed(2)}" cy="${lastPt.y.toFixed(2)}" r="3.8" fill="${chartColor}"></circle>`
+        ? `<circle cx="${lastPt.x.toFixed(2)}" cy="${lastPt.y.toFixed(2)}" r="5" fill="${chartColor}" stroke="${chartTheme.pointBorder}" stroke-width="1.4"></circle>`
         : '';
 
     sparklineEl.innerHTML = `
-        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="Weekly mood sparkline">
+        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
             <defs>
                 <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="${chartColor}" stop-opacity="0.15"></stop>

@@ -967,46 +967,33 @@
     overflow: hidden;
 }
 
-/* Richer presentation while the Book-Loader / analyzing UI is visible */
+/* Analyzing UI: fully opaque panel (no glass / translucent gradients) so text stays readable */
 .mood-analysis-card.mood-analysis-card--analyzing {
     width: min(620px, calc(100vw - 2rem));
     border-radius: 22px;
-    border: 1px solid rgba(var(--primary-rgb, 111, 143, 127), 0.32);
-    background: linear-gradient(
-        168deg,
-        var(--card-background) 0%,
-        rgba(var(--primary-rgb, 111, 143, 127), 0.07) 55%,
-        var(--card-background) 100%
-    );
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
     box-shadow:
         var(--box-shadow-hover),
-        0 0 0 1px rgba(var(--primary-rgb, 111, 143, 127), 0.1),
-        0 28px 56px rgba(12, 18, 22, 0.16);
-    overflow: visible;
+        0 28px 56px rgba(12, 18, 22, 0.12);
+    overflow: hidden;
 }
 
 .mood-analysis-card.mood-analysis-card--analyzing .mood-analysis-card__body {
     padding: 2rem 2rem 2.35rem;
-    background: radial-gradient(
-        ellipse 125% 90% at 50% 0%,
-        rgba(var(--primary-rgb, 111, 143, 127), 0.15),
-        transparent 56%
-    );
+    background: var(--card-background);
 }
 
 html.theme-dark .mood-analysis-card.mood-analysis-card--analyzing {
+    border-color: var(--border-color);
+    background: var(--card-background);
     box-shadow:
         var(--box-shadow-hover),
-        0 0 0 1px rgba(var(--primary-rgb, 111, 143, 127), 0.18),
         0 28px 56px rgba(0, 0, 0, 0.45);
 }
 
 html.theme-dark .mood-analysis-card.mood-analysis-card--analyzing .mood-analysis-card__body {
-    background: radial-gradient(
-        ellipse 125% 90% at 50% 0%,
-        rgba(var(--primary-rgb, 111, 143, 127), 0.13),
-        transparent 56%
-    );
+    background: var(--card-background);
 }
 
 .mood-analysis-card__header {
@@ -1044,19 +1031,20 @@ html.theme-dark .mood-analysis-card.mood-analysis-card--analyzing .mood-analysis
     min-height: 300px;
 }
 
+/* No tinted “plate” behind the animation — only the Lottie artwork (container stays transparent) */
 .mood-analysis-book-lottie {
     width: 200px;
     height: 200px;
     max-width: min(52vw, 230px);
     max-height: min(52vw, 230px);
     display: block;
-    border-radius: 20px;
-    /* Book-Loader uses large white fills; a faint tint keeps it visible on white cards */
-    background: rgba(111, 138, 165, 0.18);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        0 14px 32px rgba(15, 23, 28, 0.1),
-        0 0 0 1px rgba(var(--primary-rgb, 111, 143, 127), 0.14);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.mood-analysis-book-lottie svg {
+    display: block;
 }
 
 /* Off-screen pool for Book-Loader mount (match on-screen size for crisp preload) */
@@ -1122,6 +1110,10 @@ html.theme-dark .mood-analysis-card.mood-analysis-card--analyzing .mood-analysis
     color: var(--text-muted);
     line-height: 1.5;
     max-width: 26rem;
+}
+
+.mood-analysis-card--analyzing .mood-analysis-loading__subtitle {
+    color: var(--text-secondary);
 }
 
 .mood-analysis-spinner {

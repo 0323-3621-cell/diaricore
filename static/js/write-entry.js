@@ -1014,18 +1014,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const charCount = document.getElementById('charCount');
     const journalDateTimeBtn = document.getElementById('journalDateTimeBtn');
     const journalDateTimeInput = document.getElementById('journalDateTimeInput');
+
+    const toLocalInputValue = (dateObj) => {
+        const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+        return d.toISOString().slice(0, 16);
+    };
+    const nowLocalInputValue = () => toLocalInputValue(new Date());
+
+    /** Keeps datetime-local within current/past; no UI alerts. */
+    function clampJournalDateTimeSilent() {
+        const now = new Date();
+        if (journalDateTimeInput) {
+            journalDateTimeInput.max = nowLocalInputValue();
+            if (journalDateTimeInput.value) {
+                const picked = new Date(journalDateTimeInput.value);
+                if (!Number.isNaN(picked.getTime()) && picked.getTime() > now.getTime()) {
+                    manualDateTime = now;
+                    journalDateTimeInput.value = nowLocalInputValue();
+                    updateJournalDateTime();
+                    return;
+                }
+            }
+        }
+        if (manualDateTime && manualDateTime.getTime() > now.getTime()) {
+            manualDateTime = now;
+            if (journalDateTimeInput) journalDateTimeInput.value = nowLocalInputValue();
+            updateJournalDateTime();
+        }
+    }
+
+    if (journalDateTimeInput) {
+        journalDateTimeInput.max = nowLocalInputValue();
+    }
+
     updateJournalDateTime();
     setInterval(() => {
         if (!manualDateTime) updateJournalDateTime();
+        if (journalDateTimeInput) journalDateTimeInput.max = nowLocalInputValue();
     }, 30000);
 
     if (journalDateTimeBtn && journalDateTimeInput) {
-        const toLocalInputValue = (dateObj) => {
-            const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
-            return d.toISOString().slice(0, 16);
-        };
-        const nowLocalInputValue = () => toLocalInputValue(new Date());
-
         journalDateTimeBtn.addEventListener('click', () => {
             const baseDate = manualDateTime || new Date();
             journalDateTimeInput.max = nowLocalInputValue();
@@ -1037,14 +1065,21 @@ document.addEventListener('DOMContentLoaded', function() {
             journalDateTimeInput.focus();
         });
 
+        journalDateTimeInput.addEventListener('focus', () => {
+            journalDateTimeInput.max = nowLocalInputValue();
+        });
+        journalDateTimeInput.addEventListener('input', () => {
+            clampJournalDateTimeSilent();
+        });
         journalDateTimeInput.addEventListener('change', () => {
             if (!journalDateTimeInput.value) return;
+            journalDateTimeInput.max = nowLocalInputValue();
             const picked = new Date(journalDateTimeInput.value);
             const now = new Date();
+            if (Number.isNaN(picked.getTime())) return;
             if (picked.getTime() > now.getTime()) {
                 manualDateTime = now;
                 journalDateTimeInput.value = nowLocalInputValue();
-                alert('Future date/time is not allowed. Please choose current or past date/time.');
             } else {
                 manualDateTime = picked;
             }
@@ -1052,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const hideDateInput = () => {
+            clampJournalDateTimeSilent();
             journalDateTimeInput.style.display = 'none';
         };
         journalDateTimeInput.addEventListener('blur', hideDateInput);
@@ -1087,15 +1123,8 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleSaveEntry() {
         const entryText = journalText.value.trim();
         const entryTitle = normalizeTag(journalTitleInput?.value || '');
+        clampJournalDateTimeSilent();
         const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
-        if (entryDateTimeLocal) {
-            const picked = new Date(entryDateTimeLocal);
-            const now = new Date();
-            if (picked.getTime() > now.getTime()) {
-                alert('Future date/time is not allowed. Please choose current or past date/time.');
-                return;
-            }
-        }
         if (!entryText) {
             alert('Please write something in your journal entry.');
             return;

@@ -642,25 +642,24 @@ body {
         display: grid;
         grid-template-columns: 1.65fr 1fr;
         gap: 1.25rem;
-        align-items: stretch;
+        /* Top-align so a tall mood key does not stretch Weekly Mood with empty space */
+        align-items: start;
     }
 
     .weekly-snapshot-wrap {
         margin-bottom: 0;
-        height: 100%;
     }
 
     .dashboard-side-stack {
         display: flex;
         flex-direction: column;
-        gap: 0.6rem; /* tighter gap so combined height matches */
+        gap: 0.6rem;
         min-width: 0;
-        height: 100%;
     }
 
     .recent-entry-card {
         margin-bottom: 0;
-        flex: 1 1 auto; /* let Last Entry grow to match Weekly card height */
+        flex: 0 1 auto;
     }
 }
 
@@ -669,12 +668,12 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: var(--card-background);
-    padding: 1rem 1.15rem 1.1rem;
+    padding: 0.75rem 0.9rem 0.85rem;
     flex: 0 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.45rem;
 }
 
 .mood-key-title {
@@ -686,24 +685,19 @@ body {
     color: var(--text-muted);
 }
 
-.mood-key-lede {
+.mood-key-sub {
     margin: 0;
-    font-size: 0.78rem;
-    line-height: 1.45;
+    font-size: 0.72rem;
+    line-height: 1.35;
     color: var(--text-secondary);
     font-weight: 400;
-}
-
-.mood-key-lede strong {
-    color: var(--text-dark);
-    font-weight: 600;
 }
 
 .mood-key-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    flex: 1 1 auto;
+    gap: 0.45rem;
+    flex: 0 0 auto;
 }
 
 .mood-key-tile {
@@ -748,34 +742,6 @@ body {
 .mood-key-tile--angry { border-left: 3px solid var(--mood-angry); }
 .mood-key-tile--anxious { border-left: 3px solid var(--mood-anxious); }
 .mood-key-tile--neutral { border-left: 3px solid var(--mood-neutral); }
-
-.mood-key-foot {
-    margin-top: 0.1rem;
-    padding-top: 0.65rem;
-    border-top: 1px solid var(--divider-color);
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
-}
-
-.mood-key-foot-icon {
-    flex-shrink: 0;
-    font-size: 1rem;
-    color: var(--info-color);
-    margin-top: 0.1rem;
-}
-
-.mood-key-foot-text {
-    margin: 0;
-    font-size: 0.72rem;
-    line-height: 1.5;
-    color: var(--text-secondary);
-}
-
-.mood-key-foot-text strong {
-    color: var(--text-dark);
-    font-weight: 600;
-}
 
 
 /* Weekly week-strip (reference-style day dots above chart) */
@@ -1037,7 +1003,6 @@ body {
 
 @media (min-width: 992px) {
     .weekly-snapshot-card {
-        height: 100%;
         display: flex;
         flex-direction: column;
         min-height: 0;
@@ -1052,7 +1017,7 @@ body {
     }
 
     .weekly-snapshot-footer {
-        margin-top: auto; /* pin button to bottom like reference */
+        margin-top: 0.75rem;
     }
 }
 

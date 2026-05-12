@@ -164,7 +164,8 @@ function initializeEntriesPagination() {
     });
 }
 
-function initializeEntriesFromStorage() {
+function initializeEntriesFromStorage(options = {}) {
+    const preserveNav = Boolean(options.preserveNavigation);
     const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
     const main = document.querySelector('.entries-content');
     const emptyState = document.getElementById('entriesEmptyState');
@@ -196,6 +197,13 @@ function initializeEntriesFromStorage() {
         if (desktopHint) desktopHint.textContent = 'Your journal is still empty. Write your first entry to start tracking your journey.';
         if (mobileTitle) mobileTitle.textContent = 'No entries yet';
         if (mobileHint) mobileHint.textContent = 'Write your first entry to get started.';
+        entriesByMonthKey = {};
+        entriesMonthKeysOrdered = [];
+        entriesSelectedMonthKey = '';
+        entriesCurrentPage = 1;
+        if (document.getElementById('entriesGrid')) {
+            renderEntriesView({ skipFade: true });
+        }
         return;
     }
 
@@ -228,15 +236,28 @@ function initializeEntriesFromStorage() {
     });
 
     const nowKey = monthKeyFromDate(new Date());
-    entriesSelectedMonthKey = entriesMonthKeysOrdered.includes(nowKey) ? nowKey : entriesMonthKeysOrdered[0];
-    entriesCurrentPage = 1;
-    monthSelect.value = entriesSelectedMonthKey;
+    const defaultMonth = entriesMonthKeysOrdered.includes(nowKey) ? nowKey : entriesMonthKeysOrdered[0];
 
-    monthSelect.addEventListener('change', () => {
-        entriesSelectedMonthKey = monthSelect.value;
+    if (preserveNav && entriesSelectedMonthKey && entriesMonthKeysOrdered.includes(entriesSelectedMonthKey)) {
+        monthSelect.value = entriesSelectedMonthKey;
+        const filtered = getFilteredEntriesForSelectedMonth();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / ENTRIES_PAGE_SIZE));
+        if (entriesCurrentPage > totalPages) entriesCurrentPage = totalPages;
+        if (entriesCurrentPage < 1) entriesCurrentPage = 1;
+    } else {
+        entriesSelectedMonthKey = defaultMonth;
         entriesCurrentPage = 1;
-        renderEntriesView();
-    });
+        monthSelect.value = entriesSelectedMonthKey;
+    }
+
+    if (!monthSelect.dataset.entriesMonthBound) {
+        monthSelect.dataset.entriesMonthBound = '1';
+        monthSelect.addEventListener('change', () => {
+            entriesSelectedMonthKey = monthSelect.value;
+            entriesCurrentPage = 1;
+            renderEntriesView();
+        });
+    }
 
     renderEntriesView({ skipFade: true });
 }
@@ -546,7 +567,7 @@ function closeEntriesDetailInline() {
     if (list) list.hidden = false;
     document.body.classList.remove('page-entries-detail-open');
     if (document.getElementById('entriesGrid')) {
-        renderEntriesView({ skipFade: true });
+        initializeEntriesFromStorage({ preserveNavigation: true });
     }
 }
 

@@ -112,7 +112,6 @@
         const readToolbar = document.getElementById('entryViewReadToolbar');
         const cancelBtn = document.getElementById('entryViewCancelBtn');
         const actionsEl = document.getElementById('entryViewActions');
-        const saveBtn = document.getElementById('entryViewSaveBtn');
         const saveAnalyzeBtn = document.getElementById('entryViewSaveAnalyzeBtn');
         const loadingHtml =
             '<span class="entry-view-loading-line" style="color:var(--text-muted);font-size:0.8rem;">Loading entry…</span>';
@@ -135,7 +134,6 @@
         if (readToolbar) readToolbar.hidden = false;
         if (cancelBtn) cancelBtn.hidden = true;
         if (actionsEl) actionsEl.hidden = true;
-        if (saveBtn) saveBtn.disabled = true;
         if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
     }
 
@@ -178,7 +176,6 @@
         const actionsEl = document.getElementById('entryViewActions');
         const backBtn = document.getElementById('entryViewBackBtn');
         const cancelBtn = document.getElementById('entryViewCancelBtn');
-        const saveBtn = document.getElementById('entryViewSaveBtn');
         const saveAnalyzeBtn = document.getElementById('entryViewSaveAnalyzeBtn');
         const unsavedDialog = document.getElementById('entryUnsavedDialog');
         const unsavedStay = document.getElementById('entryUnsavedStayBtn');
@@ -842,7 +839,6 @@
                 window.alert('Please add some text to your entry.');
                 return;
             }
-            saveBtn.disabled = true;
             saveAnalyzeBtn.disabled = true;
             try {
                 if (!isOnline()) {
@@ -910,16 +906,13 @@
                     window.alert('Saved offline. We will sync when you are back online.');
                 }
             } finally {
-                saveBtn.disabled = false;
                 saveAnalyzeBtn.disabled = false;
                 if (!signal.aborted) syncReadPane();
             }
         }
 
-        saveBtn.addEventListener('click', () => runSave(false), { signal });
         saveAnalyzeBtn.addEventListener('click', () => runSave(true), { signal });
 
-        saveBtn.disabled = false;
         saveAnalyzeBtn.disabled = false;
 
         flushEditQueue();

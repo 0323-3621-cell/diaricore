@@ -881,6 +881,13 @@ def api_entries_post():
 
     analysis = space_nlp.analyze(text)
     entry_dt_utc = _parse_ph_local_to_utc_iso(entry_date_time_local)
+    if entry_dt_utc:
+        try:
+            parsed_dt = datetime.fromisoformat(entry_dt_utc.replace("Z", "+00:00"))
+            if parsed_dt > datetime.now(timezone.utc):
+                return jsonify({"success": False, "error": "Future entry date/time is not allowed."}), 400
+        except Exception:
+            return jsonify({"success": False, "error": "Invalid entry date/time."}), 400
     row = db.create_journal_entry(
         user_id=user_id,
         text_content=text,

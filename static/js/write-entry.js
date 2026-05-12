@@ -1024,17 +1024,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
             return d.toISOString().slice(0, 16);
         };
+        const nowLocalInputValue = () => toLocalInputValue(new Date());
 
         journalDateTimeBtn.addEventListener('click', () => {
             const baseDate = manualDateTime || new Date();
-            journalDateTimeInput.value = toLocalInputValue(baseDate);
+            journalDateTimeInput.max = nowLocalInputValue();
+            const candidate = new Date(baseDate);
+            const now = new Date();
+            const safeBase = candidate.getTime() > now.getTime() ? now : candidate;
+            journalDateTimeInput.value = toLocalInputValue(safeBase);
             journalDateTimeInput.style.display = 'inline-block';
             journalDateTimeInput.focus();
         });
 
         journalDateTimeInput.addEventListener('change', () => {
             if (!journalDateTimeInput.value) return;
-            manualDateTime = new Date(journalDateTimeInput.value);
+            const picked = new Date(journalDateTimeInput.value);
+            const now = new Date();
+            if (picked.getTime() > now.getTime()) {
+                manualDateTime = now;
+                journalDateTimeInput.value = nowLocalInputValue();
+                alert('Future date/time is not allowed. Please choose current or past date/time.');
+            } else {
+                manualDateTime = picked;
+            }
             updateJournalDateTime();
         });
 
@@ -1075,6 +1088,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const entryText = journalText.value.trim();
         const entryTitle = normalizeTag(journalTitleInput?.value || '');
         const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
+        if (entryDateTimeLocal) {
+            const picked = new Date(entryDateTimeLocal);
+            const now = new Date();
+            if (picked.getTime() > now.getTime()) {
+                alert('Future date/time is not allowed. Please choose current or past date/time.');
+                return;
+            }
+        }
         if (!entryText) {
             alert('Please write something in your journal entry.');
             return;

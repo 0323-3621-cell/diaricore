@@ -268,7 +268,13 @@
      * Stored URLs may be absolute (old deploy host). Uploads always live on this origin under /uploads/.
      */
     function normalizeDiariMediaUrl(raw) {
-        const s0 = String(raw || '').trim();
+        let s0 = String(raw || '').trim();
+        while (
+            s0.length >= 2 &&
+            ((s0.startsWith('"') && s0.endsWith('"')) || (s0.startsWith("'") && s0.endsWith("'")))
+        ) {
+            s0 = s0.slice(1, -1).trim();
+        }
         if (!s0 || s0.startsWith('data:') || s0.startsWith('blob:')) return s0;
 
         function rewriteFilesystemUploadPath(pathname) {
@@ -337,6 +343,30 @@
         if (!s || s.startsWith('data:') || s.startsWith('blob:')) return s;
         if (s.startsWith('/')) return `${window.location.origin}${s}`;
         return s;
+    }
+
+    /** Candidate URLs for resilient image loading (tries normalized + raw variants). */
+    function buildImageSrcCandidates(raw) {
+        const out = [];
+        const add = (v) => {
+            const s = String(v || '').trim();
+            if (!s) return;
+            if (!out.includes(s)) out.push(s);
+        };
+
+        const cleanedRaw = String(raw || '').trim();
+        if (!cleanedRaw) return out;
+        add(resolveDisplayImgSrc(cleanedRaw));
+        add(normalizeDiariMediaUrl(cleanedRaw));
+        add(cleanedRaw);
+
+        // If stored URL is absolute from old host, also try its pathname directly.
+        try {
+            const abs = new URL(cleanedRaw, window.location.origin);
+            add(resolveDisplayImgSrc(`${abs.pathname}${abs.search}${abs.hash}`));
+        } catch (_) {}
+
+        return out.filter(Boolean);
     }
 
     function resetEntryDetailLoadingState() {
@@ -727,8 +757,8 @@
                     wrap.className = `entry-view-strip-item${editMode ? '' : ' entry-view-strip-item--readonly'}`;
                     wrap.dataset.imageId = im.id;
                     const srcRaw = im.url || im.dataUrl;
-                    const src = resolveDisplayImgSrc(String(srcRaw || '').trim());
-                    const hasSrc = Boolean(src);
+                    const srcCandidates = buildImageSrcCandidates(String(srcRaw || '').trim());
+                    const hasSrc = srcCandidates.length > 0;
 
                     const imgWrap = document.createElement('div');
                     imgWrap.className = hasSrc
@@ -758,14 +788,44 @@
                             imgWrap.classList.remove('entry-view-strip-imgwrap--loading', 'entry-view-strip-imgwrap--pending');
                             imgWrap.classList.add('entry-view-strip-imgwrap--error');
                         };
-                        img.addEventListener('load', markLoaded, { once: true });
-                        img.addEventListener('error', markError, { once: true });
+                        let srcIdx = 0;
+                        let settleTimer = null;
+                        const clearSettleTimer = () => {
+                            if (settleTimer) {
+                                clearTimeout(settleTimer);
+                                settleTimer = null;
+                            }
+                        };
+                        const beginSrcTimeout = () => {
+                            clearSettleTimer();
+                            settleTimer = window.setTimeout(() => {
+                                tryNextSrc();
+                            }, 7000);
+                        };
+                        const tryNextSrc = () => {
+                            if (settled) return;
+                            clearSettleTimer();
+                            if (srcIdx >= srcCandidates.length) {
+                                markError();
+                                return;
+                            }
+                            const nextSrc = srcCandidates[srcIdx++];
+                            img.src = nextSrc;
+                            beginSrcTimeout();
+                        };
+                        img.addEventListener('load', () => {
+                            clearSettleTimer();
+                            markLoaded();
+                        });
+                        img.addEventListener('error', () => {
+                            tryNextSrc();
+                        });
                         imgWrap.appendChild(img);
-                        img.src = src;
                         const trySync = () => {
                             if (settled) return;
                             if (img.complete && img.naturalHeight > 0) markLoaded();
                         };
+                        tryNextSrc();
                         trySync();
                         requestAnimationFrame(trySync);
                         window.setTimeout(trySync, 80);

@@ -1165,27 +1165,14 @@ html.theme-dark .emotion-trigger-block__desc {
     gap: 1rem;
 }
 
-.weekly-range-toggle {
-    display: inline-flex;
-    gap: 0.45rem;
-}
-
-.weekly-range-btn {
-    border: 1px solid var(--border-color);
-    background: var(--card-background);
+.weekly-trend-caption {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    border-radius: 10px;
-    padding: 0.25rem 0.7rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    line-height: 1.2;
-    cursor: pointer;
-}
-
-.weekly-range-btn.is-active {
-    background: #1f2523;
-    border-color: #1f2523;
-    color: #fff;
+    line-height: 1.35;
+    text-align: right;
+    max-width: 17rem;
 }
 
 .weekly-stats-row {
@@ -1778,7 +1765,7 @@ html.theme-dark .ins-highlight-chip {
 
 .weekly-trend-card .section-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;

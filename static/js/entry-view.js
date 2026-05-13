@@ -1528,6 +1528,13 @@
             return {
                 onSaveExit() {
                     overlay.hidden = true;
+                    if (afterMetadataSaveToEntries) {
+                        afterMetadataSaveToEntries();
+                        return;
+                    }
+                    try {
+                        sessionStorage.setItem('diariEntriesUpdatedToast', '1');
+                    } catch (_) {}
                     onLeavePanel();
                 },
                 fetchRerunAnalysis: async () => {

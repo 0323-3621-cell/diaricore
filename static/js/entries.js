@@ -15,6 +15,13 @@ let entriesSelectedMonthKey = '';
 let entriesCurrentPage = 1;
 
 document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        if (sessionStorage.getItem('diariEntriesUpdatedToast') === '1') {
+            sessionStorage.removeItem('diariEntriesUpdatedToast');
+            showNotification('Updated the Entry Successfully...', 'success');
+        }
+    } catch (_) {}
+
     await syncEntriesFromApi();
     initializeEntriesFromStorage();
     await syncEntriesFilterTagsFromApi();

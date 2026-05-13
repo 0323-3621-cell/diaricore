@@ -88,6 +88,17 @@ def _ensure_user_tags_icon_column(cur):
             cur.execute("ALTER TABLE user_tags ADD COLUMN icon_name TEXT")
 
 
+def _ensure_user_avatar_column(cur):
+    """Add avatar_data_url (JPEG/PNG data URL) to users on existing deployments."""
+    if USE_POSTGRES:
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_data_url TEXT")
+    else:
+        cur.execute("PRAGMA table_info(users)")
+        cols = [r[1] for r in cur.fetchall()]
+        if "avatar_data_url" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN avatar_data_url TEXT")
+
+
 def row_to_dict(row):
     if row is None:
         return None
@@ -256,6 +267,7 @@ def init_db():
         _ensure_journal_entry_extras_columns(cur)
         _ensure_journal_updated_at_column(cur)
         _ensure_user_tags_icon_column(cur)
+        _ensure_user_avatar_column(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -429,12 +441,12 @@ def get_user_by_email(email: str):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE email = %s",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE email = %s",
                 (email.lower().strip(),),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE lower(email) = ?",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(email) = ?",
                 (email.lower().strip(),),
             )
         return row_to_dict(cur.fetchone())
@@ -448,12 +460,12 @@ def get_user_by_nickname(nickname: str):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE lower(nickname) = %s",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(nickname) = %s",
                 (nickname.lower().strip(),),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE lower(nickname) = ?",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(nickname) = ?",
                 (nickname.lower().strip(),),
             )
         return row_to_dict(cur.fetchone())
@@ -471,15 +483,44 @@ def get_user_by_id(user_id: int):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE id = %s",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = %s",
                 (user_id,),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at FROM users WHERE id = ?",
+                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
                 (user_id,),
             )
         return row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def update_user_avatar_data_url(user_id: int, avatar_data_url: str | None) -> bool:
+    """Persist profile photo as a data URL (or NULL to clear)."""
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    val = None
+    if isinstance(avatar_data_url, str) and avatar_data_url.strip():
+        val = avatar_data_url.strip()
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "UPDATE users SET avatar_data_url = %s WHERE id = %s",
+                (val, user_id),
+            )
+        else:
+            cur.execute(
+                "UPDATE users SET avatar_data_url = ? WHERE id = ?",
+                (val, user_id),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
     finally:
         conn.close()
 
@@ -506,7 +547,7 @@ def create_user(
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url
                 """,
                 (nickname_norm, email_norm, password_hash, first_name.strip(), last_name.strip(), gender, birthday),
             )
@@ -534,7 +575,7 @@ def create_user(
             uid = cur.lastrowid
             conn.commit()
             cur.execute(
-                "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at FROM users WHERE id = ?",
+                "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
                 (uid,),
             )
             u = row_to_dict(cur.fetchone())
@@ -686,7 +727,7 @@ def create_user_from_pending(pending: dict):
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url
                 """,
                 (
                     (pending.get("nickname") or "").strip(),
@@ -719,7 +760,7 @@ def create_user_from_pending(pending: dict):
         uid = cur.lastrowid
         conn.commit()
         cur.execute(
-            "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at FROM users WHERE id = ?",
+            "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
             (uid,),
         )
         return True, row_to_dict(cur.fetchone())

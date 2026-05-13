@@ -301,6 +301,11 @@ def serialize_user(row):
         "birthday": out.get("birthday"),
         "createdAt": out.get("created_at"),
     }
+    av = out.get("avatar_data_url")
+    if isinstance(av, str) and av.strip():
+        mapped["avatarDataUrl"] = av.strip()
+    else:
+        mapped["avatarDataUrl"] = None
     return mapped
 
 
@@ -539,6 +544,45 @@ def api_login():
 
     session.pop("is_admin", None)
     return jsonify({"success": True, "user": serialize_user(result)}), 200
+
+
+@app.route("/api/user/avatar", methods=["POST"])
+def api_user_avatar():
+    """Save or clear the signed-in user's profile photo (data URL stored server-side)."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    raw = data.get("avatarDataUrl")
+    if raw is None:
+        avatar = None
+    elif isinstance(raw, str):
+        s = raw.strip()
+        if not s:
+            avatar = None
+        elif len(s) > 1_200_000:
+            return jsonify({"success": False, "error": "Image data is too large."}), 400
+        elif not s.startswith("data:image/"):
+            return jsonify({"success": False, "error": "avatarDataUrl must be a data:image/… URL."}), 400
+        else:
+            avatar = s
+    else:
+        return jsonify({"success": False, "error": "Invalid avatarDataUrl."}), 400
+
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    if not db.update_user_avatar_data_url(user_id, avatar):
+        return jsonify({"success": False, "error": "Could not save profile photo."}), 500
+
+    row = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row)}), 200
 
 
 @app.route("/api/password/forgot", methods=["POST"])

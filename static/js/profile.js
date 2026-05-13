@@ -241,7 +241,35 @@ function initializeProfileInteractions() {
                     localStorage.setItem('diariCoreUser', JSON.stringify(user));
                     avatarMainImg.src = dataUrl;
                     document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
-                    showNotification('Profile photo updated.', 'success');
+
+                    const uid = Number(user.id ?? user.userId ?? 0);
+                    if (Number.isInteger(uid) && uid > 0) {
+                        fetch('/api/user/avatar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: uid, avatarDataUrl: dataUrl }),
+                        })
+                            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                            .then(({ ok, data }) => {
+                                if (!ok || !data.success) throw new Error(data.error || 'save failed');
+                                const serverUser = data.user;
+                                if (serverUser && typeof serverUser === 'object') {
+                                    const next = { ...user, ...serverUser };
+                                    if (serverUser.avatarDataUrl) next.avatarDataUrl = serverUser.avatarDataUrl;
+                                    localStorage.setItem('diariCoreUser', JSON.stringify(next));
+                                    document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
+                                }
+                                showNotification('Profile photo updated.', 'success');
+                            })
+                            .catch(function () {
+                                showNotification(
+                                    'Photo is saved on this device only. Could not sync to the server—try again when you are online.',
+                                    'warning'
+                                );
+                            });
+                    } else {
+                        showNotification('Profile photo updated.', 'success');
+                    }
                 });
             });
         }

@@ -44,7 +44,11 @@ function initializeProfileFromStorage() {
     } finally {
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
-                document.documentElement.classList.remove('profile-await-storage');
+                if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+                    window.DiariShell.release();
+                } else {
+                    document.documentElement.classList.remove('diari-shell-pending');
+                }
             });
         });
     }
@@ -627,6 +631,8 @@ function getNotificationColor(type) {
 
 if (document.body && document.body.classList.contains('page-profile')) {
     initializeProfileFromStorage();
+} else if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+    window.DiariShell.release();
 } else {
-    document.documentElement.classList.remove('profile-await-storage');
+    document.documentElement.classList.remove('diari-shell-pending');
 }

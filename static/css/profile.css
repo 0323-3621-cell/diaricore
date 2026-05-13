@@ -54,17 +54,6 @@ body {
     color: var(--text-dark);
 }
 
-/* Profile card hidden until localStorage hydrates (inline head style handles first paint) */
-html.profile-await-storage .profile-overview-section .profile-card {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-body.page-profile .profile-overview-section .profile-card {
-    transition: opacity 0.22s ease-out, visibility 0.22s ease-out;
-}
-
 .profile-overview-section .profile-name {
     min-height: 2.25rem;
 }

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="diari-shell-pending">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="diari-shell-pending.css">
     <title>DiariCore Admin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="admin.css">
@@ -20,7 +21,7 @@
             <button id="logoutBtn" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</button>
         </aside>
 
-        <main class="admin-main">
+        <main class="admin-main diari-shell-main">
             <section class="card">
                 <h2>System Settings</h2>
                 <p class="muted">Configure Brevo email settings used for OTP verification emails.</p>
@@ -50,6 +51,7 @@
         </main>
     </div>
 
+    <script src="diari-shell.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

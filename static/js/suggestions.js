@@ -1,6 +1,7 @@
 // DiariCore Suggestions Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    try {
     initializeEmotionalSupportFromData();
     // Initialize components
     initializeSuggestions();
@@ -8,6 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeInteractiveElements();
     animateProgressBars();
     initializeMobileCarousel();
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    }
 });
 
 function initializeEmotionalSupportFromData() {

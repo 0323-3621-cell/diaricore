@@ -2076,18 +2076,24 @@
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
-        if (!document.body.classList.contains('page-entry-view')) return;
-        const id = parseQueryId();
-        const uid = getUserId();
-        if (!id || !uid) {
-            window.location.href = 'entries.html';
-            return;
-        }
-        await mount({
-            entryId: id,
-            onLeavePanel: () => {
+        try {
+            if (!document.body.classList.contains('page-entry-view')) return;
+            const id = parseQueryId();
+            const uid = getUserId();
+            if (!id || !uid) {
                 window.location.href = 'entries.html';
-            },
-        });
+                return;
+            }
+            await mount({
+                entryId: id,
+                onLeavePanel: () => {
+                    window.location.href = 'entries.html';
+                },
+            });
+        } finally {
+            if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+                window.DiariShell.release();
+            }
+        }
     });
 })(typeof window !== 'undefined' ? window : this);

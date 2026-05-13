@@ -16,6 +16,7 @@ let entriesCurrentPage = 1;
 
 document.addEventListener('DOMContentLoaded', async function() {
     try {
+    try {
         if (sessionStorage.getItem('diariEntriesUpdatedToast') === '1') {
             sessionStorage.removeItem('diariEntriesUpdatedToast');
             showNotification('Updated the Entry Successfully...', 'success');
@@ -35,6 +36,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     initializeEntriesPagination();
     initializeEntriesResizeEmptyState();
     openEntriesDetailFromQuery();
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    }
 });
 
 async function syncEntriesFromApi() {

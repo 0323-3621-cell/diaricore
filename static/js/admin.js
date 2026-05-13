@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadSettings() {
-        fetch('/api/admin/settings')
+        return fetch('/api/admin/settings')
             .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
             .then(({ ok, data }) => {
                 if (!ok || !data.success) {
@@ -69,5 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    loadSettings();
+    loadSettings().finally(() => {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    });
 });

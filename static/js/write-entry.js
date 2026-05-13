@@ -1,6 +1,7 @@
 // Write Entry Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    try {
     // Initialize variables
     let selectedFeeling = null;
     let selectedTags = new Set();
@@ -1825,4 +1826,9 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         true
     );
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    }
 });

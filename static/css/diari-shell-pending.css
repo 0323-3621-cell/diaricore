@@ -1,0 +1,12 @@
+/* DiariCore — hide primary main column until page JS finishes hydrating user-dependent UI.
+   Linked early on each page; cleared via window.DiariShell.release() (see diari-shell.js). */
+
+.diari-shell-main {
+    transition: opacity 0.22s ease-out, visibility 0.22s ease-out;
+}
+
+html.diari-shell-pending .diari-shell-main {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}

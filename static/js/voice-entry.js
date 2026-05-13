@@ -1,5 +1,6 @@
 // Voice Entry JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    try {
     let isRecording = false;
     let mediaRecorder;
     let audioChunks = [];
@@ -238,6 +239,11 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 2000);
+        }
+    }
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
         }
     }
 });

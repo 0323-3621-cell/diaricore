@@ -128,6 +128,7 @@ async function loadEmotionTriggersDashboard() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    try {
     await syncInsightsEntriesFromApi();
     INSIGHTS_ENTRIES = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]').filter((e) => e && e.date);
     HAS_INSIGHTS_DATA = INSIGHTS_ENTRIES.length > 0;
@@ -145,6 +146,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadEmotionTriggersDashboard();
 
     initializeInsightsHeroTabs();
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    }
 });
 
 async function syncInsightsEntriesFromApi() {

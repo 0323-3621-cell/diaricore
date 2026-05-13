@@ -95,6 +95,7 @@ const DASHBOARD_INSIGHT_LOW = [
 ];
 
 document.addEventListener('DOMContentLoaded', async function() {
+    try {
     hydrateMoodKeyAnchors();
     await syncEntriesFromApi();
     initializeDashboardFromUserData();
@@ -157,6 +158,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             this.style.transform = 'translateY(0)';
         });
     });
+    } finally {
+        if (window.DiariShell && typeof window.DiariShell.release === 'function') {
+            window.DiariShell.release();
+        }
+    }
 });
 
 const MS_PER_DAY = 86400000;

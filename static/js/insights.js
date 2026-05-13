@@ -988,7 +988,8 @@ function initializeMoodByTagChart() {
             responsive: true,
             maintainAspectRatio: false,
             layout: {
-                padding: { top: 4, bottom: 2 },
+                // Inset chart + legend from canvas edge so the top legend (Happy…) clears the Y-axis “100%”.
+                padding: { top: 6, bottom: 2, left: 28, right: 10 },
             },
             plugins: {
                 legend: {
@@ -1005,7 +1006,7 @@ function initializeMoodByTagChart() {
                         // Chart.js label `padding` is mostly vertical between rows; pad text for horizontal gaps.
                         generateLabels(chart) {
                             const datasets = chart.data.datasets || [];
-                            const gap = '\u2003\u2003\u2003'; // em spaces between mood labels
+                            const gap = '\u2002\u2002'; // modest space between mood labels
                             return datasets.map((dataset, i) => ({
                                 text: `${dataset.label || ''}${i < datasets.length - 1 ? gap : ''}`,
                                 fillStyle: Array.isArray(dataset.backgroundColor)

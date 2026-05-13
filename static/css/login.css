@@ -1515,12 +1515,12 @@ body {
 }
 
 .login-totp-step .form-group .custom-error {
-    margin-top: 0.35rem;
+    margin-top: 0.85rem;
     text-align: center;
 }
 
 .login-totp-step .custom-error.show {
-    margin-top: 0.35rem;
+    margin-top: 0.85rem;
     margin-bottom: 0.2rem;
     max-height: 72px;
 }

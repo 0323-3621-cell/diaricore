@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let resetVerifyInProgress = false;
     let resetAutoVerifyTimeout = null;
     let pendingTwoFactorToken = null;
+    let loginTotpVerifyInProgress = false;
+    let loginTotpAutoVerifyTimeout = null;
+    const LOGIN_TOTP_VERIFY_MIN_MS = 3000;
 
     const signinMainFlow = document.getElementById('signinMainFlow');
     const loginTotpStep = document.getElementById('loginTotpStep');
@@ -91,6 +94,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearLoginTotpDigits() {
+        if (loginTotpAutoVerifyTimeout) {
+            clearTimeout(loginTotpAutoVerifyTimeout);
+            loginTotpAutoVerifyTimeout = null;
+        }
         loginTotpDigits.forEach(function (d) {
             d.value = '';
             d.classList.remove('error');
@@ -114,6 +121,100 @@ document.addEventListener('DOMContentLoaded', function() {
             loginTotpCodeError.classList.add('show');
         }
         if (loginTotpDigitsWrap) loginTotpDigitsWrap.classList.add('has-error');
+    }
+
+    function setLoginTotpSubmitIdle() {
+        if (!loginTotpSubmit) return;
+        loginTotpSubmit.classList.remove('is-loading');
+        loginTotpSubmit.disabled = false;
+        loginTotpSubmit.textContent = 'VERIFY & CONTINUE';
+        loginTotpDigits.forEach(function (d) {
+            d.disabled = false;
+        });
+    }
+
+    function setLoginTotpSubmitVerifying() {
+        if (!loginTotpSubmit) return;
+        loginTotpSubmit.classList.add('is-loading');
+        loginTotpSubmit.disabled = true;
+        loginTotpSubmit.innerHTML =
+            '<span class="login-totp-verify-spinner" aria-hidden="true"></span><span>Verifying...</span>';
+        loginTotpDigits.forEach(function (d) {
+            d.disabled = true;
+        });
+    }
+
+    function scheduleLoginTotpAutoVerify() {
+        if (loginTotpAutoVerifyTimeout) clearTimeout(loginTotpAutoVerifyTimeout);
+        loginTotpAutoVerifyTimeout = setTimeout(function () {
+            loginTotpAutoVerifyTimeout = null;
+            if (getLoginTotpCode().length === 6) {
+                submitLoginTotpVerification(true);
+            }
+        }, 240);
+    }
+
+    function submitLoginTotpVerification(fromAuto) {
+        if (loginTotpVerifyInProgress) return;
+        var code = getLoginTotpCode();
+        if (!pendingTwoFactorToken) {
+            if (!fromAuto) {
+                showNotification('Please sign in with your password again.', 'warning');
+                showLoginCredentialsStep();
+            }
+            return;
+        }
+        if (code.length !== 6) {
+            if (!fromAuto) {
+                setLoginTotpErrorState('Enter the 6-digit code from your authenticator app.');
+            }
+            return;
+        }
+        clearLoginTotpErrorState();
+        loginTotpVerifyInProgress = true;
+        var verifyStarted = Date.now();
+        setLoginTotpSubmitVerifying();
+        fetch('/api/login/totp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken: pendingTwoFactorToken, code: code }),
+        })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok, data: data };
+                });
+            })
+            .then(function (_ref) {
+                var ok = _ref.ok;
+                var data = _ref.data;
+                if (!ok || !data.success) {
+                    loginTotpVerifyInProgress = false;
+                    setLoginTotpSubmitIdle();
+                    setLoginTotpErrorState(data.error || 'Invalid code.');
+                    clearLoginTotpDigits();
+                    if (loginTotpDigits[0]) loginTotpDigits[0].focus();
+                    return null;
+                }
+                var elapsed = Date.now() - verifyStarted;
+                var wait = Math.max(0, LOGIN_TOTP_VERIFY_MIN_MS - elapsed);
+                return new Promise(function (resolve) {
+                    setTimeout(function () {
+                        resolve(data);
+                    }, wait);
+                });
+            })
+            .then(function (data) {
+                if (!data || !data.success || !data.user) return;
+                loginTotpVerifyInProgress = false;
+                setLoginTotpSubmitIdle();
+                showLoginCredentialsStep();
+                finishSuccessfulLogin(data.user);
+            })
+            .catch(function () {
+                loginTotpVerifyInProgress = false;
+                setLoginTotpSubmitIdle();
+                showNotification('Could not reach the server. Please try again.', 'error');
+            });
     }
     
     // Switch to Sign Up mode
@@ -474,6 +575,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showLoginCredentialsStep() {
         pendingTwoFactorToken = null;
+        loginTotpVerifyInProgress = false;
+        if (loginTotpAutoVerifyTimeout) {
+            clearTimeout(loginTotpAutoVerifyTimeout);
+            loginTotpAutoVerifyTimeout = null;
+        }
+        clearLoginTotpDigits();
+        clearLoginTotpErrorState();
+        setLoginTotpSubmitIdle();
         if (signinMainFlow) signinMainFlow.hidden = false;
         if (loginTotpStep) loginTotpStep.hidden = true;
         const fh = signinSection && signinSection.querySelector('.form-header');
@@ -486,8 +595,14 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTwoFactorToken = challengeToken;
         if (signinMainFlow) signinMainFlow.hidden = true;
         if (loginTotpStep) loginTotpStep.hidden = false;
+        loginTotpVerifyInProgress = false;
+        if (loginTotpAutoVerifyTimeout) {
+            clearTimeout(loginTotpAutoVerifyTimeout);
+            loginTotpAutoVerifyTimeout = null;
+        }
         clearLoginTotpDigits();
         clearLoginTotpErrorState();
+        setLoginTotpSubmitIdle();
         const fh = signinSection && signinSection.querySelector('.form-header');
         if (fh && !signinSection.dataset.savedHeaderHtml) {
             signinSection.dataset.savedHeaderHtml = fh.innerHTML;
@@ -611,14 +726,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (v && idx < loginTotpDigits.length - 1) {
                     loginTotpDigits[idx + 1].focus();
                 }
+                if (getLoginTotpCode().length === 6) {
+                    scheduleLoginTotpAutoVerify();
+                }
             });
             input.addEventListener('keydown', function (e) {
                 if (e.key === 'Backspace' && !input.value && idx > 0) {
                     loginTotpDigits[idx - 1].focus();
                 }
-                if (e.key === 'Enter' && getLoginTotpCode().length === 6 && loginTotpSubmit && !loginTotpSubmit.disabled) {
+                if (e.key === 'Enter' && getLoginTotpCode().length === 6 && !loginTotpVerifyInProgress) {
                     e.preventDefault();
-                    loginTotpSubmit.click();
+                    submitLoginTotpVerification(false);
                 }
             });
             input.addEventListener('paste', function (e) {
@@ -630,55 +748,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearLoginTotpErrorState();
                 var next = digits.length >= 6 ? 5 : digits.length;
                 if (loginTotpDigits[next]) loginTotpDigits[next].focus();
+                if (getLoginTotpCode().length === 6) {
+                    scheduleLoginTotpAutoVerify();
+                }
             });
         });
     }
 
     if (loginTotpSubmit) {
         loginTotpSubmit.addEventListener('click', function () {
-            const code = getLoginTotpCode();
-            if (!pendingTwoFactorToken) {
-                showNotification('Please sign in with your password again.', 'warning');
-                showLoginCredentialsStep();
-                return;
-            }
-            if (code.length !== 6) {
-                setLoginTotpErrorState('Enter the 6-digit code from your authenticator app.');
-                return;
-            }
-            clearLoginTotpErrorState();
-            loginTotpSubmit.textContent = 'Verifying...';
-            loginTotpSubmit.disabled = true;
-            fetch('/api/login/totp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ challengeToken: pendingTwoFactorToken, code: code }),
-            })
-                .then(function (res) {
-                    return res.json().then(function (data) {
-                        return { ok: res.ok, data: data };
-                    });
-                })
-                .then(function (_ref) {
-                    var ok = _ref.ok;
-                    var data = _ref.data;
-                    loginTotpSubmit.textContent = 'VERIFY & CONTINUE';
-                    loginTotpSubmit.disabled = false;
-                    if (!ok || !data.success) {
-                        var msg = data.error || 'Invalid code.';
-                        setLoginTotpErrorState(msg);
-                        clearLoginTotpDigits();
-                        if (loginTotpDigits[0]) loginTotpDigits[0].focus();
-                        return;
-                    }
-                    showLoginCredentialsStep();
-                    finishSuccessfulLogin(data.user);
-                })
-                .catch(function () {
-                    loginTotpSubmit.textContent = 'VERIFY & CONTINUE';
-                    loginTotpSubmit.disabled = false;
-                    showNotification('Could not reach the server. Please try again.', 'error');
-                });
+            submitLoginTotpVerification(false);
         });
     }
 

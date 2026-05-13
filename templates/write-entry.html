@@ -206,6 +206,91 @@
         </div>
     </div>
 
+    <!-- Discard unsaved entry (replaces native cancel confirm) -->
+    <div class="write-flow-modal write-discard-modal" id="writeDiscardModal" hidden role="dialog" aria-modal="true" aria-labelledby="writeDiscardTitle">
+        <div class="write-flow-modal__backdrop" data-write-discard-dismiss="1"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--warn" aria-hidden="true">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="writeDiscardTitle" class="write-flow-modal__title">Discard unsaved changes?</h2>
+                        <p class="write-flow-modal__desc">
+                            You have changes that haven't been saved yet. Leaving now will lose everything you wrote.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--list">
+                <p class="write-flow-modal__list-heading">What will be lost</p>
+                <div class="write-flow-modal__list">
+                    <div class="write-flow-modal__list-accent" aria-hidden="true"></div>
+                    <ul class="write-flow-modal__list-items">
+                        <li><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Your title and written text</span></li>
+                        <li><i class="bi bi-bookmarks" aria-hidden="true"></i><span>Selected tags</span></li>
+                        <li><i class="bi bi-images" aria-hidden="true"></i><span>Attached photos</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="writeDiscardKeepBtn">Keep writing</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="writeDiscardConfirmBtn">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        Discard changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete custom tag (replaces native confirm) -->
+    <div class="write-flow-modal write-delete-tag-modal" id="writeDeleteTagModal" hidden role="dialog" aria-modal="true" aria-labelledby="writeDeleteTagTitle">
+        <div class="write-flow-modal__backdrop" data-write-delete-tag-dismiss="1"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--tag-del" aria-hidden="true">
+                        <i class="bi bi-tag-fill"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="writeDeleteTagTitle" class="write-flow-modal__title">Delete this tag?</h2>
+                        <p class="write-flow-modal__desc">
+                            This tag will be permanently removed from your account and all entries that used it.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--tag-preview">
+                <div class="write-flow-modal__tag-block">
+                    <div class="write-flow-modal__tag-accent" aria-hidden="true"></div>
+                    <div class="write-flow-modal__tag-preview-inner">
+                        <span class="write-flow-modal__tag-pill" id="writeDeleteTagPill"></span>
+                        <p class="write-flow-modal__tag-warn" id="writeDeleteTagWarn">
+                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                            <span id="writeDeleteTagWarnText"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="writeDeleteTagKeepBtn">Keep it</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="writeDeleteTagConfirmBtn">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                        Yes, delete tag
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="photo-lightbox" id="photoLightbox" hidden>
         <button type="button" class="photo-lightbox__close" id="photoLightboxClose" aria-label="Close preview">
             <i class="bi bi-x-lg"></i>
@@ -230,6 +315,16 @@
                 </button>
             </div>
             <div class="custom-tag-modal__body">
+                <div class="custom-tag-inline-alert" id="customTagDuplicateAlert" hidden role="alert">
+                    <div class="custom-tag-inline-alert__icon" aria-hidden="true">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                    </div>
+                    <div class="custom-tag-inline-alert__content">
+                        <p class="custom-tag-inline-alert__title">This tag name is already taken</p>
+                        <p class="custom-tag-inline-alert__desc">You already have a tag with this name. Choose a different name to continue.</p>
+                        <span class="custom-tag-inline-alert__pill" id="customTagDuplicatePill"></span>
+                    </div>
+                </div>
                 <label class="custom-tag-modal__label" for="customTagNameInput">Tag name</label>
                 <input id="customTagNameInput" class="custom-tag-modal__input" type="text" maxlength="40" placeholder="e.g. Gym, Career, Reading" />
 

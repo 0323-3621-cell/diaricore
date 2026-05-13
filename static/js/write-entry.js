@@ -622,14 +622,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const deleteBtn = btn.querySelector('.tag-delete-btn');
             if (deleteBtn) {
-                deleteBtn.addEventListener('click', async (event) => {
+                deleteBtn.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     const tag = normalizeTag(btn.dataset.tag);
                     if (!tag) return;
-                    const ok = confirm('Delete this tag?');
-                    if (!ok) return;
-                    await deleteCustomTag(tag);
+                    openWriteDeleteTagModal(tag);
                 });
             }
             if (selectedTags.has(item.tag)) btn.classList.add('selected');
@@ -801,6 +799,102 @@ document.addEventListener('DOMContentLoaded', function() {
     const customTagPagination = document.getElementById('customTagPagination');
     const customTagIconMeta = document.getElementById('customTagIconMeta');
     const customTagSaveBtn = document.getElementById('customTagSaveBtn');
+    const customTagDuplicateAlert = document.getElementById('customTagDuplicateAlert');
+    const customTagDuplicatePill = document.getElementById('customTagDuplicatePill');
+    const writeDiscardModal = document.getElementById('writeDiscardModal');
+    const writeDiscardKeepBtn = document.getElementById('writeDiscardKeepBtn');
+    const writeDiscardConfirmBtn = document.getElementById('writeDiscardConfirmBtn');
+    const writeDeleteTagModal = document.getElementById('writeDeleteTagModal');
+    const writeDeleteTagKeepBtn = document.getElementById('writeDeleteTagKeepBtn');
+    const writeDeleteTagConfirmBtn = document.getElementById('writeDeleteTagConfirmBtn');
+    const writeDeleteTagPill = document.getElementById('writeDeleteTagPill');
+    const writeDeleteTagWarnText = document.getElementById('writeDeleteTagWarnText');
+
+    let pendingDeleteTagName = null;
+
+    function releaseBodyScrollIfNoModals() {
+        const d = writeDiscardModal;
+        const t = writeDeleteTagModal;
+        const c = customTagModal;
+        const allClosed = (!d || d.hidden) && (!t || t.hidden) && (!c || c.hidden);
+        if (allClosed) document.body.style.overflow = '';
+    }
+
+    function hideCustomTagDuplicateAlert() {
+        if (customTagDuplicateAlert) customTagDuplicateAlert.hidden = true;
+    }
+
+    function showCustomTagDuplicateAlert(tagName) {
+        if (!customTagDuplicateAlert || !customTagDuplicatePill) return;
+        const name = escapeHtml(String(tagName || '').trim());
+        const rawIcon = String(selectedPickerIconName || '').trim().toLowerCase();
+        const iconHtml = rawIcon && /^[a-z0-9-]+$/.test(rawIcon)
+            ? `<i class="bi bi-${escapeHtml(rawIcon)}"></i>`
+            : '';
+        customTagDuplicatePill.innerHTML = `${iconHtml}<span>${name}</span>`;
+        customTagDuplicateAlert.hidden = false;
+    }
+
+    function openWriteDiscardModal() {
+        if (!writeDiscardModal) return;
+        writeDiscardModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeWriteDiscardModal() {
+        if (!writeDiscardModal) return;
+        writeDiscardModal.hidden = true;
+        releaseBodyScrollIfNoModals();
+    }
+
+    function resolveBiIconSuffix(raw) {
+        const s = String(raw || '').trim();
+        const m = /^bi\s+bi-([\w-]+)$/i.exec(s);
+        if (m) return m[1].toLowerCase();
+        if (/^[a-z0-9-]+$/i.test(s)) return s.toLowerCase();
+        return 'hash';
+    }
+
+    function openWriteDeleteTagModal(tag) {
+        const normalized = normalizeTag(tag);
+        if (!normalized || !writeDeleteTagModal || !writeDeleteTagPill) return;
+        pendingDeleteTagName = normalized;
+        const item = tagItemsState.find((x) => normalizeTag(x.tag).toLowerCase() === normalized.toLowerCase());
+        const icn = item?.iconName || iconClassForTag(normalized);
+        const bi = resolveBiIconSuffix(icn);
+        writeDeleteTagPill.innerHTML = `<i class="bi bi-${escapeHtml(bi)}"></i><span>${escapeHtml(normalized)}</span>`;
+        if (writeDeleteTagWarnText) {
+            writeDeleteTagWarnText.innerHTML = `Any entries tagged with &lsquo;<strong>${escapeHtml(normalized)}</strong>&rsquo; will no longer have this tag. This cannot be undone.`;
+        }
+        writeDeleteTagModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeWriteDeleteTagModal() {
+        pendingDeleteTagName = null;
+        if (writeDeleteTagModal) writeDeleteTagModal.hidden = true;
+        releaseBodyScrollIfNoModals();
+    }
+
+    writeDiscardKeepBtn?.addEventListener('click', () => closeWriteDiscardModal());
+    writeDiscardConfirmBtn?.addEventListener('click', () => {
+        closeWriteDiscardModal();
+        window.location.href = 'dashboard.html';
+    });
+    writeDiscardModal?.addEventListener('click', (e) => {
+        if (e.target?.matches?.('[data-write-discard-dismiss]')) closeWriteDiscardModal();
+    });
+
+    writeDeleteTagKeepBtn?.addEventListener('click', () => closeWriteDeleteTagModal());
+    writeDeleteTagConfirmBtn?.addEventListener('click', async () => {
+        const tag = pendingDeleteTagName;
+        if (!tag) return;
+        closeWriteDeleteTagModal();
+        await deleteCustomTag(tag);
+    });
+    writeDeleteTagModal?.addEventListener('click', (e) => {
+        if (e.target?.matches?.('[data-write-delete-tag-dismiss]')) closeWriteDeleteTagModal();
+    });
 
     function filteredPickerIcons() {
         const q = customTagSearch.trim().toLowerCase();
@@ -870,6 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function openCustomTagModal() {
         if (!customTagModal) return;
+        hideCustomTagDuplicateAlert();
         customTagNameInput.value = '';
         customTagIconSearch.value = '';
         customTagSearch = '';
@@ -892,8 +987,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function closeCustomTagModal() {
         if (!customTagModal) return;
+        hideCustomTagDuplicateAlert();
         customTagModal.hidden = true;
-        document.body.style.overflow = '';
+        releaseBodyScrollIfNoModals();
     }
 
     // Add tag functionality
@@ -923,7 +1019,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (customTagNameInput) {
-        customTagNameInput.addEventListener('input', updateCustomTagSaveState);
+        customTagNameInput.addEventListener('input', () => {
+            hideCustomTagDuplicateAlert();
+            updateCustomTagSaveState();
+        });
     }
     if (customTagSaveBtn) {
         customTagSaveBtn.addEventListener('click', async () => {
@@ -944,7 +1043,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!normalizedName) return false;
         const normalizedKey = normalizedName.toLowerCase();
         if (tagItemsState.some((item) => normalizeTag(item.tag).toLowerCase() === normalizedKey)) {
-            alert('This tag already exists. Please choose a different name.');
+            showCustomTagDuplicateAlert(normalizedName);
             return false;
         }
 
@@ -1406,11 +1505,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cancel functionality
     const cancelBtn = document.getElementById('cancelBtn');
-    cancelBtn.addEventListener('click', function() {
-        if (journalText.value.trim() || selectedTags.size > 0) {
-            if (confirm('Are you sure you want to cancel? Your unsaved changes will be lost.')) {
-                window.location.href = 'dashboard.html';
-            }
+    function hasUnsavedJournalDraft() {
+        return Boolean(
+            journalText?.value?.trim() ||
+            journalTitleInput?.value?.trim() ||
+            selectedTags.size > 0 ||
+            attachedImages.length > 0
+        );
+    }
+    cancelBtn?.addEventListener('click', function() {
+        if (hasUnsavedJournalDraft()) {
+            openWriteDiscardModal();
         } else {
             window.location.href = 'dashboard.html';
         }

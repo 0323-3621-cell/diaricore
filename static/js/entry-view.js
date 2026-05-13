@@ -2024,6 +2024,8 @@
                 global.DiariMoodAnalysis.showEntryUpdateLoading(overlay);
                 try {
                     await runSave(false);
+                    // Keep the overlay on-screen until the progress hits 100% (same gate as analysis).
+                    await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                 } finally {
                     // If save succeeded, baseline is updated and overlay can close.
                     global.DiariMoodAnalysis.hideAnalysisOverlay(overlay);

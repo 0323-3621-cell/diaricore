@@ -301,7 +301,8 @@
         body.innerHTML = '';
 
         const wrap = document.createElement('div');
-        wrap.className = 'mood-analysis-loading mood-analysis-loading--editing';
+        // Reuse the exact loading layout used by analysis so styling is identical.
+        wrap.className = 'mood-analysis-loading mood-analysis-loading--book';
 
         const mount = entryUpdateEditingMountEl;
         if (mount) {

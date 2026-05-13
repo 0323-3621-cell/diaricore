@@ -199,7 +199,6 @@ html.theme-dark .theme-palette-panel {
 html.theme-dark .user-profile {
     border-top-color: rgba(47, 59, 66, 0.55) !important;
     background: var(--card-background) !important;
-    padding-bottom: 0 !important; /* keep same footer position as light mode */
 }
 
 html.theme-dark .logout-btn {

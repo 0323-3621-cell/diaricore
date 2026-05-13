@@ -161,6 +161,26 @@ body.page-profile .profile-overview-section .profile-card {
     transform: scale(1.1);
 }
 
+/* Fine pointer + hover: reveal change-photo only when pointing at the avatar (touch: always visible) */
+@media (hover: hover) and (pointer: fine) {
+    .profile-overview-section .avatar-edit-btn {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.94);
+    }
+
+    .profile-overview-section .profile-avatar:hover .avatar-edit-btn,
+    .profile-overview-section .profile-avatar:focus-within .avatar-edit-btn {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1);
+    }
+
+    .profile-overview-section .avatar-edit-btn:hover {
+        transform: scale(1.1);
+    }
+}
+
 .profile-info {
     flex: 1;
 }

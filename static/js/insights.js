@@ -190,6 +190,32 @@ function mondayStartOfLocalWeek(ref = new Date()) {
 
 const MS_PER_DAY = 86400000;
 
+/** “Most active time”: bucket and label by this zone (not the device clock). */
+const INSIGHTS_ACTIVITY_TIME_ZONE = 'Asia/Manila';
+
+function getHourInTimeZone(isoDate, timeZone) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        hour: 'numeric',
+        hourCycle: 'h23',
+    }).formatToParts(isoDate);
+    const h = parts.find((p) => p.type === 'hour')?.value;
+    if (h == null) return NaN;
+    return Number.parseInt(h, 10);
+}
+
+/** Format a Manila wall hour 0–23 as a 12-hour clock string in Asia/Manila. */
+function formatHourClockInManila(hour24) {
+    if (!Number.isFinite(hour24) || hour24 < 0 || hour24 > 23) return '—';
+    const d = new Date(`2020-01-01T${String(hour24).padStart(2, '0')}:00:00+08:00`);
+    return new Intl.DateTimeFormat('en-PH', {
+        timeZone: INSIGHTS_ACTIVITY_TIME_ZONE,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    }).format(d);
+}
+
 /**
  * Mon–Sun calendar week: per-day average mood, dominant emotion, entry counts.
  * Richer than the dashboard sparkline; same week boundaries as the dashboard strip.
@@ -336,15 +362,18 @@ function computeConsistencyInsightBundle() {
 
     const hourBuckets = Array.from({ length: 24 }, () => 0);
     /**
-     * Peak hour uses the same instant as the API `createdAt` (DB `created_at`), ISO UTC with Z from the server.
-     * `Date#getHours()` is in the browser's local timezone (device clock), not a hard-coded Philippines offset.
+     * “Most active time” = the Manila clock hour (0–23) when you saved the most entries (mode), not an average.
+     * Uses each entry’s save instant: `createdAt` (API / DB `created_at`), else `created_at`, else `date`.
+     * Bucketing and the label both use Asia/Manila so traveling laptops or wrong OS timezones do not skew it.
      */
     entries.forEach((e) => {
         const raw = e.createdAt || e.created_at || e.date;
         if (!raw) return;
         const d = new Date(raw);
         if (Number.isNaN(d.getTime())) return;
-        hourBuckets[d.getHours()] += 1;
+        const h = getHourInTimeZone(d, INSIGHTS_ACTIVITY_TIME_ZONE);
+        if (Number.isNaN(h) || h < 0 || h > 23) return;
+        hourBuckets[h] += 1;
     });
     const totalH = hourBuckets.reduce((a, b) => a + b, 0);
     let peakHour = 0;
@@ -356,14 +385,8 @@ function computeConsistencyInsightBundle() {
         }
     });
     let mostActiveTimeLabel = '—';
-    if (totalH > 0 && peakVal >= 0) {
-        const dt = new Date();
-        dt.setHours(peakHour, 0, 0, 0);
-        mostActiveTimeLabel = dt.toLocaleTimeString(undefined, {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
+    if (totalH > 0 && peakVal > 0) {
+        mostActiveTimeLabel = formatHourClockInManila(peakHour);
     }
 
     return {

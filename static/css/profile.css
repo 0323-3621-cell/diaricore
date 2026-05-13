@@ -808,6 +808,8 @@ input:checked + .toggle-slider:before {
 
 .profile-section-shell {
     padding-bottom: 2rem;
+    width: 100%;
+    min-width: 0;
 }
 
 .profile-section-head {
@@ -853,7 +855,9 @@ input:checked + .toggle-slider:before {
 }
 
 .profile-section-panel {
-    max-width: 720px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
 }
 
 .profile-prefs-eyebrow {

@@ -67,6 +67,18 @@ document.addEventListener('DOMContentLoaded', function() {
     let lightboxIndex = 0;
     let dragDepth = 0;
 
+    /** True when the journal has any unsaved content (used for leave guards). */
+    function hasUnsavedJournalDraft() {
+        const jt = document.getElementById('journalText');
+        const jti = document.getElementById('journalTitleInput');
+        return Boolean(
+            (jt && jt.value.trim()) ||
+            (jti && jti.value.trim()) ||
+            selectedTags.size > 0 ||
+            attachedImages.length > 0
+        );
+    }
+
     function escapeHtml(text) {
         return String(text)
             .replace(/&/g, '&amp;')
@@ -811,6 +823,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const writeDeleteTagWarnText = document.getElementById('writeDeleteTagWarnText');
 
     let pendingDeleteTagName = null;
+    /** @type {null | { kind: 'href', href: string } | { kind: 'logout' }} */
+    let pendingWriteDiscard = null;
 
     function releaseBodyScrollIfNoModals() {
         const d = writeDiscardModal;
@@ -843,6 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function closeWriteDiscardModal() {
         if (!writeDiscardModal) return;
+        pendingWriteDiscard = null;
         writeDiscardModal.hidden = true;
         releaseBodyScrollIfNoModals();
     }
@@ -878,8 +893,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     writeDiscardKeepBtn?.addEventListener('click', () => closeWriteDiscardModal());
     writeDiscardConfirmBtn?.addEventListener('click', () => {
-        closeWriteDiscardModal();
-        window.location.href = 'dashboard.html';
+        const p = pendingWriteDiscard;
+        pendingWriteDiscard = null;
+        if (writeDiscardModal) writeDiscardModal.hidden = true;
+        releaseBodyScrollIfNoModals();
+        if (p?.kind === 'logout') {
+            localStorage.removeItem('diariCoreUser');
+            window.location.href = 'login.html';
+            return;
+        }
+        window.location.href = p?.kind === 'href' ? p.href : 'dashboard.html';
     });
     writeDiscardModal?.addEventListener('click', (e) => {
         if (e.target?.matches?.('[data-write-discard-dismiss]')) closeWriteDiscardModal();
@@ -1527,16 +1550,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cancel functionality
     const cancelBtn = document.getElementById('cancelBtn');
-    function hasUnsavedJournalDraft() {
-        return Boolean(
-            journalText?.value?.trim() ||
-            journalTitleInput?.value?.trim() ||
-            selectedTags.size > 0 ||
-            attachedImages.length > 0
-        );
-    }
     cancelBtn?.addEventListener('click', function() {
         if (hasUnsavedJournalDraft()) {
+            pendingWriteDiscard = { kind: 'href', href: 'dashboard.html' };
             openWriteDiscardModal();
         } else {
             window.location.href = 'dashboard.html';
@@ -1611,4 +1627,55 @@ document.addEventListener('DOMContentLoaded', function() {
     flushOfflineEntryQueue();
     autoAdjustJournalTextarea();
     requestAnimationFrame(() => autoAdjustJournalTextarea());
+
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!document.body.classList.contains('page-write-entry')) return;
+            const t = e.target;
+            if (!t || !t.closest) return;
+            if (t.closest('#writeDiscardModal') || t.closest('#writeDeleteTagModal') || t.closest('#customTagModal')) return;
+            const lb = document.getElementById('photoLightbox');
+            if (lb && !lb.hidden && lb.contains(t)) return;
+
+            const voice = t.closest('#voiceInputBtn');
+            if (voice) {
+                if (!hasUnsavedJournalDraft()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                pendingWriteDiscard = { kind: 'href', href: 'voice-entry.html' };
+                openWriteDiscardModal();
+                return;
+            }
+
+            const logout = t.closest('.logout-btn');
+            if (logout) {
+                if (!hasUnsavedJournalDraft()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                pendingWriteDiscard = { kind: 'logout' };
+                openWriteDiscardModal();
+                return;
+            }
+
+            const navLink = t.closest(
+                '.sidebar a.nav-link[href], .mobile-bottom-nav a[href], a.mobile-write-fab__sat[href], a.mobile-app-topbar__brand[href], a.mobile-app-topbar__profile[href]'
+            );
+            if (navLink) {
+                const href = navLink.getAttribute('href');
+                if (!href || href === '#' || href.startsWith('javascript:')) return;
+                const pathOnly = href.split('?')[0].split('#')[0];
+                if (/write-entry\.html$/i.test(pathOnly) || pathOnly.endsWith('/write-entry.html')) return;
+                if (!hasUnsavedJournalDraft()) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                pendingWriteDiscard = { kind: 'href', href };
+                openWriteDiscardModal();
+            }
+        },
+        true
+    );
 });

@@ -193,6 +193,23 @@
         return `${weekday}, ${rest} · ${time}`;
     }
 
+    function isEntryEdited(ent) {
+        if (!ent || !ent.updatedAt) return false;
+        const u = new Date(ent.updatedAt).getTime();
+        if (Number.isNaN(u)) return false;
+        const c = ent.createdAt ? new Date(ent.createdAt).getTime() : NaN;
+        if (!Number.isNaN(c)) return u > c + 1500;
+        const d0 = ent.date ? new Date(ent.date).getTime() : NaN;
+        if (!Number.isNaN(d0)) return u > d0 + 1500;
+        return true;
+    }
+
+    function entryDateTimeIsoForDisplay(ent) {
+        if (!ent) return '';
+        if (isEntryEdited(ent) && ent.updatedAt) return ent.updatedAt;
+        return ent.date || ent.createdAt || '';
+    }
+
     /** Short date for delete confirmation (e.g. Wed, May 13 · 12:11 PM). */
     function formatEntryDateShort(isoDate) {
         const d = new Date(isoDate);
@@ -340,6 +357,7 @@
         const deleteBtn = document.getElementById('entryViewDeleteBtn');
         const viewDetailsBtn = document.getElementById('entryViewViewDetailsBtn');
         const aiEmotionLabel = document.getElementById('entryViewAiEmotionLabel');
+        const editedPill = document.getElementById('entryViewEditedPill');
         const actionsEl = document.getElementById('entryViewActions');
         const backBtn = document.getElementById('entryViewBackBtn');
         const cancelBtn = document.getElementById('entryViewCancelBtn');
@@ -965,8 +983,7 @@
             bodyEl.value = entry.text || '';
         }
 
-        const displayDate = entry.date || entry.createdAt;
-        const dateMarkup = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(displayDate)}</span>`;
+        const dateMarkup = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`;
         setBothDateLines(dateMarkup);
 
         autoResizeTextarea(bodyEl);
@@ -978,6 +995,10 @@
             try {
                 p = JSON.parse(baseline);
             } catch (_) {}
+            setBothDateLines(
+                `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`
+            );
+            if (editedPill) editedPill.hidden = !isEntryEdited(entry);
             tagsRead.innerHTML = '';
             const tagArr = Array.isArray(p.tags) ? p.tags : [];
             if (!tagArr.length) {
@@ -1197,9 +1218,8 @@
                     entry = incoming;
                     titleEl.value = entry.title || '';
                     bodyEl.value = entry.text || '';
-                    const dRefresh = entry.date || entry.createdAt;
                     setBothDateLines(
-                        `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(dRefresh)}</span>`
+                        `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`
                     );
                     tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
                     editorImages = imageItemsFromUrls(entry.imageUrls || []);
@@ -1466,6 +1486,10 @@
 
         function offlineMergedEntry(reanalyze) {
             const base = { ...entry, id: entryId };
+            const nowIso = new Date().toISOString();
+            base.updatedAt = nowIso;
+            if (!base.createdAt && entry?.createdAt) base.createdAt = entry.createdAt;
+            if (!base.createdAt && entry?.date) base.createdAt = entry.date;
             base.title = titleEl.value.trim();
             base.text = bodyEl.value.trim();
             base.tags = Array.from(tags).map(normalizeTag).filter(Boolean);

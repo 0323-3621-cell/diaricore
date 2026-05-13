@@ -53,6 +53,20 @@
     color: #4c8060;
 }
 
+.entry-view-edited-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-secondary, #6b7c74);
+    background: var(--background-soft, #eef2f0);
+    border: 1px solid var(--border-color, #e0e6e3);
+    white-space: nowrap;
+}
+
 .entry-view-toolbar__link {
     border: none;
     background: transparent;
@@ -447,6 +461,12 @@ html.theme-dark .entry-view-ai-pill {
     background: rgba(120, 180, 140, 0.12);
     border-color: rgba(120, 180, 140, 0.28);
     color: var(--text-primary, #e8ecf0);
+}
+
+html.theme-dark .entry-view-edited-pill {
+    background: #1c262b;
+    color: var(--text-muted, #9aa9a1);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 html.theme-dark .entry-view-toolbar__edit {

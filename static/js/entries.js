@@ -284,6 +284,24 @@ function moodDisplayLabel(feelingRaw) {
     return 'Neutral';
 }
 
+function isEntryEditedForList(ent) {
+    if (!ent || !ent.updatedAt) return false;
+    const u = new Date(ent.updatedAt).getTime();
+    if (Number.isNaN(u)) return false;
+    const c = ent.createdAt ? new Date(ent.createdAt).getTime() : NaN;
+    if (!Number.isNaN(c)) return u > c + 1500;
+    const d0 = ent.date ? new Date(ent.date).getTime() : NaN;
+    if (!Number.isNaN(d0)) return u > d0 + 1500;
+    return true;
+}
+
+/** ISO string used for the time row on list cards (prefer last save when edited). */
+function entryCardTimeIso(ent) {
+    if (!ent) return '';
+    if (isEntryEditedForList(ent) && ent.updatedAt) return ent.updatedAt;
+    return ent.date || ent.createdAt || '';
+}
+
 function createStoredEntryCard(entry) {
     const article = document.createElement('article');
     article.className = 'entry-card';
@@ -294,9 +312,12 @@ function createStoredEntryCard(entry) {
     const dateText = Number.isNaN(date.getTime())
         ? 'Unknown date'
         : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const timeText = Number.isNaN(date.getTime())
+    const timeSource = entryCardTimeIso(entry) || entry.date;
+    const timeDate = new Date(timeSource);
+    const timeText = Number.isNaN(timeDate.getTime())
         ? ''
-        : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        : timeDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const showEditedPill = isEntryEditedForList(entry);
 
     const title = (entry.title && String(entry.title).trim())
         ? String(entry.title).trim().slice(0, 80)
@@ -316,6 +337,7 @@ function createStoredEntryCard(entry) {
                 </div>
                 <div class="entry-mood">
                     <span class="mood-label mood-label--${resolvedFeeling}">${moodLabel}</span>
+                    ${showEditedPill ? '<span class="entry-edited-pill" aria-label="Edited after save">Edited</span>' : ''}
                 </div>
             </div>
             <div class="entry-content">

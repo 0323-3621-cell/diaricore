@@ -303,14 +303,18 @@
         entryUpdateEditingMountEl = mount;
         try {
             if (typeof global.lottie !== 'undefined' && typeof global.lottie.loadAnimation === 'function') {
-                entryUpdateEditingAnim = global.lottie.loadAnimation({
+                const animConfig = {
                     container: mount,
                     renderer: 'svg',
                     loop: true,
                     autoplay: true,
-                    animationData: entryUpdateEditingData || undefined,
-                    path: entryUpdateEditingData ? undefined : ENTRY_UPDATE_EDITING_LOTTIE_SRC,
-                });
+                };
+                if (entryUpdateEditingData) {
+                    animConfig.animationData = entryUpdateEditingData;
+                } else {
+                    animConfig.path = ENTRY_UPDATE_EDITING_LOTTIE_SRC;
+                }
+                entryUpdateEditingAnim = global.lottie.loadAnimation(animConfig);
                 entryUpdateEditingAnim.addEventListener('DOMLoaded', () => {
                     if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
                 });

@@ -237,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
         gallery.querySelectorAll('.entry-gallery-item').forEach((item) => {
             item.addEventListener('click', (e) => {
                 if (e.target.closest('.entry-gallery-action-btn')) return;
-                e.stopPropagation();
                 const wasActive = item.classList.contains('is-active');
                 gallery.querySelectorAll('.entry-gallery-item.is-active').forEach((el) => el.classList.remove('is-active'));
                 if (!wasActive) item.classList.add('is-active');

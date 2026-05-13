@@ -647,7 +647,6 @@
                         'click',
                         (e) => {
                             if (e.target.closest('.entry-view-strip-item__actions')) return;
-                            e.stopPropagation();
                             const was = wrap.classList.contains('is-active');
                             imageStripScroll.querySelectorAll('.entry-view-strip-item.is-active').forEach((el) => el.classList.remove('is-active'));
                             if (!was) wrap.classList.add('is-active');

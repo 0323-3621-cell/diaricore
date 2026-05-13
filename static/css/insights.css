@@ -1745,18 +1745,70 @@ html.theme-dark .emotion-trigger-block__desc {
     line-height: 1.5;
 }
 
+/* Weekly snapshot: outer tinted shell + inner white panels (Memory Highlights–style) */
+.ins-card--highlights {
+    padding: 1.35rem 1.4rem 1.45rem;
+    border-radius: 16px;
+    border: 1px solid rgba(var(--primary-rgb), 0.22);
+    background: linear-gradient(
+        165deg,
+        rgba(var(--primary-rgb), 0.14) 0%,
+        rgba(var(--primary-rgb), 0.06) 100%
+    );
+    box-shadow: var(--box-shadow);
+}
+
+.ins-card--highlights .ins-highlights__head {
+    margin-bottom: 0.85rem;
+}
+
+.ins-card--highlights .ins-card__head-title {
+    color: #2a4a3d;
+}
+
+.ins-highlights-bundle {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ins-highlights-lede {
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    padding: 1rem 1.1rem;
+    box-shadow: 0 1px 3px rgba(47, 62, 54, 0.06);
+}
+
+.ins-highlights-lede__text {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
 .ins-highlights__chips {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
 }
 
 .ins-highlight-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     background: var(--card-background);
     padding: 0.75rem 0.85rem;
+    box-shadow: 0 1px 3px rgba(47, 62, 54, 0.06);
+}
+
+.ins-highlight-chip__icon {
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--primary-color);
 }
 
 .ins-highlight-chip__eyebrow {
@@ -1766,13 +1818,31 @@ html.theme-dark .emotion-trigger-block__desc {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0;
 }
 
 .ins-highlight-chip__value {
     font-size: 1rem;
     font-weight: 700;
     color: var(--text-dark);
+}
+
+html.theme-dark .ins-card--highlights {
+    border-color: rgba(var(--primary-rgb), 0.38);
+    background: linear-gradient(
+        165deg,
+        rgba(var(--primary-rgb), 0.22) 0%,
+        rgba(var(--primary-rgb), 0.1) 100%
+    );
+}
+
+html.theme-dark .ins-card--highlights .ins-card__head-title {
+    color: var(--text-dark);
+}
+
+html.theme-dark .ins-highlights-lede,
+html.theme-dark .ins-highlight-chip {
+    box-shadow: none;
 }
 
 .weekly-trend-card .section-header {
@@ -1875,7 +1945,7 @@ html.theme-dark .emotion-trigger-block__desc {
         padding: 1.1rem !important;
     }
 
-    .ins-card--highlights.chart-card {
+    .ins-card--highlights {
         padding: 1.1rem !important;
     }
 

@@ -744,25 +744,24 @@ function initializeEmotionPieChart() {
     if (legendEl && HAS_INSIGHTS_DATA) {
         const p = breakdown.percentages;
         const items = [
-            { key: 'happy', name: 'Happy', meta: 'uplifted', color: '#2A9D8F', pct: p.happy },
-            { key: 'sad', name: 'Sad', meta: 'low', color: '#457B9D', pct: p.sad },
-            { key: 'angry', name: 'Angry', meta: 'frustrated', color: '#E63946', pct: p.angry },
-            { key: 'anxious', name: 'Anxious', meta: 'stressed', color: '#F4A261', pct: p.anxious },
-            { key: 'neutral', name: 'Neutral', meta: 'steady', color: '#9AA5B1', pct: p.neutral },
+            { key: 'happy', name: 'Happy', color: '#2A9D8F', pct: p.happy },
+            { key: 'sad', name: 'Sad', color: '#457B9D', pct: p.sad },
+            { key: 'angry', name: 'Angry', color: '#E63946', pct: p.angry },
+            { key: 'anxious', name: 'Anxious', color: '#F4A261', pct: p.anxious },
+            { key: 'neutral', name: 'Neutral', color: '#9AA5B1', pct: p.neutral },
         ];
         legendEl.innerHTML = items
-            .map((it) => `
-                <div class="legend-card" role="listitem">
-                    <div class="legend-left">
-                        <span class="legend-dot" style="background:${it.color}" aria-hidden="true"></span>
-                        <div class="legend-text">
-                            <div class="legend-name">${it.name}</div>
-                            <div class="legend-meta">${it.meta}</div>
-                        </div>
-                    </div>
-                    <div class="legend-pct">${it.pct.toFixed(1)}%</div>
+            .map(
+                (it) => `
+                <div class="emotion-legend-compact" role="listitem">
+                    <span class="emotion-legend-compact__dot" style="background:${it.color}" aria-hidden="true"></span>
+                    <span class="emotion-legend-compact__line">
+                        <span class="emotion-legend-compact__pct">${it.pct.toFixed(1)}%</span>
+                        <span class="emotion-legend-compact__name">${it.name}</span>
+                    </span>
                 </div>
-            `)
+            `
+            )
             .join('');
     } else if (legendEl) {
         legendEl.innerHTML = '';

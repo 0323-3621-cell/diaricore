@@ -997,11 +997,30 @@ function initializeMoodByTagChart() {
                     labels: {
                         color: chartTheme.tick,
                         font: { size: 11, weight: '600' },
-                        padding: 10,
+                        padding: 12,
                         boxWidth: 12,
                         boxHeight: 12,
                         usePointStyle: true,
                         pointStyle: 'rectRounded',
+                        // Chart.js label `padding` is mostly vertical between rows; pad text for horizontal gaps.
+                        generateLabels(chart) {
+                            const datasets = chart.data.datasets || [];
+                            const gap = '\u2003\u2003\u2003'; // em spaces between mood labels
+                            return datasets.map((dataset, i) => ({
+                                text: `${dataset.label || ''}${i < datasets.length - 1 ? gap : ''}`,
+                                fillStyle: Array.isArray(dataset.backgroundColor)
+                                    ? dataset.backgroundColor[0]
+                                    : dataset.backgroundColor,
+                                strokeStyle: Array.isArray(dataset.borderColor)
+                                    ? dataset.borderColor[0]
+                                    : dataset.borderColor,
+                                lineWidth: 0,
+                                hidden: !chart.isDatasetVisible(i),
+                                datasetIndex: i,
+                                fontColor: chartTheme.tick,
+                                pointStyle: 'rectRounded',
+                            }));
+                        },
                     },
                 },
                 tooltip: {

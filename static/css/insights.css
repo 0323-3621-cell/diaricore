@@ -1783,6 +1783,12 @@ html.theme-dark .emotion-trigger-block__desc {
     flex-wrap: wrap;
 }
 
+.ins-card--trend .weekly-stats-row--under-chart {
+    margin-top: 0.35rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
 .ins-weekly-canvas--mobile {
     display: none;
 }

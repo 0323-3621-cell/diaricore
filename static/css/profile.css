@@ -2556,3 +2556,89 @@ button.profile-account-card .btn-edit {
     }
 }
 
+/* TOTP (authenticator) setup modal */
+body.profile-totp-modal-open {
+    overflow: hidden;
+}
+
+.profile-totp-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+}
+
+.profile-totp-modal[hidden] {
+    display: none !important;
+}
+
+.profile-totp-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(44, 62, 53, 0.45);
+    cursor: pointer;
+}
+
+.profile-totp-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(26rem, 100%);
+    max-height: min(90vh, 36rem);
+    overflow: auto;
+    background: var(--card-background);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow-hover);
+    padding: 1.35rem 1.4rem 1.25rem;
+}
+
+.profile-totp-modal__title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 0.75rem 0;
+}
+
+.profile-totp-modal__lead {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin: 0 0 1rem 0;
+}
+
+.profile-totp-modal__field {
+    margin-bottom: 0.85rem;
+}
+
+.profile-totp-modal__qr-block {
+    margin-top: 0.25rem;
+}
+
+.profile-totp-modal__qr-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0 1rem;
+    padding: 0.75rem;
+    background: var(--background-soft);
+    border-radius: 12px;
+    border: 1px solid var(--divider-color);
+}
+
+.profile-totp-modal__qr-img {
+    display: block;
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+}
+
+.profile-totp-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin-top: 1.1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--divider-color);
+}

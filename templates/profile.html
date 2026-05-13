@@ -467,11 +467,11 @@
                                         <span class="profile-security-2fa__hint">Use an app like Google Authenticator</span>
                                     </div>
                                     <label class="toggle-switch profile-security-2fa__toggle">
-                                        <input type="checkbox" id="profileSec2faToggle" disabled>
+                                        <input type="checkbox" id="profileSec2faToggle" aria-describedby="profileSec2faHint">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
-                                <p class="profile-security-2fa__note">Two-factor setup is coming soon.</p>
+                                <p class="profile-security-2fa__note" id="profileSec2faHint">Adds a code from an app like Google Authenticator when you sign in.</p>
                             </div>
                             <div class="profile-account-detail-footer">
                                 <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profileSecurityCancelBtn">Cancel</button>
@@ -484,6 +484,57 @@
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    <div class="profile-totp-modal" id="profileTotpModal" hidden>
+        <div class="profile-totp-modal__backdrop" id="profileTotpModalBackdrop"></div>
+        <div class="profile-totp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="profileTotpModalTitle">
+            <h3 class="profile-totp-modal__title" id="profileTotpModalTitle">Authenticator</h3>
+            <div id="profileTotpModalSetup" hidden>
+                <p class="profile-totp-modal__lead" id="profileTotpSetupLead">Enter your account password to generate a setup QR code.</p>
+                <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
+                    <span class="profile-account-field__label">Password</span>
+                    <span class="profile-account-field__input-wrap">
+                        <i class="bi bi-lock profile-account-field__icon" aria-hidden="true"></i>
+                        <input type="password" id="profileTotpSetupPassword" class="profile-account-field__input" autocomplete="current-password" placeholder="Your password">
+                    </span>
+                </label>
+                <div id="profileTotpQrBlock" class="profile-totp-modal__qr-block" hidden>
+                    <p class="profile-totp-modal__lead">Scan this QR code in Google Authenticator (or enter the secret manually), then enter the 6-digit code to confirm.</p>
+                    <div class="profile-totp-modal__qr-wrap">
+                        <img id="profileTotpQrImg" class="profile-totp-modal__qr-img" alt="Authenticator QR code" width="200" height="200">
+                    </div>
+                    <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
+                        <span class="profile-account-field__label">Verification code</span>
+                        <span class="profile-account-field__input-wrap">
+                            <i class="bi bi-shield-lock profile-account-field__icon" aria-hidden="true"></i>
+                            <input type="text" id="profileTotpConfirmCode" class="profile-account-field__input" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="6-digit code">
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div id="profileTotpModalDisable" hidden>
+                <p class="profile-totp-modal__lead">Enter your password and a current code from your authenticator app to turn off two-factor sign-in.</p>
+                <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
+                    <span class="profile-account-field__label">Password</span>
+                    <span class="profile-account-field__input-wrap">
+                        <i class="bi bi-lock profile-account-field__icon" aria-hidden="true"></i>
+                        <input type="password" id="profileTotpDisablePassword" class="profile-account-field__input" autocomplete="current-password" placeholder="Your password">
+                    </span>
+                </label>
+                <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
+                    <span class="profile-account-field__label">Authenticator code</span>
+                    <span class="profile-account-field__input-wrap">
+                        <i class="bi bi-shield-lock profile-account-field__icon" aria-hidden="true"></i>
+                        <input type="text" id="profileTotpDisableCode" class="profile-account-field__input" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="6-digit code">
+                    </span>
+                </label>
+            </div>
+            <div class="profile-totp-modal__actions">
+                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profileTotpModalCancel">Cancel</button>
+                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--primary" id="profileTotpModalPrimary">Continue</button>
+            </div>
         </div>
     </div>
 

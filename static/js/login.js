@@ -74,6 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let resetResendRemaining = 0;
     let resetVerifyInProgress = false;
     let resetAutoVerifyTimeout = null;
+    let pendingTwoFactorToken = null;
+
+    const signinMainFlow = document.getElementById('signinMainFlow');
+    const loginTotpStep = document.getElementById('loginTotpStep');
+    const loginTotpCode = document.getElementById('loginTotpCode');
+    const loginTotpSubmit = document.getElementById('loginTotpSubmit');
+    const loginTotpBack = document.getElementById('loginTotpBack');
+    const loginTotpCodeError = document.getElementById('loginTotpCodeError');
     
     // Switch to Sign Up mode
     function switchToSignUp() {
@@ -430,6 +438,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return true;
     }
+
+    function showLoginCredentialsStep() {
+        pendingTwoFactorToken = null;
+        if (signinMainFlow) signinMainFlow.hidden = false;
+        if (loginTotpStep) loginTotpStep.hidden = true;
+        const fh = signinSection && signinSection.querySelector('.form-header');
+        if (fh && signinSection.dataset.savedHeaderHtml) {
+            fh.innerHTML = signinSection.dataset.savedHeaderHtml;
+        }
+    }
+
+    function showLoginTotpStep(challengeToken) {
+        pendingTwoFactorToken = challengeToken;
+        if (signinMainFlow) signinMainFlow.hidden = true;
+        if (loginTotpStep) loginTotpStep.hidden = false;
+        if (loginTotpCode) {
+            loginTotpCode.value = '';
+            loginTotpCode.classList.remove('error', 'success');
+        }
+        if (loginTotpCodeError) {
+            loginTotpCodeError.hidden = true;
+            loginTotpCodeError.textContent = 'Invalid code.';
+        }
+        const fh = signinSection && signinSection.querySelector('.form-header');
+        if (fh && !signinSection.dataset.savedHeaderHtml) {
+            signinSection.dataset.savedHeaderHtml = fh.innerHTML;
+        }
+        if (fh) {
+            fh.innerHTML = '<h2 class="form-title">Two-factor authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
+        }
+        if (loginTotpCode) loginTotpCode.focus();
+    }
+
+    function finishSuccessfulLogin(u) {
+        localStorage.setItem('diariCoreUser', JSON.stringify({
+            ...u,
+            isLoggedIn: true,
+            loginTime: new Date().toISOString()
+        }));
+        if (u.isAdmin) {
+            showNotification('Admin login successful! Redirecting...', 'success');
+            setTimeout(function () {
+                window.location.href = 'admin';
+            }, 500);
+            return;
+        }
+        showNotification('Login successful! Redirecting...', 'success');
+        setTimeout(function () {
+            window.location.href = 'dashboard.html';
+        }, 900);
+    }
     
     // Login form submission
     if (loginForm) {
@@ -492,23 +551,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             submitBtn.disabled = false;
                             return;
                         }
-                        const u = data.user;
-                        localStorage.setItem('diariCoreUser', JSON.stringify({
-                            ...u,
-                            isLoggedIn: true,
-                            loginTime: new Date().toISOString()
-                        }));
-                        if (u.isAdmin) {
-                            showNotification('Admin login successful! Redirecting...', 'success');
-                            setTimeout(() => {
-                                window.location.href = 'admin';
-                            }, 500);
+                        if (data.requiresTwoFactor && data.challengeToken) {
+                            submitBtn.textContent = 'SIGN IN';
+                            submitBtn.disabled = false;
+                            showLoginTotpStep(data.challengeToken);
                             return;
                         }
-                        showNotification('Login successful! Redirecting...', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html';
-                        }, 900);
+                        const u = data.user;
+                        finishSuccessfulLogin(u);
                     })
                     .catch(() => {
                         showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');
@@ -516,6 +566,71 @@ document.addEventListener('DOMContentLoaded', function() {
                         submitBtn.disabled = false;
                     });
             }
+        });
+    }
+
+    if (loginTotpBack) {
+        loginTotpBack.addEventListener('click', function () {
+            showLoginCredentialsStep();
+        });
+    }
+
+    if (loginTotpSubmit) {
+        loginTotpSubmit.addEventListener('click', function () {
+            const code = (loginTotpCode && loginTotpCode.value ? loginTotpCode.value : '').replace(/\D/g, '');
+            if (!pendingTwoFactorToken) {
+                showNotification('Please sign in with your password again.', 'warning');
+                showLoginCredentialsStep();
+                return;
+            }
+            if (code.length !== 6) {
+                if (loginTotpCodeError) {
+                    loginTotpCodeError.textContent = 'Enter the 6-digit code from your authenticator app.';
+                    loginTotpCodeError.hidden = false;
+                }
+                if (loginTotpCode) loginTotpCode.classList.add('error');
+                return;
+            }
+            if (loginTotpCodeError) loginTotpCodeError.hidden = true;
+            if (loginTotpCode) loginTotpCode.classList.remove('error');
+            loginTotpSubmit.textContent = 'Verifying...';
+            loginTotpSubmit.disabled = true;
+            fetch('/api/login/totp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ challengeToken: pendingTwoFactorToken, code: code }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function (_ref) {
+                    var ok = _ref.ok;
+                    var data = _ref.data;
+                    loginTotpSubmit.textContent = 'VERIFY & CONTINUE';
+                    loginTotpSubmit.disabled = false;
+                    if (!ok || !data.success) {
+                        var msg = data.error || 'Invalid code.';
+                        if (loginTotpCodeError) {
+                            loginTotpCodeError.textContent = msg;
+                            loginTotpCodeError.hidden = false;
+                        }
+                        if (loginTotpCode) {
+                            loginTotpCode.value = '';
+                            loginTotpCode.classList.add('error');
+                            loginTotpCode.focus();
+                        }
+                        return;
+                    }
+                    showLoginCredentialsStep();
+                    finishSuccessfulLogin(data.user);
+                })
+                .catch(function () {
+                    loginTotpSubmit.textContent = 'VERIFY & CONTINUE';
+                    loginTotpSubmit.disabled = false;
+                    showNotification('Could not reach the server. Please try again.', 'error');
+                });
         });
     }
 

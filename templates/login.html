@@ -23,6 +23,7 @@
                     <p class="form-subtitle">Continue your journaling journey with mindful insights.</p>
                 </div>
                 
+                <div id="signinMainFlow">
                 <form id="loginForm" class="login-form" novalidate autocomplete="off">
                     <div class="form-group">
                         <div class="input-wrapper" data-label="Username">
@@ -80,6 +81,30 @@
                 <p class="signup-link mobile-only">
                     Don't have an account? <a href="register.html">Sign up</a>
                 </p>
+                </div>
+
+                <div id="loginTotpStep" class="login-totp-step" hidden>
+                    <div class="form-group">
+                        <div class="input-wrapper" data-label="Authentication code">
+                            <input
+                                type="text"
+                                id="loginTotpCode"
+                                class="form-input"
+                                placeholder=" "
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
+                                maxlength="8"
+                                autocapitalize="off"
+                                spellcheck="false"
+                            >
+                            <span class="floating-label">6-digit code</span>
+                            <i class="bi bi-shield-lock input-icon" aria-hidden="true"></i>
+                        </div>
+                        <div class="custom-error" id="loginTotpCodeError" hidden>Invalid code.</div>
+                    </div>
+                    <button type="button" class="btn-signin" id="loginTotpSubmit">VERIFY &amp; CONTINUE</button>
+                    <button type="button" class="login-totp-step__back" id="loginTotpBack">← Back to sign in</button>
+                </div>
             </div>
         </div>
         

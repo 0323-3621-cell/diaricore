@@ -212,6 +212,289 @@ function clearSecurityForm() {
     updatePasswordStrengthMeter('');
 }
 
+function getStoredDiariUser() {
+    try {
+        return JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    } catch (_) {
+        return null;
+    }
+}
+
+function mergeDiariUserIntoStorage(serverUser) {
+    if (!serverUser || typeof serverUser !== 'object') return;
+    const prev = getStoredDiariUser() || {};
+    const merged = Object.assign({}, prev, serverUser, {
+        isLoggedIn: prev.isLoggedIn !== false,
+    });
+    localStorage.setItem('diariCoreUser', JSON.stringify(merged));
+    try {
+        document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
+    } catch (_) {}
+}
+
+function updateSecurityStatusPill(user) {
+    const pill = document.querySelector('.profile-account-detail-card--security .profile-security-status span');
+    if (!pill) return;
+    const on = !!(user && user.totpEnabled);
+    pill.textContent = on ? 'Two-factor sign-in is on.' : 'Two-factor sign-in is off.';
+}
+
+function hydrateSecurity2fa() {
+    const user = getStoredDiariUser();
+    const toggle = document.getElementById('profileSec2faToggle');
+    if (!toggle) return;
+    toggle.dataset.hydrating = '1';
+    toggle.checked = !!(user && user.totpEnabled);
+    delete toggle.dataset.hydrating;
+    updateSecurityStatusPill(user);
+}
+
+function resetTotpModal() {
+    const modal = document.getElementById('profileTotpModal');
+    const setup = document.getElementById('profileTotpModalSetup');
+    const disable = document.getElementById('profileTotpModalDisable');
+    const qrBlock = document.getElementById('profileTotpQrBlock');
+    const pw = document.getElementById('profileTotpSetupPassword');
+    const code = document.getElementById('profileTotpConfirmCode');
+    const dpw = document.getElementById('profileTotpDisablePassword');
+    const dcode = document.getElementById('profileTotpDisableCode');
+    const primary = document.getElementById('profileTotpModalPrimary');
+    if (modal) modal.hidden = true;
+    if (setup) setup.hidden = true;
+    if (disable) disable.hidden = true;
+    if (qrBlock) qrBlock.hidden = true;
+    if (pw) pw.value = '';
+    if (code) code.value = '';
+    if (dpw) dpw.value = '';
+    if (dcode) dcode.value = '';
+    if (primary) {
+        primary.disabled = false;
+        primary.textContent = 'Continue';
+    }
+    document.body.classList.remove('profile-totp-modal-open');
+}
+
+function openTotpModal() {
+    const modal = document.getElementById('profileTotpModal');
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add('profile-totp-modal-open');
+}
+
+function openTotpSetupModal() {
+    const setup = document.getElementById('profileTotpModalSetup');
+    const disable = document.getElementById('profileTotpModalDisable');
+    const title = document.getElementById('profileTotpModalTitle');
+    const lead = document.getElementById('profileTotpSetupLead');
+    const qrBlock = document.getElementById('profileTotpQrBlock');
+    const primary = document.getElementById('profileTotpModalPrimary');
+    if (disable) disable.hidden = true;
+    if (setup) setup.hidden = false;
+    if (title) title.textContent = 'Set up authenticator';
+    if (lead) {
+        lead.textContent = 'Enter your account password to generate a setup QR code.';
+        lead.hidden = false;
+    }
+    if (qrBlock) qrBlock.hidden = true;
+    const img = document.getElementById('profileTotpQrImg');
+    if (img) img.removeAttribute('src');
+    const pw = document.getElementById('profileTotpSetupPassword');
+    if (pw) pw.value = '';
+    const code = document.getElementById('profileTotpConfirmCode');
+    if (code) code.value = '';
+    if (primary) {
+        primary.textContent = 'Show QR code';
+        primary.dataset.totpAction = 'setup-qr';
+    }
+    openTotpModal();
+    setTimeout(function () {
+        if (pw) pw.focus();
+    }, 50);
+}
+
+function openTotpDisableModal() {
+    const setup = document.getElementById('profileTotpModalSetup');
+    const disable = document.getElementById('profileTotpModalDisable');
+    const title = document.getElementById('profileTotpModalTitle');
+    const primary = document.getElementById('profileTotpModalPrimary');
+    if (setup) setup.hidden = true;
+    if (disable) disable.hidden = false;
+    if (title) title.textContent = 'Turn off authenticator';
+    const dpw = document.getElementById('profileTotpDisablePassword');
+    const dcode = document.getElementById('profileTotpDisableCode');
+    if (dpw) dpw.value = '';
+    if (dcode) dcode.value = '';
+    if (primary) {
+        primary.textContent = 'Disable 2FA';
+        primary.dataset.totpAction = 'disable';
+    }
+    openTotpModal();
+    setTimeout(function () {
+        if (dpw) dpw.focus();
+    }, 50);
+}
+
+function wireProfileTotpModal() {
+    const modal = document.getElementById('profileTotpModal');
+    if (!modal || modal.dataset.wired === '1') return;
+    modal.dataset.wired = '1';
+
+    const backdrop = document.getElementById('profileTotpModalBackdrop');
+    const cancel = document.getElementById('profileTotpModalCancel');
+    const primary = document.getElementById('profileTotpModalPrimary');
+
+    function close() {
+        resetTotpModal();
+        hydrateSecurity2fa();
+    }
+
+    if (backdrop) backdrop.addEventListener('click', close);
+    if (cancel) cancel.addEventListener('click', close);
+
+    if (primary) {
+        primary.addEventListener('click', function () {
+            const user = getStoredDiariUser();
+            const uid = user && user.id != null ? Number(user.id) : 0;
+            if (!uid) {
+                showNotification('Sign in to manage two-factor authentication.', 'warning');
+                close();
+                return;
+            }
+            const action = primary.dataset.totpAction || '';
+
+            if (action === 'setup-qr') {
+                const password = (document.getElementById('profileTotpSetupPassword')?.value || '').trim();
+                if (!password) {
+                    showNotification('Enter your password to continue.', 'warning');
+                    return;
+                }
+                primary.disabled = true;
+                primary.textContent = 'Loading…';
+                fetch('/api/user/totp/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: uid, password: password }),
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, data: data };
+                        });
+                    })
+                    .then(function (_ref) {
+                        var ok = _ref.ok;
+                        var data = _ref.data;
+                        primary.disabled = false;
+                        primary.textContent = 'Enable 2FA';
+                        primary.dataset.totpAction = 'setup-confirm';
+                        if (!ok || !data.success) {
+                            showNotification(data.error || 'Could not start setup.', 'error');
+                            primary.textContent = 'Show QR code';
+                            primary.dataset.totpAction = 'setup-qr';
+                            return;
+                        }
+                        const img = document.getElementById('profileTotpQrImg');
+                        if (img && data.qrDataUri) img.src = data.qrDataUri;
+                        const qrBlock = document.getElementById('profileTotpQrBlock');
+                        const lead = document.getElementById('profileTotpSetupLead');
+                        if (lead) lead.hidden = true;
+                        if (qrBlock) qrBlock.hidden = false;
+                        const codeEl = document.getElementById('profileTotpConfirmCode');
+                        if (codeEl) codeEl.focus();
+                    })
+                    .catch(function () {
+                        primary.disabled = false;
+                        primary.textContent = 'Show QR code';
+                        primary.dataset.totpAction = 'setup-qr';
+                        showNotification('Could not reach the server.', 'error');
+                    });
+                return;
+            }
+
+            if (action === 'setup-confirm') {
+                const code = (document.getElementById('profileTotpConfirmCode')?.value || '').replace(/\D/g, '');
+                if (code.length !== 6) {
+                    showNotification('Enter the 6-digit code from your app.', 'warning');
+                    return;
+                }
+                primary.disabled = true;
+                primary.textContent = 'Enabling…';
+                fetch('/api/user/totp/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: uid, code: code }),
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, data: data };
+                        });
+                    })
+                    .then(function (_ref2) {
+                        var ok2 = _ref2.ok;
+                        var data2 = _ref2.data;
+                        primary.disabled = false;
+                        primary.textContent = 'Enable 2FA';
+                        if (!ok2 || !data2.success) {
+                            showNotification(data2.error || 'Invalid code.', 'error');
+                            return;
+                        }
+                        mergeDiariUserIntoStorage(data2.user);
+                        hydrateSecurity2fa();
+                        initializeProfileFromStorage();
+                        showNotification('Two-factor authentication is enabled.', 'success');
+                        resetTotpModal();
+                    })
+                    .catch(function () {
+                        primary.disabled = false;
+                        primary.textContent = 'Enable 2FA';
+                        showNotification('Could not reach the server.', 'error');
+                    });
+                return;
+            }
+
+            if (action === 'disable') {
+                const password = (document.getElementById('profileTotpDisablePassword')?.value || '').trim();
+                const code = (document.getElementById('profileTotpDisableCode')?.value || '').replace(/\D/g, '');
+                if (!password || code.length !== 6) {
+                    showNotification('Enter your password and a 6-digit code.', 'warning');
+                    return;
+                }
+                primary.disabled = true;
+                primary.textContent = 'Disabling…';
+                fetch('/api/user/totp/disable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: uid, password: password, code: code }),
+                })
+                    .then(function (res) {
+                        return res.json().then(function (data) {
+                            return { ok: res.ok, data: data };
+                        });
+                    })
+                    .then(function (_ref3) {
+                        var ok3 = _ref3.ok;
+                        var data3 = _ref3.data;
+                        primary.disabled = false;
+                        primary.textContent = 'Disable 2FA';
+                        if (!ok3 || !data3.success) {
+                            showNotification(data3.error || 'Could not disable 2FA.', 'error');
+                            return;
+                        }
+                        mergeDiariUserIntoStorage(data3.user);
+                        hydrateSecurity2fa();
+                        initializeProfileFromStorage();
+                        showNotification('Two-factor authentication is disabled.', 'success');
+                        resetTotpModal();
+                    })
+                    .catch(function () {
+                        primary.disabled = false;
+                        primary.textContent = 'Disable 2FA';
+                        showNotification('Could not reach the server.', 'error');
+                    });
+            }
+        });
+    }
+}
+
 function savePersonalInfoForm() {
     let user = null;
     try {
@@ -290,6 +573,29 @@ function initializeAccountDetailPanels() {
     if (np) {
         np.addEventListener('input', function () {
             updatePasswordStrengthMeter(np.value);
+        });
+    }
+
+    wireProfileTotpModal();
+    const totpToggle = document.getElementById('profileSec2faToggle');
+    if (totpToggle && !totpToggle.dataset.wired) {
+        totpToggle.dataset.wired = '1';
+        totpToggle.addEventListener('change', function () {
+            if (totpToggle.dataset.hydrating === '1') return;
+            const wantOn = totpToggle.checked;
+            const user = getStoredDiariUser();
+            if (!user || !user.id) {
+                showNotification('Sign in to manage two-factor authentication.', 'warning');
+                totpToggle.checked = false;
+                return;
+            }
+            if (wantOn) {
+                totpToggle.checked = false;
+                openTotpSetupModal();
+            } else {
+                totpToggle.checked = true;
+                openTotpDisableModal();
+            }
         });
     }
 }
@@ -701,6 +1007,7 @@ function openProfileSection(sectionKey) {
     }
     if (sectionKey === 'security') {
         clearSecurityForm();
+        hydrateSecurity2fa();
     }
 }
 

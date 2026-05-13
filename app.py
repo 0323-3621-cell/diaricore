@@ -7,9 +7,13 @@ import os
 import json
 import uuid
 import random
+import urllib.parse
+import io
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 
+import pyotp
+import segno
 from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
@@ -281,12 +285,42 @@ def entry_created_at_iso_utc(created_at):
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _truthy_db_flag(v) -> bool:
+    if v is None:
+        return False
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return int(v) != 0
+    s = str(v).strip().lower()
+    return s in ("1", "true", "t", "yes", "on")
+
+
+def _normalize_totp_code(raw) -> str:
+    return "".join(c for c in str(raw or "") if c.isdigit())
+
+
+def _verify_totp_code(secret: str, code: str) -> bool:
+    s = (secret or "").strip()
+    digits = _normalize_totp_code(code)
+    if not s or len(digits) != 6:
+        return False
+    return bool(pyotp.TOTP(s).verify(digits, valid_window=1))
+
+
+def _totp_qr_data_uri(otpauth_url: str) -> str:
+    buf = io.BytesIO()
+    segno.make(otpauth_url).save(buf, kind="svg", scale=3, border=1, xmldecl=False)
+    svg = buf.getvalue().decode("utf-8")
+    return "data:image/svg+xml;charset=utf-8," + urllib.parse.quote(svg)
+
+
 def serialize_user(row):
     if not row:
         return None
     out = {}
     for k, v in row.items():
-        if k == "password_hash":
+        if k in ("password_hash", "totp_secret", "totp_setup_secret", "totp_setup_expires"):
             continue
         out[k] = _serialize_value(v)
     # camelCase for frontend localStorage parity
@@ -300,6 +334,7 @@ def serialize_user(row):
         "gender": out.get("gender"),
         "birthday": out.get("birthday"),
         "createdAt": out.get("created_at"),
+        "totpEnabled": _truthy_db_flag(out.get("totp_enabled")),
     }
     av = out.get("avatar_data_url")
     if isinstance(av, str) and av.strip():
@@ -543,7 +578,133 @@ def api_login():
         return jsonify({"success": False, "error": result}), 401
 
     session.pop("is_admin", None)
+
+    if _truthy_db_flag(result.get("totp_enabled")) and (result.get("totp_secret") or "").strip():
+        token = db.create_login_totp_challenge(int(result["id"]))
+        if not token:
+            return jsonify({"success": False, "error": "Could not start two-factor sign-in. Please try again."}), 500
+        return jsonify({"success": True, "requiresTwoFactor": True, "challengeToken": token}), 200
+
     return jsonify({"success": True, "user": serialize_user(result)}), 200
+
+
+@app.route("/api/login/totp", methods=["POST"])
+def api_login_totp():
+    data = request.get_json(silent=True) or {}
+    challenge_token = (data.get("challengeToken") or "").strip()
+    code = data.get("code") or ""
+    if not challenge_token or not code:
+        return jsonify({"success": False, "error": "Verification code is required."}), 400
+
+    user_id = db.peek_login_totp_challenge_user_id(challenge_token)
+    if not user_id:
+        return jsonify({"success": False, "error": "This sign-in step expired. Please sign in again."}), 401
+
+    user = db.get_user_by_id(user_id)
+    if not user or not _truthy_db_flag(user.get("totp_enabled")):
+        db.delete_login_totp_challenge(challenge_token)
+        return jsonify({"success": False, "error": "Two-factor authentication is not active for this account."}), 400
+
+    secret = (user.get("totp_secret") or "").strip()
+    if not secret or not _verify_totp_code(secret, code):
+        return jsonify({"success": False, "error": "Invalid authentication code."}), 401
+
+    db.delete_login_totp_challenge(challenge_token)
+    out = {k: v for k, v in user.items() if k != "password_hash"}
+    return jsonify({"success": True, "user": serialize_user(out)}), 200
+
+
+@app.route("/api/user/totp/setup", methods=["POST"])
+def api_user_totp_setup():
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        user_id = 0
+    password = data.get("password") or ""
+    if user_id <= 0 or not password:
+        return jsonify({"success": False, "error": "User ID and password are required."}), 400
+
+    if not db.verify_user_password_by_id(user_id, password):
+        return jsonify({"success": False, "error": "Incorrect password."}), 401
+
+    user = db.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not found."}), 404
+    if _truthy_db_flag(user.get("totp_enabled")) and (user.get("totp_secret") or "").strip():
+        return jsonify({"success": False, "error": "Two-factor authentication is already enabled."}), 400
+
+    secret = pyotp.random_base32()
+    if not db.set_totp_setup_pending(user_id, secret):
+        return jsonify({"success": False, "error": "Could not start authenticator setup."}), 500
+
+    label = (user.get("email") or user.get("nickname") or str(user_id)).strip()
+    otpauth_url = pyotp.TOTP(secret).provisioning_uri(name=label, issuer_name="DiariCore")
+    return jsonify(
+        {
+            "success": True,
+            "otpauthUrl": otpauth_url,
+            "qrDataUri": _totp_qr_data_uri(otpauth_url),
+        }
+    ), 200
+
+
+@app.route("/api/user/totp/confirm", methods=["POST"])
+def api_user_totp_confirm():
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        user_id = 0
+    code = data.get("code") or ""
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    pending = db.get_totp_setup_pending_secret(user_id)
+    if not pending:
+        return jsonify({"success": False, "error": "No pending authenticator setup. Start setup again."}), 400
+
+    if not _verify_totp_code(pending, code):
+        return jsonify({"success": False, "error": "Invalid code. Check the time on your phone and try again."}), 400
+
+    if not db.commit_totp_secret_enabled(user_id, pending):
+        return jsonify({"success": False, "error": "Could not enable two-factor authentication."}), 500
+
+    row = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row)}), 200
+
+
+@app.route("/api/user/totp/disable", methods=["POST"])
+def api_user_totp_disable():
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        user_id = 0
+    password = data.get("password") or ""
+    code = data.get("code") or ""
+    if user_id <= 0 or not password or not code:
+        return jsonify({"success": False, "error": "Password and authenticator code are required."}), 400
+
+    if not db.verify_user_password_by_id(user_id, password):
+        return jsonify({"success": False, "error": "Incorrect password."}), 401
+
+    user = db.get_user_by_id(user_id)
+    if not user or not _truthy_db_flag(user.get("totp_enabled")):
+        return jsonify({"success": False, "error": "Two-factor authentication is not enabled."}), 400
+
+    secret = (user.get("totp_secret") or "").strip()
+    if not secret or not _verify_totp_code(secret, code):
+        return jsonify({"success": False, "error": "Invalid authentication code."}), 401
+
+    if not db.disable_totp_for_user(user_id):
+        return jsonify({"success": False, "error": "Could not disable two-factor authentication."}), 500
+
+    row = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row)}), 200
 
 
 @app.route("/api/user/avatar", methods=["POST"])

@@ -5,13 +5,23 @@ DiariCore database layer — same pattern as AnemoCheck: PostgreSQL on Railway
 
 import os
 import json
+import secrets
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
 USE_POSTGRES = bool(os.environ.get("DATABASE_URL"))
 SQLITE_PATH = os.environ.get("DATABASE_PATH", "diaricore.db")
+
+# Columns for auth-related user reads (includes TOTP secrets — never expose to client except via app serializers).
+_USER_AUTH_SELECT = (
+    "id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url, "
+    "totp_secret, totp_enabled, totp_setup_secret, totp_setup_expires"
+)
+_USER_PUBLIC_SELECT = (
+    "id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled"
+)
 
 
 def _connect_postgres():
@@ -97,6 +107,76 @@ def _ensure_user_avatar_column(cur):
         cols = [r[1] for r in cur.fetchall()]
         if "avatar_data_url" not in cols:
             cur.execute("ALTER TABLE users ADD COLUMN avatar_data_url TEXT")
+
+
+def _ensure_user_totp_columns(cur):
+    """TOTP (Google Authenticator) storage on users."""
+    if USE_POSTGRES:
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_setup_secret TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_setup_expires TIMESTAMP")
+    else:
+        cur.execute("PRAGMA table_info(users)")
+        cols = {str(r[1]).lower() for r in (cur.fetchall() or [])}
+        if "totp_secret" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN totp_secret TEXT")
+        if "totp_enabled" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0")
+        if "totp_setup_secret" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN totp_setup_secret TEXT")
+        if "totp_setup_expires" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN totp_setup_expires TEXT")
+
+
+def _ensure_login_totp_challenges_table(cur):
+    if USE_POSTGRES:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS login_totp_challenges (
+                token VARCHAR(128) PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                expires_at TIMESTAMP NOT NULL
+            );
+            """
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_login_totp_challenges_user_id ON login_totp_challenges (user_id);"
+        )
+    else:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS login_totp_challenges (
+                token TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                expires_at TEXT NOT NULL,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_login_totp_challenges_user_id ON login_totp_challenges (user_id);")
+
+
+def _parse_expires_at(val):
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        dt = val
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    s = str(val).strip()
+    if not s:
+        return None
+    if s.endswith("Z") or s.endswith("z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def row_to_dict(row):
@@ -268,6 +348,8 @@ def init_db():
         _ensure_journal_updated_at_column(cur)
         _ensure_user_tags_icon_column(cur)
         _ensure_user_avatar_column(cur)
+        _ensure_user_totp_columns(cur)
+        _ensure_login_totp_challenges_table(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -441,12 +523,12 @@ def get_user_by_email(email: str):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE email = %s",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE email = %s",
                 (email.lower().strip(),),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(email) = ?",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE lower(email) = ?",
                 (email.lower().strip(),),
             )
         return row_to_dict(cur.fetchone())
@@ -460,12 +542,12 @@ def get_user_by_nickname(nickname: str):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(nickname) = %s",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE lower(nickname) = %s",
                 (nickname.lower().strip(),),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE lower(nickname) = ?",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE lower(nickname) = ?",
                 (nickname.lower().strip(),),
             )
         return row_to_dict(cur.fetchone())
@@ -483,12 +565,12 @@ def get_user_by_id(user_id: int):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = %s",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE id = %s",
                 (user_id,),
             )
         else:
             cur.execute(
-                "SELECT id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
+                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE id = ?",
                 (user_id,),
             )
         return row_to_dict(cur.fetchone())
@@ -547,7 +629,7 @@ def create_user(
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled
                 """,
                 (nickname_norm, email_norm, password_hash, first_name.strip(), last_name.strip(), gender, birthday),
             )
@@ -575,7 +657,7 @@ def create_user(
             uid = cur.lastrowid
             conn.commit()
             cur.execute(
-                "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
+                "SELECT " + _USER_PUBLIC_SELECT + " FROM users WHERE id = ?",
                 (uid,),
             )
             u = row_to_dict(cur.fetchone())
@@ -727,7 +809,7 @@ def create_user_from_pending(pending: dict):
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled
                 """,
                 (
                     (pending.get("nickname") or "").strip(),
@@ -760,7 +842,7 @@ def create_user_from_pending(pending: dict):
         uid = cur.lastrowid
         conn.commit()
         cur.execute(
-            "SELECT id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url FROM users WHERE id = ?",
+            "SELECT " + _USER_PUBLIC_SELECT + " FROM users WHERE id = ?",
             (uid,),
         )
         return True, row_to_dict(cur.fetchone())
@@ -822,6 +904,242 @@ def set_system_setting(key: str, value: str):
             )
         conn.commit()
         return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def verify_user_password_by_id(user_id: int, password: str) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not password:
+        return False
+    user = get_user_by_id(user_id)
+    if not user or not user.get("password_hash"):
+        return False
+    return check_password_hash(user["password_hash"], password)
+
+
+def create_login_totp_challenge(user_id: int) -> str | None:
+    if not isinstance(user_id, int) or user_id <= 0:
+        return None
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + timedelta(minutes=5)
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM login_totp_challenges WHERE user_id = %s", (user_id,))
+            cur.execute(
+                "INSERT INTO login_totp_challenges (token, user_id, expires_at) VALUES (%s, %s, %s)",
+                (token, user_id, expires),
+            )
+        else:
+            cur.execute("DELETE FROM login_totp_challenges WHERE user_id = ?", (user_id,))
+            cur.execute(
+                "INSERT INTO login_totp_challenges (token, user_id, expires_at) VALUES (?, ?, ?)",
+                (token, user_id, expires.isoformat()),
+            )
+        conn.commit()
+        return token
+    except Exception:
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
+
+
+def peek_login_totp_challenge_user_id(token: str) -> int | None:
+    raw = (token or "").strip()
+    if len(raw) < 8:
+        return None
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "SELECT user_id, expires_at FROM login_totp_challenges WHERE token = %s",
+                (raw,),
+            )
+        else:
+            cur.execute(
+                "SELECT user_id, expires_at FROM login_totp_challenges WHERE token = ?",
+                (raw,),
+            )
+        row = row_to_dict(cur.fetchone())
+        if not row:
+            return None
+        exp = _parse_expires_at(row.get("expires_at"))
+        now = datetime.now(timezone.utc)
+        if exp is None or now > exp:
+            if USE_POSTGRES:
+                cur.execute("DELETE FROM login_totp_challenges WHERE token = %s", (raw,))
+            else:
+                cur.execute("DELETE FROM login_totp_challenges WHERE token = ?", (raw,))
+            conn.commit()
+            return None
+        uid = int(row["user_id"])
+        return uid if uid > 0 else None
+    finally:
+        conn.close()
+
+
+def delete_login_totp_challenge(token: str) -> None:
+    raw = (token or "").strip()
+    if not raw:
+        return
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM login_totp_challenges WHERE token = %s", (raw,))
+        else:
+            cur.execute("DELETE FROM login_totp_challenges WHERE token = ?", (raw,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def set_totp_setup_pending(user_id: int, secret: str) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not secret:
+        return False
+    expires = datetime.now(timezone.utc) + timedelta(minutes=15)
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_setup_secret = %s, totp_setup_expires = %s
+                WHERE id = %s
+                """,
+                (secret.strip(), expires, user_id),
+            )
+        else:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_setup_secret = ?, totp_setup_expires = ?
+                WHERE id = ?
+                """,
+                (secret.strip(), expires.isoformat(), user_id),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def clear_totp_setup_pending(user_id: int) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "UPDATE users SET totp_setup_secret = NULL, totp_setup_expires = NULL WHERE id = %s",
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                "UPDATE users SET totp_setup_secret = NULL, totp_setup_expires = NULL WHERE id = ?",
+                (user_id,),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def get_totp_setup_pending_secret(user_id: int) -> str | None:
+    u = get_user_by_id(user_id)
+    if not u:
+        return None
+    sec = u.get("totp_setup_secret")
+    if not sec or not str(sec).strip():
+        return None
+    exp = _parse_expires_at(u.get("totp_setup_expires"))
+    now = datetime.now(timezone.utc)
+    if exp is None or now > exp:
+        clear_totp_setup_pending(user_id)
+        return None
+    return str(sec).strip()
+
+
+def commit_totp_secret_enabled(user_id: int, secret: str) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not secret:
+        return False
+    s = secret.strip()
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_secret = %s, totp_enabled = TRUE,
+                    totp_setup_secret = NULL, totp_setup_expires = NULL
+                WHERE id = %s
+                """,
+                (s, user_id),
+            )
+        else:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_secret = ?, totp_enabled = 1,
+                    totp_setup_secret = NULL, totp_setup_expires = NULL
+                WHERE id = ?
+                """,
+                (s, user_id),
+            )
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def disable_totp_for_user(user_id: int) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_secret = NULL, totp_enabled = FALSE,
+                    totp_setup_secret = NULL, totp_setup_expires = NULL
+                WHERE id = %s
+                """,
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                """
+                UPDATE users
+                SET totp_secret = NULL, totp_enabled = 0,
+                    totp_setup_secret = NULL, totp_setup_expires = NULL
+                WHERE id = ?
+                """,
+                (user_id,),
+            )
+        conn.commit()
+        return cur.rowcount > 0
     except Exception:
         conn.rollback()
         return False

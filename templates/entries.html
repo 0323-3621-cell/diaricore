@@ -234,12 +234,19 @@
                                 <aside class="entry-view-images-aside" id="entryViewImagesAside" hidden aria-label="Entry photos">
                                     <div class="entry-view-image-strip" id="entryViewImageStrip">
                                         <p class="entry-view-image-strip__badge" id="entryViewImageStripBadge" hidden></p>
-                                        <div class="entry-view-image-strip__scroll" id="entryViewImageStripScroll"></div>
-                                        <div class="entry-view-image-strip__fade" id="entryViewImageStripFade" hidden aria-hidden="true"></div>
-                                        <button type="button" class="entry-view-image-strip__add" id="entryViewImageStripAddBtn" hidden>
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                                            <span>Add photos</span>
-                                        </button>
+                                        <div class="entry-view-image-strip__stack">
+                                            <div class="entry-view-image-strip__viewport">
+                                                <div class="entry-view-image-strip__scroll diari-scrollbar" id="entryViewImageStripScroll"></div>
+                                                <div class="entry-view-image-strip__fade" id="entryViewImageStripFade" hidden aria-hidden="true"></div>
+                                            </div>
+                                            <div class="entry-view-image-strip__sticky">
+                                                <button type="button" class="entry-view-image-strip__add" id="entryViewImageStripAddBtn" hidden>
+                                                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                                    <span>Add photos</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="entry-view-image-strip__spacer" aria-hidden="true"></div>
                                     </div>
                                 </aside>
                             </div>

@@ -380,6 +380,7 @@
 
 .entry-gallery-scroll {
     --g-gap: 0.36rem;
+    /* Cell ≈ column width; row height matches (square thumbs). Cap viewport to 3 rows (6 images). */
     --g-cell: calc((100% - var(--g-gap)) / 2);
     --g-viewport-h: calc(3 * var(--g-cell) + 2 * var(--g-gap));
     flex: 0 0 auto;
@@ -398,12 +399,21 @@
     box-sizing: border-box;
 }
 
+@supports (width: 1cqi) {
+    .entry-gallery-scroll {
+        container-type: inline-size;
+        --g-cell: calc((100cqi - var(--g-gap)) / 2);
+    }
+}
+
 .entry-gallery-scroll .entry-gallery {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
+    height: 100%;
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     border: none;
     border-radius: 0;
     background: transparent;

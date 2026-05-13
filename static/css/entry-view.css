@@ -842,12 +842,21 @@ html.theme-dark .entry-view-actions {
     box-sizing: border-box;
 }
 
+@supports (width: 1cqi) {
+    .entry-view-image-strip__viewport {
+        container-type: inline-size;
+        --g-cell: calc((100cqi - var(--g-gap)) / 2);
+    }
+}
+
 .entry-view-image-strip__scroll {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
+    height: 100%;
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     scroll-behavior: smooth;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;

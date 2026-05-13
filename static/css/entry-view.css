@@ -647,7 +647,6 @@ html.theme-dark .entry-view-toolbar__cancel {
 .entry-delete-dialog__preview-mood {
     display: inline-flex;
     align-items: center;
-    gap: 0.28rem;
     padding: 0.18rem 0.55rem;
     border-radius: 999px;
     font-size: 0.72rem;
@@ -656,8 +655,8 @@ html.theme-dark .entry-view-toolbar__cancel {
     color: var(--del-mood-fg);
 }
 
-.entry-delete-dialog__preview-mood .bi {
-    font-size: 0.62rem;
+.entry-delete-dialog__preview-mood #entryDeletePreviewMoodLabel {
+    line-height: 1.2;
 }
 
 .entry-delete-dialog__section--actions {

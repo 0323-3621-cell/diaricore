@@ -268,12 +268,34 @@
      * Stored URLs may be absolute (old deploy host). Uploads always live on this origin under /uploads/.
      */
     function normalizeDiariMediaUrl(raw) {
-        const s = String(raw || '').trim();
-        if (!s || s.startsWith('data:') || s.startsWith('blob:')) return s;
-        if (s.startsWith('/')) return s;
+        const s0 = String(raw || '').trim();
+        if (!s0 || s0.startsWith('data:') || s0.startsWith('blob:')) return s0;
+
+        function rewriteFilesystemUploadPath(pathname) {
+            const p = pathname || '';
+            if (p.startsWith('/static/img/uploads/')) return `/uploads/${p.slice('/static/img/uploads/'.length)}`;
+            if (p.startsWith('/img/uploads/')) return `/uploads/${p.slice('/img/uploads/'.length)}`;
+            return pathname;
+        }
+
+        let s = s0;
+        if (s.startsWith('/')) {
+            const pathEnd = Math.min(
+                ...[s.indexOf('?'), s.indexOf('#')].map((i) => (i < 0 ? s.length : i))
+            );
+            const pathOnly = s.slice(0, pathEnd);
+            const rest = s.slice(pathEnd);
+            const rw = rewriteFilesystemUploadPath(pathOnly);
+            if (rw !== pathOnly) s = rw + rest;
+            return s;
+        }
         if (s.startsWith('//')) {
             try {
                 const abs = new URL(`${window.location.protocol}${s}`);
+                const path = rewriteFilesystemUploadPath(abs.pathname);
+                if (path.startsWith('/uploads/')) {
+                    return `${path}${abs.search}${abs.hash}`;
+                }
                 if (abs.pathname.startsWith('/uploads/')) {
                     return `${abs.pathname}${abs.search}${abs.hash}`;
                 }
@@ -284,6 +306,10 @@
         }
         try {
             const abs = new URL(s);
+            const path = rewriteFilesystemUploadPath(abs.pathname);
+            if (path.startsWith('/uploads/')) {
+                return `${path}${abs.search}${abs.hash}`;
+            }
             if (abs.pathname.startsWith('/uploads/')) {
                 return `${abs.pathname}${abs.search}${abs.hash}`;
             }
@@ -291,6 +317,10 @@
         } catch {
             try {
                 const rel = new URL(s, window.location.origin);
+                const path = rewriteFilesystemUploadPath(rel.pathname);
+                if (path.startsWith('/uploads/')) {
+                    return `${path}${rel.search}${rel.hash}`;
+                }
                 if (rel.pathname.startsWith('/uploads/')) {
                     return `${rel.pathname}${rel.search}${rel.hash}`;
                 }
@@ -425,7 +455,9 @@
         const columnsEl = document.getElementById('entryViewColumns');
         const imagesAside = document.getElementById('entryViewImagesAside');
         const imageStripScroll = document.getElementById('entryViewImageStripScroll');
-        const imageStripViewport = document.querySelector('.entry-view-image-strip__viewport');
+        const imageStripViewport =
+            (imagesAside && imagesAside.querySelector('.entry-view-image-strip__viewport')) ||
+            document.querySelector('.entry-view-image-strip__viewport');
         const imageStripBadge = document.getElementById('entryViewImageStripBadge');
         const imageStripFade = document.getElementById('entryViewImageStripFade');
         const imageStripAddBtn = document.getElementById('entryViewImageStripAddBtn');
@@ -570,7 +602,9 @@
 
         function stripDisplayItems() {
             if (editMode) return editorImages;
-            return imageItemsFromUrls(readModeStripUrls());
+            const fromBaseline = imageItemsFromUrls(readModeStripUrls());
+            if (fromBaseline.length) return fromBaseline;
+            return editorImages;
         }
 
         function updateStripFade() {
@@ -596,9 +630,11 @@
                 gapPx = parseFloat(gcs.columnGap) || parseFloat(gcs.gap) || gapPx;
             }
             const cell = Math.max(0, (innerW - gapPx) / 2);
+            /** Avoid --gallery-viewport-px: 0 when the shell is display:none (inline entries mount); use CSS fallback. */
+            const layoutUsable = innerW >= 32;
 
             if (!n) {
-                if (editMode) {
+                if (editMode && layoutUsable && cell >= 40) {
                     const h = cell;
                     imageStripViewport.style.setProperty('--gallery-viewport-px', `${Math.round(h * 100) / 100}px`);
                 } else {
@@ -610,8 +646,32 @@
 
             const rows = 3;
             const h = rows * cell + (rows - 1) * gapPx;
-            imageStripViewport.style.setProperty('--gallery-viewport-px', `${Math.round(h * 100) / 100}px`);
+            if (layoutUsable && h >= 96) {
+                imageStripViewport.style.setProperty('--gallery-viewport-px', `${Math.round(h * 100) / 100}px`);
+            } else {
+                imageStripViewport.style.removeProperty('--gallery-viewport-px');
+            }
             imageStripScroll.classList.toggle('entry-view-image-strip--overflow', n > 6);
+        }
+
+        let stripResizeObserver = null;
+        if (typeof ResizeObserver !== 'undefined' && imageStripViewport) {
+            stripResizeObserver = new ResizeObserver(() => {
+                if (signal.aborted) return;
+                syncEntryStripViewportPx();
+                updateStripFade();
+            });
+            stripResizeObserver.observe(imageStripViewport);
+            signal.addEventListener(
+                'abort',
+                () => {
+                    try {
+                        stripResizeObserver?.disconnect();
+                    } catch (_) {}
+                    stripResizeObserver = null;
+                },
+                { once: true }
+            );
         }
 
         function serializeImagesForStorage() {
@@ -710,9 +770,6 @@
                         requestAnimationFrame(trySync);
                         window.setTimeout(trySync, 80);
                         window.setTimeout(trySync, 400);
-                        if (typeof img.decode === 'function') {
-                            img.decode().then(trySync).catch(() => {});
-                        }
                     }
 
                     wrap.appendChild(imgWrap);

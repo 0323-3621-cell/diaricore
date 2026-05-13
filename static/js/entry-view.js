@@ -2007,7 +2007,30 @@
             }
         }
 
-        saveAnalyzeBtn.addEventListener('click', () => runSave(didTextChangeFromBaseline()), { signal });
+        saveAnalyzeBtn.addEventListener(
+            'click',
+            async () => {
+                const shouldReanalyze = didTextChangeFromBaseline();
+                if (shouldReanalyze) {
+                    void runSave(true);
+                    return;
+                }
+                if (!isDirty()) return;
+                global.DiariMoodAnalysis.resetSession();
+                const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
+                try {
+                    await global.DiariMoodAnalysis.primeEntryUpdateEditingLottie();
+                } catch (_) {}
+                global.DiariMoodAnalysis.showEntryUpdateLoading(overlay);
+                try {
+                    await runSave(false);
+                } finally {
+                    // If save succeeded, baseline is updated and overlay can close.
+                    global.DiariMoodAnalysis.hideAnalysisOverlay(overlay);
+                }
+            },
+            { signal }
+        );
 
         saveAnalyzeBtn.disabled = false;
 

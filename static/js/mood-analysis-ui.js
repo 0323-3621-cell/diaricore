@@ -8,6 +8,7 @@
     const MOOD_ANALYSIS_TOTAL_MS = 8000;
     const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 1200;
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json';
+    const ENTRY_UPDATE_EDITING_LOTTIE_SRC = '/noto-emoji/editing.json';
 
     let moodAnalysisLoadingShownAt = 0;
     let moodAnalysisBookReadyAt = null;
@@ -15,6 +16,11 @@
     let moodAnalysisBookMountEl = null;
     let moodAnalysisBookAnim = null;
     let moodAnalysisBookPrimePromise = null;
+
+    let entryUpdateEditingReadyAt = null;
+    let entryUpdateEditingMountEl = null;
+    let entryUpdateEditingAnim = null;
+    let entryUpdateEditingPrimePromise = null;
 
     function clearMoodAnalysisProgressTimer() {
         if (moodAnalysisProgressTimer != null) {
@@ -90,6 +96,47 @@
         return moodAnalysisBookPrimePromise;
     }
 
+    function primeEntryUpdateEditingLottie() {
+        if (entryUpdateEditingPrimePromise) return entryUpdateEditingPrimePromise;
+        entryUpdateEditingPrimePromise = (async () => {
+            if (typeof global.lottie === 'undefined' || typeof global.lottie.loadAnimation !== 'function') {
+                console.warn('Editing-Loader: lottie-web not loaded');
+                return null;
+            }
+            if (entryUpdateEditingMountEl && entryUpdateEditingAnim) return entryUpdateEditingAnim;
+            try {
+                const res = await fetch(ENTRY_UPDATE_EDITING_LOTTIE_SRC, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const pool = getMoodAnalysisBookPool();
+                const mount = document.createElement('div');
+                mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
+                mount.setAttribute('aria-hidden', 'true');
+                pool.appendChild(mount);
+                entryUpdateEditingMountEl = mount;
+                const anim = global.lottie.loadAnimation({
+                    container: mount,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: data,
+                });
+                entryUpdateEditingAnim = anim;
+                anim.addEventListener('DOMLoaded', () => {
+                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
+                });
+                requestAnimationFrame(() => {
+                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
+                });
+                return anim;
+            } catch (e) {
+                console.warn('Editing-Loader preload:', e);
+                return null;
+            }
+        })();
+        return entryUpdateEditingPrimePromise;
+    }
+
     function parkMoodAnalysisBookMount() {
         if (!moodAnalysisBookMountEl) return;
         const pool = getMoodAnalysisBookPool();
@@ -98,6 +145,17 @@
         pool.appendChild(moodAnalysisBookMountEl);
         try {
             if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+        } catch (_) {}
+    }
+
+    function parkEntryUpdateEditingMount() {
+        if (!entryUpdateEditingMountEl) return;
+        const pool = getMoodAnalysisBookPool();
+        entryUpdateEditingMountEl.classList.remove('mood-analysis-book-lottie--in-overlay');
+        entryUpdateEditingMountEl.setAttribute('aria-hidden', 'true');
+        pool.appendChild(entryUpdateEditingMountEl);
+        try {
+            if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
         } catch (_) {}
     }
 
@@ -144,6 +202,7 @@
 
     function showAnalysisLoading(overlay) {
         parkMoodAnalysisBookMount();
+        parkEntryUpdateEditingMount();
         clearMoodAnalysisProgressTimer();
 
         const header = overlay.querySelector('.mood-analysis-card__header');
@@ -228,6 +287,104 @@
                 if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
             } catch (_) {}
         });
+    }
+
+    function showEntryUpdateLoading(overlay) {
+        parkMoodAnalysisBookMount();
+        parkEntryUpdateEditingMount();
+        clearMoodAnalysisProgressTimer();
+
+        const header = overlay.querySelector('.mood-analysis-card__header');
+        const body = overlay.querySelector('#moodAnalysisBody');
+        const footer = overlay.querySelector('.mood-analysis-card__footer');
+        if (header) header.style.display = 'none';
+        body.innerHTML = '';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'mood-analysis-loading mood-analysis-loading--editing';
+
+        const mount = entryUpdateEditingMountEl;
+        if (mount) {
+            mount.classList.add('mood-analysis-book-lottie--in-overlay');
+            mount.removeAttribute('aria-hidden');
+            mount.setAttribute('aria-label', 'Loading animation');
+            wrap.appendChild(mount);
+            try {
+                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.play === 'function') entryUpdateEditingAnim.play();
+                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
+            } catch (_) {}
+        }
+
+        const titleEl = document.createElement('h4');
+        titleEl.className = 'mood-analysis-loading__title';
+        titleEl.textContent = 'Updating your entry...';
+
+        const subEl = document.createElement('p');
+        subEl.className = 'mood-analysis-loading__subtitle';
+        subEl.textContent = 'Read and update new Title, Tags, or Images...';
+
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'mood-analysis-progress';
+        progressWrap.setAttribute('role', 'progressbar');
+        progressWrap.setAttribute('aria-valuemin', '0');
+        progressWrap.setAttribute('aria-valuemax', '100');
+        progressWrap.setAttribute('aria-valuenow', '0');
+        progressWrap.setAttribute('aria-label', 'Update progress');
+
+        const progressTrack = document.createElement('div');
+        progressTrack.className = 'mood-analysis-progress__track';
+
+        const progressFill = document.createElement('div');
+        progressFill.className = 'mood-analysis-progress__fill';
+
+        progressTrack.appendChild(progressFill);
+        progressWrap.appendChild(progressTrack);
+
+        const progressPct = document.createElement('span');
+        progressPct.className = 'mood-analysis-progress__pct';
+        progressPct.textContent = '0%';
+        progressWrap.appendChild(progressPct);
+
+        wrap.appendChild(titleEl);
+        wrap.appendChild(subEl);
+        wrap.appendChild(progressWrap);
+        body.appendChild(wrap);
+
+        overlay.querySelector('.mood-analysis-card')?.classList.remove('mood-analysis-card--result');
+        overlay.querySelector('.mood-analysis-card')?.classList.add('mood-analysis-card--analyzing');
+
+        footer.style.display = 'none';
+        overlay.hidden = false;
+        moodAnalysisLoadingShownAt = Date.now();
+
+        const totalMs = MOOD_ANALYSIS_TOTAL_MS;
+        const progressStart = Date.now();
+        moodAnalysisProgressTimer = setInterval(() => {
+            const elapsed = Date.now() - progressStart;
+            const pct = Math.min(100, Math.round((elapsed / totalMs) * 100));
+            progressPct.textContent = `${pct}%`;
+            progressWrap.setAttribute('aria-valuenow', String(pct));
+            if (pct >= 100) clearMoodAnalysisProgressTimer();
+        }, 80);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                progressFill.style.transition = `width ${totalMs}ms linear`;
+                progressFill.style.width = '100%';
+            });
+            try {
+                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
+            } catch (_) {}
+        });
+    }
+
+    function hideAnalysisOverlay(overlay) {
+        const ov = overlay || document.getElementById('moodAnalysisOverlay');
+        if (!ov) return;
+        clearMoodAnalysisProgressTimer();
+        parkMoodAnalysisBookMount();
+        parkEntryUpdateEditingMount();
+        ov.hidden = true;
     }
 
     async function delayUntilMoodAnalysisGate() {
@@ -435,9 +592,12 @@
         MOOD_ANALYSIS_TOTAL_MS,
         resetSession,
         primeMoodAnalysisBookLottie,
+        primeEntryUpdateEditingLottie,
         ensureAnalysisOverlay,
         showAnalysisLoading,
+        showEntryUpdateLoading,
         delayUntilMoodAnalysisGate,
+        hideAnalysisOverlay,
         showAnalysisResult,
         parkMoodAnalysisBookMount,
     };

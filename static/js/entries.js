@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     initializeEntryCards();
     initializeEntriesPagination();
     initializeEntriesResizeEmptyState();
+    openEntriesDetailFromQuery();
 });
 
 async function syncEntriesFromApi() {
@@ -648,6 +649,11 @@ async function openEntriesDetailInline(entryId) {
         window.location.href = `entry-view.html?id=${encodeURIComponent(String(entryId))}`;
         return;
     }
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('entryId', String(entryId));
+        window.history.replaceState({}, '', url.toString());
+    } catch (_) {}
     list.hidden = true;
     document.body.classList.add('page-entries-detail-open');
     window.scrollTo(0, 0);
@@ -690,10 +696,30 @@ function closeEntriesDetailInline() {
     if (shell) shell.hidden = true;
     if (list) list.hidden = false;
     document.body.classList.remove('page-entries-detail-open');
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('entryId');
+        window.history.replaceState({}, '', url.toString());
+    } catch (_) {}
     if (document.getElementById('entriesGrid')) {
         initializeEntriesFromStorage({ preserveNavigation: true });
         void syncEntriesFilterTagsFromApi();
     }
+}
+
+function openEntriesDetailFromQuery() {
+    try {
+        const url = new URL(window.location.href);
+        const raw = url.searchParams.get('entryId');
+        const id = Number(raw);
+        if (!id) return;
+        // Delay until initial list render is done.
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                openEntriesDetailInline(id);
+            });
+        });
+    } catch (_) {}
 }
 
 // Entry cards: delegated clicks on dynamically rendered grid

@@ -326,18 +326,21 @@ function initializeInsightsHeroTabs() {
     consistency.addEventListener('click', () => activate('consistency'));
 }
 
-/** Pick 0..len-1 from local calendar day so snapshot copy rotates daily but stays deterministic. */
-function snapshotLedeDailyTemplateIndex(len) {
+/** Pick 0..len-1 from calendar day + week (Monday) so copy shifts daily and when the week rolls over. */
+function snapshotLedeTemplateIndex(len, weekly) {
     if (len <= 1) return 0;
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     const epochDays = Math.floor(d.getTime() / 86400000);
-    return ((epochDays % len) + len) % len;
+    const mon = weekly?.monday;
+    const weekEpoch =
+        mon instanceof Date && !Number.isNaN(mon.getTime()) ? Math.floor(mon.getTime() / 86400000) : 0;
+    const mix = epochDays * 31 + weekEpoch * 17 + (Array.isArray(weekly?.labels) ? weekly.labels.length * 3 : 21);
+    return ((mix % len) + len) % len;
 }
 
 /**
- * Templated weekly snapshot ledes — all filled from the same Mon–Sun `weekly` series as the chart.
- * Index rotates by calendar day so wording does not feel identical every visit.
+ * Weekly snapshot ledes — same Mon–Sun `weekly` series as the chart; pool + day/week index keeps copy fresh.
  */
 const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
     (c) =>
@@ -347,7 +350,7 @@ const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
     (c) =>
         `Your check-ins this week center around ${c.avg} / 10 overall, with a ${c.trWord} shift between the first half of logged days and the second.`,
     (c) =>
-        `Across ${c.n} ${c.n === 1 ? 'day' : 'days'} with entries, daily mood averages ${c.avg} / 10, reading ${c.trWord} through the span you captured.`,
+        `Across ${c.n} days with entries, daily mood averages ${c.avg} / 10, reading ${c.trWord} through the span you captured.`,
     (c) =>
         `The moods you logged this week sit near ${c.avg} / 10 on average, showing a ${c.trWord} tilt from earlier journal days to the ones that followed.`,
     (c) =>
@@ -356,6 +359,32 @@ const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
         `Weekly mood from your entries lands around ${c.avg} / 10, with a ${c.trWord} run across the days you journaled.`,
     (c) =>
         `Plotting the days you saved, the week averages ${c.avg} / 10 and carries a ${c.trWord} feel from earlier check-ins to later ones.`,
+    (c) =>
+        c.totalEntries > c.n
+            ? `You left ${c.totalEntries} entries across ${c.n} calendar days; daily mood averages ${c.avg} / 10 with a ${c.trWord} swing from the first batch of notes to the next.`
+            : `Glancing at ${c.n} days with mood data, the week settles near ${c.avg} / 10 and moves in a ${c.trWord} direction from earlier to later logs.`,
+    (c) =>
+        c.rangeCaption
+            ? `Between ${c.rangeCaption}, your logged moods average ${c.avg} / 10 — a ${c.trWord} story from the first half of those days to the second.`
+            : `Your logged moods average ${c.avg} / 10 this week — a ${c.trWord} story from the first half of those days to the second.`,
+    (c) =>
+        c.hasContrast
+            ? `The week still centers near ${c.avg} / 10, with a ${c.trWord} pull across your notes — ${c.bestDay} peaked at ${c.bestScore}/10 while ${c.toughDay} landed softer at ${c.toughScore}/10.`
+            : `The week centers near ${c.avg} / 10, with a ${c.trWord} pull across the ${c.n} days you chose to log.`,
+    (c) =>
+        c.hasContrast && parseFloat(c.spread) >= 1.5
+            ? `There is about a ${c.spread}-point swing between your highest and lowest logged days, yet the week averages ${c.avg} / 10 overall, trending ${c.trWord} from earlier entries to later ones.`
+            : `Mood traces stay clustered enough to average ${c.avg} / 10, while the week still reads ${c.trWord} from first notes toward the last.`,
+    (c) =>
+        `Your line this week hovers near ${c.avg} / 10; the half-and-half read is ${c.trWord} — a different tone at the start of what you logged than by the time you closed the week.`,
+    (c) =>
+        c.hasContrast
+            ? `${c.bestDay} felt like the emotional high note (${c.bestScore}/10) and ${c.toughDay} the low tide (${c.toughScore}/10); between them the week still averages ${c.avg} / 10 and trends ${c.trWord}.`
+            : `Day by day, the thread averages ${c.avg} / 10 and trends ${c.trWord} across what you put on the page.`,
+    (c) =>
+        `Picture the week as ${c.n} stepping stones: together they average ${c.avg} / 10, and the stride between the first stones and the last feels ${c.trWord}.`,
+    (c) =>
+        `If we smooth every mood you captured, we land on ${c.avg} / 10 — not flat, but ${c.trWord} as you move from the opening days you logged toward the finale.`,
 ];
 
 const WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES = [
@@ -365,6 +394,14 @@ const WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES = [
         `Only one mood check-in so far this week — ${c.avg} / 10. A fuller week of notes will make this summary richer.`,
     (c) =>
         `This week's journal shows a single mood snapshot at ${c.avg} / 10; keep logging to trace the arc across more days.`,
+    (c) =>
+        c.totalEntries > 1
+            ? `Several entries landed on the same day, averaging ${c.avg} / 10 — sprinkle moods across more days so this card can stretch its legs.`
+            : `One quiet dot on the calendar (${c.avg} / 10) — give the rest of the week a voice when you can.`,
+    (c) =>
+        c.rangeCaption
+            ? `Across ${c.rangeCaption}, only one day carries a mood score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`
+            : `Only one day carries a mood score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`,
 ];
 
 function updateInsightsSnapshotFromWeekly(weekly) {
@@ -411,15 +448,37 @@ function updateInsightsSnapshotFromWeekly(weekly) {
             const secondAvg = second.length ? second.reduce((a, b) => a + b, 0) / second.length : firstAvg;
             const tr = secondAvg - firstAvg;
             const trWord = tr > 0.08 ? 'lifting' : tr < -0.08 ? 'softening' : 'steady';
-            const ctx = { avg: avgStr, trWord, n };
+            const ec = weekly?.entryCounts;
+            const totalEntries = Array.isArray(ec) ? ec.reduce((s, x) => s + (Number(x) || 0), 0) : 0;
+            const bestDay = bestI >= 0 ? labels[bestI] : '';
+            const toughDay = toughI >= 0 ? labels[toughI] : '';
+            const bestScore = bestI >= 0 ? Number(data[bestI]).toFixed(1) : '';
+            const toughScore = toughI >= 0 ? Number(data[toughI]).toFixed(1) : '';
+            const spreadNum = vals.length ? Math.max(...vals) - Math.min(...vals) : 0;
+            const spreadStr = spreadNum.toFixed(1);
+            const hasContrast = Boolean(bestDay && toughDay && bestI !== toughI);
+            const rangeCaption = weekly?.rangeCaption ? String(weekly.rangeCaption).trim() : '';
+            const ctx = {
+                avg: avgStr,
+                trWord,
+                n,
+                totalEntries,
+                bestDay,
+                toughDay,
+                bestScore,
+                toughScore,
+                spread: spreadStr,
+                hasContrast,
+                rangeCaption,
+            };
 
             if (n < 2) {
                 const pool = WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES;
-                const idx = snapshotLedeDailyTemplateIndex(pool.length);
+                const idx = snapshotLedeTemplateIndex(pool.length, weekly);
                 lede.textContent = pool[idx](ctx);
             } else {
                 const pool = WEEKLY_SNAPSHOT_LEDE_TEMPLATES;
-                const idx = snapshotLedeDailyTemplateIndex(pool.length);
+                const idx = snapshotLedeTemplateIndex(pool.length, weekly);
                 lede.textContent = pool[idx](ctx);
             }
         }

@@ -2,6 +2,7 @@
 let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
 let WEEKLY_DESKTOP_CHART = null;
+let INSIGHTS_CONSISTENCY_CHART = null;
 
 function hexToRgba(hex, alpha) {
     const safe = String(hex || '').trim().replace('#', '');
@@ -141,7 +142,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     await loadEmotionTriggersDashboard();
 
-    renderInsightsConsistencyStrip();
     initializeInsightsHeroTabs();
 });
 
@@ -264,64 +264,242 @@ function weeklyHighlightDayIndex(weekly) {
     return -1;
 }
 
-function countEntriesInRollingDays(days) {
-    const n = Math.max(1, Number(days) || 7);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-    const start = new Date(end);
-    start.setDate(start.getDate() - (n - 1));
-    start.setHours(0, 0, 0, 0);
-    let c = 0;
-    INSIGHTS_ENTRIES.forEach((e) => {
-        if (!e?.date) return;
-        const d = new Date(e.date);
-        if (d >= start && d <= end) c += 1;
-    });
-    return c;
+function localDayStartMs(value) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return NaN;
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
 }
 
-function computeJournalStreakDays() {
-    if (!INSIGHTS_ENTRIES.length) return 0;
+/** Distinct calendar days with at least one entry (local midnight keys). */
+function buildEntryDaySet(entries) {
     const set = new Set();
-    INSIGHTS_ENTRIES.forEach((e) => {
-        if (!e?.date) return;
-        const d = new Date(e.date);
-        d.setHours(0, 0, 0, 0);
-        set.add(d.getTime());
+    entries.forEach((e) => {
+        const raw = e?.date || e?.createdAt;
+        if (!raw) return;
+        const ms = localDayStartMs(raw);
+        if (!Number.isNaN(ms)) set.add(ms);
     });
-    let streak = 0;
-    const cur = new Date();
-    cur.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 400; i += 1) {
-        if (set.has(cur.getTime())) streak += 1;
-        else break;
-        cur.setDate(cur.getDate() - 1);
-    }
-    return streak;
+    return set;
 }
 
-function renderInsightsConsistencyStrip() {
-    const wEl = document.getElementById('insightsConsistencyWeek');
-    const mEl = document.getElementById('insightsConsistencyMonth');
-    const sEl = document.getElementById('insightsConsistencyStreak');
-    if (wEl) wEl.textContent = String(countEntriesInRollingDays(7));
-    if (mEl) mEl.textContent = String(countEntriesInRollingDays(30));
-    if (sEl) sEl.textContent = String(computeJournalStreakDays());
+/**
+ * Consistency tab metrics + last six Mon–Sun weeks (W1 oldest … W6 current), aligned with `mondayStartOfLocalWeek`.
+ */
+function computeConsistencyInsightBundle() {
+    const entries = INSIGHTS_ENTRIES.filter((e) => e && (e.date || e.createdAt));
+    const entryDays = buildEntryDaySet(entries);
+    const totalActiveDays = entryDays.size;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let activeInLast30 = 0;
+    for (let i = 0; i < 30; i += 1) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        if (entryDays.has(d.getTime())) activeInLast30 += 1;
+    }
+    const consistencyRate = Math.round((activeInLast30 / 30) * 100);
+
+    const thisMonday = mondayStartOfLocalWeek(today);
+    const weekLabels = [];
+    const weekCounts = [];
+    for (let w = 0; w < 6; w += 1) {
+        const weekStart = new Date(thisMonday);
+        weekStart.setDate(thisMonday.getDate() - (5 - w) * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        let cnt = 0;
+        entries.forEach((e) => {
+            const raw = e.date || e.createdAt;
+            const dm = localDayStartMs(raw);
+            if (Number.isNaN(dm)) return;
+            if (dm >= weekStart.getTime() && dm < weekEnd.getTime()) cnt += 1;
+        });
+        weekLabels.push(`W${w + 1}`);
+        weekCounts.push(cnt);
+    }
+
+    const sumWeek = weekCounts.reduce((a, b) => a + b, 0);
+    const entriesPerWeek = Math.round((sumWeek / 6) * 10) / 10;
+
+    const hourBuckets = Array.from({ length: 24 }, () => 0);
+    entries.forEach((e) => {
+        const raw = e.createdAt || e.date;
+        if (!raw) return;
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return;
+        hourBuckets[d.getHours()] += 1;
+    });
+    const totalH = hourBuckets.reduce((a, b) => a + b, 0);
+    let peakHour = 0;
+    let peakVal = -1;
+    hourBuckets.forEach((c, h) => {
+        if (c > peakVal) {
+            peakVal = c;
+            peakHour = h;
+        }
+    });
+    let mostActiveTimeLabel = '—';
+    if (totalH > 0 && peakVal >= 0) {
+        const dt = new Date();
+        dt.setHours(peakHour, 0, 0, 0);
+        mostActiveTimeLabel = dt.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    }
+
+    return {
+        totalActiveDays,
+        consistencyRate,
+        entriesPerWeek,
+        mostActiveTimeLabel,
+        weekLabels,
+        weekCounts,
+    };
+}
+
+function destroyInsightsConsistencyChart() {
+    if (INSIGHTS_CONSISTENCY_CHART) {
+        INSIGHTS_CONSISTENCY_CHART.destroy();
+        INSIGHTS_CONSISTENCY_CHART = null;
+    }
+}
+
+function renderInsightsConsistencyPanel() {
+    const bundle = computeConsistencyInsightBundle();
+    const dEl = document.getElementById('insightsConsTotalDays');
+    const rEl = document.getElementById('insightsConsRate');
+    const wEl = document.getElementById('insightsConsEntriesWeek');
+    const tEl = document.getElementById('insightsConsPeakTime');
+    if (dEl) dEl.textContent = String(bundle.totalActiveDays);
+    if (rEl) rEl.textContent = `${bundle.consistencyRate}%`;
+    if (wEl) wEl.textContent = bundle.entriesPerWeek.toFixed(1);
+    if (tEl) tEl.textContent = bundle.mostActiveTimeLabel;
+
+    destroyInsightsConsistencyChart();
+    const canvas = document.getElementById('insightsConsistencyWeekChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const chartTheme = getChartTheme();
+    const maxC = Math.max(...bundle.weekCounts, 0);
+    const suggestedMax = maxC <= 0 ? 6 : Math.max(6, Math.ceil(maxC * 1.08));
+
+    INSIGHTS_CONSISTENCY_CHART = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: bundle.weekLabels,
+            datasets: [
+                {
+                    label: 'Entries',
+                    data: bundle.weekCounts,
+                    backgroundColor: chartTheme.primary,
+                    borderColor: chartTheme.primary,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    barThickness: 36,
+                    maxBarThickness: 48,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 8, bottom: 4, left: 4, right: 4 } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: chartTheme.tooltipBg,
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label(ctx) {
+                            const n = Number(ctx.parsed.y ?? 0);
+                            return `${n} ${n === 1 ? 'entry' : 'entries'}`;
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: chartTheme.tick,
+                        font: { size: 12, weight: '600' },
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                    suggestedMax,
+                    grid: {
+                        color: chartTheme.grid,
+                        borderDash: [5, 5],
+                    },
+                    ticks: {
+                        color: chartTheme.tick,
+                        font: { size: 12, weight: '500' },
+                        maxTicksLimit: 9,
+                    },
+                },
+            },
+            interaction: { intersect: false, mode: 'index' },
+        },
+    });
+}
+
+function insightsHeroSetMode(mode) {
+    const title = document.querySelector('.insights-hero__title');
+    const sub = document.querySelector('.insights-hero__subtitle');
+    if (title && !title.dataset.insightsDefaultTitle) {
+        title.dataset.insightsDefaultTitle = title.textContent.trim();
+    }
+    if (sub && !sub.dataset.insightsDefaultSubtitle) {
+        sub.dataset.insightsDefaultSubtitle = sub.textContent.trim();
+    }
+    if (mode === 'consistency') {
+        if (title) title.textContent = 'Usage Insights';
+        if (sub) sub.textContent = 'Your journaling habits and consistency.';
+    } else {
+        if (title) title.textContent = title.dataset.insightsDefaultTitle || 'Insights & Patterns';
+        if (sub) sub.textContent = sub.dataset.insightsDefaultSubtitle || '';
+    }
 }
 
 function initializeInsightsHeroTabs() {
     const emotions = document.getElementById('insightsTabEmotions');
     const consistency = document.getElementById('insightsTabConsistency');
-    const strip = document.getElementById('insightsConsistencyStrip');
-    if (!emotions || !consistency) return;
+    const panelEmotions = document.getElementById('insightsPanelEmotions');
+    const panelConsistency = document.getElementById('insightsPanelConsistency');
+    if (!emotions || !consistency || !panelEmotions || !panelConsistency) return;
+
     const activate = (which) => {
         const isCons = which === 'consistency';
         emotions.classList.toggle('is-active', !isCons);
         emotions.setAttribute('aria-selected', !isCons ? 'true' : 'false');
         consistency.classList.toggle('is-active', isCons);
         consistency.setAttribute('aria-selected', isCons ? 'true' : 'false');
-        if (strip) strip.hidden = !isCons;
+
+        panelEmotions.classList.toggle('is-active', !isCons);
+        panelEmotions.hidden = isCons;
+        panelConsistency.classList.toggle('is-active', isCons);
+        panelConsistency.hidden = !isCons;
+
+        document.body.classList.toggle('insights-view-consistency', isCons);
+        insightsHeroSetMode(isCons ? 'consistency' : 'emotions');
+
+        if (isCons) {
+            requestAnimationFrame(() => renderInsightsConsistencyPanel());
+        } else {
+            destroyInsightsConsistencyChart();
+        }
     };
+
     emotions.addEventListener('click', () => activate('emotions'));
     consistency.addEventListener('click', () => activate('consistency'));
 }

@@ -66,23 +66,6 @@
                     </div>
                 </header>
 
-                <section id="insightsConsistencyStrip" class="insights-consistency-strip" hidden aria-label="Journaling consistency">
-                    <div class="insights-consistency-strip__inner">
-                        <div class="insights-consistency-metric">
-                            <span class="insights-consistency-metric__label">Entries (last 7 days)</span>
-                            <span class="insights-consistency-metric__value" id="insightsConsistencyWeek">—</span>
-                        </div>
-                        <div class="insights-consistency-metric">
-                            <span class="insights-consistency-metric__label">Entries (last 30 days)</span>
-                            <span class="insights-consistency-metric__value" id="insightsConsistencyMonth">—</span>
-                        </div>
-                        <div class="insights-consistency-metric">
-                            <span class="insights-consistency-metric__label">Active day streak</span>
-                            <span class="insights-consistency-metric__value" id="insightsConsistencyStreak">—</span>
-                        </div>
-                    </div>
-                </section>
-
                 <div id="insightsPanelEmotions" class="insights-panel insights-panel--emotions is-active">
                     <div class="insights-dashboard">
                         <div class="insights-dashboard__main">
@@ -224,6 +207,44 @@
                             </article>
                         </aside>
                     </div>
+                </div>
+
+                <div id="insightsPanelConsistency" class="insights-panel insights-panel--consistency" hidden>
+                    <p class="insights-consistency-lede">Your journaling habits and consistency.</p>
+                    <div class="insights-consistency-metric-grid" role="list" aria-label="Consistency summary">
+                        <article class="insights-consistency-kpi" role="listitem">
+                            <span class="insights-consistency-kpi__icon insights-consistency-kpi__icon--days" aria-hidden="true"><i class="bi bi-calendar-check"></i></span>
+                            <span class="insights-consistency-kpi__value" id="insightsConsTotalDays">0</span>
+                            <span class="insights-consistency-kpi__label">Total active days</span>
+                        </article>
+                        <article class="insights-consistency-kpi" role="listitem">
+                            <span class="insights-consistency-kpi__icon insights-consistency-kpi__icon--rate" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
+                            <span class="insights-consistency-kpi__value" id="insightsConsRate">0%</span>
+                            <span class="insights-consistency-kpi__label">Consistency rate</span>
+                        </article>
+                        <article class="insights-consistency-kpi" role="listitem">
+                            <span class="insights-consistency-kpi__icon insights-consistency-kpi__icon--volume" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
+                            <span class="insights-consistency-kpi__value" id="insightsConsEntriesWeek">0</span>
+                            <span class="insights-consistency-kpi__label">Entries / week</span>
+                        </article>
+                        <article class="insights-consistency-kpi" role="listitem">
+                            <span class="insights-consistency-kpi__icon insights-consistency-kpi__icon--time" aria-hidden="true"><i class="bi bi-clock"></i></span>
+                            <span class="insights-consistency-kpi__value" id="insightsConsPeakTime">—</span>
+                            <span class="insights-consistency-kpi__label">Most active time</span>
+                        </article>
+                    </div>
+                    <article class="ins-card ins-card--consistency-week chart-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                                Journaling Consistency
+                            </h2>
+                            <p class="insights-consistency-chart-caption">Last six weeks (Mon–Sun), entry count per week</p>
+                        </div>
+                        <div class="chart-container insights-consistency-chart-wrap">
+                            <canvas id="insightsConsistencyWeekChart"></canvas>
+                        </div>
+                    </article>
                 </div>
             </main>
         </div>

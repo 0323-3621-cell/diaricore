@@ -53,30 +53,40 @@ function renderTagBasedSummaryCard(summary) {
     const stressJustification = summary.stressJustification || '';
     const happyJustification = summary.happinessJustification || '';
     return `
-        <article class="emotion-trigger-card" data-emotion="summary">
-            <div class="emotion-trigger-card__head">
-                <span class="emotion-trigger-card__emoji" aria-hidden="true">😰</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top stress trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topStress)}</span></h3>
-            </div>
-            <p class="emotion-trigger-card__insight">${esc(stressDesc)}</p>
-            ${stressJustification ? `
-                <details class="trigger-justification">
-                    <summary>Why this is the top stress trigger</summary>
-                    <p>${esc(stressJustification)}</p>
-                </details>
-            ` : ``}
-            <div class="emotion-trigger-card__head">
-                <span class="emotion-trigger-card__emoji" aria-hidden="true">😊</span>
-                <h3 class="emotion-trigger-card__title"><span class="emotion-trigger-card__label">Top happiness trigger:</span> <span class="emotion-trigger-card__keywords">${esc(topHappy)}</span></h3>
-            </div>
-            <p class="emotion-trigger-card__insight">${esc(happyDesc)}</p>
-            ${happyJustification ? `
-                <details class="trigger-justification">
-                    <summary>Why this is the top happiness trigger</summary>
-                    <p>${esc(happyJustification)}</p>
-                </details>
-            ` : ``}
-        </article>`;
+        <div class="emotion-triggers-stack">
+            <article class="emotion-trigger-block emotion-trigger-block--stress" aria-labelledby="stressTriggerTitle">
+                <div class="emotion-trigger-block__top">
+                    <span class="emotion-trigger-block__emoji" aria-hidden="true">😰</span>
+                    <div class="emotion-trigger-block__intro">
+                        <p class="emotion-trigger-block__eyebrow" id="stressTriggerTitle">Top stress trigger</p>
+                        <p class="emotion-trigger-block__accent">${esc(topStress)}</p>
+                    </div>
+                </div>
+                <p class="emotion-trigger-block__desc">${esc(stressDesc)}</p>
+                ${stressJustification ? `
+                    <details class="trigger-justification emotion-trigger-block__details">
+                        <summary>Why this is the top stress trigger</summary>
+                        <p>${esc(stressJustification)}</p>
+                    </details>
+                ` : ``}
+            </article>
+            <article class="emotion-trigger-block emotion-trigger-block--happiness" aria-labelledby="happyTriggerTitle">
+                <div class="emotion-trigger-block__top">
+                    <span class="emotion-trigger-block__emoji" aria-hidden="true">😊</span>
+                    <div class="emotion-trigger-block__intro">
+                        <p class="emotion-trigger-block__eyebrow" id="happyTriggerTitle">Top happiness trigger</p>
+                        <p class="emotion-trigger-block__accent">${esc(topHappy)}</p>
+                    </div>
+                </div>
+                <p class="emotion-trigger-block__desc">${esc(happyDesc)}</p>
+                ${happyJustification ? `
+                    <details class="trigger-justification emotion-trigger-block__details">
+                        <summary>Why this is the top happiness trigger</summary>
+                        <p>${esc(happyJustification)}</p>
+                    </details>
+                ` : ``}
+            </article>
+        </div>`;
 }
 
 async function loadEmotionTriggersDashboard() {

@@ -704,11 +704,12 @@ function initializeEmotionPieChart() {
     };
     
     const config = {
-        type: 'pie',
+        type: 'doughnut',
         data: emotionData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '56%',
             plugins: {
                 legend: {
                     display: false

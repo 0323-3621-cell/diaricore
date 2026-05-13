@@ -222,14 +222,43 @@
         </button>
     </div>
 
-    <div class="entry-view-dialog" id="entryUnsavedDialog" hidden role="dialog" aria-modal="true" aria-labelledby="entryUnsavedTitle">
-        <div class="entry-view-dialog__backdrop" data-close="1"></div>
-        <div class="entry-view-dialog__box">
-            <h2 id="entryUnsavedTitle" class="entry-view-dialog__title">Unsaved changes</h2>
-            <p class="entry-view-dialog__text">You have unsaved changes. Discard them?</p>
-            <div class="entry-view-dialog__actions">
-                <button type="button" class="mood-analysis-btn mood-analysis-btn--outline" id="entryUnsavedStayBtn">Cancel</button>
-                <button type="button" class="mood-analysis-btn mood-analysis-btn--solid" id="entryUnsavedDiscardBtn">Confirm</button>
+    <div class="write-flow-modal write-discard-modal" id="entryUnsavedDialog" hidden role="dialog" aria-modal="true" aria-labelledby="entryUnsavedTitle">
+        <div class="write-flow-modal__backdrop" data-close="1"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--warn" aria-hidden="true">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="entryUnsavedTitle" class="write-flow-modal__title">Discard unsaved changes?</h2>
+                        <p class="write-flow-modal__desc">
+                            You have changes that haven't been saved yet. Leaving now will lose everything you edited on this entry.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--list">
+                <p class="write-flow-modal__list-heading">What will be lost</p>
+                <div class="write-flow-modal__list">
+                    <div class="write-flow-modal__list-accent" aria-hidden="true"></div>
+                    <ul class="write-flow-modal__list-items">
+                        <li><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Your title and written text</span></li>
+                        <li><i class="bi bi-bookmarks" aria-hidden="true"></i><span>Selected tags</span></li>
+                        <li><i class="bi bi-images" aria-hidden="true"></i><span>Attached photos</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="entryUnsavedStayBtn">Keep editing</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="entryUnsavedDiscardBtn">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        Discard changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>

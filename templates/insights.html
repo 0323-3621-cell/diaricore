@@ -11,6 +11,14 @@
     <link href="insights.css" rel="stylesheet">
     <link href="theme.css" rel="stylesheet">
     <script src="theme.js"></script>
+    <script>
+        (function () {
+            try {
+                var h = (window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
+                if (h === 'consistency') document.documentElement.classList.add('insights-consistency-hash-boot');
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
 </head>
 <body class="has-mobile-app-topbar">
     <!-- Mobile top bar: inlined for first paint; keep in sync with side-bar.html -->

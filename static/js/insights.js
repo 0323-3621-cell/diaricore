@@ -660,7 +660,10 @@ function initializeInsightsHeroTabs() {
     const consistency = document.getElementById('insightsTabConsistency');
     const panelEmotions = document.getElementById('insightsPanelEmotions');
     const panelConsistency = document.getElementById('insightsPanelConsistency');
-    if (!emotions || !consistency || !panelEmotions || !panelConsistency) return;
+    if (!emotions || !consistency || !panelEmotions || !panelConsistency) {
+        document.documentElement.classList.remove('insights-consistency-hash-boot');
+        return;
+    }
 
     const activate = (which) => {
         const isCons = which === 'consistency';
@@ -684,6 +687,7 @@ function initializeInsightsHeroTabs() {
         }
 
         replaceInsightsUrlForTab(which);
+        document.documentElement.classList.remove('insights-consistency-hash-boot');
     };
 
     emotions.addEventListener('click', () => activate('emotions'));

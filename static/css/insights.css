@@ -1535,6 +1535,30 @@ html.theme-dark .emotion-trigger-block__desc {
     box-shadow: 0 1px 4px rgba(47, 62, 54, 0.12);
 }
 
+/* When URL is #consistency, first paint matches that tab before insights.js runs (avoids Emotions flash). */
+html.insights-consistency-hash-boot #insightsPanelEmotions {
+    display: none !important;
+}
+
+html.insights-consistency-hash-boot #insightsPanelConsistency.insights-panel--consistency[hidden] {
+    display: flex !important;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+html.insights-consistency-hash-boot #insightsTabEmotions.insights-pill.is-active {
+    background: transparent;
+    color: var(--text-secondary);
+    box-shadow: none;
+}
+
+html.insights-consistency-hash-boot #insightsTabConsistency.insights-pill {
+    background: var(--card-background);
+    color: var(--primary-color);
+    box-shadow: 0 1px 4px rgba(47, 62, 54, 0.12);
+}
+
 /* Full Consistency tab (replaces emotions dashboard, same pattern as Entries detail swap) */
 .insights-panel[hidden] {
     display: none !important;

@@ -679,6 +679,12 @@ async function openEntriesDetailInline(entryId) {
                 });
             });
         }
+        // Initial inline script adds `entries-restore-detail` to avoid a list flash; that rule uses
+        // !important and overrides `[hidden]`. Remove it once the detail is mounted so Back / URL
+        // changes can show the grid again.
+        try {
+            document.documentElement.classList.remove('entries-restore-detail');
+        } catch (_) {}
     } catch (err) {
         console.error(err);
         closeEntriesDetailInline();
@@ -686,6 +692,9 @@ async function openEntriesDetailInline(entryId) {
 }
 
 function closeEntriesDetailInline() {
+    try {
+        document.documentElement.classList.remove('entries-restore-detail');
+    } catch (_) {}
     if (window.DiariEntryDetail && typeof window.DiariEntryDetail.unmount === 'function') {
         window.DiariEntryDetail.unmount();
     }

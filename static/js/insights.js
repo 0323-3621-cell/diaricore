@@ -593,33 +593,37 @@ function updateConsistencyMonthBarChart() {
 }
 
 function renderInsightsConsistencyPanel() {
-    const bundle = computeConsistencyInsightBundle();
-    const dEl = document.getElementById('insightsConsTotalDays');
-    const rEl = document.getElementById('insightsConsRate');
-    const wEl = document.getElementById('insightsConsEntriesWeek');
-    const tEl = document.getElementById('insightsConsPeakTime');
-    if (dEl) dEl.textContent = String(bundle.totalActiveDays);
-    if (rEl) rEl.textContent = `${bundle.consistencyRate}%`;
-    if (wEl) wEl.textContent = bundle.entriesPerWeek.toFixed(1);
-    if (tEl) tEl.textContent = bundle.mostActiveTimeLabel;
+    try {
+        const bundle = computeConsistencyInsightBundle();
+        const dEl = document.getElementById('insightsConsTotalDays');
+        const rEl = document.getElementById('insightsConsRate');
+        const wEl = document.getElementById('insightsConsEntriesWeek');
+        const tEl = document.getElementById('insightsConsPeakTime');
+        if (dEl) dEl.textContent = String(bundle.totalActiveDays);
+        if (rEl) rEl.textContent = `${bundle.consistencyRate}%`;
+        if (wEl) wEl.textContent = bundle.entriesPerWeek.toFixed(1);
+        if (tEl) tEl.textContent = bundle.mostActiveTimeLabel;
 
-    destroyInsightsConsistencyChart();
+        destroyInsightsConsistencyChart();
 
-    const sel = document.getElementById('insightsConsistencyMonthSelect');
-    populateInsightsConsistencyMonthSelect(sel);
-    if (sel && !consistencyMonthSelectBound) {
-        consistencyMonthSelectBound = true;
-        sel.addEventListener('change', () => {
-            try {
-                sessionStorage.setItem(CONSISTENCY_MONTH_STORAGE_KEY, sel.value);
-            } catch (_) {
-                /* private mode */
-            }
-            updateConsistencyMonthBarChart();
-        });
+        const sel = document.getElementById('insightsConsistencyMonthSelect');
+        populateInsightsConsistencyMonthSelect(sel);
+        if (sel && !consistencyMonthSelectBound) {
+            consistencyMonthSelectBound = true;
+            sel.addEventListener('change', () => {
+                try {
+                    sessionStorage.setItem(CONSISTENCY_MONTH_STORAGE_KEY, sel.value);
+                } catch (_) {
+                    /* private mode */
+                }
+                updateConsistencyMonthBarChart();
+            });
+        }
+
+        updateConsistencyMonthBarChart();
+    } finally {
+        document.documentElement.classList.remove('insights-consistency-await-data');
     }
-
-    updateConsistencyMonthBarChart();
 }
 
 function insightsHeroSetMode(mode) {
@@ -661,7 +665,7 @@ function initializeInsightsHeroTabs() {
     const panelEmotions = document.getElementById('insightsPanelEmotions');
     const panelConsistency = document.getElementById('insightsPanelConsistency');
     if (!emotions || !consistency || !panelEmotions || !panelConsistency) {
-        document.documentElement.classList.remove('insights-consistency-hash-boot');
+        document.documentElement.classList.remove('insights-consistency-hash-boot', 'insights-consistency-await-data');
         return;
     }
 
@@ -681,13 +685,13 @@ function initializeInsightsHeroTabs() {
         insightsHeroSetMode(isCons ? 'consistency' : 'emotions');
 
         if (isCons) {
-            requestAnimationFrame(() => renderInsightsConsistencyPanel());
+            renderInsightsConsistencyPanel();
         } else {
             destroyInsightsConsistencyChart();
         }
 
         replaceInsightsUrlForTab(which);
-        document.documentElement.classList.remove('insights-consistency-hash-boot');
+        document.documentElement.classList.remove('insights-consistency-hash-boot', 'insights-consistency-await-data');
     };
 
     emotions.addEventListener('click', () => activate('emotions'));

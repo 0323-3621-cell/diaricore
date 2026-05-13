@@ -15,7 +15,10 @@
         (function () {
             try {
                 var h = (window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
-                if (h === 'consistency') document.documentElement.classList.add('insights-consistency-hash-boot');
+                if (h === 'consistency') {
+                    document.documentElement.classList.add('insights-consistency-hash-boot');
+                    document.documentElement.classList.add('insights-consistency-await-data');
+                }
             } catch (e) { /* ignore */ }
         })();
     </script>
@@ -218,6 +221,7 @@
                 </div>
 
                 <div id="insightsPanelConsistency" class="insights-panel insights-panel--consistency" hidden>
+                    <div class="insights-consistency-inner">
                     <div class="insights-consistency-metric-grid" role="list" aria-label="Consistency summary">
                         <article class="insights-consistency-kpi" role="listitem">
                             <span class="insights-consistency-kpi__icon insights-consistency-kpi__icon--days" aria-hidden="true"><i class="bi bi-calendar-check"></i></span>
@@ -261,6 +265,7 @@
                             <canvas id="insightsConsistencyWeekChart"></canvas>
                         </div>
                     </article>
+                    </div>
                 </div>
             </main>
         </div>

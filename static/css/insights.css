@@ -1559,6 +1559,12 @@ html.insights-consistency-hash-boot #insightsTabConsistency.insights-pill {
     box-shadow: 0 1px 4px rgba(47, 62, 54, 0.12);
 }
 
+/* Hide Consistency metrics/chart until entries sync + first render (no flash of zeros). */
+html.insights-consistency-await-data #insightsPanelConsistency .insights-consistency-inner {
+    opacity: 0;
+    visibility: hidden;
+}
+
 /* Full Consistency tab (replaces emotions dashboard, same pattern as Entries detail swap) */
 .insights-panel[hidden] {
     display: none !important;

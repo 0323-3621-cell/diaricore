@@ -653,6 +653,18 @@ function performSearch() {
     renderEntriesView();
 }
 
+function setEntriesDetailLoading(on) {
+    const ov = document.getElementById('entriesDetailLoadingOverlay');
+    if (!ov) return;
+    if (on) {
+        ov.classList.add('is-visible');
+        ov.setAttribute('aria-busy', 'true');
+    } else {
+        ov.classList.remove('is-visible');
+        ov.setAttribute('aria-busy', 'false');
+    }
+}
+
 async function openEntriesDetailInline(entryId) {
     const shell = document.getElementById('entriesDetailShell');
     const list = document.getElementById('entriesListShell');
@@ -660,6 +672,7 @@ async function openEntriesDetailInline(entryId) {
         window.location.href = `entry-view.html?id=${encodeURIComponent(String(entryId))}`;
         return;
     }
+    setEntriesDetailLoading(true);
     try {
         const url = new URL(window.location.href);
         url.searchParams.set('entryId', String(entryId));
@@ -697,15 +710,14 @@ async function openEntriesDetailInline(entryId) {
                 });
             });
         }
-        // Initial inline script adds `entries-restore-detail` to avoid a list flash; that rule uses
-        // !important and overrides `[hidden]`. Remove it once the detail is mounted so Back / URL
-        // changes can show the grid again.
         try {
             document.documentElement.classList.remove('entries-restore-detail');
         } catch (_) {}
     } catch (err) {
         console.error(err);
         closeEntriesDetailInline();
+    } finally {
+        setEntriesDetailLoading(false);
     }
 }
 
@@ -713,6 +725,7 @@ function closeEntriesDetailInline() {
     try {
         document.documentElement.classList.remove('entries-restore-detail');
     } catch (_) {}
+    setEntriesDetailLoading(false);
     if (window.DiariEntryDetail && typeof window.DiariEntryDetail.unmount === 'function') {
         window.DiariEntryDetail.unmount();
     }

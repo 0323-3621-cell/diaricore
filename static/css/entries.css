@@ -63,6 +63,56 @@ html.entries-restore-detail #entriesDetailShell[hidden] {
     display: block !important;
 }
 
+/* Full-screen loading layer while entry body is fetched (refresh with ?entryId=). */
+.entries-detail-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-color);
+}
+
+.entries-detail-loading-overlay.is-visible,
+html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay {
+    display: flex !important;
+}
+
+.entries-detail-loading-overlay__box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1.75rem;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    box-shadow: var(--box-shadow);
+}
+
+.entries-detail-loading-overlay__text {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.entries-detail-loading-overlay__spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: entries-detail-spin 0.7s linear infinite;
+}
+
+@keyframes entries-detail-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -1678,6 +1728,7 @@ html.theme-dark .entry-edited-pill {
 /* Inline entry editor on Entries page (replaces list shell without navigation) */
 .entries-detail-shell.entry-view-layout {
     width: 100%;
+    position: relative;
 }
 
 .page-entries-detail-open .entries-content {

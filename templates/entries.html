@@ -162,6 +162,12 @@
 
                 <!-- Inline entry editor (same as entry-view page; toggled from list) -->
                 <div id="entriesDetailShell" class="entries-detail-shell entry-view-layout" hidden>
+                    <div id="entriesDetailLoadingOverlay" class="entries-detail-loading-overlay" aria-live="polite" aria-busy="false">
+                        <div class="entries-detail-loading-overlay__box">
+                            <span class="entries-detail-loading-overlay__spinner" aria-hidden="true"></span>
+                            <p class="entries-detail-loading-overlay__text">Loading entry…</p>
+                        </div>
+                    </div>
                     <div class="main-content entry-view-main">
                         <header class="entry-view-toolbar">
                             <button type="button" class="entry-view-toolbar__back" id="entryViewBackBtn">

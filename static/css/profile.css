@@ -54,6 +54,24 @@ body {
     color: var(--text-dark);
 }
 
+/* Avoid a flash of empty HTML placeholders before localStorage hydrates the profile */
+html.profile-await-storage .profile-name,
+html.profile-await-storage .profile-email,
+html.profile-await-storage .profile-edit-identity,
+html.profile-await-storage .profile-member-since,
+html.profile-await-storage .profile-stats-section {
+    visibility: hidden;
+    min-height: 4.5rem;
+}
+
+.profile-overview-section .profile-name {
+    min-height: 2.25rem;
+}
+
+.profile-overview-section .profile-email {
+    min-height: 1.35rem;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;

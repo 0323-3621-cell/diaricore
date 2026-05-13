@@ -1,7 +1,6 @@
 // DiariCore Profile Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeProfileFromStorage();
     initializeProfileInteractions();
     initializePreferenceToggles();
     initializeStorageActions();
@@ -9,33 +8,37 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeProfileFromStorage() {
-    const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-    const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
-    const safeEntries = Array.isArray(entries) ? entries.filter((e) => e && (e.date || e.createdAt)) : [];
+    try {
+        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+        const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        const safeEntries = Array.isArray(entries) ? entries.filter((e) => e && (e.date || e.createdAt)) : [];
 
-    const nameEl = document.querySelector('.profile-name');
-    const emailEl = document.querySelector('.profile-email');
-    const memberSinceEl = document.querySelector('.profile-member-since');
-    const statEls = document.querySelectorAll('.profile-stats .stat-number');
+        const nameEl = document.querySelector('.profile-name');
+        const emailEl = document.querySelector('.profile-email');
+        const memberSinceEl = document.querySelector('.profile-member-since');
+        const statEls = document.querySelectorAll('.profile-stats .stat-number');
 
-    if (nameEl) {
-        const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-        nameEl.textContent = fullName || user?.nickname || 'New User';
+        if (nameEl) {
+            const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+            nameEl.textContent = fullName || user?.nickname || 'New User';
+        }
+        if (emailEl) emailEl.textContent = user?.email || 'No email available';
+        if (memberSinceEl) {
+            const parsed = user?.createdAt ? new Date(user.createdAt) : null;
+            const createdAt = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+            const monthYear = createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            memberSinceEl.textContent = `Member since ${monthYear}`;
+        }
+
+        const entryCount = safeEntries.length;
+        const streak = calculateEntryStreak(safeEntries);
+        const consistency = calculateMonthlyConsistency(safeEntries);
+        if (statEls[0]) statEls[0].textContent = String(entryCount);
+        if (statEls[1]) statEls[1].textContent = String(streak);
+        if (statEls[2]) statEls[2].textContent = `${consistency}%`;
+    } finally {
+        document.documentElement.classList.remove('profile-await-storage');
     }
-    if (emailEl) emailEl.textContent = user?.email || 'No email available';
-    if (memberSinceEl) {
-        const parsed = user?.createdAt ? new Date(user.createdAt) : null;
-        const createdAt = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
-        const monthYear = createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        memberSinceEl.textContent = `Member since ${monthYear}`;
-    }
-
-    const entryCount = safeEntries.length;
-    const streak = calculateEntryStreak(safeEntries);
-    const consistency = calculateMonthlyConsistency(safeEntries);
-    if (statEls[0]) statEls[0].textContent = String(entryCount);
-    if (statEls[1]) statEls[1].textContent = String(streak);
-    if (statEls[2]) statEls[2].textContent = `${consistency}%`;
 }
 
 const PROFILE_MS_PER_DAY = 86400000;
@@ -506,4 +509,10 @@ function getNotificationColor(type) {
         'info': '#7FA7BF'
     };
     return colors[type] || '#7FA7BF';
+}
+
+if (document.body && document.body.classList.contains('page-profile')) {
+    initializeProfileFromStorage();
+} else {
+    document.documentElement.classList.remove('profile-await-storage');
 }

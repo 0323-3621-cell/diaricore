@@ -136,7 +136,7 @@
     function imageItemsFromUrls(urls) {
         return (Array.isArray(urls) ? urls : [])
             .map((u) => {
-                const s = String(u || '').trim();
+                const s = normalizeDiariMediaUrl(u);
                 if (!s) return null;
                 if (s.startsWith('data:')) return makeImageItem({ dataUrl: s });
                 return makeImageItem({ url: s });
@@ -148,7 +148,7 @@
         return (Array.isArray(arr) ? arr : [])
             .map((raw) => {
                 if (raw && typeof raw === 'object') {
-                    const url = String(raw.url || '').trim();
+                    const url = normalizeDiariMediaUrl(raw.url || '').trim();
                     const dataUrl = String(raw.dataUrl || '').trim();
                     if (!url && !dataUrl) return null;
                     const pr = Number(raw.progress);
@@ -160,7 +160,7 @@
                         progress: Number.isFinite(pr) && pr >= 0 ? pr : url ? 100 : 0,
                     };
                 }
-                const s = String(raw || '').trim();
+                const s = normalizeDiariMediaUrl(raw);
                 if (!s) return null;
                 return s.startsWith('data:') ? makeImageItem({ dataUrl: s }) : makeImageItem({ url: s });
             })
@@ -261,6 +261,45 @@
     }
 
     let activeController = null;
+    /** Set while mount() is active; entries inline panel calls after removing `hidden` so imgs decode. */
+    let refreshEntryImageStrip = null;
+
+    /**
+     * Stored URLs may be absolute (old deploy host). Uploads always live on this origin under /uploads/.
+     */
+    function normalizeDiariMediaUrl(raw) {
+        const s = String(raw || '').trim();
+        if (!s || s.startsWith('data:') || s.startsWith('blob:')) return s;
+        if (s.startsWith('/')) return s;
+        if (s.startsWith('//')) {
+            try {
+                const abs = new URL(`${window.location.protocol}${s}`);
+                if (abs.pathname.startsWith('/uploads/')) {
+                    return `${abs.pathname}${abs.search}${abs.hash}`;
+                }
+                return abs.href;
+            } catch {
+                return s;
+            }
+        }
+        try {
+            const abs = new URL(s);
+            if (abs.pathname.startsWith('/uploads/')) {
+                return `${abs.pathname}${abs.search}${abs.hash}`;
+            }
+            return abs.href;
+        } catch {
+            try {
+                const rel = new URL(s, window.location.origin);
+                if (rel.pathname.startsWith('/uploads/')) {
+                    return `${rel.pathname}${rel.search}${rel.hash}`;
+                }
+                return rel.href;
+            } catch {
+                return s;
+            }
+        }
+    }
 
     function resetEntryDetailLoadingState() {
         const titleEl = document.getElementById('entryViewTitle');
@@ -322,6 +361,7 @@
     }
 
     function unmount() {
+        refreshEntryImageStrip = null;
         if (activeController) {
             activeController.abort();
             activeController = null;
@@ -602,7 +642,7 @@
                     wrap.className = `entry-view-strip-item${editMode ? '' : ' entry-view-strip-item--readonly'}`;
                     wrap.dataset.imageId = im.id;
                     const srcRaw = im.url || im.dataUrl;
-                    const src = String(srcRaw || '').trim();
+                    const src = normalizeDiariMediaUrl(String(srcRaw || '').trim());
                     const hasSrc = Boolean(src);
 
                     const imgWrap = document.createElement('div');
@@ -638,10 +678,16 @@
                         imgWrap.appendChild(img);
                         img.src = src;
                         const trySync = () => {
+                            if (settled) return;
                             if (img.complete && img.naturalHeight > 0) markLoaded();
                         };
                         trySync();
                         requestAnimationFrame(trySync);
+                        window.setTimeout(trySync, 80);
+                        window.setTimeout(trySync, 400);
+                        if (typeof img.decode === 'function') {
+                            img.decode().then(trySync).catch(() => {});
+                        }
                     }
 
                     wrap.appendChild(imgWrap);
@@ -797,7 +843,7 @@
             const imgEl = document.getElementById('photoLightboxImage');
             if (!modal || !imgEl) return;
             const cur = list[lightboxIndex];
-            imgEl.src = cur.url || cur.dataUrl || '';
+            imgEl.src = normalizeDiariMediaUrl(String(cur.url || cur.dataUrl || '').trim());
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
         }
@@ -1079,6 +1125,11 @@
             renderImageStrip();
             updateColumnsLayout();
         }
+
+        refreshEntryImageStrip = () => {
+            if (signal.aborted) return;
+            renderImageStrip();
+        };
 
         syncReadPane();
 
@@ -1757,6 +1808,9 @@
         unmount,
         getUserId,
         reflowEditorLayout,
+        refreshImages() {
+            refreshEntryImageStrip?.();
+        },
     };
 
     document.addEventListener('DOMContentLoaded', async () => {

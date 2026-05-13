@@ -564,6 +564,13 @@ async function openEntriesDetailInline(entryId) {
             onLeavePanel: closeEntriesDetailInline,
         });
         shell.hidden = false;
+        if (typeof window.DiariEntryDetail.refreshImages === 'function') {
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    window.DiariEntryDetail.refreshImages();
+                });
+            });
+        }
         if (typeof window.DiariEntryDetail.reflowEditorLayout === 'function') {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {

@@ -2024,8 +2024,19 @@ html.theme-dark .mood-result-badge--amber {
 }
 
 .write-flow-modal__icon-badge--photo-remove {
-    background: color-mix(in srgb, var(--primary-color) 18%, #fff);
-    color: var(--primary-color);
+    background: #fce8ea;
+    color: #dc2626;
+    position: relative;
+}
+
+.write-flow-modal__icon-badge--photo-remove::after {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 2px;
+    background: #dc2626;
+    transform: rotate(-42deg);
+    border-radius: 1px;
 }
 
 .write-flow-modal__header-text {
@@ -2155,6 +2166,58 @@ html.theme-dark .mood-result-badge--amber {
     min-width: 0;
 }
 
+.write-flow-modal__entry-preview {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    border-radius: 10px;
+    background: var(--write-flow-list-bg, #f4f6f8);
+    border: 1px solid var(--write-flow-list-border, rgba(15, 23, 42, 0.06));
+    overflow: hidden;
+}
+
+.write-flow-modal__entry-preview-accent {
+    width: 4px;
+    flex-shrink: 0;
+    background: #dc2626;
+}
+
+.write-flow-modal__entry-preview-inner {
+    flex: 1;
+    min-width: 0;
+    padding: 0.72rem 0.95rem 0.78rem 0.9rem;
+}
+
+.write-flow-modal__entry-preview-label {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--write-flow-muted, #6b7280);
+}
+
+.write-flow-modal__entry-preview-title {
+    margin: 0.18rem 0 0;
+    font-size: 1.02rem;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--write-flow-title, #141a20);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.write-flow-modal__entry-preview-meta {
+    margin: 0.24rem 0 0;
+    font-size: 0.86rem;
+    line-height: 1.35;
+    color: var(--write-flow-muted, #5c6570);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .write-flow-modal__actions {
     display: flex;
     justify-content: flex-end;
@@ -2239,8 +2302,12 @@ html.theme-dark .write-flow-modal__icon-badge--tag-del::after {
 }
 
 html.theme-dark .write-flow-modal__icon-badge--photo-remove {
-    background: rgba(143, 175, 159, 0.22);
-    color: #b8d4c4;
+    background: rgba(252, 232, 234, 0.12);
+    color: #fca5a5;
+}
+
+html.theme-dark .write-flow-modal__icon-badge--photo-remove::after {
+    background: #fca5a5;
 }
 
 html.theme-dark .write-flow-modal__tag-pill {

@@ -586,6 +586,8 @@
         const entryRemovePhotoModalEl = document.getElementById('entryRemovePhotoModal');
         const entryRemovePhotoCancelBtn = document.getElementById('entryRemovePhotoCancelBtn');
         const entryRemovePhotoConfirmBtn = document.getElementById('entryRemovePhotoConfirmBtn');
+        const entryRemovePhotoPreviewTitle = document.getElementById('entryRemovePhotoPreviewTitle');
+        const entryRemovePhotoPreviewMeta = document.getElementById('entryRemovePhotoPreviewMeta');
 
         function closeEntryRemovePhotoModal() {
             pendingRemoveEntryPhotoId = null;
@@ -593,6 +595,15 @@
         }
 
         function openEntryRemovePhotoModal(imageId) {
+            const titleRaw = String(titleEl?.value || '').trim();
+            const bodyRaw = String(bodyEl?.value || '').trim();
+            const fallbackTitle = bodyRaw ? bodyRaw.split('\n')[0].trim() : '';
+            const previewTitle = (titleRaw || fallbackTitle || 'Untitled entry').slice(0, 100);
+            const dateText = formatEntryDateLine(entryDateTimeIsoForDisplay(entry));
+            const tagsLabel = [...tags].slice(0, 2).join(', ');
+            const previewMeta = [dateText, tagsLabel].filter(Boolean).join(' · ') || 'No date';
+            if (entryRemovePhotoPreviewTitle) entryRemovePhotoPreviewTitle.textContent = previewTitle;
+            if (entryRemovePhotoPreviewMeta) entryRemovePhotoPreviewMeta.textContent = previewMeta;
             pendingRemoveEntryPhotoId = imageId;
             if (entryRemovePhotoModalEl) entryRemovePhotoModalEl.hidden = false;
         }

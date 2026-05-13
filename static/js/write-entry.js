@@ -362,9 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', async () => {
                 const id = String(btn.dataset.id || '');
                 if (!id) return;
-                if (!confirm('Remove this photo?')) return;
-                attachedImages = attachedImages.filter((img) => img.id !== id);
-                renderImageGallery();
+                openWriteRemovePhotoModal(id);
             });
         });
         requestAnimationFrame(() => {
@@ -873,6 +871,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const writeRemovePhotoModal = document.getElementById('writeRemovePhotoModal');
     const writeRemovePhotoCancelBtn = document.getElementById('writeRemovePhotoCancelBtn');
     const writeRemovePhotoConfirmBtn = document.getElementById('writeRemovePhotoConfirmBtn');
+    const writeRemovePhotoPreviewTitle = document.getElementById('writeRemovePhotoPreviewTitle');
+    const writeRemovePhotoPreviewMeta = document.getElementById('writeRemovePhotoPreviewMeta');
 
     let pendingDeleteTagName = null;
     let pendingRemoveWritePhotoId = null;
@@ -983,6 +983,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function openWriteRemovePhotoModal(imageId) {
         const id = String(imageId || '').trim();
         if (!id || !writeRemovePhotoModal) return;
+        const titleRaw = String(document.getElementById('journalTitleInput')?.value || '').trim();
+        const textRaw = String(document.getElementById('journalText')?.value || '').trim();
+        const fallbackTitle = textRaw ? textRaw.split('\n')[0].trim() : '';
+        const previewTitle = (titleRaw || fallbackTitle || 'Untitled entry').slice(0, 100);
+        const dateLabel = String(document.getElementById('journalDateTime')?.textContent || '').trim();
+        const tagsLabel = Array.from(selectedTags).slice(0, 2).join(', ');
+        const previewMeta = [dateLabel, tagsLabel].filter(Boolean).join(' · ') || 'No date';
+        if (writeRemovePhotoPreviewTitle) writeRemovePhotoPreviewTitle.textContent = previewTitle;
+        if (writeRemovePhotoPreviewMeta) writeRemovePhotoPreviewMeta.textContent = previewMeta;
         pendingRemoveWritePhotoId = id;
         writeRemovePhotoModal.hidden = false;
         document.body.style.overflow = 'hidden';

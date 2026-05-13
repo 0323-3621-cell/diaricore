@@ -50,6 +50,19 @@ body {
     color: var(--text-dark);
 }
 
+/* Prevent brief flash of the entries list when URL restores inline detail view. */
+html.entries-restore-detail #entriesListShell {
+    display: none !important;
+}
+
+html.entries-restore-detail #entriesDetailShell {
+    display: block !important;
+}
+
+html.entries-restore-detail #entriesDetailShell[hidden] {
+    display: block !important;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;

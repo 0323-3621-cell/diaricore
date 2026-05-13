@@ -2023,6 +2023,11 @@ html.theme-dark .mood-result-badge--amber {
     border-radius: 1px;
 }
 
+.write-flow-modal__icon-badge--photo-remove {
+    background: color-mix(in srgb, var(--primary-color) 18%, #fff);
+    color: var(--primary-color);
+}
+
 .write-flow-modal__header-text {
     min-width: 0;
     flex: 1;
@@ -2231,6 +2236,11 @@ html.theme-dark .write-flow-modal__icon-badge--tag-del {
 
 html.theme-dark .write-flow-modal__icon-badge--tag-del::after {
     background: #fca5a5;
+}
+
+html.theme-dark .write-flow-modal__icon-badge--photo-remove {
+    background: rgba(143, 175, 159, 0.22);
+    color: #b8d4c4;
 }
 
 html.theme-dark .write-flow-modal__tag-pill {

@@ -291,6 +291,36 @@
         </div>
     </div>
 
+    <!-- Remove attached photo (replaces native confirm) -->
+    <div class="write-flow-modal write-remove-photo-modal" id="writeRemovePhotoModal" hidden role="dialog" aria-modal="true" aria-labelledby="writeRemovePhotoTitle">
+        <div class="write-flow-modal__backdrop" data-write-remove-photo-dismiss="1"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--photo-remove" aria-hidden="true">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="writeRemovePhotoTitle" class="write-flow-modal__title">Remove this photo?</h2>
+                        <p class="write-flow-modal__desc">
+                            This removes the photo from your draft. You can add photos again before saving your entry.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="writeRemovePhotoCancelBtn">Keep photo</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="writeRemovePhotoConfirmBtn">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                        Remove photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="photo-lightbox" id="photoLightbox" hidden>
         <button type="button" class="photo-lightbox__close" id="photoLightboxClose" aria-label="Close preview">
             <i class="bi bi-x-lg"></i>

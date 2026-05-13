@@ -340,6 +340,8 @@
         if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
         const delDlg = document.getElementById('entryDeleteDialog');
         if (delDlg) delDlg.hidden = true;
+        const rmPhotoDlg = document.getElementById('entryRemovePhotoModal');
+        if (rmPhotoDlg) rmPhotoDlg.hidden = true;
         const aside = document.getElementById('entryViewImagesAside');
         const cols = document.getElementById('entryViewColumns');
         const stripScroll = document.getElementById('entryViewImageStripScroll');
@@ -509,6 +511,21 @@
         let lightboxIndex = 0;
         let stripDragDepth = 0;
         let baseline = '';
+
+        let pendingRemoveEntryPhotoId = null;
+        const entryRemovePhotoModalEl = document.getElementById('entryRemovePhotoModal');
+        const entryRemovePhotoCancelBtn = document.getElementById('entryRemovePhotoCancelBtn');
+        const entryRemovePhotoConfirmBtn = document.getElementById('entryRemovePhotoConfirmBtn');
+
+        function closeEntryRemovePhotoModal() {
+            pendingRemoveEntryPhotoId = null;
+            if (entryRemovePhotoModalEl) entryRemovePhotoModalEl.hidden = true;
+        }
+
+        function openEntryRemovePhotoModal(imageId) {
+            pendingRemoveEntryPhotoId = imageId;
+            if (entryRemovePhotoModalEl) entryRemovePhotoModalEl.hidden = false;
+        }
 
         function imagesPayloadStrings() {
             return editorImages.map((im) => String(im.url || im.dataUrl || '').trim()).filter(Boolean);
@@ -732,16 +749,7 @@
                             'click',
                             (e) => {
                                 e.stopPropagation();
-                                if (!window.confirm('Remove this photo from your entry?')) {
-                                    return;
-                                }
-                                editorImages = editorImages.filter((x) => x.id !== im.id);
-                                renderImageStrip();
-                                updateColumnsLayout();
-                                if (!isOnline()) {
-                                    void persistDraftImages();
-                                    persistDraft();
-                                }
+                                openEntryRemovePhotoModal(im.id);
                             },
                             { signal }
                         );
@@ -1003,6 +1011,7 @@
         }
 
         function openDeleteDialog() {
+            closeEntryRemovePhotoModal();
             deletePreviewTitleEl.textContent = previewCardTitleForDelete(entry);
             deletePreviewSnippetEl.textContent = previewSnippetForDelete(entry);
             const displayDate = entry.date || entry.createdAt;
@@ -1534,6 +1543,31 @@
                 );
             }
         }
+
+        entryRemovePhotoCancelBtn?.addEventListener('click', () => closeEntryRemovePhotoModal(), { signal });
+        entryRemovePhotoConfirmBtn?.addEventListener(
+            'click',
+            () => {
+                const id = pendingRemoveEntryPhotoId;
+                closeEntryRemovePhotoModal();
+                if (!id) return;
+                editorImages = editorImages.filter((x) => x.id !== id);
+                renderImageStrip();
+                updateColumnsLayout();
+                if (!isOnline()) {
+                    void persistDraftImages();
+                    persistDraft();
+                }
+            },
+            { signal }
+        );
+        entryRemovePhotoModalEl?.addEventListener(
+            'click',
+            (e) => {
+                if (e.target?.matches?.('[data-entry-remove-photo-dismiss]')) closeEntryRemovePhotoModal();
+            },
+            { signal }
+        );
 
         async function patchRemote(reanalyze, imageUrlsList) {
             const payload = {

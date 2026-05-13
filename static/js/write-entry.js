@@ -870,8 +870,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const writeDeleteTagConfirmBtn = document.getElementById('writeDeleteTagConfirmBtn');
     const writeDeleteTagPill = document.getElementById('writeDeleteTagPill');
     const writeDeleteTagWarnText = document.getElementById('writeDeleteTagWarnText');
+    const writeRemovePhotoModal = document.getElementById('writeRemovePhotoModal');
+    const writeRemovePhotoCancelBtn = document.getElementById('writeRemovePhotoCancelBtn');
+    const writeRemovePhotoConfirmBtn = document.getElementById('writeRemovePhotoConfirmBtn');
 
     let pendingDeleteTagName = null;
+    let pendingRemoveWritePhotoId = null;
     /** @type {null | { kind: 'href', href: string } | { kind: 'logout' }} */
     let pendingWriteDiscard = null;
 
@@ -879,7 +883,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const d = writeDiscardModal;
         const t = writeDeleteTagModal;
         const c = customTagModal;
-        const allClosed = (!d || d.hidden) && (!t || t.hidden) && (!c || c.hidden);
+        const rp = writeRemovePhotoModal;
+        const allClosed =
+            (!d || d.hidden) && (!t || t.hidden) && (!c || c.hidden) && (!rp || rp.hidden);
         if (allClosed) document.body.style.overflow = '';
     }
 
@@ -966,6 +972,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     writeDeleteTagModal?.addEventListener('click', (e) => {
         if (e.target?.matches?.('[data-write-delete-tag-dismiss]')) closeWriteDeleteTagModal();
+    });
+
+    function closeWriteRemovePhotoModal() {
+        pendingRemoveWritePhotoId = null;
+        if (writeRemovePhotoModal) writeRemovePhotoModal.hidden = true;
+        releaseBodyScrollIfNoModals();
+    }
+
+    function openWriteRemovePhotoModal(imageId) {
+        const id = String(imageId || '').trim();
+        if (!id || !writeRemovePhotoModal) return;
+        pendingRemoveWritePhotoId = id;
+        writeRemovePhotoModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    }
+
+    writeRemovePhotoCancelBtn?.addEventListener('click', () => closeWriteRemovePhotoModal());
+    writeRemovePhotoConfirmBtn?.addEventListener('click', () => {
+        const id = pendingRemoveWritePhotoId;
+        closeWriteRemovePhotoModal();
+        if (!id) return;
+        attachedImages = attachedImages.filter((img) => img.id !== id);
+        renderImageGallery();
+    });
+    writeRemovePhotoModal?.addEventListener('click', (e) => {
+        if (e.target?.matches?.('[data-write-remove-photo-dismiss]')) closeWriteRemovePhotoModal();
     });
 
     function filteredPickerIcons() {
@@ -1685,7 +1717,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!document.body.classList.contains('page-write-entry')) return;
             const t = e.target;
             if (!t || !t.closest) return;
-            if (t.closest('#writeDiscardModal') || t.closest('#writeDeleteTagModal') || t.closest('#customTagModal')) return;
+            if (
+                t.closest('#writeDiscardModal') ||
+                t.closest('#writeDeleteTagModal') ||
+                t.closest('#customTagModal') ||
+                t.closest('#writeRemovePhotoModal')
+            )
+                return;
             const lb = document.getElementById('photoLightbox');
             if (lb && !lb.hidden && lb.contains(t)) return;
 

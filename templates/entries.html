@@ -312,6 +312,36 @@
         </div>
     </div>
 
+    <!-- Remove photo from entry while editing (same as entry-view.html; replaces native confirm) -->
+    <div class="write-flow-modal entry-remove-photo-modal" id="entryRemovePhotoModal" hidden role="dialog" aria-modal="true" aria-labelledby="entryRemovePhotoTitle">
+        <div class="write-flow-modal__backdrop" data-entry-remove-photo-dismiss="1"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--photo-remove" aria-hidden="true">
+                        <i class="bi bi-image"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="entryRemovePhotoTitle" class="write-flow-modal__title">Remove this photo?</h2>
+                        <p class="write-flow-modal__desc">
+                            It will be removed from this entry. Save your changes to keep the update.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="entryRemovePhotoCancelBtn">Keep photo</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="entryRemovePhotoConfirmBtn">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                        Remove photo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="entryViewImageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
 
     <div class="photo-lightbox" id="photoLightbox" hidden>

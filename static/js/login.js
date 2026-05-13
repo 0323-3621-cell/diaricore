@@ -78,10 +78,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const signinMainFlow = document.getElementById('signinMainFlow');
     const loginTotpStep = document.getElementById('loginTotpStep');
-    const loginTotpCode = document.getElementById('loginTotpCode');
+    const loginTotpDigitsWrap = document.getElementById('loginTotpDigits');
+    const loginTotpDigits = Array.from(document.querySelectorAll('.login-totp-digit'));
     const loginTotpSubmit = document.getElementById('loginTotpSubmit');
     const loginTotpBack = document.getElementById('loginTotpBack');
     const loginTotpCodeError = document.getElementById('loginTotpCodeError');
+
+    function getLoginTotpCode() {
+        return loginTotpDigits.map(function (d) {
+            return (d.value || '').replace(/\D/g, '');
+        }).join('');
+    }
+
+    function clearLoginTotpDigits() {
+        loginTotpDigits.forEach(function (d) {
+            d.value = '';
+            d.classList.remove('error');
+        });
+        if (loginTotpDigitsWrap) loginTotpDigitsWrap.classList.remove('has-error');
+    }
+
+    function clearLoginTotpErrorState() {
+        if (loginTotpCodeError) {
+            loginTotpCodeError.classList.remove('show');
+            loginTotpCodeError.setAttribute('hidden', '');
+            loginTotpCodeError.textContent = 'Invalid code.';
+        }
+        if (loginTotpDigitsWrap) loginTotpDigitsWrap.classList.remove('has-error');
+    }
+
+    function setLoginTotpErrorState(message) {
+        if (loginTotpCodeError) {
+            loginTotpCodeError.textContent = message || 'Invalid code.';
+            loginTotpCodeError.removeAttribute('hidden');
+            loginTotpCodeError.classList.add('show');
+        }
+        if (loginTotpDigitsWrap) loginTotpDigitsWrap.classList.add('has-error');
+    }
     
     // Switch to Sign Up mode
     function switchToSignUp() {
@@ -453,14 +486,8 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTwoFactorToken = challengeToken;
         if (signinMainFlow) signinMainFlow.hidden = true;
         if (loginTotpStep) loginTotpStep.hidden = false;
-        if (loginTotpCode) {
-            loginTotpCode.value = '';
-            loginTotpCode.classList.remove('error', 'success');
-        }
-        if (loginTotpCodeError) {
-            loginTotpCodeError.hidden = true;
-            loginTotpCodeError.textContent = 'Invalid code.';
-        }
+        clearLoginTotpDigits();
+        clearLoginTotpErrorState();
         const fh = signinSection && signinSection.querySelector('.form-header');
         if (fh && !signinSection.dataset.savedHeaderHtml) {
             signinSection.dataset.savedHeaderHtml = fh.innerHTML;
@@ -468,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (fh) {
             fh.innerHTML = '<h2 class="form-title">Two-factor authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
         }
-        if (loginTotpCode) loginTotpCode.focus();
+        if (loginTotpDigits[0]) loginTotpDigits[0].focus();
     }
 
     function finishSuccessfulLogin(u) {
@@ -575,24 +602,51 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    if (loginTotpDigits.length) {
+        loginTotpDigits.forEach(function (input, idx) {
+            input.addEventListener('input', function (e) {
+                var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
+                e.target.value = v;
+                clearLoginTotpErrorState();
+                if (v && idx < loginTotpDigits.length - 1) {
+                    loginTotpDigits[idx + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !input.value && idx > 0) {
+                    loginTotpDigits[idx - 1].focus();
+                }
+                if (e.key === 'Enter' && getLoginTotpCode().length === 6 && loginTotpSubmit && !loginTotpSubmit.disabled) {
+                    e.preventDefault();
+                    loginTotpSubmit.click();
+                }
+            });
+            input.addEventListener('paste', function (e) {
+                e.preventDefault();
+                var digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+                loginTotpDigits.forEach(function (d, i) {
+                    d.value = digits[i] || '';
+                });
+                clearLoginTotpErrorState();
+                var next = digits.length >= 6 ? 5 : digits.length;
+                if (loginTotpDigits[next]) loginTotpDigits[next].focus();
+            });
+        });
+    }
+
     if (loginTotpSubmit) {
         loginTotpSubmit.addEventListener('click', function () {
-            const code = (loginTotpCode && loginTotpCode.value ? loginTotpCode.value : '').replace(/\D/g, '');
+            const code = getLoginTotpCode();
             if (!pendingTwoFactorToken) {
                 showNotification('Please sign in with your password again.', 'warning');
                 showLoginCredentialsStep();
                 return;
             }
             if (code.length !== 6) {
-                if (loginTotpCodeError) {
-                    loginTotpCodeError.textContent = 'Enter the 6-digit code from your authenticator app.';
-                    loginTotpCodeError.hidden = false;
-                }
-                if (loginTotpCode) loginTotpCode.classList.add('error');
+                setLoginTotpErrorState('Enter the 6-digit code from your authenticator app.');
                 return;
             }
-            if (loginTotpCodeError) loginTotpCodeError.hidden = true;
-            if (loginTotpCode) loginTotpCode.classList.remove('error');
+            clearLoginTotpErrorState();
             loginTotpSubmit.textContent = 'Verifying...';
             loginTotpSubmit.disabled = true;
             fetch('/api/login/totp', {
@@ -612,15 +666,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     loginTotpSubmit.disabled = false;
                     if (!ok || !data.success) {
                         var msg = data.error || 'Invalid code.';
-                        if (loginTotpCodeError) {
-                            loginTotpCodeError.textContent = msg;
-                            loginTotpCodeError.hidden = false;
-                        }
-                        if (loginTotpCode) {
-                            loginTotpCode.value = '';
-                            loginTotpCode.classList.add('error');
-                            loginTotpCode.focus();
-                        }
+                        setLoginTotpErrorState(msg);
+                        clearLoginTotpDigits();
+                        if (loginTotpDigits[0]) loginTotpDigits[0].focus();
                         return;
                     }
                     showLoginCredentialsStep();

@@ -2,11 +2,10 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeProfileFromStorage();
-    // Initialize profile components
     initializeProfileInteractions();
     initializePreferenceToggles();
     initializeStorageActions();
-    initializeDangerZoneActions();
+    initializeProfileSectionNavigation();
 });
 
 function initializeProfileFromStorage() {
@@ -109,6 +108,14 @@ function initializeProfileInteractions() {
         });
     }
 
+    const pageLogoutBtn = document.getElementById('profilePageLogoutBtn');
+    if (pageLogoutBtn) {
+        pageLogoutBtn.addEventListener('click', function() {
+            localStorage.removeItem('diariCoreUser');
+            window.location.href = 'login.html';
+        });
+    }
+
     // Avatar edit button
     const avatarEditBtn = document.querySelector('.avatar-edit-btn');
     if (avatarEditBtn) {
@@ -188,6 +195,12 @@ function initializeStorageActions() {
             }, 1500);
         });
     }
+
+    document.querySelectorAll('.btn-privacy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            showNotification('Privacy policy is coming soon.', 'info');
+        });
+    });
 
     // Backup button
     const backupBtn = document.querySelector('.btn-backup');
@@ -292,71 +305,129 @@ function updateStorageDisplay(textSize, attachmentSize, backupSize) {
     if (storageItems[2]) storageItems[2].querySelector('.storage-size').textContent = `${(backupSize / 1024).toFixed(1)} GB`;
 }
 
-// Initialize Danger Zone Actions
-function initializeDangerZoneActions() {
-    // Deactivate button
-    const deactivateBtn = document.querySelector('.btn-deactivate');
-    if (deactivateBtn) {
-        deactivateBtn.addEventListener('click', function() {
-            const confirmed = confirm('Are you sure you want to deactivate your account? You can reactivate it later by logging back in.');
-            
-            if (confirmed) {
-                showNotification('Deactivating account...', 'warning');
-                
-                setTimeout(() => {
-                    deactivateAccount();
-                }, 1500);
+const PROFILE_SECTION_PANELS = {
+    preferences: 'profileSectionPreferences',
+    privacy: 'profileSectionPrivacy',
+    security: 'profileSectionSecurity',
+};
+
+const PROFILE_SECTION_COPY = {
+    preferences: {
+        title: 'Preferences',
+        subtitle: 'Customize your DiariCore experience.',
+    },
+    privacy: {
+        title: 'Privacy',
+        subtitle: 'Data usage and sharing.',
+    },
+    security: {
+        title: 'Security',
+        subtitle: 'Password and account security.',
+    },
+};
+
+function profileSectionFromHash() {
+    const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    return PROFILE_SECTION_PANELS[h] ? h : '';
+}
+
+function setProfileUrlHash(sectionKey) {
+    try {
+        const base = `${location.pathname}${location.search}`;
+        if (sectionKey) {
+            history.replaceState({}, '', `${base}#${sectionKey}`);
+        } else {
+            history.replaceState({}, '', base);
+        }
+    } catch (_) {}
+}
+
+function openProfileSection(sectionKey) {
+    if (!PROFILE_SECTION_PANELS[sectionKey]) return;
+    const overview = document.getElementById('profileOverviewShell');
+    const shell = document.getElementById('profileSectionShell');
+    if (!overview || !shell) return;
+
+    overview.hidden = true;
+    shell.hidden = false;
+    document.body.classList.add('page-profile-section-open');
+
+    Object.keys(PROFILE_SECTION_PANELS).forEach(function (k) {
+        const el = document.getElementById(PROFILE_SECTION_PANELS[k]);
+        if (el) el.hidden = k !== sectionKey;
+    });
+
+    const copy = PROFILE_SECTION_COPY[sectionKey];
+    const titleEl = document.getElementById('profileSectionTitle');
+    const subEl = document.getElementById('profileSectionSubtitle');
+    if (titleEl && copy) titleEl.textContent = copy.title;
+    if (subEl && copy) subEl.textContent = copy.subtitle;
+
+    setProfileUrlHash(sectionKey);
+    window.scrollTo(0, 0);
+}
+
+function closeProfileSection() {
+    const overview = document.getElementById('profileOverviewShell');
+    const shell = document.getElementById('profileSectionShell');
+    if (!overview || !shell || shell.hidden) return;
+
+    shell.hidden = true;
+    overview.hidden = false;
+    document.body.classList.remove('page-profile-section-open');
+
+    Object.keys(PROFILE_SECTION_PANELS).forEach(function (k) {
+        const el = document.getElementById(PROFILE_SECTION_PANELS[k]);
+        if (el) el.hidden = true;
+    });
+
+    setProfileUrlHash(null);
+    window.scrollTo(0, 0);
+}
+
+function initializeProfileSectionNavigation() {
+    const backBtn = document.getElementById('profileSectionBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function () {
+            closeProfileSection();
+        });
+    }
+
+    document.querySelectorAll('[data-profile-section]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const key = btn.getAttribute('data-profile-section');
+            if (key) openProfileSection(key);
+        });
+    });
+
+    const mobileBackBtn = document.getElementById('profileMobileBackBtn');
+    if (mobileBackBtn) {
+        mobileBackBtn.addEventListener('click', function () {
+            if (document.body.classList.contains('page-profile-section-open')) {
+                closeProfileSection();
+            } else {
+                window.location.href = 'dashboard.html';
             }
         });
     }
 
-    // Delete account button
-    const deleteAccountBtn = document.querySelector('.btn-delete-account');
-    if (deleteAccountBtn) {
-        deleteAccountBtn.addEventListener('click', function() {
-            const confirmed = confirm('Are you absolutely sure you want to delete your account permanently? This action cannot be undone and all your data will be lost.');
-            
-            if (confirmed) {
-                const doubleConfirmed = confirm('This is your last chance. Type "DELETE" to confirm permanent account deletion.');
-                
-                if (doubleConfirmed) {
-                    showNotification('Deleting account permanently...', 'error');
-                    
-                    setTimeout(() => {
-                        deleteAccountPermanently();
-                    }, 2000);
-                }
-            }
+    const editIdentityBtn = document.getElementById('profileEditIdentityBtn');
+    if (editIdentityBtn) {
+        editIdentityBtn.addEventListener('click', function () {
+            openProfileSection('security');
         });
     }
-}
 
-// Deactivate Account (Mock Function)
-function deactivateAccount() {
-    // In a real app, this would deactivate the account
-    console.log('Deactivating account...');
-    
-    setTimeout(() => {
-        showNotification('Account deactivated. You can reactivate by logging back in.', 'success');
-        console.log('Account deactivated');
-        
-        // In a real app, this would redirect to login page
-        // window.location.href = 'login.html';
-    }, 1500);
-}
+    window.addEventListener('hashchange', function () {
+        const key = profileSectionFromHash();
+        if (key) openProfileSection(key);
+        else closeProfileSection();
+    });
 
-// Delete Account Permanently (Mock Function)
-function deleteAccountPermanently() {
-    // In a real app, this would permanently delete the account
-    console.log('Deleting account permanently...');
-    
-    setTimeout(() => {
-        showNotification('Account deleted permanently. Redirecting to home...', 'error');
-        console.log('Account deleted permanently');
-        
-        // In a real app, this would redirect to home page
-        // window.location.href = 'index.html';
-    }, 2000);
+    const initial = profileSectionFromHash();
+    if (initial) {
+        openProfileSection(initial);
+    }
 }
 
 // Show Notification

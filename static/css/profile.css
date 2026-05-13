@@ -638,6 +638,211 @@ input:checked + .toggle-slider:before {
     margin-bottom: 3rem;
 }
 
+.account-settings-section--profile-detail {
+    margin-bottom: 0;
+}
+
+.account-settings-section--profile-detail .section-header {
+    margin-bottom: 1.25rem;
+}
+
+/* Settings hub (overview) + section detail shell */
+.profile-settings-hub {
+    margin-bottom: 2.5rem;
+}
+
+.profile-settings-hub__title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 0.85rem 0;
+    letter-spacing: -0.02em;
+}
+
+.profile-settings-hub__card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
+
+.profile-settings-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    border: none;
+    border-bottom: 1px solid var(--divider-color);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    transition: background 0.15s ease;
+}
+
+.profile-settings-row:last-child {
+    border-bottom: none;
+}
+
+.profile-settings-row:hover {
+    background: var(--background-soft);
+}
+
+.profile-settings-row__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--background-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+.profile-settings-row__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.profile-settings-row__label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.profile-settings-row__hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+
+.profile-settings-row__chevron {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.profile-page-logout--desktop {
+    display: none;
+}
+
+.profile-page-logout__btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.95rem 1.25rem;
+    border-radius: 14px;
+    border: none;
+    background: #fde8e8;
+    color: #b42318;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.profile-page-logout__btn:hover {
+    background: #fcd4d4;
+}
+
+.profile-page-logout__btn:active {
+    transform: scale(0.99);
+}
+
+.profile-edit-identity {
+    display: inline-block;
+    margin: 0.35rem 0 0.5rem;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-family: inherit;
+}
+
+.profile-edit-identity:hover {
+    color: var(--primary-hover);
+}
+
+.profile-section-shell {
+    padding-bottom: 2rem;
+}
+
+.profile-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+}
+
+.profile-section-back {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.profile-section-back:hover {
+    background: var(--background-soft);
+}
+
+.profile-section-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 0.25rem 0;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.profile-section-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.45;
+}
+
+.profile-section-panel {
+    max-width: 720px;
+}
+
+.profile-prefs-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 0.5rem 0.15rem;
+}
+
+.profile-section-panel .appearance-header,
+.profile-section-panel .notifications-header,
+.profile-section-panel .privacy-header {
+    display: none !important;
+}
+
 .settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -986,84 +1191,6 @@ input:checked + .toggle-slider:before {
     box-shadow: 0 4px 12px rgba(107, 142, 126, 0.3);
 }
 
-/* Danger Zone Section */
-.danger-zone-section {
-    margin-bottom: 3rem;
-}
-
-.danger-zone-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border: 2px solid var(--danger-color);
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.15);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.danger-zone-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--danger-color), #ef4444);
-    border-radius: 16px 16px 0 0;
-}
-
-.danger-zone-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(220, 38, 38, 0.2);
-}
-
-.danger-zone-header {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(220, 38, 38, 0.1);
-}
-
-.danger-zone-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--danger-color);
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.5px;
-}
-
-.danger-zone-description {
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin: 0;
-    line-height: 1.5;
-}
-
-.danger-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.btn-delete-account {
-    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1), rgba(220, 38, 38, 0.05));
-    border: 2px solid rgba(220, 38, 38, 0.3);
-    color: var(--danger-color);
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-delete-account:hover {
-    background: linear-gradient(135deg, var(--danger-color), #D62C1C);
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
     .sidebar {
@@ -1117,10 +1244,6 @@ input:checked + .toggle-slider:before {
     
     .btn-export, .btn-privacy {
         justify-content: center;
-    }
-    
-    .danger-actions {
-        flex-direction: column;
     }
 }
 
@@ -1213,8 +1336,7 @@ input:checked + .toggle-slider:before {
 .appearance-item__leading-icon,
 .notifications-item__leading-icon,
 .setting-chevron,
-.privacy-item__leading-icon,
-.danger-zone__leading-icon {
+.privacy-item__leading-icon {
     display: none;
 }
 
@@ -1229,13 +1351,19 @@ input:checked + .toggle-slider:before {
         flex-direction: column;
         gap: 1.25rem;
     }
+
+    body.page-profile #profileOverviewShell {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
     
-    body.page-profile .header-section {
+    body.page-profile #profileOverviewShell .header-section {
         order: 1;
         margin-bottom: 0.5rem;
     }
     
-    body.page-profile .profile-overview-section {
+    body.page-profile #profileOverviewShell .profile-overview-section {
         order: 2;
         margin-bottom: 0;
     }
@@ -1284,20 +1412,19 @@ input:checked + .toggle-slider:before {
     body.page-profile .stat-label {
         font-size: 0.68rem;
     }
-    
-    body.page-profile .profile-preferences-stack {
+
+    body.page-profile #profileOverviewShell .profile-settings-hub {
         order: 3;
-        display: flex;
-        flex-direction: column;
-        gap: 1.1rem;
-    }
-    
-    body.page-profile .account-settings-section {
-        order: 4;
         margin-bottom: 0;
     }
 
-    body.page-profile .section-header {
+    body.page-profile #profileOverviewShell .profile-page-logout--desktop {
+        order: 4;
+        display: block;
+        margin-top: 0.25rem;
+    }
+
+    body.page-profile .account-settings-section--profile-detail .section-header {
         margin-bottom: 0.9rem;
     }
 
@@ -1327,23 +1454,20 @@ input:checked + .toggle-slider:before {
 
     body.page-profile .appearance-section,
     body.page-profile .notifications-section,
-    body.page-profile .privacy-section,
-    body.page-profile .danger-zone-section {
+    body.page-profile .privacy-section {
         margin-bottom: 0;
     }
 
     body.page-profile .appearance-options,
     body.page-profile .notifications-options,
-    body.page-profile .privacy-options,
-    body.page-profile .danger-zone-card {
+    body.page-profile .privacy-options {
         padding: 1.2rem 1.25rem;
         border-radius: 14px;
     }
 
     body.page-profile .appearance-header,
     body.page-profile .notifications-header,
-    body.page-profile .privacy-header,
-    body.page-profile .danger-zone-header {
+    body.page-profile .privacy-header {
         margin-bottom: 1rem;
     }
 
@@ -1351,22 +1475,6 @@ input:checked + .toggle-slider:before {
     body.page-profile .notifications-item,
     body.page-profile .privacy-item {
         padding: 0.95rem 1rem;
-    }
-
-    body.page-profile .danger-zone-header {
-        padding-bottom: 0.7rem;
-    }
-
-    body.page-profile .danger-zone-title {
-        margin-bottom: 0.2rem;
-    }
-    
-    body.page-profile .privacy-section {
-        order: 5;
-    }
-    
-    body.page-profile .danger-zone-section {
-        order: 6;
     }
 }
 
@@ -1409,7 +1517,12 @@ input:checked + .toggle-slider:before {
         min-height: 0;
     }
     
-    body.page-profile .profile-mobile-hero {
+    body.page-profile #profileOverviewShell {
+        display: flex;
+        flex-direction: column;
+    }
+
+    body.page-profile #profileOverviewShell .profile-mobile-hero {
         display: block;
         position: relative;
         order: 0;
@@ -1418,7 +1531,7 @@ input:checked + .toggle-slider:before {
         align-self: center;
     }
     
-    body.page-profile .profile-mobile-hero__curve {
+    body.page-profile #profileOverviewShell .profile-mobile-hero__curve {
         height: 148px;
         background: linear-gradient(165deg, #6f8f7f 0%, #5a7568 55%, #4f6b5c 100%);
         border-radius: 0 0 28px 28px;
@@ -1426,7 +1539,7 @@ input:checked + .toggle-slider:before {
         box-shadow: 0 8px 24px rgba(47, 62, 54, 0.12);
     }
     
-    body.page-profile .profile-mobile-hero__toolbar {
+    body.page-profile #profileOverviewShell .profile-mobile-hero__toolbar {
         position: absolute;
         left: 0;
         right: 0;
@@ -1438,7 +1551,7 @@ input:checked + .toggle-slider:before {
         z-index: 2;
     }
     
-    body.page-profile .profile-mobile-hero__icon-btn {
+    body.page-profile #profileOverviewShell .profile-mobile-hero__icon-btn {
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -1453,19 +1566,19 @@ input:checked + .toggle-slider:before {
         transition: background 0.2s ease, transform 0.15s ease;
     }
     
-    body.page-profile .profile-mobile-hero__icon-btn:active {
+    body.page-profile #profileOverviewShell .profile-mobile-hero__icon-btn:active {
         transform: scale(0.96);
     }
     
-    body.page-profile .profile-mobile-hero__icon-btn--logout {
+    body.page-profile #profileOverviewShell .profile-mobile-hero__icon-btn--logout {
         background: rgba(255, 255, 255, 0.22);
     }
     
-    body.page-profile .header-section {
+    body.page-profile #profileOverviewShell .header-section {
         display: none !important;
     }
     
-    body.page-profile .profile-overview-section {
+    body.page-profile #profileOverviewShell .profile-overview-section {
         order: 1;
         margin-top: -3.25rem;
         margin-bottom: 1.35rem;
@@ -1558,16 +1671,12 @@ input:checked + .toggle-slider:before {
         font-weight: 600;
     }
     
-    body.page-profile .account-settings-section {
+    body.page-profile #profileOverviewShell .profile-settings-hub {
         order: 2;
         margin-bottom: 1rem;
     }
-    
-    body.page-profile .account-settings-section .section-header {
-        display: none !important;
-    }
-    
-    body.page-profile .profile-mobile-block-title {
+
+    body.page-profile .profile-settings-hub__title {
         display: block;
         font-size: 0.72rem;
         font-weight: 600;
@@ -1577,10 +1686,25 @@ input:checked + .toggle-slider:before {
         margin: 0 0 0.5rem 0.15rem;
         padding: 0;
     }
-    
-    body.page-profile .profile-mobile-block-title--prefs {
-        order: 3;
-        margin-top: 0.25rem;
+
+    body.page-profile .profile-settings-hub__card {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(47, 62, 54, 0.06);
+        overflow: hidden;
+    }
+
+    body.page-profile .profile-settings-row {
+        padding: 1rem 1.1rem;
+    }
+
+    body.page-profile .profile-settings-row__hint {
+        display: none;
+    }
+
+    body.page-profile .profile-settings-row__chevron {
+        color: #b0bec5;
     }
     
     body.page-profile .settings-grid {
@@ -1656,7 +1780,6 @@ input:checked + .toggle-slider:before {
     }
     
     body.page-profile .profile-preferences-stack {
-        order: 4;
         display: flex;
         flex-direction: column;
         gap: 0;
@@ -1756,9 +1879,10 @@ input:checked + .toggle-slider:before {
         margin: 0;
     }
     
-    body.page-profile .profile-mobile-block-title--privacy,
-    body.page-profile .profile-mobile-block-title--danger {
-        margin-top: 0.35rem;
+    body.page-profile .profile-prefs-eyebrow {
+        padding: 0.65rem 1rem 0.35rem;
+        margin: 0;
+        background: #fff;
     }
     
     /* Privacy — compact card, account-style rows (mobile only) */
@@ -1867,93 +1991,15 @@ input:checked + .toggle-slider:before {
         transform: none;
         box-shadow: none;
     }
-    
-    /* Danger zone — single compact row (mobile only) */
-    body.page-profile .danger-zone__leading-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        border-radius: 10px;
-        background: rgba(239, 68, 68, 0.1);
-        color: #dc2626;
-        font-size: 1.05rem;
-        flex-shrink: 0;
+
+    body.page-profile .profile-edit-identity {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
     }
-    
-    body.page-profile .danger-zone-card {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1rem;
-        border-width: 1px;
-        border-radius: 16px;
-        box-shadow: 0 2px 12px rgba(220, 38, 38, 0.08);
-        background: #fff;
-    }
-    
-    body.page-profile .danger-zone-card::before {
-        display: none;
-    }
-    
-    body.page-profile .danger-zone-card:hover {
-        transform: none;
-        box-shadow: 0 2px 12px rgba(220, 38, 38, 0.1);
-    }
-    
-    body.page-profile .danger-zone-header {
-        flex: 1;
-        min-width: 0;
-        margin: 0;
-        padding: 0;
-        border: none;
-    }
-    
-    body.page-profile .danger-zone-title {
-        font-size: 0.92rem;
-        font-weight: 600;
-        margin: 0;
-        line-height: 1.3;
-    }
-    
-    body.page-profile .danger-zone-description {
-        display: none !important;
-    }
-    
-    body.page-profile .danger-actions {
-        flex-shrink: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
-    
-    body.page-profile .btn-delete-account {
-        padding: 0.42rem 0.65rem;
-        font-size: 0.7rem;
-        font-weight: 600;
-        white-space: normal;
-        max-width: 7.25rem;
-        text-align: center;
-        border-width: 1px;
-        line-height: 1.2;
-    }
-    
-    body.page-profile .btn-delete-account:hover {
-        transform: none;
-    }
-    
-    body.page-profile .privacy-section {
-        order: 5;
-        margin-bottom: 1rem;
-    }
-    
-    body.page-profile .danger-zone-section {
-        order: 6;
-        margin-bottom: 1rem;
+
+    body.page-profile.page-profile-section-open #profileSectionShell.profile-section-shell {
+        padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));
     }
 }
 

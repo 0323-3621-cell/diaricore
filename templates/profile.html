@@ -55,274 +55,310 @@
         <div class="main-content">
             <!-- Main Content -->
             <main class="profile-content">
-                <!-- Mobile: sage hero + back / logout (desktop hides via CSS) -->
-                <div class="profile-mobile-hero">
-                    <div class="profile-mobile-hero__curve" aria-hidden="true"></div>
-                    <div class="profile-mobile-hero__toolbar">
-                        <button type="button" class="profile-mobile-hero__icon-btn" onclick="window.location.href='dashboard.html'" aria-label="Back to home">
+                <div id="profileOverviewShell">
+                    <!-- Mobile: sage hero + back / logout (desktop hides via CSS) -->
+                    <div class="profile-mobile-hero">
+                        <div class="profile-mobile-hero__curve" aria-hidden="true"></div>
+                        <div class="profile-mobile-hero__toolbar">
+                            <button type="button" class="profile-mobile-hero__icon-btn" id="profileMobileBackBtn" aria-label="Back to home">
+                                <i class="bi bi-arrow-left"></i>
+                            </button>
+                            <button type="button" class="profile-mobile-hero__icon-btn profile-mobile-hero__icon-btn--logout" id="profileMobileLogoutBtn" aria-label="Log out">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="header-section">
+                        <h1 class="main-title">Profile</h1>
+                        <p class="subtitle">Manage your account and preferences</p>
+                    </div>
+
+                    <section class="profile-overview-section">
+                        <div class="profile-card">
+                            <div class="profile-header">
+                                <div class="profile-avatar">
+                                    <img src="https://picsum.photos/seed/diari-user/120/120.jpg" alt="Profile Avatar" class="avatar-image">
+                                    <button type="button" class="avatar-edit-btn" aria-label="Change profile photo">
+                                        <i class="bi bi-camera"></i>
+                                    </button>
+                                </div>
+                                <div class="profile-info">
+                                    <h2 class="profile-name">Sarah Johnson</h2>
+                                    <p class="profile-email">sarah.johnson@email.com</p>
+                                    <button type="button" class="profile-edit-identity" id="profileEditIdentityBtn">Edit profile</button>
+                                    <p class="profile-member-since profile-desktop-only-meta">Member since March 2024</p>
+                                </div>
+                            </div>
+                            <div class="profile-stats-section">
+                                <div class="profile-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number">127</span>
+                                        <span class="stat-label">Entries</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">45</span>
+                                        <span class="stat-label">Streak</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">89%</span>
+                                        <span class="stat-label">Rate</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="profile-settings-hub" aria-label="Settings">
+                        <h2 class="profile-settings-hub__title">Settings</h2>
+                        <div class="profile-settings-hub__card">
+                            <button type="button" class="profile-settings-row" data-profile-section="preferences">
+                                <span class="profile-settings-row__icon" aria-hidden="true"><i class="bi bi-bell"></i></span>
+                                <span class="profile-settings-row__text">
+                                    <span class="profile-settings-row__label">Preferences</span>
+                                    <span class="profile-settings-row__hint">Notifications, appearance, and sounds</span>
+                                </span>
+                                <i class="bi bi-chevron-right profile-settings-row__chevron" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="profile-settings-row" data-profile-section="privacy">
+                                <span class="profile-settings-row__icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
+                                <span class="profile-settings-row__text">
+                                    <span class="profile-settings-row__label">Privacy</span>
+                                    <span class="profile-settings-row__hint">Data usage and sharing</span>
+                                </span>
+                                <i class="bi bi-chevron-right profile-settings-row__chevron" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="profile-settings-row" data-profile-section="security">
+                                <span class="profile-settings-row__icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
+                                <span class="profile-settings-row__text">
+                                    <span class="profile-settings-row__label">Security</span>
+                                    <span class="profile-settings-row__hint">Password and account security</span>
+                                </span>
+                                <i class="bi bi-chevron-right profile-settings-row__chevron" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </section>
+
+                    <div class="profile-page-logout profile-page-logout--desktop">
+                        <button type="button" class="profile-page-logout__btn" id="profilePageLogoutBtn">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                            Log out
+                        </button>
+                    </div>
+                </div>
+
+                <div id="profileSectionShell" class="profile-section-shell" hidden>
+                    <div class="profile-section-head">
+                        <button type="button" class="profile-section-back" id="profileSectionBackBtn" aria-label="Back to profile">
                             <i class="bi bi-arrow-left"></i>
                         </button>
-                        <button type="button" class="profile-mobile-hero__icon-btn profile-mobile-hero__icon-btn--logout" id="profileMobileLogoutBtn" aria-label="Log out">
-                            <i class="bi bi-box-arrow-right"></i>
-                        </button>
+                        <div class="profile-section-head__text">
+                            <h1 class="profile-section-title" id="profileSectionTitle">Preferences</h1>
+                            <p class="profile-section-subtitle" id="profileSectionSubtitle">Customize your DiariCore experience.</p>
+                        </div>
+                    </div>
+
+                    <div id="profileSectionPreferences" class="profile-section-panel" hidden>
+                        <div class="profile-preferences-stack">
+                            <p class="profile-prefs-eyebrow">Appearance</p>
+                            <section class="appearance-section">
+                                <div class="appearance-options">
+                                    <div class="appearance-header">
+                                        <div class="appearance-title-container">
+                                            <i class="bi bi-lightbulb appearance-icon"></i>
+                                            <h2 class="appearance-title">Appearance</h2>
+                                        </div>
+                                    </div>
+                                    <div class="appearance-item">
+                                        <div class="appearance-item__row">
+                                            <i class="bi bi-moon appearance-item__leading-icon" aria-hidden="true"></i>
+                                            <div class="appearance-info">
+                                                <h3 class="appearance-subtitle">Dark Mode</h3>
+                                                <p class="appearance-description">Adjust the app's visual theme.</p>
+                                            </div>
+                                        </div>
+                                        <div class="appearance-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="toggleDarkMode">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="appearance-item appearance-item--theme-palette">
+                                        <div class="appearance-item__row">
+                                            <i class="bi bi-palette appearance-item__leading-icon" aria-hidden="true"></i>
+                                            <div class="appearance-info">
+                                                <h3 class="appearance-subtitle">Accent color</h3>
+                                                <p class="appearance-description">Pick one of 10 calming color palettes.</p>
+                                            </div>
+                                        </div>
+                                        <div class="theme-palette-picker">
+                                            <div class="theme-palette-current" aria-live="polite">
+                                                <span class="theme-palette-current__swatch" data-theme-palette-swatch></span>
+                                                <span class="theme-palette-current__name" data-theme-palette-name>Soft Sage Green</span>
+                                            </div>
+                                            <button type="button" class="theme-palette-picker__toggle" id="themePaletteToggle" aria-expanded="false" aria-controls="themePalettePanel">
+                                                Choose theme
+                                                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <div class="theme-palette-panel" id="themePalettePanel" hidden>
+                                            <div class="theme-palette-grid" role="group" aria-label="Theme palette selection">
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-1" aria-pressed="false" title="Soft Sage Green">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#6F8F7F;"></span>
+                                                    <span class="theme-palette-btn__label">Sage</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-2" aria-pressed="false" title="Lavender Purple">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#8E7CB5;"></span>
+                                                    <span class="theme-palette-btn__label">Lavender</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-3" aria-pressed="false" title="Sky Blue">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#6F9BB8;"></span>
+                                                    <span class="theme-palette-btn__label">Sky</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-4" aria-pressed="false" title="Warm Peach">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#D89A82;"></span>
+                                                    <span class="theme-palette-btn__label">Peach</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-5" aria-pressed="false" title="Aqua Teal">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#4FAFB0;"></span>
+                                                    <span class="theme-palette-btn__label">Aqua</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-6" aria-pressed="false" title="Sand Beige">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#B5957E;"></span>
+                                                    <span class="theme-palette-btn__label">Sand</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-7" aria-pressed="false" title="Rose Quartz">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#BC7E97;"></span>
+                                                    <span class="theme-palette-btn__label">Rose</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-8" aria-pressed="false" title="Mint Green">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#6FAF9B;"></span>
+                                                    <span class="theme-palette-btn__label">Mint</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-9" aria-pressed="false" title="Mauve Pink">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#A97B95;"></span>
+                                                    <span class="theme-palette-btn__label">Mauve</span>
+                                                </button>
+                                                <button type="button" class="theme-palette-btn" data-theme-palette="theme-10" aria-pressed="false" title="Sage Gray">
+                                                    <span class="theme-palette-btn__swatch" style="--palette:#7F9393;"></span>
+                                                    <span class="theme-palette-btn__label">Gray</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <p class="profile-prefs-eyebrow">Notifications</p>
+                            <section class="notifications-section">
+                                <div class="notifications-options">
+                                    <div class="notifications-header">
+                                        <div class="notifications-title-container">
+                                            <i class="bi bi-bell notifications-icon"></i>
+                                            <h2 class="notifications-title">Notifications</h2>
+                                        </div>
+                                    </div>
+                                    <div class="notifications-item">
+                                        <div class="notifications-item__row">
+                                            <i class="bi bi-bell notifications-item__leading-icon" aria-hidden="true"></i>
+                                            <div class="notifications-info">
+                                                <h3 class="notifications-subtitle">Daily Reminders</h3>
+                                                <p class="notifications-description">Gentle nudges to write an entry.</p>
+                                            </div>
+                                        </div>
+                                        <div class="notifications-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" id="toggleDailyReminders" checked>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="notifications-item notifications-item--reminder-time">
+                                        <div class="notifications-info">
+                                            <h3 class="notifications-subtitle">Reminder Time</h3>
+                                            <p class="notifications-description">Set your daily reminder time</p>
+                                        </div>
+                                        <div class="notifications-control">
+                                            <input type="time" class="time-input" value="09:00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div id="profileSectionPrivacy" class="profile-section-panel" hidden>
+                        <p class="profile-prefs-eyebrow">Data &amp; privacy</p>
+                        <section class="privacy-section">
+                            <div class="privacy-options">
+                                <div class="privacy-header">
+                                    <div class="privacy-title-container">
+                                        <i class="bi bi-shield-check privacy-icon"></i>
+                                        <h2 class="privacy-title">Privacy</h2>
+                                    </div>
+                                </div>
+                                <div class="privacy-item">
+                                    <span class="privacy-item__leading-icon" aria-hidden="true"><i class="bi bi-download"></i></span>
+                                    <div class="privacy-info">
+                                        <h3 class="privacy-subtitle">Export Data</h3>
+                                        <p class="privacy-description">Download all your journal data in JSON format</p>
+                                    </div>
+                                    <div class="privacy-control">
+                                        <button type="button" class="btn-export">Export</button>
+                                    </div>
+                                </div>
+                                <div class="privacy-item">
+                                    <span class="privacy-item__leading-icon" aria-hidden="true"><i class="bi bi-file-text"></i></span>
+                                    <div class="privacy-info">
+                                        <h3 class="privacy-subtitle">Privacy Policy</h3>
+                                        <p class="privacy-description">Learn how we protect your data</p>
+                                    </div>
+                                    <div class="privacy-control">
+                                        <button type="button" class="btn-privacy">View</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="profileSectionSecurity" class="profile-section-panel" hidden>
+                        <section class="account-settings-section account-settings-section--profile-detail">
+                            <div class="section-header">
+                                <h2 class="section-title">Account Settings</h2>
+                                <p class="section-description">Manage your account information and security</p>
+                            </div>
+                            <div class="settings-grid">
+                                <div class="setting-card">
+                                    <div class="setting-icon">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                    <div class="setting-content">
+                                        <h3 class="setting-title">Personal Info</h3>
+                                        <p class="setting-description">Update your name, email, and profile details</p>
+                                    </div>
+                                    <div class="setting-action">
+                                        <button type="button" class="btn-edit">Edit</button>
+                                        <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                                    </div>
+                                </div>
+                                <div class="setting-card">
+                                    <div class="setting-icon">
+                                        <i class="bi bi-lock"></i>
+                                    </div>
+                                    <div class="setting-content">
+                                        <h3 class="setting-title">Security</h3>
+                                        <p class="setting-description">Change password and enable two-factor authentication</p>
+                                    </div>
+                                    <div class="setting-action">
+                                        <button type="button" class="btn-edit">Edit</button>
+                                        <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
-
-                <!-- Header Section -->
-                <div class="header-section">
-                    <h1 class="main-title">Profile</h1>
-                    <p class="subtitle">Manage your account and preferences</p>
-                </div>
-
-                <!-- Profile Overview -->
-                <section class="profile-overview-section">
-                    <div class="profile-card">
-                        <div class="profile-header">
-                            <div class="profile-avatar">
-                                <img src="https://picsum.photos/seed/diari-user/120/120.jpg" alt="Profile Avatar" class="avatar-image">
-                                <button type="button" class="avatar-edit-btn" aria-label="Change profile photo">
-                                    <i class="bi bi-camera"></i>
-                                </button>
-                            </div>
-                            <div class="profile-info">
-                                <h2 class="profile-name">Sarah Johnson</h2>
-                                <p class="profile-email">sarah.johnson@email.com</p>
-                                <p class="profile-member-since profile-desktop-only-meta">Member since March 2024</p>
-                            </div>
-                        </div>
-                        <div class="profile-stats-section">
-                            <div class="profile-stats">
-                                <div class="stat-item">
-                                    <span class="stat-number">127</span>
-                                    <span class="stat-label">Entries</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-number">45</span>
-                                    <span class="stat-label">Streak</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-number">89%</span>
-                                    <span class="stat-label">Rate</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Account Settings (after overview on mobile; desktop keeps same flow) -->
-                <section class="account-settings-section">
-                    <div class="section-header">
-                        <h2 class="section-title">Account Settings</h2>
-                        <p class="section-description">Manage your account information and security</p>
-                    </div>
-                    <h2 class="profile-mobile-block-title">Account</h2>
-                    <div class="settings-grid">
-                        <div class="setting-card">
-                            <div class="setting-icon">
-                                <i class="bi bi-person"></i>
-                            </div>
-                            <div class="setting-content">
-                                <h3 class="setting-title">Personal Info</h3>
-                                <p class="setting-description">Update your name, email, and profile details</p>
-                            </div>
-                            <div class="setting-action">
-                                <button type="button" class="btn-edit">Edit</button>
-                                <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                            </div>
-                        </div>
-                        <div class="setting-card">
-                            <div class="setting-icon">
-                                <i class="bi bi-lock"></i>
-                            </div>
-                            <div class="setting-content">
-                                <h3 class="setting-title">Security</h3>
-                                <p class="setting-description">Change password and enable two-factor authentication</p>
-                            </div>
-                            <div class="setting-action">
-                                <button type="button" class="btn-edit">Edit</button>
-                                <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <h2 class="profile-mobile-block-title profile-mobile-block-title--prefs">Preferences</h2>
-
-                <div class="profile-preferences-stack">
-                <!-- Appearance -->
-                <section class="appearance-section">
-                    <div class="appearance-options">
-                        <div class="appearance-header">
-                            <div class="appearance-title-container">
-                                <i class="bi bi-lightbulb appearance-icon"></i>
-                                <h2 class="appearance-title">Appearance</h2>
-                            </div>
-                        </div>
-                        <div class="appearance-item">
-                            <div class="appearance-item__row">
-                                <i class="bi bi-lightbulb appearance-item__leading-icon" aria-hidden="true"></i>
-                                <div class="appearance-info">
-                                    <h3 class="appearance-subtitle">Dark Mode</h3>
-                                    <p class="appearance-description">Switch between light and dark themes</p>
-                                </div>
-                            </div>
-                            <div class="appearance-control">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="toggleDarkMode">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="appearance-item appearance-item--theme-palette">
-                            <div class="appearance-item__row">
-                                <i class="bi bi-palette appearance-item__leading-icon" aria-hidden="true"></i>
-                                <div class="appearance-info">
-                                    <h3 class="appearance-subtitle">Theme Color</h3>
-                                    <p class="appearance-description">Pick one of 10 calming color palettes.</p>
-                                </div>
-                            </div>
-                            <div class="theme-palette-picker">
-                                <div class="theme-palette-current" aria-live="polite">
-                                    <span class="theme-palette-current__swatch" data-theme-palette-swatch></span>
-                                    <span class="theme-palette-current__name" data-theme-palette-name>Soft Sage Green</span>
-                                </div>
-                                <button type="button" class="theme-palette-picker__toggle" id="themePaletteToggle" aria-expanded="false" aria-controls="themePalettePanel">
-                                    Choose theme
-                                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            <div class="theme-palette-panel" id="themePalettePanel" hidden>
-                                <div class="theme-palette-grid" role="group" aria-label="Theme palette selection">
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-1" aria-pressed="false" title="Soft Sage Green">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#6F8F7F;"></span>
-                                        <span class="theme-palette-btn__label">Sage</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-2" aria-pressed="false" title="Lavender Purple">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#8E7CB5;"></span>
-                                        <span class="theme-palette-btn__label">Lavender</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-3" aria-pressed="false" title="Sky Blue">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#6F9BB8;"></span>
-                                        <span class="theme-palette-btn__label">Sky</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-4" aria-pressed="false" title="Warm Peach">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#D89A82;"></span>
-                                        <span class="theme-palette-btn__label">Peach</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-5" aria-pressed="false" title="Aqua Teal">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#4FAFB0;"></span>
-                                        <span class="theme-palette-btn__label">Aqua</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-6" aria-pressed="false" title="Sand Beige">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#B5957E;"></span>
-                                        <span class="theme-palette-btn__label">Sand</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-7" aria-pressed="false" title="Rose Quartz">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#BC7E97;"></span>
-                                        <span class="theme-palette-btn__label">Rose</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-8" aria-pressed="false" title="Mint Green">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#6FAF9B;"></span>
-                                        <span class="theme-palette-btn__label">Mint</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-9" aria-pressed="false" title="Mauve Pink">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#A97B95;"></span>
-                                        <span class="theme-palette-btn__label">Mauve</span>
-                                    </button>
-                                    <button type="button" class="theme-palette-btn" data-theme-palette="theme-10" aria-pressed="false" title="Sage Gray">
-                                        <span class="theme-palette-btn__swatch" style="--palette:#7F9393;"></span>
-                                        <span class="theme-palette-btn__label">Gray</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Notifications -->
-                <section class="notifications-section">
-                    <div class="notifications-options">
-                        <div class="notifications-header">
-                            <div class="notifications-title-container">
-                                <i class="bi bi-bell notifications-icon"></i>
-                                <h2 class="notifications-title">Notifications</h2>
-                            </div>
-                        </div>
-                        <div class="notifications-item">
-                            <div class="notifications-item__row">
-                                <i class="bi bi-bell notifications-item__leading-icon" aria-hidden="true"></i>
-                                <div class="notifications-info">
-                                    <h3 class="notifications-subtitle">Daily Reminders</h3>
-                                    <p class="notifications-description">Get reminded to write in your journal</p>
-                                </div>
-                            </div>
-                            <div class="notifications-control">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="toggleDailyReminders" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="notifications-item notifications-item--reminder-time">
-                            <div class="notifications-info">
-                                <h3 class="notifications-subtitle">Reminder Time</h3>
-                                <p class="notifications-description">Set your daily reminder time</p>
-                            </div>
-                            <div class="notifications-control">
-                                <input type="time" class="time-input" value="09:00">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                </div>
-
-                <!-- Privacy -->
-                <section class="privacy-section">
-                    <h2 class="profile-mobile-block-title profile-mobile-block-title--privacy">Privacy</h2>
-                    <div class="privacy-options">
-                        <div class="privacy-header">
-                            <div class="privacy-title-container">
-                                <i class="bi bi-shield-check privacy-icon"></i>
-                                <h2 class="privacy-title">Privacy</h2>
-                            </div>
-                        </div>
-                        <div class="privacy-item">
-                            <span class="privacy-item__leading-icon" aria-hidden="true"><i class="bi bi-download"></i></span>
-                            <div class="privacy-info">
-                                <h3 class="privacy-subtitle">Export Data</h3>
-                                <p class="privacy-description">Download all your journal data in JSON format</p>
-                            </div>
-                            <div class="privacy-control">
-                                <button type="button" class="btn-export">Export</button>
-                            </div>
-                        </div>
-                        <div class="privacy-item">
-                            <span class="privacy-item__leading-icon" aria-hidden="true"><i class="bi bi-file-text"></i></span>
-                            <div class="privacy-info">
-                                <h3 class="privacy-subtitle">Privacy Policy</h3>
-                                <p class="privacy-description">Learn how we protect your data</p>
-                            </div>
-                            <div class="privacy-control">
-                                <button type="button" class="btn-privacy">View</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Danger Zone -->
-                <section class="danger-zone-section">
-                    <h2 class="profile-mobile-block-title profile-mobile-block-title--danger">Danger zone</h2>
-                    <div class="danger-zone-card">
-                        <span class="danger-zone__leading-icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
-                        <div class="danger-zone-header">
-                            <h3 class="danger-zone-title">Danger Zone</h3>
-                            <p class="danger-zone-description">Irreversible actions that affect your account</p>
-                        </div>
-                        <div class="danger-actions">
-                            <button type="button" class="btn-delete-account">Delete Account Permanently</button>
-                        </div>
-                    </div>
-                </section>
             </main>
         </div>
     </div>

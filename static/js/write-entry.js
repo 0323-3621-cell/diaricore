@@ -1,6 +1,6 @@
 // Write Entry Page JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function () {
     try {
     // Initialize variables
     let selectedFeeling = null;
@@ -888,8 +888,9 @@ document.addEventListener('DOMContentLoaded', function() {
         applyTagCollapse();
     }
     
-    // Initialize tags (defaults + user tags) then apply visibility rules
-    syncUserTagsIntoUI();
+    // Initialize tags (defaults + user tags) then apply visibility rules.
+    // Must complete before shell release or static HTML tags flash until fetch returns.
+    await syncUserTagsIntoUI();
     
     // Update on window resize
     window.addEventListener('resize', updateTagVisibility);

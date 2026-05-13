@@ -713,7 +713,14 @@ function openEntriesDetailFromQuery() {
         const raw = url.searchParams.get('entryId');
         const id = Number(raw);
         if (!id) return;
-        // Delay until initial list render is done.
+        const listShell = document.getElementById('entriesListShell');
+        const detailShell = document.getElementById('entriesDetailShell');
+        // Avoid showing the grid first: immediately flip shells, then mount.
+        if (listShell && detailShell) {
+            listShell.hidden = true;
+            detailShell.hidden = false;
+            document.body.classList.add('page-entries-detail-open');
+        }
         window.requestAnimationFrame(() => {
             window.requestAnimationFrame(() => {
                 openEntriesDetailInline(id);

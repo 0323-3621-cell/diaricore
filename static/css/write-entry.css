@@ -380,18 +380,15 @@
 
 .entry-gallery-scroll {
     --g-gap: 0.36rem;
-    /* Cell ≈ column width; row height matches (square thumbs). Cap viewport to 3 rows (6 images). */
-    --g-cell: calc((100% - var(--g-gap)) / 2);
-    --g-viewport-h: calc(3 * var(--g-cell) + 2 * var(--g-gap));
     flex: 0 0 auto;
     width: 100%;
-    height: var(--g-viewport-h);
-    max-height: var(--g-viewport-h);
+    /* --gallery-viewport-px set by JS; fallback avoids invalid cqi before container-type */
+    height: var(--gallery-viewport-px, min(52vw, 380px));
+    max-height: var(--gallery-viewport-px, min(52vw, 380px));
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    contain: layout;
     border: 1px solid var(--border-color);
     border-radius: 12px 12px 0 0;
     background: var(--background-soft);
@@ -403,6 +400,9 @@
     .entry-gallery-scroll {
         container-type: inline-size;
         --g-cell: calc((100cqi - var(--g-gap)) / 2);
+        --g-viewport-h: calc(3 * var(--g-cell) + 2 * var(--g-gap));
+        height: var(--gallery-viewport-px, var(--g-viewport-h));
+        max-height: var(--gallery-viewport-px, var(--g-viewport-h));
     }
 }
 
@@ -418,6 +418,10 @@
     border-radius: 0;
     background: transparent;
     padding: 0;
+}
+
+.entry-gallery-scroll--overflow .entry-gallery {
+    overflow-y: scroll;
 }
 
 .entry-gallery-pane__sticky {

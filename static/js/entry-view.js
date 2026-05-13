@@ -375,6 +375,7 @@
         const columnsEl = document.getElementById('entryViewColumns');
         const imagesAside = document.getElementById('entryViewImagesAside');
         const imageStripScroll = document.getElementById('entryViewImageStripScroll');
+        const imageStripViewport = document.querySelector('.entry-view-image-strip__viewport');
         const imageStripBadge = document.getElementById('entryViewImageStripBadge');
         const imageStripFade = document.getElementById('entryViewImageStripFade');
         const imageStripAddBtn = document.getElementById('entryViewImageStripAddBtn');
@@ -512,6 +513,40 @@
             const el = imageStripScroll;
             const more = el.scrollHeight > el.clientHeight + 4;
             imageStripFade.hidden = !more || editMode;
+        }
+
+        function syncEntryStripViewportPx() {
+            if (!imageStripViewport || !imageStripScroll) return;
+            const items = stripDisplayItems();
+            const n = items.length;
+
+            const cs = getComputedStyle(imageStripViewport);
+            const padL = parseFloat(cs.paddingLeft) || 0;
+            const padR = parseFloat(cs.paddingRight) || 0;
+            const innerW = Math.max(0, imageStripViewport.clientWidth - padL - padR);
+            const grid = imageStripScroll.querySelector('.entry-view-strip-grid');
+            let gapPx = 5.76;
+            if (grid) {
+                const gcs = getComputedStyle(grid);
+                gapPx = parseFloat(gcs.columnGap) || parseFloat(gcs.gap) || gapPx;
+            }
+            const cell = Math.max(0, (innerW - gapPx) / 2);
+
+            if (!n) {
+                if (editMode) {
+                    const h = cell;
+                    imageStripViewport.style.setProperty('--gallery-viewport-px', `${Math.round(h * 100) / 100}px`);
+                } else {
+                    imageStripViewport.style.removeProperty('--gallery-viewport-px');
+                }
+                imageStripScroll.classList.remove('entry-view-image-strip--overflow');
+                return;
+            }
+
+            const rows = 3;
+            const h = rows * cell + (rows - 1) * gapPx;
+            imageStripViewport.style.setProperty('--gallery-viewport-px', `${Math.round(h * 100) / 100}px`);
+            imageStripScroll.classList.toggle('entry-view-image-strip--overflow', n > 6);
         }
 
         function serializeImagesForStorage() {
@@ -685,6 +720,7 @@
             imageStripScroll.appendChild(grid);
             updateColumnsLayout();
             requestAnimationFrame(() => {
+                syncEntryStripViewportPx();
                 updateStripFade();
                 autoResizeTextarea(bodyEl);
             });
@@ -878,6 +914,15 @@
         if (columnsEl && window.ResizeObserver) {
             const ro = new ResizeObserver(() => autoResizeTextarea(bodyEl));
             ro.observe(columnsEl);
+        }
+
+        if (imageStripViewport && window.ResizeObserver) {
+            const roStrip = new ResizeObserver(() => {
+                syncEntryStripViewportPx();
+                updateStripFade();
+            });
+            roStrip.observe(imageStripViewport);
+            signal.addEventListener('abort', () => roStrip.disconnect(), { once: true });
         }
 
         function previewTitleForEntry(ent) {

@@ -162,6 +162,50 @@ document.addEventListener('DOMContentLoaded', function() {
         badge.textContent = formatPhotoCount(count);
     }
 
+    /** 2×3 grid of square thumbs — lock viewport height in px (CSS % in calc was resolving wrong). */
+    const WRITE_GALLERY_ROWS = 3;
+    const WRITE_GALLERY_COLS = 2;
+    const WRITE_GALLERY_MAX_VISIBLE = WRITE_GALLERY_ROWS * WRITE_GALLERY_COLS;
+    let writeGalleryResizeObserver = null;
+
+    function syncWriteEntryGalleryViewport() {
+        const scrollEl = document.getElementById('entryGalleryScroll');
+        const galleryEl = document.getElementById('entryGallery');
+        if (!scrollEl || !galleryEl) return;
+
+        if (galleryEl.classList.contains('is-empty')) {
+            scrollEl.style.removeProperty('--gallery-viewport-px');
+            scrollEl.classList.remove('entry-gallery-scroll--overflow');
+            return;
+        }
+
+        const cs = getComputedStyle(scrollEl);
+        const padL = parseFloat(cs.paddingLeft) || 0;
+        const padR = parseFloat(cs.paddingRight) || 0;
+        const innerW = Math.max(0, scrollEl.clientWidth - padL - padR);
+
+        const grid = galleryEl.querySelector('.entry-gallery-grid');
+        let gapPx = 5.76;
+        if (grid) {
+            const gcs = getComputedStyle(grid);
+            gapPx = parseFloat(gcs.columnGap) || parseFloat(gcs.gap) || gapPx;
+        }
+
+        const cell = Math.max(0, (innerW - gapPx) / 2);
+        const viewportH = WRITE_GALLERY_ROWS * cell + (WRITE_GALLERY_ROWS - 1) * gapPx;
+        scrollEl.style.setProperty('--gallery-viewport-px', `${Math.round(viewportH * 100) / 100}px`);
+
+        const count = galleryEl.querySelectorAll('.entry-gallery-item').length;
+        scrollEl.classList.toggle('entry-gallery-scroll--overflow', count > WRITE_GALLERY_MAX_VISIBLE);
+    }
+
+    function initWriteGalleryViewportObserver() {
+        const scrollEl = document.getElementById('entryGalleryScroll');
+        if (!scrollEl || !window.ResizeObserver || writeGalleryResizeObserver) return;
+        writeGalleryResizeObserver = new ResizeObserver(() => syncWriteEntryGalleryViewport());
+        writeGalleryResizeObserver.observe(scrollEl);
+    }
+
     function updateImageProgress(id, progress) {
         attachedImages = attachedImages.map((img) => (img.id === id ? { ...img, progress } : img));
         renderImageGallery();
@@ -231,6 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const done = () => {
                 wrap.classList.remove('entry-gallery-img-wrap--loading', 'entry-gallery-img-wrap--pending');
                 wrap.classList.add('entry-gallery-img-wrap--loaded');
+                syncWriteEntryGalleryViewport();
             };
             const fail = () => {
                 wrap.classList.remove('entry-gallery-img-wrap--loading', 'entry-gallery-img-wrap--pending');
@@ -275,6 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             const trigger = document.getElementById('entryGalleryEmptyTrigger');
             trigger?.addEventListener('click', () => document.getElementById('imageFileInput')?.click());
+            syncWriteEntryGalleryViewport();
             if (typeof window.__diariAdjustWriteJournal === 'function') window.__diariAdjustWriteJournal();
             return;
         }
@@ -321,7 +367,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderImageGallery();
             });
         });
-        if (typeof window.__diariAdjustWriteJournal === 'function') window.__diariAdjustWriteJournal();
+        requestAnimationFrame(() => {
+            syncWriteEntryGalleryViewport();
+            if (typeof window.__diariAdjustWriteJournal === 'function') window.__diariAdjustWriteJournal();
+        });
     }
 
     function openLightbox(index) {
@@ -1223,7 +1272,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     renderImageGallery();
-    
+    initWriteGalleryViewportObserver();
+    syncWriteEntryGalleryViewport();
+
     const journalText = document.getElementById('journalText');
     const journalTitleInput = document.getElementById('journalTitleInput');
     const charCount = document.getElementById('charCount');

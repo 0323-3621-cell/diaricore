@@ -565,23 +565,30 @@
                         const img = document.createElement('img');
                         img.alt = '';
                         img.decoding = 'async';
-                        img.loading = 'lazy';
-                        img.src = src;
+                        img.loading = 'eager';
+                        let settled = false;
                         const markLoaded = () => {
+                            if (settled) return;
+                            settled = true;
                             imgWrap.classList.remove('entry-view-strip-imgwrap--loading', 'entry-view-strip-imgwrap--pending');
                             imgWrap.classList.add('entry-view-strip-imgwrap--loaded');
                             img.alt = 'Entry photo';
                         };
                         const markError = () => {
+                            if (settled) return;
+                            settled = true;
                             imgWrap.classList.remove('entry-view-strip-imgwrap--loading', 'entry-view-strip-imgwrap--pending');
                             imgWrap.classList.add('entry-view-strip-imgwrap--error');
                         };
                         img.addEventListener('load', markLoaded, { once: true });
                         img.addEventListener('error', markError, { once: true });
                         imgWrap.appendChild(img);
-                        if (img.complete && img.naturalHeight > 0) {
-                            markLoaded();
-                        }
+                        img.src = src;
+                        const trySync = () => {
+                            if (img.complete && img.naturalHeight > 0) markLoaded();
+                        };
+                        trySync();
+                        requestAnimationFrame(trySync);
                     }
 
                     wrap.appendChild(imgWrap);

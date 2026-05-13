@@ -810,7 +810,11 @@ html.theme-dark .entry-view-actions {
     width: 100%;
     height: var(--g-viewport-h);
     max-height: var(--g-viewport-h);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    contain: layout;
     border: 1px solid var(--border-color, #e8ecf0);
     border-radius: 12px 12px 0 0;
     background: var(--bg-secondary, #f4f6f8);
@@ -819,9 +823,9 @@ html.theme-dark .entry-view-actions {
 }
 
 .entry-view-image-strip__scroll {
-    height: 100%;
-    max-height: 100%;
+    flex: 1 1 auto;
     min-height: 0;
+    max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
@@ -953,15 +957,21 @@ html.theme-dark .entry-view-image-strip__sticky {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 1;
     vertical-align: middle;
     opacity: 0;
     transition: opacity 0.35s ease;
 }
 
+.entry-view-strip-imgwrap--loading img {
+    z-index: 0;
+}
+
 .entry-view-strip-imgwrap--loaded img {
     opacity: 1;
+    z-index: 1;
 }
 
 .entry-view-strip-imgwrap--loaded .entry-img-skeleton {

@@ -357,9 +357,53 @@ def delete_user_tag(*, user_id: int, tag: str) -> bool:
     t = _normalize_tag_value(tag)
     if not t or user_id <= 0:
         return False
+    t_key = t.lower()
     conn = get_conn()
     cur = conn.cursor()
     try:
+        if USE_POSTGRES:
+            cur.execute(
+                "SELECT id, tags_json FROM journal_entries WHERE user_id = %s",
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                "SELECT id, tags_json FROM journal_entries WHERE user_id = ?",
+                (user_id,),
+            )
+        rows = [row_to_dict(r) for r in cur.fetchall()]
+        for row in rows:
+            eid = int(row["id"])
+            raw = row.get("tags_json") or "[]"
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                continue
+            if not isinstance(parsed, list):
+                continue
+            new_tags = [x for x in parsed if str(x or "").strip().lower() != t_key]
+            if len(new_tags) == len(parsed):
+                continue
+            new_json = json.dumps(new_tags)
+            if USE_POSTGRES:
+                cur.execute(
+                    """
+                    UPDATE journal_entries
+                    SET tags_json = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s AND user_id = %s
+                    """,
+                    (new_json, eid, user_id),
+                )
+            else:
+                cur.execute(
+                    """
+                    UPDATE journal_entries
+                    SET tags_json = ?, updated_at = datetime('now')
+                    WHERE id = ? AND user_id = ?
+                    """,
+                    (new_json, eid, user_id),
+                )
+
         if USE_POSTGRES:
             cur.execute(
                 "DELETE FROM user_tags WHERE user_id = %s AND tag = %s",

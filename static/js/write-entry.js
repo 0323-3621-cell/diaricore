@@ -1087,6 +1087,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    function stripTagFromLocalStoredEntries(tagName) {
+        const key = normalizeTag(tagName).toLowerCase();
+        if (!key) return;
+        try {
+            const raw = localStorage.getItem('diariCoreEntries');
+            const list = JSON.parse(raw || '[]');
+            if (!Array.isArray(list)) return;
+            let changed = false;
+            const next = list.map((e) => {
+                const tags = Array.isArray(e?.tags) ? e.tags : [];
+                const filtered = tags.filter((t) => normalizeTag(t).toLowerCase() !== key);
+                if (filtered.length === tags.length) return e;
+                changed = true;
+                return { ...e, tags: filtered };
+            });
+            if (changed) localStorage.setItem('diariCoreEntries', JSON.stringify(next));
+        } catch (_) {
+            /* ignore */
+        }
+    }
+
     async function deleteCustomTag(tagName) {
         const normalized = normalizeTag(tagName);
         const key = normalized.toLowerCase();
@@ -1094,6 +1115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tagItemsState = tagItemsState.filter((x) => normalizeTag(x.tag).toLowerCase() !== key);
         selectedTags.delete(normalized);
         renderTagButtons();
+        stripTagFromLocalStoredEntries(normalized);
 
         const userId = getCurrentUserId();
         if (!userId || !isOnlineNow()) {

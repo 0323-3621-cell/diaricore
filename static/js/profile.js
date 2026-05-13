@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeProfileFromStorage() {
     const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
     const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
-    const safeEntries = Array.isArray(entries) ? entries.filter((e) => e && e.date) : [];
+    const safeEntries = Array.isArray(entries) ? entries.filter((e) => e && (e.date || e.createdAt)) : [];
 
     const nameEl = document.querySelector('.profile-name');
     const emailEl = document.querySelector('.profile-email');
@@ -39,21 +39,47 @@ function initializeProfileFromStorage() {
     if (statEls[2]) statEls[2].textContent = `${consistency}%`;
 }
 
+const PROFILE_MS_PER_DAY = 86400000;
+
+function profileJournalDayStartMs(raw) {
+    if (raw == null) return null;
+    const dt = new Date(raw);
+    if (Number.isNaN(dt.getTime())) return null;
+    const local = new Date(dt);
+    local.setHours(0, 0, 0, 0);
+    return local.getTime();
+}
+
 function calculateEntryStreak(entries) {
-    if (!entries.length) return 0;
-    const uniqueDays = Array.from(new Set(entries.map((e) => {
-        const d = new Date(e.date);
-        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    }))).sort((a, b) => new Date(b) - new Date(a));
+    if (!Array.isArray(entries) || entries.length === 0) return 0;
+    const daySet = new Set();
+    entries.forEach((e) => {
+        if (!e) return;
+        const raw = e.date || e.createdAt;
+        if (!raw) return;
+        const ms = profileJournalDayStartMs(raw);
+        if (ms != null) daySet.add(ms);
+    });
+    if (daySet.size === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+
+    let anchorMs = null;
+    daySet.forEach((t) => {
+        if (t > todayMs) return;
+        if (anchorMs == null || t > anchorMs) anchorMs = t;
+    });
+    if (anchorMs == null) return 0;
+
+    const gapDays = Math.floor((todayMs - anchorMs) / PROFILE_MS_PER_DAY);
+    if (gapDays > 1) return 0;
 
     let streak = 0;
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
-    for (let i = 0; i < uniqueDays.length; i += 1) {
-        const expected = new Date(cursor);
-        expected.setDate(cursor.getDate() - i);
-        const dayKey = `${expected.getFullYear()}-${expected.getMonth()}-${expected.getDate()}`;
-        if (uniqueDays[i] === dayKey) streak += 1;
+    for (let i = 0; i < 400; i += 1) {
+        const d = anchorMs - i * PROFILE_MS_PER_DAY;
+        if (daySet.has(d)) streak += 1;
         else break;
     }
     return streak;

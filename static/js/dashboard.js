@@ -229,12 +229,16 @@ function aggregateCalendarWeekMood(entries) {
     const dayScores = new Array(7).fill(null).map(() => []);
     const dayFeelings = new Array(7).fill(null).map(() => []);
     const sortedForWeek = [...(entries || [])]
-        .filter((e) => e?.date)
-        .sort((a, b) => (parseEntryDate(a.date)?.getTime() ?? 0) - (parseEntryDate(b.date)?.getTime() ?? 0));
+        .filter((e) => e && (e.date || e.createdAt))
+        .sort(
+            (a, b) =>
+                (parseEntryDate(a.date || a.createdAt)?.getTime() ?? 0) -
+                (parseEntryDate(b.date || b.createdAt)?.getTime() ?? 0)
+        );
 
     let entriesInWeek = 0;
     sortedForWeek.forEach((entry) => {
-        const idx = weekDayIndexSinceMonday(entry.date, mondayMs);
+        const idx = weekDayIndexSinceMonday(entry.date || entry.createdAt, mondayMs);
         if (idx == null) return;
         entriesInWeek += 1;
         const feeling = resolveEntryFeeling(entry);
@@ -250,49 +254,61 @@ function aggregateCalendarWeekMood(entries) {
     return { mondayMs, dayScores, dayFeelings, chartData, entriesInWeek };
 }
 
-function calculateEntryStreak(entries) {
-    if (!Array.isArray(entries) || entries.length === 0) return 0;
-    const uniqueDays = Array.from(new Set(entries
-        .filter((entry) => entry?.date)
-        .map((entry) => startOfLocalDayMsFromEntry(entry.date))
-        .filter((t) => t != null)))
-        .sort((a, b) => b - a);
+/**
+ * Consecutive journal days ending at your most recent entry day, as long as that day is
+ * today or yesterday (one-day grace so evening-only users are not shown 0 in the morning).
+ * Uses the same local calendar day rules as `startOfLocalDayMsFromEntry` / weekly chart.
+ */
+function computeEntryStreak(entries) {
+    const empty = { streak: 0, streakDayMs: new Set(), hasEntryToday: false };
+    if (!Array.isArray(entries) || entries.length === 0) return empty;
 
+    const daySet = new Set();
+    entries.forEach((e) => {
+        if (!e) return;
+        const raw = e.date || e.createdAt;
+        if (!raw) return;
+        const ms = startOfLocalDayMsFromEntry(raw);
+        if (ms != null) daySet.add(ms);
+    });
+    if (daySet.size === 0) return empty;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+    const hasEntryToday = daySet.has(todayMs);
+
+    let anchorMs = null;
+    daySet.forEach((t) => {
+        if (t > todayMs) return;
+        if (anchorMs == null || t > anchorMs) anchorMs = t;
+    });
+    if (anchorMs == null) return empty;
+
+    const gapDays = Math.floor((todayMs - anchorMs) / MS_PER_DAY);
+    if (gapDays > 1) return { streak: 0, streakDayMs: new Set(), hasEntryToday };
+
+    const streakDayMs = new Set();
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < uniqueDays.length; i += 1) {
-        const expected = new Date(today);
-        expected.setDate(today.getDate() - i);
-        if (uniqueDays[i] === expected.getTime()) streak += 1;
-        else break;
+    for (let i = 0; i < 400; i += 1) {
+        const d = anchorMs - i * MS_PER_DAY;
+        if (daySet.has(d)) {
+            streak += 1;
+            streakDayMs.add(d);
+        } else break;
     }
-    return streak;
+    return { streak, streakDayMs, hasEntryToday };
 }
 
-function streakCalendarDayTimestamps(streak) {
-    const set = new Set();
-    if (streak <= 0) return set;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    for (let i = 0; i < streak; i += 1) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        d.setHours(0, 0, 0, 0);
-        set.add(d.getTime());
-    }
-    return set;
-}
-
-function streakPanelHintText(streak) {
+function streakPanelHintText(streak, hasEntryToday) {
     if (streak <= 0) return 'Journal today to start.';
+    if (!hasEntryToday) return 'Log today to keep your streak going.';
     if (streak === 1) return 'Log again tomorrow to extend it.';
     return "You're on a roll — keep it up.";
 }
 
 function updateStreakPanelUI(entries) {
-    const streak = calculateEntryStreak(entries || []);
+    const { streak, streakDayMs, hasEntryToday } = computeEntryStreak(entries || []);
     const numEl = document.getElementById('floatingStreakNum');
     const hintEl = document.getElementById('floatingStreakHint');
     const weekEl = document.getElementById('floatingStreakWeek');
@@ -301,14 +317,14 @@ function updateStreakPanelUI(entries) {
     if (numEl) numEl.textContent = String(streak);
     const daysLbl = document.getElementById('floatingStreakDaysLabel');
     if (daysLbl) daysLbl.textContent = streak === 1 ? 'day' : 'days';
-    if (hintEl) hintEl.textContent = streakPanelHintText(streak);
+    if (hintEl) hintEl.textContent = streakPanelHintText(streak, hasEntryToday);
     if (legacy) legacy.textContent = `${streak} day${streak === 1 ? '' : 's'}`;
 
     if (!weekEl) return;
 
     const letters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     const mondayMs = mondayOfWeekContaining().getTime();
-    const streakDays = streakCalendarDayTimestamps(streak);
+    const streakDays = streakDayMs;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = today.getTime();
@@ -602,8 +618,12 @@ function titleCase(value) {
 function getLatestEntry(entries) {
     if (!Array.isArray(entries) || entries.length === 0) return null;
     return [...entries]
-        .filter((e) => e?.date)
-        .sort((a, b) => (parseEntryDate(b.date)?.getTime() ?? 0) - (parseEntryDate(a.date)?.getTime() ?? 0))[0] || null;
+        .filter((e) => e && (e.date || e.createdAt))
+        .sort(
+            (a, b) =>
+                (parseEntryDate(b.date || b.createdAt)?.getTime() ?? 0) -
+                (parseEntryDate(a.date || a.createdAt)?.getTime() ?? 0)
+        )[0] || null;
 }
 
 function updateDashboardCards(entries) {

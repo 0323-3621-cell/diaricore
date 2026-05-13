@@ -326,6 +326,7 @@ function computeConsistencyInsightBundle() {
     const entriesPerWeek = Math.round((sumWeek / 6) * 10) / 10;
 
     const hourBuckets = Array.from({ length: 24 }, () => 0);
+    /** Hour-of-day uses each entry's clock time in the browser's local timezone. Prefer `createdAt` (save time); fall back to `date` if missing. */
     entries.forEach((e) => {
         const raw = e.createdAt || e.date;
         if (!raw) return;
@@ -346,7 +347,7 @@ function computeConsistencyInsightBundle() {
     if (totalH > 0 && peakVal >= 0) {
         const dt = new Date();
         dt.setHours(peakHour, 0, 0, 0);
-        mostActiveTimeLabel = dt.toLocaleTimeString('en-US', {
+        mostActiveTimeLabel = dt.toLocaleTimeString(undefined, {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
@@ -471,6 +472,21 @@ function insightsHeroSetMode(mode) {
     }
 }
 
+function insightsTabFromHash() {
+    const h = String(window.location.hash || '')
+        .replace(/^#/, '')
+        .trim()
+        .toLowerCase();
+    return h === 'consistency' ? 'consistency' : 'emotions';
+}
+
+function replaceInsightsUrlForTab(which) {
+    const base = `${window.location.pathname}${window.location.search}`;
+    const want = which === 'consistency' ? `${base}#consistency` : base;
+    const cur = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (cur !== want) history.replaceState(null, '', want);
+}
+
 function initializeInsightsHeroTabs() {
     const emotions = document.getElementById('insightsTabEmotions');
     const consistency = document.getElementById('insightsTabConsistency');
@@ -498,10 +514,18 @@ function initializeInsightsHeroTabs() {
         } else {
             destroyInsightsConsistencyChart();
         }
+
+        replaceInsightsUrlForTab(which);
     };
 
     emotions.addEventListener('click', () => activate('emotions'));
     consistency.addEventListener('click', () => activate('consistency'));
+
+    window.addEventListener('hashchange', () => {
+        activate(insightsTabFromHash());
+    });
+
+    activate(insightsTabFromHash());
 }
 
 /** Pick 0..len-1 from calendar day + week (Monday) so copy shifts daily and when the week rolls over. */

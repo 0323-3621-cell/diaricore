@@ -335,9 +335,12 @@ function computeConsistencyInsightBundle() {
     const entriesPerWeek = Math.round((isoWeeks.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
 
     const hourBuckets = Array.from({ length: 24 }, () => 0);
-    /** Hour-of-day uses each entry's clock time in the browser's local timezone. Prefer `createdAt` (save time); fall back to `date` if missing. */
+    /**
+     * Peak hour uses the same instant as the API `createdAt` (DB `created_at`), ISO UTC with Z from the server.
+     * `Date#getHours()` is in the browser's local timezone (device clock), not a hard-coded Philippines offset.
+     */
     entries.forEach((e) => {
-        const raw = e.createdAt || e.date;
+        const raw = e.createdAt || e.created_at || e.date;
         if (!raw) return;
         const d = new Date(raw);
         if (Number.isNaN(d.getTime())) return;

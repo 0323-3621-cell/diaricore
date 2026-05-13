@@ -1696,6 +1696,15 @@ html.theme-dark .emotion-trigger-block__desc {
     }
 }
 
+.insights-consistency-kpi__hint {
+    font-size: 0.68rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--text-muted);
+    max-width: 14rem;
+    margin-top: 0.2rem;
+}
+
 @media (max-width: 520px) {
     .insights-consistency-metric-grid {
         grid-template-columns: 1fr;

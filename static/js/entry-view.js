@@ -977,7 +977,6 @@
                 }
             }
             if (imageFileInput) imageFileInput.value = '';
-            if (isOnline()) scheduleAutoSave('image');
         }
 
         function openLightbox(index) {
@@ -1306,27 +1305,6 @@
             const prev = String(b.text || '').trim();
             return cur !== prev;
         }
-
-        let autoSaveTimer = null;
-        function scheduleAutoSave(reason) {
-            if (signal.aborted) return;
-            if (!editMode) return;
-            if (!isOnline()) return; // offline already persists drafts/queue
-            if (!isDirty()) return;
-            if (autoSaveTimer) clearTimeout(autoSaveTimer);
-            autoSaveTimer = window.setTimeout(() => {
-                autoSaveTimer = null;
-                void runSave(didTextChangeFromBaseline());
-            }, reason === 'image' ? 350 : 550);
-        }
-        signal.addEventListener(
-            'abort',
-            () => {
-                if (autoSaveTimer) clearTimeout(autoSaveTimer);
-                autoSaveTimer = null;
-            },
-            { once: true }
-        );
 
         function persistDraft() {
             localStorage.setItem(
@@ -1739,9 +1717,7 @@
                 if (!isOnline()) {
                     void persistDraftImages();
                     persistDraft();
-                    return;
                 }
-                scheduleAutoSave('image');
             },
             { signal }
         );

@@ -193,6 +193,16 @@
         return `${weekday}, ${rest} · ${time}`;
     }
 
+    /** Short date for delete confirmation (e.g. Wed, May 13 · 12:11 PM). */
+    function formatEntryDateShort(isoDate) {
+        const d = new Date(isoDate);
+        if (Number.isNaN(d.getTime())) return '';
+        const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+        const md = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return `${wd}, ${md} · ${time}`;
+    }
+
     function autoResizeTextarea(el) {
         if (!el) return;
         el.style.height = 'auto';
@@ -315,7 +325,9 @@
         const unsavedDiscard = document.getElementById('entryUnsavedDiscardBtn');
         const deleteDialog = document.getElementById('entryDeleteDialog');
         const deletePreviewTitleEl = document.getElementById('entryDeletePreviewTitle');
+        const deletePreviewSnippetEl = document.getElementById('entryDeletePreviewSnippet');
         const deletePreviewDateEl = document.getElementById('entryDeletePreviewDate');
+        const deletePreviewMoodLabelEl = document.getElementById('entryDeletePreviewMoodLabel');
         const deleteCancelBtn = document.getElementById('entryDeleteCancelBtn');
         const deleteConfirmBtn = document.getElementById('entryDeleteConfirmBtn');
         const columnsEl = document.getElementById('entryViewColumns');
@@ -368,7 +380,9 @@
             !aiEmotionLabel ||
             !deleteDialog ||
             !deletePreviewTitleEl ||
+            !deletePreviewSnippetEl ||
             !deletePreviewDateEl ||
+            !deletePreviewMoodLabelEl ||
             !deleteCancelBtn ||
             !deleteConfirmBtn
         ) {
@@ -758,10 +772,27 @@
             deleteConfirmBtn.disabled = false;
         }
 
+        function previewCardTitleForDelete(ent) {
+            const t = String(ent.title || '').trim();
+            if (t) return t.length > 120 ? `${t.slice(0, 117)}…` : t;
+            return previewTitleForEntry(ent);
+        }
+
+        function previewSnippetForDelete(ent) {
+            const body = String(ent.text || '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!body) return 'No body text in this entry.';
+            const max = 240;
+            return body.length > max ? `${body.slice(0, max - 1)}…` : body;
+        }
+
         function openDeleteDialog() {
-            deletePreviewTitleEl.textContent = previewTitleForEntry(entry);
+            deletePreviewTitleEl.textContent = previewCardTitleForDelete(entry);
+            deletePreviewSnippetEl.textContent = previewSnippetForDelete(entry);
             const displayDate = entry.date || entry.createdAt;
-            deletePreviewDateEl.textContent = formatEntryDateLine(displayDate) || '—';
+            deletePreviewDateEl.textContent = formatEntryDateShort(displayDate) || '—';
+            deletePreviewMoodLabelEl.textContent = toTitleCaseEmotion(entry.emotionLabel || entry.feeling || 'neutral');
             deleteDialog.hidden = false;
         }
 

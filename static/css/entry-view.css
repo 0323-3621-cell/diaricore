@@ -460,7 +460,7 @@ html.theme-dark .entry-view-toolbar__cancel {
     border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* ——— Delete entry confirmation (matches design reference) ——— */
+/* ——— Delete entry confirmation (reference layout; light default, dark in theme-dark) ——— */
 .entry-delete-dialog {
     position: fixed;
     inset: 0;
@@ -469,6 +469,28 @@ html.theme-dark .entry-view-toolbar__cancel {
     align-items: center;
     justify-content: center;
     padding: 1.25rem;
+    --del-panel-bg: #ffffff;
+    --del-panel-border: rgba(15, 23, 42, 0.1);
+    --del-panel-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    --del-title: #141a20;
+    --del-desc: #5c6570;
+    --del-divider: rgba(15, 23, 42, 0.08);
+    --del-icon-bg: #fce8ea;
+    --del-icon-fg: #9b1c1c;
+    --del-preview-bg: #f0f3f5;
+    --del-preview-border: rgba(15, 23, 42, 0.08);
+    --del-preview-title: #141a20;
+    --del-preview-snippet: #5c6570;
+    --del-preview-meta: #6b7280;
+    --del-accent: #c41e3a;
+    --del-mood-bg: #fce4ec;
+    --del-mood-fg: #9b1c1c;
+    --del-btn-border: rgba(15, 23, 42, 0.18);
+    --del-btn-fg: #1a2430;
+    --del-btn-secondary-hover: rgba(15, 23, 42, 0.05);
+    --del-btn-danger-hover-bg: rgba(180, 35, 24, 0.08);
+    --del-btn-danger-hover-border: rgba(180, 35, 24, 0.45);
+    --del-backdrop: rgba(15, 23, 42, 0.45);
 }
 
 .entry-delete-dialog[hidden] {
@@ -478,123 +500,235 @@ html.theme-dark .entry-view-toolbar__cancel {
 .entry-delete-dialog__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(8, 10, 14, 0.72);
-    backdrop-filter: blur(6px);
+    background: var(--del-backdrop);
+    backdrop-filter: blur(5px);
 }
 
 .entry-delete-dialog__panel {
     position: relative;
     width: 100%;
-    max-width: 420px;
-    background: #1c1f26;
-    border-radius: 18px;
-    padding: 1.75rem 1.5rem 1.5rem;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    text-align: center;
+    max-width: 440px;
+    background: var(--del-panel-bg);
+    border-radius: 14px;
+    padding: 0;
+    box-shadow: var(--del-panel-shadow);
+    border: 1px solid var(--del-panel-border);
+    text-align: left;
+    overflow: hidden;
+}
+
+.entry-delete-dialog__section {
+    padding: 1.15rem 1.25rem;
+}
+
+.entry-delete-dialog__section--header {
+    padding-bottom: 1rem;
+}
+
+.entry-delete-dialog__header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
 }
 
 .entry-delete-dialog__icon-wrap {
-    width: 3.25rem;
-    height: 3.25rem;
-    margin: 0 auto 1.1rem;
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: 50%;
-    background: #f5d0d4;
+    background: var(--del-icon-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #9b1c1c;
-    font-size: 1.35rem;
+    color: var(--del-icon-fg);
+    font-size: 1.2rem;
+}
+
+.entry-delete-dialog__header-text {
+    min-width: 0;
+    flex: 1;
 }
 
 .entry-delete-dialog__title {
-    margin: 0 0 0.65rem;
-    font-size: 1.25rem;
+    margin: 0 0 0.45rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: #f4f6f8;
+    color: var(--del-title);
     letter-spacing: -0.02em;
+    line-height: 1.25;
 }
 
 .entry-delete-dialog__desc {
-    margin: 0 auto 1.25rem;
-    font-size: 0.9rem;
-    line-height: 1.55;
-    color: rgba(228, 232, 238, 0.72);
-    max-width: 32ch;
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--del-desc);
+}
+
+.entry-delete-dialog__divider {
+    height: 1px;
+    background: var(--del-divider);
+    margin: 0;
+}
+
+.entry-delete-dialog__section--preview {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
 }
 
 .entry-delete-dialog__preview {
-    text-align: left;
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1rem 1.1rem;
-    margin-bottom: 1.35rem;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    border-radius: 10px;
+    background: var(--del-preview-bg);
+    border: 1px solid var(--del-preview-border);
+    overflow: hidden;
+    min-height: 5.5rem;
+}
+
+.entry-delete-dialog__preview-accent {
+    width: 3px;
+    flex-shrink: 0;
+    background: var(--del-accent);
+}
+
+.entry-delete-dialog__preview-inner {
+    flex: 1;
+    min-width: 0;
+    padding: 0.85rem 1rem 0.85rem 0.9rem;
 }
 
 .entry-delete-dialog__preview-title {
-    margin: 0 0 0.45rem;
-    font-size: 1rem;
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #f4f6f8;
+    color: var(--del-preview-title);
     line-height: 1.35;
     word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.entry-delete-dialog__preview-snippet {
+    margin: 0 0 0.65rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--del-preview-snippet);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .entry-delete-dialog__preview-meta {
-    margin: 0;
-    font-size: 0.82rem;
-    color: rgba(228, 232, 238, 0.65);
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem 0.75rem;
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--del-preview-meta);
 }
 
-.entry-delete-dialog__preview-meta .bi {
-    font-size: 0.95rem;
+.entry-delete-dialog__preview-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.entry-delete-dialog__preview-date .bi {
+    font-size: 0.9rem;
     opacity: 0.85;
+}
+
+.entry-delete-dialog__preview-mood {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--del-mood-bg);
+    color: var(--del-mood-fg);
+}
+
+.entry-delete-dialog__preview-mood .bi {
+    font-size: 0.62rem;
+}
+
+.entry-delete-dialog__section--actions {
+    padding-top: 0.85rem;
+    padding-bottom: 1.15rem;
 }
 
 .entry-delete-dialog__actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
+    gap: 0.65rem;
 }
 
 .entry-delete-dialog__btn {
     font-family: inherit;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    padding: 0.65rem 0.85rem;
-    border-radius: 11px;
+    padding: 0.62rem 0.75rem;
+    border-radius: 10px;
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    border: 1px solid var(--del-btn-border);
+    background: transparent;
+    color: var(--del-btn-fg);
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.entry-delete-dialog__btn--secondary {
-    background: transparent;
-    color: #f4f6f8;
-}
-
 .entry-delete-dialog__btn--secondary:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.35);
+    background: var(--del-btn-secondary-hover);
+    border-color: rgba(15, 23, 42, 0.28);
 }
 
 .entry-delete-dialog__btn--danger {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    background: rgba(255, 255, 255, 0.06);
-    color: #f4f6f8;
-    border-color: rgba(255, 255, 255, 0.22);
+    gap: 0.4rem;
 }
 
 .entry-delete-dialog__btn--danger:hover {
-    background: rgba(180, 35, 24, 0.35);
-    border-color: rgba(255, 120, 110, 0.45);
+    background: var(--del-btn-danger-hover-bg);
+    border-color: var(--del-btn-danger-hover-border);
+    color: #8f1e1e;
+}
+
+html.theme-dark .entry-delete-dialog {
+    --del-panel-bg: #1c1f26;
+    --del-panel-border: rgba(255, 255, 255, 0.08);
+    --del-panel-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    --del-title: #f4f6f8;
+    --del-desc: rgba(228, 232, 238, 0.72);
+    --del-divider: rgba(255, 255, 255, 0.08);
+    --del-icon-bg: #4a2a2e;
+    --del-icon-fg: #f5b4bc;
+    --del-preview-bg: rgba(0, 0, 0, 0.28);
+    --del-preview-border: rgba(255, 255, 255, 0.1);
+    --del-preview-title: #f4f6f8;
+    --del-preview-snippet: rgba(228, 232, 238, 0.7);
+    --del-preview-meta: rgba(228, 232, 238, 0.65);
+    --del-accent: #e85d6f;
+    --del-mood-bg: rgba(232, 93, 111, 0.22);
+    --del-mood-fg: #f5d0d4;
+    --del-btn-border: rgba(255, 255, 255, 0.22);
+    --del-btn-fg: #f4f6f8;
+    --del-btn-secondary-hover: rgba(255, 255, 255, 0.06);
+    --del-btn-danger-hover-bg: rgba(180, 35, 24, 0.35);
+    --del-btn-danger-hover-border: rgba(255, 120, 110, 0.45);
+    --del-backdrop: rgba(8, 10, 14, 0.72);
+}
+
+html.theme-dark .entry-delete-dialog__btn--danger:hover {
+    color: #f4f6f8;
 }
 
 html.theme-dark .entry-view-actions {

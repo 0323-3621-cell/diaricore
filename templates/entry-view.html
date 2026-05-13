@@ -112,24 +112,48 @@
     <div class="entry-delete-dialog" id="entryDeleteDialog" hidden role="dialog" aria-modal="true" aria-labelledby="entryDeleteDialogTitle">
         <div class="entry-delete-dialog__backdrop" data-entry-delete-dismiss="1"></div>
         <div class="entry-delete-dialog__panel">
-            <div class="entry-delete-dialog__icon-wrap" aria-hidden="true">
-                <i class="bi bi-trash3"></i>
+            <div class="entry-delete-dialog__section entry-delete-dialog__section--header">
+                <div class="entry-delete-dialog__header-row">
+                    <div class="entry-delete-dialog__icon-wrap" aria-hidden="true">
+                        <i class="bi bi-trash3"></i>
+                    </div>
+                    <div class="entry-delete-dialog__header-text">
+                        <h2 id="entryDeleteDialogTitle" class="entry-delete-dialog__title">Delete this entry?</h2>
+                        <p class="entry-delete-dialog__desc">
+                            This is permanent — your entry will be gone from your journal and cannot be recovered.
+                        </p>
+                    </div>
+                </div>
             </div>
-            <h2 id="entryDeleteDialogTitle" class="entry-delete-dialog__title">Delete this entry?</h2>
-            <p class="entry-delete-dialog__desc">This action cannot be undone. This entry will be permanently removed from your journal.</p>
-            <div class="entry-delete-dialog__preview">
-                <p class="entry-delete-dialog__preview-title" id="entryDeletePreviewTitle"></p>
-                <p class="entry-delete-dialog__preview-meta">
-                    <i class="bi bi-calendar3" aria-hidden="true"></i>
-                    <span id="entryDeletePreviewDate"></span>
-                </p>
+            <div class="entry-delete-dialog__divider" aria-hidden="true"></div>
+            <div class="entry-delete-dialog__section entry-delete-dialog__section--preview">
+                <div class="entry-delete-dialog__preview">
+                    <div class="entry-delete-dialog__preview-accent" aria-hidden="true"></div>
+                    <div class="entry-delete-dialog__preview-inner">
+                        <p class="entry-delete-dialog__preview-title" id="entryDeletePreviewTitle"></p>
+                        <p class="entry-delete-dialog__preview-snippet" id="entryDeletePreviewSnippet"></p>
+                        <div class="entry-delete-dialog__preview-meta">
+                            <span class="entry-delete-dialog__preview-date">
+                                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                <span id="entryDeletePreviewDate"></span>
+                            </span>
+                            <span class="entry-delete-dialog__preview-mood">
+                                <i class="bi bi-heart-fill" aria-hidden="true"></i>
+                                <span id="entryDeletePreviewMoodLabel"></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="entry-delete-dialog__actions">
-                <button type="button" class="entry-delete-dialog__btn entry-delete-dialog__btn--secondary" id="entryDeleteCancelBtn">Keep it</button>
-                <button type="button" class="entry-delete-dialog__btn entry-delete-dialog__btn--danger" id="entryDeleteConfirmBtn">
-                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                    Yes, delete
-                </button>
+            <div class="entry-delete-dialog__divider" aria-hidden="true"></div>
+            <div class="entry-delete-dialog__section entry-delete-dialog__section--actions">
+                <div class="entry-delete-dialog__actions">
+                    <button type="button" class="entry-delete-dialog__btn entry-delete-dialog__btn--secondary" id="entryDeleteCancelBtn">Keep it</button>
+                    <button type="button" class="entry-delete-dialog__btn entry-delete-dialog__btn--danger" id="entryDeleteConfirmBtn">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                        Yes, delete entry
+                    </button>
+                </div>
             </div>
         </div>
     </div>

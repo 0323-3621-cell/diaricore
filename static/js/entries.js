@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             sessionStorage.removeItem('diariEntriesUpdatedToast');
             showNotification('Updated the Entry Successfully...', 'success');
         }
+        if (sessionStorage.getItem('diariEntriesDeletedToast') === '1') {
+            sessionStorage.removeItem('diariEntriesDeletedToast');
+            showNotification('Entry was Deleted Successfully', 'success');
+        }
     } catch (_) {}
 
     await syncEntriesFromApi();
@@ -671,6 +675,9 @@ async function openEntriesDetailInline(entryId) {
             afterMetadataSaveToEntries: () => {
                 closeEntriesDetailInline();
                 showNotification('Updated the Entry Successfully...', 'success');
+            },
+            afterEntryDeletedToEntries: () => {
+                showNotification('Entry was Deleted Successfully', 'success');
             },
         });
         shell.hidden = false;

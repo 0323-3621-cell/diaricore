@@ -445,6 +445,7 @@
      *   onLeavePanel: () => void,
      *   userId?: number,
      *   afterMetadataSaveToEntries?: () => void,
+     *   afterEntryDeletedToEntries?: () => void,
      * }} opts
      */
     async function mount(opts) {
@@ -458,6 +459,8 @@
         const onLeavePanel = typeof opts.onLeavePanel === 'function' ? opts.onLeavePanel : () => {};
         const afterMetadataSaveToEntries =
             typeof opts.afterMetadataSaveToEntries === 'function' ? opts.afterMetadataSaveToEntries : null;
+        const afterEntryDeletedToEntries =
+            typeof opts.afterEntryDeletedToEntries === 'function' ? opts.afterEntryDeletedToEntries : null;
 
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
@@ -1196,7 +1199,15 @@
                 closeDeleteDialog();
                 removeEntryFromList(entryId);
                 clearDraft();
-                onLeavePanel();
+                if (afterEntryDeletedToEntries) {
+                    onLeavePanel();
+                    afterEntryDeletedToEntries();
+                } else {
+                    try {
+                        sessionStorage.setItem('diariEntriesDeletedToast', '1');
+                    } catch (_) {}
+                    onLeavePanel();
+                }
             } catch (e) {
                 console.error(e);
                 window.alert('Could not delete this entry.');

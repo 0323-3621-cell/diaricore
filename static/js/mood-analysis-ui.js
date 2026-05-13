@@ -24,6 +24,7 @@
     let entryUpdateEditingMountEl = null;
     let entryUpdateEditingAnim = null;
     let entryUpdateEditingPrimePromise = null;
+    let entryUpdateEditingData = null;
 
     function clearMoodAnalysisProgressTimer() {
         if (moodAnalysisProgressTimer != null) {
@@ -113,27 +114,8 @@
                 const res = await fetch(ENTRY_UPDATE_EDITING_LOTTIE_SRC, { credentials: 'same-origin' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                const pool = getMoodAnalysisBookPool();
-                const mount = document.createElement('div');
-                mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
-                mount.setAttribute('aria-hidden', 'true');
-                pool.appendChild(mount);
-                entryUpdateEditingMountEl = mount;
-                const anim = global.lottie.loadAnimation({
-                    container: mount,
-                    renderer: 'svg',
-                    loop: true,
-                    autoplay: true,
-                    animationData: data,
-                });
-                entryUpdateEditingAnim = anim;
-                anim.addEventListener('DOMLoaded', () => {
-                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
-                });
-                requestAnimationFrame(() => {
-                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
-                });
-                return anim;
+                entryUpdateEditingData = data;
+                return data;
             } catch (e) {
                 console.warn('Editing-Loader preload:', e);
                 // Allow retry on next invocation if this attempt failed.
@@ -156,14 +138,16 @@
     }
 
     function parkEntryUpdateEditingMount() {
-        if (!entryUpdateEditingMountEl) return;
-        const pool = getMoodAnalysisBookPool();
-        entryUpdateEditingMountEl.classList.remove('mood-analysis-book-lottie--in-overlay');
-        entryUpdateEditingMountEl.setAttribute('aria-hidden', 'true');
-        pool.appendChild(entryUpdateEditingMountEl);
         try {
-            if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
+            if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.destroy === 'function') {
+                entryUpdateEditingAnim.destroy();
+            }
         } catch (_) {}
+        entryUpdateEditingAnim = null;
+        if (entryUpdateEditingMountEl && entryUpdateEditingMountEl.parentNode) {
+            entryUpdateEditingMountEl.parentNode.removeChild(entryUpdateEditingMountEl);
+        }
+        entryUpdateEditingMountEl = null;
     }
 
     function ensureAnalysisOverlay() {
@@ -311,22 +295,28 @@
         // Reuse the exact loading layout used by analysis so styling is identical.
         wrap.className = 'mood-analysis-loading mood-analysis-loading--book';
 
-        const mount = entryUpdateEditingMountEl;
-        if (mount) {
-            mount.classList.add('mood-analysis-book-lottie--in-overlay');
-            mount.removeAttribute('aria-hidden');
-            mount.setAttribute('aria-label', 'Loading animation');
-            wrap.appendChild(mount);
-            try {
-                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.play === 'function') entryUpdateEditingAnim.play();
-                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
-            } catch (_) {}
-        } else {
-            // Update mode must use editing animation only (no book fallback).
-            const ph = document.createElement('div');
-            ph.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
-            ph.setAttribute('aria-hidden', 'true');
-            wrap.appendChild(ph);
+        // Build a fresh mount each time for update mode (prevents stale pooled mount issues).
+        const mount = document.createElement('div');
+        mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
+        mount.setAttribute('aria-label', 'Loading animation');
+        wrap.appendChild(mount);
+        entryUpdateEditingMountEl = mount;
+        try {
+            if (typeof global.lottie !== 'undefined' && typeof global.lottie.loadAnimation === 'function') {
+                entryUpdateEditingAnim = global.lottie.loadAnimation({
+                    container: mount,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: entryUpdateEditingData || undefined,
+                    path: entryUpdateEditingData ? undefined : ENTRY_UPDATE_EDITING_LOTTIE_SRC,
+                });
+                entryUpdateEditingAnim.addEventListener('DOMLoaded', () => {
+                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
+                });
+            }
+        } catch (e) {
+            console.warn('Editing-Loader mount error:', e);
         }
 
         const titleEl = document.createElement('h4');

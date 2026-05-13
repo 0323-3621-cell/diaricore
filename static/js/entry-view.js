@@ -69,30 +69,6 @@
     const MAX_ENTRY_IMAGES = 10;
     const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-    /** Green top-right toast — same language as Entries “Filters applied successfully”. */
-    function showEntryEditSuccessToast(message) {
-        const existing = document.querySelector('.entry-edit-toast');
-        if (existing) existing.remove();
-
-        const el = document.createElement('div');
-        el.className = 'entry-edit-toast entry-edit-toast--success';
-        el.setAttribute('role', 'status');
-        el.innerHTML =
-            '<span class="entry-edit-toast__icon" aria-hidden="true"><i class="bi bi-check-lg"></i></span>' +
-            '<span class="entry-edit-toast__text"></span>';
-        const textEl = el.querySelector('.entry-edit-toast__text');
-        if (textEl) textEl.textContent = message;
-
-        document.body.appendChild(el);
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => el.classList.add('entry-edit-toast--visible'));
-        });
-        window.setTimeout(() => {
-            el.classList.remove('entry-edit-toast--visible');
-            window.setTimeout(() => el.remove(), 300);
-        }, 3000);
-    }
-
     function draftImagesKey(entryId) {
         return `entryDraftImg_${entryId}`;
     }
@@ -464,7 +440,12 @@
     }
 
     /**
-     * @param {{ entryId: number, onLeavePanel: () => void, userId?: number }} opts
+     * @param {{
+     *   entryId: number,
+     *   onLeavePanel: () => void,
+     *   userId?: number,
+     *   afterMetadataSaveToEntries?: () => void,
+     * }} opts
      */
     async function mount(opts) {
         unmount();
@@ -475,6 +456,8 @@
         const entryId = Number(opts.entryId);
         const userId = opts.userId != null ? Number(opts.userId) : getUserId();
         const onLeavePanel = typeof opts.onLeavePanel === 'function' ? opts.onLeavePanel : () => {};
+        const afterMetadataSaveToEntries =
+            typeof opts.afterMetadataSaveToEntries === 'function' ? opts.afterMetadataSaveToEntries : null;
 
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
@@ -968,7 +951,6 @@
             if (editorImages.length + files.length === MAX_ENTRY_IMAGES && files.length > 0) {
                 window.alert('This entry will have 10 photos (the maximum per entry).');
             }
-            let addedOk = 0;
             for (const file of files) {
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
                 const item = makeImageItem({ name: file.name });
@@ -990,7 +972,6 @@
                             img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
                         );
                     }
-                    addedOk += 1;
                 } catch (e) {
                     console.error(e);
                     editorImages = editorImages.filter((img) => img.id !== item.id);
@@ -1003,11 +984,6 @@
                 }
             }
             if (imageFileInput) imageFileInput.value = '';
-            if (addedOk === 1) {
-                showEntryEditSuccessToast('Successfully added the photo');
-            } else if (addedOk > 1) {
-                showEntryEditSuccessToast('Successfully added the photos');
-            }
         }
 
         function openLightbox(index) {
@@ -1745,7 +1721,6 @@
                 editorImages = editorImages.filter((x) => x.id !== id);
                 renderImageStrip();
                 updateColumnsLayout();
-                showEntryEditSuccessToast('Removed photos successfully');
                 if (!isOnline()) {
                     void persistDraftImages();
                     persistDraft();
@@ -1925,11 +1900,15 @@
             { signal }
         );
 
+        /**
+         * @returns {Promise<boolean>} Whether the requested save completed in a “good” state (API PATCH
+         *          succeeded for metadata-only saves; broader success for reanalyze / offline paths).
+         */
         async function runSave(reanalyze) {
             const text = bodyEl.value.trim();
             if (!text) {
                 window.alert('Please add some text to your entry.');
-                return;
+                return false;
             }
             saveAnalyzeBtn.disabled = true;
             try {
@@ -1951,7 +1930,7 @@
                         await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
                     }
-                    return;
+                    return reanalyze;
                 }
 
                 try {
@@ -1959,7 +1938,7 @@
                 } catch (e) {
                     console.error(e);
                     window.alert(e.message || 'Could not upload images. Try again when you have a stable connection.');
-                    return;
+                    return false;
                 }
                 const imageSaveList = imagesPayloadStrings().filter((u) => !u.startsWith('data:'));
 
@@ -1980,6 +1959,7 @@
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, data.entry, engine === 'fallback', moodOptions(overlay));
                         clearDraft();
                         baseline = serializeState();
+                        return true;
                     } catch (err) {
                         console.error(err);
                         await pushOfflineQueue(true);
@@ -1989,8 +1969,8 @@
                         baseline = serializeState();
                         await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
+                        return true;
                     }
-                    return;
                 }
 
                 try {
@@ -2000,6 +1980,7 @@
                     replaceEntryInList(entry);
                     clearDraft();
                     baseline = serializeState();
+                    return true;
                 } catch (err) {
                     console.error(err);
                     await pushOfflineQueue(false);
@@ -2008,6 +1989,7 @@
                     entry = merged;
                     baseline = serializeState();
                     window.alert('Saved offline. We will sync when you are back online.');
+                    return false;
                 }
             } finally {
                 saveAnalyzeBtn.disabled = false;
@@ -2032,13 +2014,17 @@
                     console.warn('Could not preload editing animation:', e);
                 }
                 global.DiariMoodAnalysis.showEntryUpdateLoading(overlay);
+                let metadataSavedOk = false;
                 try {
-                    await runSave(false);
+                    metadataSavedOk = await runSave(false);
                     // Keep update overlay long enough to finish its faster progress phase.
                     await global.DiariMoodAnalysis.delayUntilEntryUpdateGate();
                 } finally {
                     // If save succeeded, baseline is updated and overlay can close.
                     global.DiariMoodAnalysis.hideAnalysisOverlay(overlay);
+                }
+                if (metadataSavedOk && afterMetadataSaveToEntries) {
+                    afterMetadataSaveToEntries();
                 }
             },
             { signal }

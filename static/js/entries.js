@@ -661,6 +661,10 @@ async function openEntriesDetailInline(entryId) {
         await window.DiariEntryDetail.mount({
             entryId: Number(entryId),
             onLeavePanel: closeEntriesDetailInline,
+            afterMetadataSaveToEntries: () => {
+                closeEntriesDetailInline();
+                showNotification('Updated the Entry Successfully...', 'success');
+            },
         });
         shell.hidden = false;
         void shell.offsetWidth;

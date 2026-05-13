@@ -123,7 +123,11 @@ def _trigger_query_user_id():
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-UPLOADS_DIR = os.path.join(STATIC_DIR, "img", "uploads")
+#
+# Uploads must live somewhere persistent across deploys (Railway volume, etc).
+# If `UPLOADS_DIR` is not set, we fall back to the local container path.
+#
+UPLOADS_DIR = os.environ.get("UPLOADS_DIR") or os.path.join(STATIC_DIR, "img", "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 

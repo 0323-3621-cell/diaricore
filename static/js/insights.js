@@ -759,12 +759,11 @@ function initializeEmotionPieChart() {
     };
     
     const config = {
-        type: 'doughnut',
+        type: 'pie',
         data: emotionData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '56%',
             plugins: {
                 legend: {
                     display: false
@@ -966,7 +965,8 @@ function initializeMoodByTagChart() {
             borderColor: moodColors[d.mood],
             borderWidth: 1,
             borderRadius: 6,
-            barThickness: 34,
+            barThickness: 26,
+            maxBarThickness: 32,
             stack: 'moods',
         }))
         : [{
@@ -976,7 +976,8 @@ function initializeMoodByTagChart() {
             borderColor: chartTheme.pieFallback,
             borderWidth: 1,
             borderRadius: 6,
-            barThickness: 34,
+            barThickness: 26,
+            maxBarThickness: 32,
             stack: 'moods',
         }];
     
@@ -986,15 +987,22 @@ function initializeMoodByTagChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: { top: 4, bottom: 2 },
+            },
             plugins: {
                 legend: {
                     display: true,
-                    position: 'bottom',
+                    position: 'top',
                     labels: {
                         color: chartTheme.tick,
-                        font: { size: 12, weight: '600' },
-                        padding: 14,
-                    }
+                        font: { size: 11, weight: '600' },
+                        padding: 10,
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                    },
                 },
                 tooltip: {
                     enabled: HAS_INSIGHTS_DATA,
@@ -1030,14 +1038,15 @@ function initializeMoodByTagChart() {
                     ticks: {
                         color: chartTheme.tick,
                         font: {
-                            size: 12,
+                            size: 11,
                             weight: '500'
                         },
-                        maxRotation: 0,
+                        maxRotation: 40,
+                        minRotation: 0,
+                        autoSkip: true,
                         callback: function(value) {
                             const label = this.getLabelForValue(value);
-                            const s = String(label || '');
-                            return s.length > 10 ? s.slice(0, 10) + '…' : s;
+                            return String(label || '');
                         }
                     }
                 },

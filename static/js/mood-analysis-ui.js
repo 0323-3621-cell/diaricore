@@ -321,16 +321,12 @@
                 if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.play === 'function') entryUpdateEditingAnim.play();
                 if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
             } catch (_) {}
-        } else if (moodAnalysisBookMountEl) {
-            // Never show a blank header area if editing mount is unavailable.
-            moodAnalysisBookMountEl.classList.add('mood-analysis-book-lottie--in-overlay');
-            moodAnalysisBookMountEl.removeAttribute('aria-hidden');
-            moodAnalysisBookMountEl.setAttribute('aria-label', 'Loading animation');
-            wrap.appendChild(moodAnalysisBookMountEl);
-            try {
-                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.play === 'function') moodAnalysisBookAnim.play();
-                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
-            } catch (_) {}
+        } else {
+            // Update mode must use editing animation only (no book fallback).
+            const ph = document.createElement('div');
+            ph.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
+            ph.setAttribute('aria-hidden', 'true');
+            wrap.appendChild(ph);
         }
 
         const titleEl = document.createElement('h4');

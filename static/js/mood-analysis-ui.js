@@ -9,8 +9,11 @@
     const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 1200;
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json';
     const ENTRY_UPDATE_EDITING_LOTTIE_SRC = '/noto-emoji/editing.json';
+    const ENTRY_UPDATE_TOTAL_MS = 4200;
+    const ENTRY_UPDATE_MIN_AFTER_EDITING_MS = 700;
 
     let moodAnalysisLoadingShownAt = 0;
+    let entryUpdateLoadingShownAt = 0;
     let moodAnalysisBookReadyAt = null;
     let moodAnalysisProgressTimer = null;
     let moodAnalysisBookMountEl = null;
@@ -105,9 +108,6 @@
             }
             if (entryUpdateEditingMountEl && entryUpdateEditingAnim) return entryUpdateEditingAnim;
             try {
-                const res = await fetch(ENTRY_UPDATE_EDITING_LOTTIE_SRC, { credentials: 'same-origin' });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
                 const pool = getMoodAnalysisBookPool();
                 const mount = document.createElement('div');
                 mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
@@ -119,7 +119,7 @@
                     renderer: 'svg',
                     loop: true,
                     autoplay: true,
-                    animationData: data,
+                    path: ENTRY_UPDATE_EDITING_LOTTIE_SRC,
                 });
                 entryUpdateEditingAnim = anim;
                 anim.addEventListener('DOMLoaded', () => {
@@ -356,9 +356,9 @@
 
         footer.style.display = 'none';
         overlay.hidden = false;
-        moodAnalysisLoadingShownAt = Date.now();
+        entryUpdateLoadingShownAt = Date.now();
 
-        const totalMs = MOOD_ANALYSIS_TOTAL_MS;
+        const totalMs = ENTRY_UPDATE_TOTAL_MS;
         const progressStart = Date.now();
         moodAnalysisProgressTimer = setInterval(() => {
             const elapsed = Date.now() - progressStart;
@@ -393,6 +393,15 @@
         const barEnd = shownAt + MOOD_ANALYSIS_TOTAL_MS;
         const bookEnd = moodAnalysisBookReadyAt ? moodAnalysisBookReadyAt + MOOD_ANALYSIS_MIN_AFTER_BOOK_MS : 0;
         const targetEnd = Math.max(barEnd, bookEnd);
+        const wait = Math.max(0, targetEnd - Date.now());
+        await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+
+    async function delayUntilEntryUpdateGate() {
+        const shownAt = entryUpdateLoadingShownAt || Date.now();
+        const barEnd = shownAt + ENTRY_UPDATE_TOTAL_MS;
+        const editEnd = entryUpdateEditingReadyAt ? entryUpdateEditingReadyAt + ENTRY_UPDATE_MIN_AFTER_EDITING_MS : 0;
+        const targetEnd = Math.max(barEnd, editEnd);
         const wait = Math.max(0, targetEnd - Date.now());
         await new Promise((resolve) => setTimeout(resolve, wait));
     }
@@ -598,6 +607,7 @@
         showAnalysisLoading,
         showEntryUpdateLoading,
         delayUntilMoodAnalysisGate,
+        delayUntilEntryUpdateGate,
         hideAnalysisOverlay,
         showAnalysisResult,
         parkMoodAnalysisBookMount,

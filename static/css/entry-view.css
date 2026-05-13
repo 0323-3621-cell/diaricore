@@ -883,34 +883,17 @@ html.theme-dark .entry-view-actions {
     pointer-events: none;
 }
 
-.entry-view-strip-imgwrap--error .entry-img-skeleton {
+.entry-view-strip-imgwrap--error img {
     display: none;
 }
 
-.entry-view-strip-imgwrap--error::after {
-    content: 'Could not load image';
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.65rem;
-    text-align: center;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--text-muted, #6b7680);
-    background: #e8ecee;
-    border-radius: 8px;
+.entry-view-strip-imgwrap--error .entry-img-skeleton {
+    opacity: 0.88;
+    animation-duration: 2.6s;
 }
 
 html.theme-dark .entry-view-strip-imgwrap {
     background: #2a3038;
-}
-
-html.theme-dark .entry-view-strip-imgwrap--error::after {
-    background: #2a3038;
-    color: rgba(228, 232, 238, 0.72);
 }
 
 .entry-view-strip-item__expand,

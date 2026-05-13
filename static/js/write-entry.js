@@ -201,11 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const img = wrap.querySelector('img');
             if (!img) return;
             const done = () => {
-                wrap.classList.remove('entry-gallery-img-wrap--loading');
+                wrap.classList.remove('entry-gallery-img-wrap--loading', 'entry-gallery-img-wrap--pending');
                 wrap.classList.add('entry-gallery-img-wrap--loaded');
             };
             const fail = () => {
-                wrap.classList.remove('entry-gallery-img-wrap--loading');
+                wrap.classList.remove('entry-gallery-img-wrap--loading', 'entry-gallery-img-wrap--pending');
                 wrap.classList.add('entry-gallery-img-wrap--error');
             };
             if (img.complete && img.naturalHeight > 0) {
@@ -242,16 +242,23 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (count === 2) mode = 'mode-2';
         else if (count === 3) mode = 'mode-3';
         const baseCells = attachedImages.map((img, idx) => {
-            const src = img.url || img.dataUrl;
+            const src = (img.url || img.dataUrl || '').trim();
+            const hasSrc = Boolean(src);
             const cls = mode === 'mode-3' && idx === 0 ? 'entry-gallery-item is-primary' : 'entry-gallery-item';
             const progress = img.progress > 0 && img.progress < 100
                 ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
                 : '';
+            const wrapState = hasSrc
+                ? 'entry-gallery-img-wrap entry-gallery-img-wrap--loading'
+                : 'entry-gallery-img-wrap entry-gallery-img-wrap--pending';
+            const imgTag = hasSrc
+                ? `<img src="${escapeHtml(src)}" alt="" decoding="async" />`
+                : '';
             return `
                 <div class="${cls}" data-image-id="${escapeHtml(img.id)}">
-                    <div class="entry-gallery-img-wrap entry-gallery-img-wrap--loading">
+                    <div class="${wrapState}">
                         <div class="entry-img-skeleton" aria-hidden="true"></div>
-                        <img src="${escapeHtml(src)}" alt="" decoding="async" />
+                        ${imgTag}
                     </div>
                     ${progress}
                     <div class="entry-gallery-item-actions">

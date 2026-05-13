@@ -521,35 +521,43 @@
                     const wrap = document.createElement('div');
                     wrap.className = `entry-view-strip-item${editMode ? '' : ' entry-view-strip-item--readonly'}`;
                     wrap.dataset.imageId = im.id;
-                    const src = im.url || im.dataUrl;
+                    const srcRaw = im.url || im.dataUrl;
+                    const src = String(srcRaw || '').trim();
+                    const hasSrc = Boolean(src);
 
                     const imgWrap = document.createElement('div');
-                    imgWrap.className = 'entry-view-strip-imgwrap entry-view-strip-imgwrap--loading';
+                    imgWrap.className = hasSrc
+                        ? 'entry-view-strip-imgwrap entry-view-strip-imgwrap--loading'
+                        : 'entry-view-strip-imgwrap entry-view-strip-imgwrap--pending';
                     const skeleton = document.createElement('div');
                     skeleton.className = 'entry-img-skeleton';
                     skeleton.setAttribute('aria-hidden', 'true');
-                    const img = document.createElement('img');
-                    img.alt = '';
-                    img.decoding = 'async';
-                    img.loading = 'lazy';
-                    img.src = src || '';
-                    const markLoaded = () => {
-                        imgWrap.classList.remove('entry-view-strip-imgwrap--loading');
-                        imgWrap.classList.add('entry-view-strip-imgwrap--loaded');
-                        img.alt = 'Entry photo';
-                    };
-                    const markError = () => {
-                        imgWrap.classList.remove('entry-view-strip-imgwrap--loading');
-                        imgWrap.classList.add('entry-view-strip-imgwrap--error');
-                    };
-                    img.addEventListener('load', markLoaded, { once: true });
-                    img.addEventListener('error', markError, { once: true });
                     imgWrap.appendChild(skeleton);
-                    imgWrap.appendChild(img);
-                    wrap.appendChild(imgWrap);
-                    if (src && img.complete && img.naturalHeight > 0) {
-                        markLoaded();
+
+                    if (hasSrc) {
+                        const img = document.createElement('img');
+                        img.alt = '';
+                        img.decoding = 'async';
+                        img.loading = 'lazy';
+                        img.src = src;
+                        const markLoaded = () => {
+                            imgWrap.classList.remove('entry-view-strip-imgwrap--loading', 'entry-view-strip-imgwrap--pending');
+                            imgWrap.classList.add('entry-view-strip-imgwrap--loaded');
+                            img.alt = 'Entry photo';
+                        };
+                        const markError = () => {
+                            imgWrap.classList.remove('entry-view-strip-imgwrap--loading', 'entry-view-strip-imgwrap--pending');
+                            imgWrap.classList.add('entry-view-strip-imgwrap--error');
+                        };
+                        img.addEventListener('load', markLoaded, { once: true });
+                        img.addEventListener('error', markError, { once: true });
+                        imgWrap.appendChild(img);
+                        if (img.complete && img.naturalHeight > 0) {
+                            markLoaded();
+                        }
                     }
+
+                    wrap.appendChild(imgWrap);
                     const uploading = im.progress > 0 && im.progress < 100;
                     if (uploading) {
                         const bar = document.createElement('div');

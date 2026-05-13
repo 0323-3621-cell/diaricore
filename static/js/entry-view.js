@@ -301,6 +301,14 @@
         }
     }
 
+    /** Absolute URL for same-origin uploads — avoids stalled loads when subtree had zero layout width. */
+    function resolveDisplayImgSrc(raw) {
+        const s = normalizeDiariMediaUrl(String(raw || '').trim());
+        if (!s || s.startsWith('data:') || s.startsWith('blob:')) return s;
+        if (s.startsWith('/')) return `${window.location.origin}${s}`;
+        return s;
+    }
+
     function resetEntryDetailLoadingState() {
         const titleEl = document.getElementById('entryViewTitle');
         const bodyEl = document.getElementById('entryViewBody');
@@ -659,7 +667,7 @@
                     wrap.className = `entry-view-strip-item${editMode ? '' : ' entry-view-strip-item--readonly'}`;
                     wrap.dataset.imageId = im.id;
                     const srcRaw = im.url || im.dataUrl;
-                    const src = normalizeDiariMediaUrl(String(srcRaw || '').trim());
+                    const src = resolveDisplayImgSrc(String(srcRaw || '').trim());
                     const hasSrc = Boolean(src);
 
                     const imgWrap = document.createElement('div');
@@ -851,7 +859,7 @@
             const imgEl = document.getElementById('photoLightboxImage');
             if (!modal || !imgEl) return;
             const cur = list[lightboxIndex];
-            imgEl.src = normalizeDiariMediaUrl(String(cur.url || cur.dataUrl || '').trim());
+            imgEl.src = resolveDisplayImgSrc(String(cur.url || cur.dataUrl || '').trim());
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
         }
@@ -970,10 +978,17 @@
             ro.observe(columnsEl);
         }
 
+        let stripVpObsLastW = -1;
         if (imageStripViewport && window.ResizeObserver) {
             const roStrip = new ResizeObserver(() => {
+                const w = imageStripViewport.clientWidth;
                 syncEntryStripViewportPx();
                 updateStripFade();
+                /* Inline entries shell starts hidden → viewport width 0; imgs stall until layout width exists. */
+                if (stripVpObsLastW !== -1 && stripVpObsLastW <= 8 && w > 8) {
+                    renderImageStrip();
+                }
+                stripVpObsLastW = w;
             });
             roStrip.observe(imageStripViewport);
             signal.addEventListener('abort', () => roStrip.disconnect(), { once: true });
@@ -1071,13 +1086,14 @@
             } catch (_) {}
         }
 
+        const hadDraft = Boolean(localStorage.getItem(draftKey(entryId)));
+
         applyDraftFromStorage();
         try {
             const row = await idbMediaGet(draftImagesKey(entryId));
-            if (row?.images?.length) editorImages = reviveImageItems(row.images);
+            if (hadDraft && row?.images?.length) editorImages = reviveImageItems(row.images);
         } catch (_) {}
 
-        const hadDraft = Boolean(localStorage.getItem(draftKey(entryId)));
         if (!hadDraft) {
             titleEl.value = entry.title || '';
             bodyEl.value = entry.text || '';

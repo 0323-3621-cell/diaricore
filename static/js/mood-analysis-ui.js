@@ -44,6 +44,8 @@
         clearMoodAnalysisProgressTimer();
         moodAnalysisLoadingShownAt = 0;
         moodAnalysisBookReadyAt = null;
+        entryUpdateLoadingShownAt = 0;
+        entryUpdateEditingReadyAt = null;
     }
 
     function getMoodAnalysisBookPool() {
@@ -108,6 +110,9 @@
             }
             if (entryUpdateEditingMountEl && entryUpdateEditingAnim) return entryUpdateEditingAnim;
             try {
+                const res = await fetch(ENTRY_UPDATE_EDITING_LOTTIE_SRC, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
                 const pool = getMoodAnalysisBookPool();
                 const mount = document.createElement('div');
                 mount.className = 'mood-analysis-book-lottie mood-analysis-book-mount mood-analysis-editing-mount';
@@ -119,7 +124,7 @@
                     renderer: 'svg',
                     loop: true,
                     autoplay: true,
-                    path: ENTRY_UPDATE_EDITING_LOTTIE_SRC,
+                    animationData: data,
                 });
                 entryUpdateEditingAnim = anim;
                 anim.addEventListener('DOMLoaded', () => {

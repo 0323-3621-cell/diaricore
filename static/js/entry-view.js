@@ -2020,7 +2020,9 @@
                 const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
                 try {
                     await global.DiariMoodAnalysis.primeEntryUpdateEditingLottie();
-                } catch (_) {}
+                } catch (e) {
+                    console.warn('Could not preload editing animation:', e);
+                }
                 global.DiariMoodAnalysis.showEntryUpdateLoading(overlay);
                 try {
                     await runSave(false);

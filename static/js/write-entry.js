@@ -196,6 +196,22 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    function autoAdjustJournalTextarea() {
+        const jt = document.getElementById('journalText');
+        if (!jt) return;
+        const titleEl = document.getElementById('journalTitleInput');
+        const gal = document.querySelector('.entry-gallery-pane');
+        if (gal) {
+            const titleH = titleEl ? titleEl.offsetHeight + 10 : 0;
+            const minPx = Math.max(96, gal.offsetHeight - titleH);
+            jt.style.minHeight = `${Math.round(minPx)}px`;
+        }
+        jt.style.height = 'auto';
+        const min = parseFloat(jt.style.minHeight) || 96;
+        jt.style.height = `${Math.max(jt.scrollHeight, min)}px`;
+    }
+    window.__diariAdjustWriteJournal = autoAdjustJournalTextarea;
+
     function wireGalleryImageLoads(gallery) {
         gallery.querySelectorAll('.entry-gallery-img-wrap').forEach((wrap) => {
             const img = wrap.querySelector('img');
@@ -217,15 +233,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function wireWriteEntryGalleryInteractions(gallery) {
+        gallery.querySelectorAll('.entry-gallery-item').forEach((item) => {
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.entry-gallery-action-btn')) return;
+                e.stopPropagation();
+                const wasActive = item.classList.contains('is-active');
+                gallery.querySelectorAll('.entry-gallery-item.is-active').forEach((el) => el.classList.remove('is-active'));
+                if (!wasActive) item.classList.add('is-active');
+            });
+        });
+    }
+
     function renderImageGallery() {
         const gallery = document.getElementById('entryGallery');
         const toolbar = document.getElementById('entryGalleryToolbar');
+        const stickyAdd = document.getElementById('entryGalleryStickyAdd');
         if (!gallery) return;
         const count = attachedImages.length;
         if (toolbar) toolbar.hidden = count !== 1;
+        if (stickyAdd) stickyAdd.hidden = !(count > 0 && count < MAX_IMAGE_WARN);
         updatePhotoBadge();
         if (!count) {
-            gallery.className = 'entry-gallery is-empty';
+            gallery.className = 'entry-gallery diari-scrollbar is-empty';
             gallery.innerHTML = `
                 <button type="button" class="entry-gallery-empty" id="entryGalleryEmptyTrigger">
                     <i class="bi bi-image"></i>
@@ -234,17 +264,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             const trigger = document.getElementById('entryGalleryEmptyTrigger');
             trigger?.addEventListener('click', () => document.getElementById('imageFileInput')?.click());
+            if (typeof window.__diariAdjustWriteJournal === 'function') window.__diariAdjustWriteJournal();
             return;
         }
-        gallery.className = 'entry-gallery';
-        let mode = 'mode-4';
-        if (count === 1) mode = 'mode-1';
-        else if (count === 2) mode = 'mode-2';
-        else if (count === 3) mode = 'mode-3';
+        gallery.className = 'entry-gallery diari-scrollbar';
         const baseCells = attachedImages.map((img, idx) => {
             const src = (img.url || img.dataUrl || '').trim();
             const hasSrc = Boolean(src);
-            const cls = mode === 'mode-3' && idx === 0 ? 'entry-gallery-item is-primary' : 'entry-gallery-item';
             const progress = img.progress > 0 && img.progress < 100
                 ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
                 : '';
@@ -255,12 +281,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<img src="${escapeHtml(src)}" alt="" decoding="async" />`
                 : '';
             return `
-                <div class="${cls}" data-image-id="${escapeHtml(img.id)}">
+                <div class="entry-gallery-item" data-image-id="${escapeHtml(img.id)}">
                     <div class="${wrapState}">
                         <div class="entry-img-skeleton" aria-hidden="true"></div>
                         ${imgTag}
                     </div>
                     ${progress}
+                    <div class="entry-gallery-item-overlay" aria-hidden="true"></div>
                     <div class="entry-gallery-item-actions">
                         <button type="button" class="entry-gallery-action-btn" data-action="preview" data-index="${idx}" aria-label="Preview image"><i class="bi bi-search"></i></button>
                         <button type="button" class="entry-gallery-action-btn" data-action="delete" data-id="${escapeHtml(img.id)}" aria-label="Delete image"><i class="bi bi-trash3"></i></button>
@@ -268,12 +295,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         });
-        const addMoreCell =
-            count > 0 && count < MAX_IMAGE_WARN
-                ? `<button type="button" class="entry-gallery-add-cell" id="entryGalleryAddMore"><i class="bi bi-plus-lg"></i><span>Add more photos</span></button>`
-                : '';
-        gallery.innerHTML = `<div class="entry-gallery-grid ${mode}">${baseCells.join('')}${addMoreCell}</div>`;
+        gallery.innerHTML = `<div class="entry-gallery-grid entry-gallery-grid--matrix">${baseCells.join('')}</div>`;
         wireGalleryImageLoads(gallery);
+        wireWriteEntryGalleryInteractions(gallery);
         gallery.querySelectorAll('[data-action="preview"]').forEach((btn) => {
             btn.addEventListener('click', () => openLightbox(Number(btn.dataset.index || 0)));
         });
@@ -286,9 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderImageGallery();
             });
         });
-        document.getElementById('entryGalleryAddMore')?.addEventListener('click', () => {
-            document.getElementById('imageFileInput')?.click();
-        });
+        if (typeof window.__diariAdjustWriteJournal === 'function') window.__diariAdjustWriteJournal();
     }
 
     function openLightbox(index) {
@@ -1046,6 +1068,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target === photoLightbox) closeLightbox();
     });
 
+    document.addEventListener('click', (e) => {
+        const g = document.getElementById('entryGallery');
+        if (!g || g.classList.contains('is-empty')) return;
+        const item = e.target.closest('.entry-gallery-item');
+        if (item && g.contains(item)) return;
+        g.querySelectorAll('.entry-gallery-item.is-active').forEach((el) => el.classList.remove('is-active'));
+    });
+    document.getElementById('entryGalleryStickyAdd')?.addEventListener('click', () => {
+        document.getElementById('imageFileInput')?.click();
+    });
+
     renderImageGallery();
     
     const journalText = document.getElementById('journalText');
@@ -1053,6 +1086,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const charCount = document.getElementById('charCount');
     const journalDateTimeBtn = document.getElementById('journalDateTimeBtn');
     const journalDateTimeInput = document.getElementById('journalDateTimeInput');
+
+    if (entrySplitLayout && window.ResizeObserver) {
+        const ro = new ResizeObserver(() => autoAdjustJournalTextarea());
+        ro.observe(entrySplitLayout);
+    }
+    window.addEventListener('resize', () => {
+        window.requestAnimationFrame(() => autoAdjustJournalTextarea());
+    });
+    journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
 
     const toLocalInputValue = (dateObj) => {
         const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
@@ -1175,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 charCount.style.color = 'var(--text-muted)';
             }
         }
+        autoAdjustJournalTextarea();
     });
     
     // Voice input button functionality
@@ -1440,4 +1483,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load draft on page load
     loadDraft();
     flushOfflineEntryQueue();
+    autoAdjustJournalTextarea();
+    requestAnimationFrame(() => autoAdjustJournalTextarea());
 });

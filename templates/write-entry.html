@@ -164,12 +164,22 @@
                             </div>
                         </div>
                         <div class="entry-gallery-pane">
-                            <div class="entry-gallery" id="entryGallery"></div>
-                            <div class="entry-gallery-toolbar" id="entryGalleryToolbar" hidden>
-                                <button type="button" class="entry-gallery-toolbar__btn" id="addPhotosBtn">
-                                    <i class="bi bi-images"></i>
-                                    <span>Add Photos</span>
-                                </button>
+                            <div class="entry-gallery-pane__stack">
+                                <div class="entry-gallery-scroll" id="entryGalleryScroll">
+                                    <div class="entry-gallery diari-scrollbar" id="entryGallery"></div>
+                                </div>
+                                <div class="entry-gallery-pane__sticky">
+                                    <div class="entry-gallery-toolbar" id="entryGalleryToolbar" hidden>
+                                        <button type="button" class="entry-gallery-toolbar__btn" id="addPhotosBtn">
+                                            <i class="bi bi-images"></i>
+                                            <span>Add Photos</span>
+                                        </button>
+                                    </div>
+                                    <button type="button" class="entry-gallery-add-sticky" id="entryGalleryStickyAdd" hidden>
+                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                        <span>Add more photos</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

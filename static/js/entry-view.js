@@ -203,10 +203,34 @@
         return `${wd}, ${md} · ${time}`;
     }
 
+    function syncEditBodyMinToAsideFromDom() {
+        const editPane = document.getElementById('entryViewEditPane');
+        const bodyEl = document.getElementById('entryViewBody');
+        const imagesAside = document.getElementById('entryViewImagesAside');
+        const columnsEl = document.getElementById('entryViewColumns');
+        if (!bodyEl) return;
+        if (
+            !editPane ||
+            editPane.hidden ||
+            !imagesAside ||
+            imagesAside.hidden ||
+            !columnsEl?.classList.contains('entry-view-columns--split')
+        ) {
+            bodyEl.style.minHeight = '';
+            return;
+        }
+        const asideH = imagesAside.offsetHeight;
+        const siblings = editPane.offsetHeight - bodyEl.offsetHeight;
+        const minPx = Math.max(200, asideH - siblings);
+        bodyEl.style.minHeight = `${Math.round(minPx)}px`;
+    }
+
     function autoResizeTextarea(el) {
         if (!el) return;
+        syncEditBodyMinToAsideFromDom();
         el.style.height = 'auto';
-        el.style.height = `${Math.max(200, el.scrollHeight)}px`;
+        const min = parseFloat(el.style.minHeight) || 200;
+        el.style.height = `${Math.max(min, el.scrollHeight)}px`;
     }
 
     /** Re-measure body height after the editor is visible (hidden ancestors yield wrong scrollHeight). */
@@ -469,7 +493,7 @@
             if (!imageStripFade || !imageStripScroll) return;
             const el = imageStripScroll;
             const more = el.scrollHeight > el.clientHeight + 4;
-            imageStripFade.hidden = !more;
+            imageStripFade.hidden = !more || editMode;
         }
 
         function serializeImagesForStorage() {
@@ -506,16 +530,19 @@
                 }
             }
             if (imageStripAddBtn) {
-                imageStripAddBtn.hidden = !editMode || n === 0;
+                imageStripAddBtn.hidden = !editMode || n >= MAX_ENTRY_IMAGES;
             }
             imageStripScroll.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'entry-view-strip-grid';
+
             if (editMode && n === 0) {
                 const empty = document.createElement('button');
                 empty.type = 'button';
                 empty.className = 'entry-view-strip-empty';
                 empty.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i><span>Add photos to this entry</span>';
                 empty.addEventListener('click', () => imageFileInput?.click(), { signal });
-                imageStripScroll.appendChild(empty);
+                grid.appendChild(empty);
             } else {
                 items.forEach((im, idx) => {
                     const wrap = document.createElement('div');
@@ -565,6 +592,15 @@
                         bar.innerHTML = `<span style="width:${Math.max(8, im.progress)}%"></span>`;
                         wrap.appendChild(bar);
                     }
+
+                    const overlay = document.createElement('div');
+                    overlay.className = 'entry-view-strip-item-overlay';
+                    overlay.setAttribute('aria-hidden', 'true');
+                    wrap.appendChild(overlay);
+
+                    const actions = document.createElement('div');
+                    actions.className = 'entry-view-strip-item__actions';
+
                     const exp = document.createElement('button');
                     exp.type = 'button';
                     exp.className = 'entry-view-strip-item__expand';
@@ -578,7 +614,8 @@
                         },
                         { signal }
                     );
-                    wrap.appendChild(exp);
+                    actions.appendChild(exp);
+
                     if (editMode) {
                         const del = document.createElement('button');
                         del.type = 'button';
@@ -589,9 +626,7 @@
                             'click',
                             (e) => {
                                 e.stopPropagation();
-                                if (
-                                    !window.confirm('Remove this photo from your entry?')
-                                ) {
+                                if (!window.confirm('Remove this photo from your entry?')) {
                                     return;
                                 }
                                 editorImages = editorImages.filter((x) => x.id !== im.id);
@@ -604,13 +639,31 @@
                             },
                             { signal }
                         );
-                        wrap.appendChild(del);
+                        actions.appendChild(del);
                     }
-                    imageStripScroll.appendChild(wrap);
+                    wrap.appendChild(actions);
+
+                    wrap.addEventListener(
+                        'click',
+                        (e) => {
+                            if (e.target.closest('.entry-view-strip-item__actions')) return;
+                            e.stopPropagation();
+                            const was = wrap.classList.contains('is-active');
+                            imageStripScroll.querySelectorAll('.entry-view-strip-item.is-active').forEach((el) => el.classList.remove('is-active'));
+                            if (!was) wrap.classList.add('is-active');
+                        },
+                        { signal }
+                    );
+
+                    grid.appendChild(wrap);
                 });
             }
+            imageStripScroll.appendChild(grid);
             updateColumnsLayout();
-            requestAnimationFrame(() => updateStripFade());
+            requestAnimationFrame(() => {
+                updateStripFade();
+                autoResizeTextarea(bodyEl);
+            });
         }
 
         async function uploadImageOnlineLocal(file, localId) {
@@ -785,6 +838,22 @@
                 },
                 { signal }
             );
+        }
+
+        document.addEventListener(
+            'click',
+            (e) => {
+                if (!imageStripScroll) return;
+                const item = e.target.closest('.entry-view-strip-item');
+                if (item && imageStripScroll.contains(item)) return;
+                imageStripScroll.querySelectorAll('.entry-view-strip-item.is-active').forEach((x) => x.classList.remove('is-active'));
+            },
+            { signal }
+        );
+
+        if (columnsEl && window.ResizeObserver) {
+            const ro = new ResizeObserver(() => autoResizeTextarea(bodyEl));
+            ro.observe(columnsEl);
         }
 
         function previewTitleForEntry(ent) {
@@ -1151,6 +1220,7 @@
         titleEl.addEventListener(
             'input',
             () => {
+                autoResizeTextarea(bodyEl);
                 if (!isOnline()) persistDraft();
             },
             { signal }

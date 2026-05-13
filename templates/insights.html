@@ -51,141 +51,179 @@
         </div>
     </header>
     <div class="insights-container">
-        <!-- Main Content Area -->
         <div class="main-content">
-            <!-- Main Content -->
             <main class="insights-content">
-                <!-- Insights Header -->
-                <div class="header-section">
-                    <h1 class="main-title">Insights & Analytics</h1>
-                    <p class="subtitle">Understand your emotional patterns</p>
-                </div>
-
-                <!-- Weekly Glance Mobile -->
-            <div class="weekly-glance">
-                <h2 class="section-title">
-                    <i class="bi bi-calendar"></i>
-                    Weekly Mood
-                </h2>
-                <div class="chart-container">
-                    <canvas id="weeklyChart"></canvas>
-                </div>
-            </div>
-
-                <!-- Cause & trigger patterns (Feature 2: populated from /api/triggers/*) -->
-                <section class="triggers-section" aria-labelledby="triggersHeading">
-                    <h2 id="triggersHeading" class="section-title triggers-section__heading">
-                        <i class="bi bi-lightning-charge" aria-hidden="true"></i>
-                        Cause &amp; trigger patterns
-                    </h2>
-                    <p class="triggers-section__subtitle">Based on the tags you select while writing entries. We show one top stress trigger and one top happiness trigger after enough tagged history.</p>
-                    <div id="emotionTriggersDashboard" class="emotion-triggers-dashboard" aria-live="polite"></div>
-                </section>
-
-                <!-- Weekly Mood Chart Desktop -->
-            <div class="weekly-mood-desktop">
-                <div class="chart-card">
-                    <div class="section-header">
-                        <h2 class="section-title">
-                            <i class="bi bi-calendar"></i>
-                            Weekly Mood
-                        </h2>
-                        <div class="weekly-range-toggle" role="group" aria-label="Weekly range">
-                            <button type="button" class="weekly-range-btn is-active" data-range="7">7d</button>
-                            <button type="button" class="weekly-range-btn" data-range="30">30d</button>
+                <header class="insights-hero header-section">
+                    <div class="insights-hero__row">
+                        <div class="insights-hero__text">
+                            <h1 class="insights-hero__title main-title">Insights &amp; Patterns</h1>
+                            <p class="insights-hero__subtitle subtitle">Deep dive into your emotional landscape.</p>
+                        </div>
+                        <div class="insights-hero__toggle" role="tablist" aria-label="Insights view">
+                            <button type="button" class="insights-pill is-active" id="insightsTabEmotions" data-insights-tab="emotions" role="tab" aria-selected="true">Emotions</button>
+                            <button type="button" class="insights-pill" id="insightsTabConsistency" data-insights-tab="consistency" role="tab" aria-selected="false">Consistency</button>
                         </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="weeklyChartDesktop"></canvas>
-                    </div>
-                    <div class="weekly-stats-row">
-                        <div class="weekly-stat-card">
-                            <div class="weekly-stat-value" id="weeklyStatAvg">--</div>
-                            <div class="weekly-stat-label">7-day avg</div>
-                        </div>
-                        <div class="weekly-stat-card">
-                            <div class="weekly-stat-value" id="weeklyStatTrend">--</div>
-                            <div class="weekly-stat-label">Trend</div>
-                        </div>
-                        <div class="weekly-stat-card">
-                            <div class="weekly-stat-value" id="weeklyStatPeak">--</div>
-                            <div class="weekly-stat-label">Peak day</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </header>
 
-                <!-- Charts Section -->
-                <section class="charts-section">
-                    <div class="charts-grid">
-                        <!-- Emotion Breakdown -->
-                        <div class="chart-card">
-                            <div class="section-header">
-                                <h2 class="section-title">
-                                    <i class="bi bi-pie-chart"></i>
-                                    Emotion Breakdown
-                                </h2>
-                            </div>
-                            <!-- Desktop: Original Pie Chart -->
-                            <div class="chart-container">
-                                <canvas id="emotionPieChart"></canvas>
-                            </div>
-                            <div class="emotion-breakdown-desktop-legend" id="emotionLegendDesktop" aria-label="Emotion breakdown legend"></div>
-                            <!-- Mobile: Pie Chart + Bullet List -->
-                            <div class="emotion-breakdown-mobile">
-                                <div class="mobile-section-header">
-                                    <i class="bi bi-pie-chart"></i>
-                                    Emotion Breakdown
-                                </div>
-                                <div class="emotion-breakdown-content">
-                                    <div class="emotion-pie-chart">
-                                        <canvas id="emotionPieChartMobile"></canvas>
-                                    </div>
-                                    <div class="emotion-legend">
-                                        <div class="emotion-legend-item">
-                                            <div class="emotion-legend-dot happy"></div>
-                                            <span class="emotion-legend-name">😊 Happy</span>
-                                            <span class="emotion-legend-percentage">0%</span>
-                                        </div>
-                                        <div class="emotion-legend-item">
-                                            <div class="emotion-legend-dot sad"></div>
-                                            <span class="emotion-legend-name">😢 Sad</span>
-                                            <span class="emotion-legend-percentage">0%</span>
-                                        </div>
-                                        <div class="emotion-legend-item">
-                                            <div class="emotion-legend-dot angry"></div>
-                                            <span class="emotion-legend-name">😠 Angry</span>
-                                            <span class="emotion-legend-percentage">0%</span>
-                                        </div>
-                                        <div class="emotion-legend-item">
-                                            <div class="emotion-legend-dot anxious"></div>
-                                            <span class="emotion-legend-name">😰 Anxious</span>
-                                            <span class="emotion-legend-percentage">0%</span>
-                                        </div>
-                                        <div class="emotion-legend-item">
-                                            <div class="emotion-legend-dot neutral"></div>
-                                            <span class="emotion-legend-name">😐 Neutral</span>
-                                            <span class="emotion-legend-percentage">0%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <section id="insightsConsistencyStrip" class="insights-consistency-strip" hidden aria-label="Journaling consistency">
+                    <div class="insights-consistency-strip__inner">
+                        <div class="insights-consistency-metric">
+                            <span class="insights-consistency-metric__label">Entries (last 7 days)</span>
+                            <span class="insights-consistency-metric__value" id="insightsConsistencyWeek">—</span>
                         </div>
-
-                        <!-- Mood by Tag -->
-                        <div class="chart-card">
-                            <div class="section-header">
-                                <h2 class="section-title">
-                                    <i class="bi bi-activity"></i>
-                                    Mood by Tag
-                                </h2>
-                            </div>
-                            <div class="chart-container">
-                                <canvas id="activityImpactChart"></canvas>
-                            </div>
+                        <div class="insights-consistency-metric">
+                            <span class="insights-consistency-metric__label">Entries (last 30 days)</span>
+                            <span class="insights-consistency-metric__value" id="insightsConsistencyMonth">—</span>
+                        </div>
+                        <div class="insights-consistency-metric">
+                            <span class="insights-consistency-metric__label">Active day streak</span>
+                            <span class="insights-consistency-metric__value" id="insightsConsistencyStreak">—</span>
                         </div>
                     </div>
                 </section>
+
+                <div id="insightsPanelEmotions" class="insights-panel insights-panel--emotions is-active">
+                    <div class="insights-dashboard">
+                        <div class="insights-dashboard__main">
+                            <!-- Weekly trend: Mon–Sun mobile canvas + ranged desktop canvas -->
+                            <article class="ins-card ins-card--trend chart-card weekly-trend-card">
+                                <div class="section-header ins-card__section-header">
+                                    <h2 class="section-title ins-card__title-row">
+                                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                                        Weekly Emotional Trend
+                                    </h2>
+                                    <div class="weekly-range-toggle" role="group" aria-label="Weekly range">
+                                        <button type="button" class="weekly-range-btn is-active" data-range="7">7d</button>
+                                        <button type="button" class="weekly-range-btn" data-range="30">30d</button>
+                                    </div>
+                                </div>
+                                <div class="ins-weekly-canvas ins-weekly-canvas--mobile">
+                                    <div class="chart-container">
+                                        <canvas id="weeklyChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="ins-weekly-canvas ins-weekly-canvas--desktop">
+                                    <div class="chart-container">
+                                        <canvas id="weeklyChartDesktop"></canvas>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Emotion breakdown -->
+                            <article class="ins-card ins-card--emotion chart-card">
+                                <div class="section-header">
+                                    <h2 class="section-title">
+                                        <i class="bi bi-pie-chart" aria-hidden="true"></i>
+                                        Emotion Breakdown
+                                    </h2>
+                                </div>
+                                <div class="chart-container emotion-breakdown-desktop-chartwrap">
+                                    <canvas id="emotionPieChart"></canvas>
+                                </div>
+                                <div class="emotion-breakdown-desktop-legend" id="emotionLegendDesktop" aria-label="Emotion breakdown legend"></div>
+                                <div class="emotion-breakdown-mobile">
+                                    <div class="mobile-section-header">
+                                        <i class="bi bi-pie-chart" aria-hidden="true"></i>
+                                        Emotion Breakdown
+                                    </div>
+                                    <div class="emotion-breakdown-content">
+                                        <div class="emotion-pie-chart">
+                                            <canvas id="emotionPieChartMobile"></canvas>
+                                        </div>
+                                        <div class="emotion-legend">
+                                            <div class="emotion-legend-item">
+                                                <div class="emotion-legend-dot happy"></div>
+                                                <span class="emotion-legend-name">😊 Happy</span>
+                                                <span class="emotion-legend-percentage">0%</span>
+                                            </div>
+                                            <div class="emotion-legend-item">
+                                                <div class="emotion-legend-dot sad"></div>
+                                                <span class="emotion-legend-name">😢 Sad</span>
+                                                <span class="emotion-legend-percentage">0%</span>
+                                            </div>
+                                            <div class="emotion-legend-item">
+                                                <div class="emotion-legend-dot angry"></div>
+                                                <span class="emotion-legend-name">😠 Angry</span>
+                                                <span class="emotion-legend-percentage">0%</span>
+                                            </div>
+                                            <div class="emotion-legend-item">
+                                                <div class="emotion-legend-dot anxious"></div>
+                                                <span class="emotion-legend-name">😰 Anxious</span>
+                                                <span class="emotion-legend-percentage">0%</span>
+                                            </div>
+                                            <div class="emotion-legend-item">
+                                                <div class="emotion-legend-dot neutral"></div>
+                                                <span class="emotion-legend-name">😐 Neutral</span>
+                                                <span class="emotion-legend-percentage">0%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+
+                            <!-- Mood by Tag -->
+                            <article class="ins-card ins-card--tags chart-card">
+                                <div class="section-header">
+                                    <h2 class="section-title">
+                                        <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                                        Mood by Tag
+                                    </h2>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="activityImpactChart"></canvas>
+                                </div>
+                            </article>
+                        </div>
+
+                        <aside class="insights-dashboard__aside">
+                            <article class="ins-card ins-card--triggers">
+                                <div class="ins-card__head">
+                                    <span class="ins-card__head-icon" aria-hidden="true"><i class="bi bi-info-circle"></i></span>
+                                    <div>
+                                        <h2 class="ins-card__head-title">Identified Triggers</h2>
+                                        <p class="ins-card__head-desc triggers-section__subtitle">Based on the tags you select while writing entries. We show one top stress trigger and one top happiness trigger after enough tagged history.</p>
+                                    </div>
+                                </div>
+                                <div id="emotionTriggersDashboard" class="emotion-triggers-dashboard" aria-live="polite"></div>
+                            </article>
+
+                            <article class="ins-card ins-card--highlights">
+                                <div class="ins-card__head">
+                                    <span class="ins-card__head-icon ins-card__head-icon--accent" aria-hidden="true"><i class="bi bi-stars"></i></span>
+                                    <div>
+                                        <h2 class="ins-card__head-title">Weekly snapshot</h2>
+                                        <p class="ins-card__head-desc" id="insightsMemoryLede">Your mood summary for the selected range will appear here.</p>
+                                    </div>
+                                </div>
+                                <div class="ins-highlights__chips">
+                                    <div class="ins-highlight-chip" id="insightHighlightBest">
+                                        <span class="ins-highlight-chip__eyebrow">Best day</span>
+                                        <span class="ins-highlight-chip__value" id="insightHighlightBestValue">—</span>
+                                    </div>
+                                    <div class="ins-highlight-chip" id="insightHighlightTough">
+                                        <span class="ins-highlight-chip__eyebrow">Toughest day</span>
+                                        <span class="ins-highlight-chip__value" id="insightHighlightToughValue">—</span>
+                                    </div>
+                                </div>
+                                <div class="weekly-stats-row weekly-stats-row--aside">
+                                    <div class="weekly-stat-card">
+                                        <div class="weekly-stat-value" id="weeklyStatAvg">--</div>
+                                        <div class="weekly-stat-label">Range avg</div>
+                                    </div>
+                                    <div class="weekly-stat-card">
+                                        <div class="weekly-stat-value" id="weeklyStatTrend">--</div>
+                                        <div class="weekly-stat-label">Trend</div>
+                                    </div>
+                                    <div class="weekly-stat-card">
+                                        <div class="weekly-stat-value" id="weeklyStatPeak">--</div>
+                                        <div class="weekly-stat-label">Peak day</div>
+                                    </div>
+                                </div>
+                            </article>
+                        </aside>
+                    </div>
+                </div>
             </main>
         </div>
     </div>

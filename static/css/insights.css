@@ -1441,3 +1441,308 @@ body {
         justify-content: flex-start !important;
     }
 }
+
+/* —— Insights dashboard v2 (reference layout: main column + aside) —— */
+.insights-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.insights-hero {
+    margin-bottom: 1.75rem;
+}
+
+.insights-hero__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.25rem 1.5rem;
+}
+
+.insights-hero__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-dark);
+    margin: 0 0 0.35rem;
+}
+
+.insights-hero__subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    max-width: 36rem;
+    line-height: 1.5;
+}
+
+.insights-hero__toggle {
+    display: inline-flex;
+    padding: 0.2rem;
+    border-radius: 999px;
+    background: var(--background-soft);
+    border: 1px solid var(--border-color);
+    gap: 0.15rem;
+}
+
+.insights-pill {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.insights-pill.is-active {
+    background: var(--card-background);
+    color: var(--primary-color);
+    box-shadow: 0 1px 4px rgba(47, 62, 54, 0.12);
+}
+
+.insights-consistency-strip {
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    box-shadow: var(--box-shadow);
+}
+
+.insights-consistency-strip__inner {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.insights-consistency-metric__label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+
+.insights-consistency-metric__value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.insights-dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.insights-dashboard__main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.insights-dashboard__aside {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.ins-card__head {
+    display: flex;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.ins-card__head-icon {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-soft);
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.ins-card__head-icon--accent {
+    background: rgba(111, 143, 127, 0.12);
+    color: var(--primary-color);
+}
+
+.ins-card__head-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.ins-card__head-desc {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.ins-card--triggers .emotion-trigger-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+.ins-card--triggers .emotion-trigger-card:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.ins-highlights__chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.ins-highlight-chip {
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--card-background);
+    padding: 0.75rem 0.85rem;
+}
+
+.ins-highlight-chip__eyebrow {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+
+.ins-highlight-chip__value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.weekly-trend-card .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ins-weekly-canvas--mobile {
+    display: none;
+}
+
+.ins-weekly-canvas--desktop {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .insights-hero__row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .insights-hero__toggle {
+        align-self: flex-start;
+    }
+
+    .insights-consistency-strip__inner {
+        grid-template-columns: 1fr;
+    }
+
+    .insights-dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .insights-dashboard__aside {
+        order: 2;
+    }
+
+    .insights-dashboard__main {
+        order: 1;
+    }
+
+    .ins-weekly-canvas--mobile {
+        display: block;
+    }
+
+    .ins-weekly-canvas--mobile .chart-container {
+        display: block !important;
+        height: 200px !important;
+    }
+
+    .ins-weekly-canvas--desktop {
+        display: none !important;
+    }
+
+    .ins-card--emotion .emotion-breakdown-desktop-chartwrap,
+    .ins-card--emotion .emotion-breakdown-desktop-legend {
+        display: none !important;
+    }
+
+    .ins-card--emotion .emotion-breakdown-mobile {
+        display: flex !important;
+    }
+
+    .ins-card--emotion.chart-card {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .ins-card--emotion .section-header {
+        display: none !important;
+    }
+
+    .ins-card--tags.chart-card {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .ins-card--tags .section-header {
+        display: flex !important;
+    }
+
+    .ins-card--tags .chart-container {
+        display: block !important;
+        height: 260px !important;
+    }
+
+    .ins-card--triggers.chart-card {
+        padding: 1.1rem !important;
+    }
+
+    .ins-card--highlights.chart-card {
+        padding: 1.1rem !important;
+    }
+
+    .ins-highlights__chips {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 769px) {
+    .ins-card--emotion .emotion-breakdown-mobile {
+        display: none !important;
+    }
+
+    .ins-card--emotion .emotion-breakdown-desktop-chartwrap .chart-container {
+        display: block !important;
+    }
+}

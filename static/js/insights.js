@@ -132,6 +132,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadInsightsData();
 
     await loadEmotionTriggersDashboard();
+
+    renderInsightsConsistencyStrip();
+    initializeInsightsHeroTabs();
 });
 
 async function syncInsightsEntriesFromApi() {
@@ -250,6 +253,118 @@ function initializeWeeklyRangeControls() {
     });
 }
 
+function countEntriesInRollingDays(days) {
+    const n = Math.max(1, Number(days) || 7);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date(end);
+    start.setDate(start.getDate() - (n - 1));
+    start.setHours(0, 0, 0, 0);
+    let c = 0;
+    INSIGHTS_ENTRIES.forEach((e) => {
+        if (!e?.date) return;
+        const d = new Date(e.date);
+        if (d >= start && d <= end) c += 1;
+    });
+    return c;
+}
+
+function computeJournalStreakDays() {
+    if (!INSIGHTS_ENTRIES.length) return 0;
+    const set = new Set();
+    INSIGHTS_ENTRIES.forEach((e) => {
+        if (!e?.date) return;
+        const d = new Date(e.date);
+        d.setHours(0, 0, 0, 0);
+        set.add(d.getTime());
+    });
+    let streak = 0;
+    const cur = new Date();
+    cur.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 400; i += 1) {
+        if (set.has(cur.getTime())) streak += 1;
+        else break;
+        cur.setDate(cur.getDate() - 1);
+    }
+    return streak;
+}
+
+function renderInsightsConsistencyStrip() {
+    const wEl = document.getElementById('insightsConsistencyWeek');
+    const mEl = document.getElementById('insightsConsistencyMonth');
+    const sEl = document.getElementById('insightsConsistencyStreak');
+    if (wEl) wEl.textContent = String(countEntriesInRollingDays(7));
+    if (mEl) mEl.textContent = String(countEntriesInRollingDays(30));
+    if (sEl) sEl.textContent = String(computeJournalStreakDays());
+}
+
+function initializeInsightsHeroTabs() {
+    const emotions = document.getElementById('insightsTabEmotions');
+    const consistency = document.getElementById('insightsTabConsistency');
+    const strip = document.getElementById('insightsConsistencyStrip');
+    if (!emotions || !consistency) return;
+    const activate = (which) => {
+        const isCons = which === 'consistency';
+        emotions.classList.toggle('is-active', !isCons);
+        emotions.setAttribute('aria-selected', !isCons ? 'true' : 'false');
+        consistency.classList.toggle('is-active', isCons);
+        consistency.setAttribute('aria-selected', isCons ? 'true' : 'false');
+        if (strip) strip.hidden = !isCons;
+    };
+    emotions.addEventListener('click', () => activate('emotions'));
+    consistency.addEventListener('click', () => activate('consistency'));
+}
+
+function updateInsightsSnapshotFromWeekly(weekly) {
+    const lede = document.getElementById('insightsMemoryLede');
+    const bestVal = document.getElementById('insightHighlightBestValue');
+    const toughVal = document.getElementById('insightHighlightToughValue');
+    const data = weekly?.data || [];
+    const labels = weekly?.labels || [];
+    let bestI = -1;
+    let toughI = -1;
+    const validIdx = [];
+    data.forEach((v, i) => {
+        if (v !== null && v !== undefined && !Number.isNaN(Number(v))) validIdx.push(i);
+    });
+    if (validIdx.length) {
+        let bestV = -Infinity;
+        let toughV = Infinity;
+        validIdx.forEach((i) => {
+            const v = Number(data[i]);
+            if (v > bestV) {
+                bestV = v;
+                bestI = i;
+            }
+            if (v < toughV) {
+                toughV = v;
+                toughI = i;
+            }
+        });
+    }
+    if (bestVal) bestVal.textContent = bestI >= 0 ? `${labels[bestI]} (${Number(data[bestI]).toFixed(1)})` : '—';
+    if (toughVal) toughVal.textContent = toughI >= 0 ? `${labels[toughI]} (${Number(data[toughI]).toFixed(1)})` : '—';
+
+    const vals = data.filter((v) => v !== null && v !== undefined).map(Number);
+    const n = vals.length;
+    const rangeLabel = WEEKLY_RANGE_DAYS === 30 ? 'last 30 days' : 'last 7 days';
+    if (lede) {
+        if (!n) {
+            lede.textContent = 'Save a few dated entries to see your weekly mood snapshot here.';
+        } else {
+            const avg = vals.reduce((a, b) => a + b, 0) / n;
+            const half = Math.max(1, Math.floor(n / 2));
+            const first = vals.slice(0, half);
+            const second = vals.slice(half);
+            const firstAvg = first.reduce((a, b) => a + b, 0) / first.length;
+            const secondAvg = second.length ? second.reduce((a, b) => a + b, 0) / second.length : firstAvg;
+            const tr = secondAvg - firstAvg;
+            const trWord = tr > 0.08 ? 'lifting' : tr < -0.08 ? 'softening' : 'steady';
+            lede.textContent = `Across the ${rangeLabel}, your average mood is ${avg.toFixed(1)} / 10 with a ${trWord} trend in the second half of the range.`;
+        }
+    }
+}
+
 function emotionBreakdownData() {
     if (!HAS_INSIGHTS_DATA) {
         return { labels: ['No Data'], values: [1], percentages: { happy: 0, neutral: 0, sad: 0, anxious: 0, angry: 0 } };
@@ -306,7 +421,7 @@ function emotionBreakdownData() {
 
 function applyInsightsEmptyState() {
     if (HAS_INSIGHTS_DATA) return;
-    const moodHeader = document.querySelector('.header-section .subtitle');
+    const moodHeader = document.querySelector('.insights-hero__subtitle');
     if (moodHeader) moodHeader.textContent = 'Insights will appear once you start journaling.';
 }
 
@@ -549,6 +664,8 @@ function initializeWeeklyMoodChartDesktop() {
         else if (trend < -0.05) trendEl.classList.add('is-down');
     }
     if (peakEl) peakEl.textContent = bestIdx >= 0 ? weekly.labels[bestIdx] : '--';
+
+    updateInsightsSnapshotFromWeekly(weekly);
 }
 
 // Initialize Emotion Pie Chart

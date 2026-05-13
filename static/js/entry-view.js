@@ -2037,6 +2037,11 @@
         );
 
         saveAnalyzeBtn.disabled = false;
+        // Prime both loading animations early so save click shows immediately.
+        try {
+            void global.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
+            void global.DiariMoodAnalysis.primeEntryUpdateEditingLottie();
+        } catch (_) {}
 
         flushEditQueue();
 

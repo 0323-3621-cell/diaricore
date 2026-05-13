@@ -8,7 +8,7 @@
     const MOOD_ANALYSIS_TOTAL_MS = 8000;
     const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 1200;
     const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json';
-    const ENTRY_UPDATE_EDITING_LOTTIE_SRC = '/noto-emoji/editing.json';
+    const ENTRY_UPDATE_EDITING_LOTTIE_SRC = '/noto-emoji/editing.json?v=20260513a';
     const ENTRY_UPDATE_TOTAL_MS = 4200;
     const ENTRY_UPDATE_MIN_AFTER_EDITING_MS = 700;
 
@@ -136,6 +136,8 @@
                 return anim;
             } catch (e) {
                 console.warn('Editing-Loader preload:', e);
+                // Allow retry on next invocation if this attempt failed.
+                entryUpdateEditingPrimePromise = null;
                 return null;
             }
         })();
@@ -318,6 +320,16 @@
             try {
                 if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.play === 'function') entryUpdateEditingAnim.play();
                 if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.resize === 'function') entryUpdateEditingAnim.resize();
+            } catch (_) {}
+        } else if (moodAnalysisBookMountEl) {
+            // Never show a blank header area if editing mount is unavailable.
+            moodAnalysisBookMountEl.classList.add('mood-analysis-book-lottie--in-overlay');
+            moodAnalysisBookMountEl.removeAttribute('aria-hidden');
+            moodAnalysisBookMountEl.setAttribute('aria-label', 'Loading animation');
+            wrap.appendChild(moodAnalysisBookMountEl);
+            try {
+                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.play === 'function') moodAnalysisBookAnim.play();
+                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
             } catch (_) {}
         }
 

@@ -18,6 +18,9 @@ class SidebarComponent {
         this.loadSidebar();
         this.setupMobileToggle();
         this.setupEventListeners();
+        document.addEventListener('diari-user-updated', () => {
+            this.applyCurrentUserIdentity();
+        });
     }
 
     getCurrentPage() {
@@ -484,6 +487,15 @@ class SidebarComponent {
                 memberSinceEl.textContent = `Member since ${monthYear}`;
             } else {
                 memberSinceEl.textContent = 'Member since --';
+            }
+        }
+
+        const avatarImg = this.sidebarElement && this.sidebarElement.querySelector('.avatar-img');
+        if (avatarImg) {
+            if (typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
+                avatarImg.src = user.avatarDataUrl;
+            } else {
+                avatarImg.src = 'https://picsum.photos/seed/diari-user/40/40.jpg';
             }
         }
     }

@@ -36,6 +36,11 @@ function initializeProfileFromStorage() {
         if (statEls[0]) statEls[0].textContent = String(entryCount);
         if (statEls[1]) statEls[1].textContent = String(streak);
         if (statEls[2]) statEls[2].textContent = `${consistency}%`;
+
+        const avatarEl = document.querySelector('.profile-overview-section .avatar-image');
+        if (avatarEl && user && typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
+            avatarEl.src = user.avatarDataUrl;
+        }
     } finally {
         document.documentElement.classList.remove('profile-await-storage');
     }
@@ -101,6 +106,69 @@ function calculateMonthlyConsistency(entries) {
     return Math.round((uniqueRecentDays.size / 30) * 100);
 }
 
+function processAvatarFileToDataUrl(file, done) {
+    const reader = new FileReader();
+    reader.onload = function () {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+            done(null);
+            return;
+        }
+        const image = new Image();
+        image.onload = function () {
+            try {
+                const maxEdge = 360;
+                let w = image.naturalWidth || image.width;
+                let h = image.naturalHeight || image.height;
+                if (!w || !h) {
+                    done(null);
+                    return;
+                }
+                if (w > maxEdge || h > maxEdge) {
+                    const scale = Math.min(maxEdge / w, maxEdge / h);
+                    w = Math.round(w * scale);
+                    h = Math.round(h * scale);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    done(result);
+                    return;
+                }
+                ctx.drawImage(image, 0, 0, w, h);
+                done(canvas.toDataURL('image/jpeg', 0.86));
+            } catch (_) {
+                done(null);
+            }
+        };
+        image.onerror = function () {
+            done(null);
+        };
+        image.src = result;
+    };
+    reader.onerror = function () {
+        done(null);
+    };
+    reader.readAsDataURL(file);
+}
+
+function ensureProfileAvatarFileInput() {
+    let el = document.getElementById('profileAvatarFileInput');
+    if (!el) {
+        el = document.createElement('input');
+        el.type = 'file';
+        el.id = 'profileAvatarFileInput';
+        el.accept = 'image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif';
+        el.setAttribute('aria-hidden', 'true');
+        el.tabIndex = -1;
+        el.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-100px;top:0;';
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
 // Initialize Profile Interactions
 function initializeProfileInteractions() {
     const mobileLogoutBtn = document.getElementById('profileMobileLogoutBtn');
@@ -119,14 +187,56 @@ function initializeProfileInteractions() {
         });
     }
 
-    // Avatar edit button
+    // Avatar: open file picker, resize, save to diariCoreUser.avatarDataUrl, sync sidebar
     const avatarEditBtn = document.querySelector('.avatar-edit-btn');
-    if (avatarEditBtn) {
-        avatarEditBtn.addEventListener('click', function() {
-            showNotification('Opening avatar upload...', 'info');
-            // In a real app, this would open file picker
-            console.log('Avatar edit clicked');
-        });
+    const avatarMainImg = document.querySelector('.profile-overview-section .avatar-image');
+    if (avatarEditBtn && avatarMainImg) {
+        const input = ensureProfileAvatarFileInput();
+        if (input.dataset.avatarBound !== '1') {
+            input.dataset.avatarBound = '1';
+            avatarEditBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                input.click();
+            });
+            input.addEventListener('change', function () {
+                const file = input.files && input.files[0];
+                input.value = '';
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    showNotification('Please choose an image file.', 'warning');
+                    return;
+                }
+                if (file.size > 4 * 1024 * 1024) {
+                    showNotification('Image is too large (max 4 MB).', 'warning');
+                    return;
+                }
+                processAvatarFileToDataUrl(file, function (dataUrl) {
+                    if (!dataUrl) {
+                        showNotification('Could not read that image. Try JPG or PNG.', 'error');
+                        return;
+                    }
+                    if (dataUrl.length > 900000) {
+                        showNotification('Processed image is still too large. Try a smaller photo.', 'error');
+                        return;
+                    }
+                    let user = null;
+                    try {
+                        user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+                    } catch (_) {
+                        user = null;
+                    }
+                    if (!user || typeof user !== 'object') {
+                        showNotification('Sign in to save a profile photo.', 'warning');
+                        return;
+                    }
+                    user.avatarDataUrl = dataUrl;
+                    localStorage.setItem('diariCoreUser', JSON.stringify(user));
+                    avatarMainImg.src = dataUrl;
+                    document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
+                    showNotification('Profile photo updated.', 'success');
+                });
+            });
+        }
     }
 
     // Setting edit buttons

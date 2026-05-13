@@ -201,6 +201,10 @@ html.theme-dark .user-profile {
     background: var(--card-background) !important;
 }
 
+html.theme-dark .sidebar-profile-link:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
 html.theme-dark .logout-btn {
     background: var(--card-background) !important;
     border-color: rgba(143, 184, 165, 0.45) !important;

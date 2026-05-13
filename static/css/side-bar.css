@@ -224,6 +224,25 @@
     gap: 0.7rem;
 }
 
+.sidebar-profile-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 12px;
+    margin: 0 -0.15rem;
+    padding: 0.2rem 0.25rem;
+    transition: background 0.15s ease;
+}
+
+.sidebar-profile-link:hover {
+    background: var(--background-soft);
+}
+
+.sidebar-profile-link:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .profile-left {
     display: flex;
     align-items: center;

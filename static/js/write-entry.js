@@ -237,9 +237,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         });
-        const addMoreCell = (count >= 4)
-            ? `<button type="button" class="entry-gallery-add-cell" id="entryGalleryAddMore"><i class="bi bi-plus-lg"></i><span>Add more photos</span></button>`
-            : '';
+        const addMoreCell =
+            count > 0 && count < MAX_IMAGE_WARN
+                ? `<button type="button" class="entry-gallery-add-cell" id="entryGalleryAddMore"><i class="bi bi-plus-lg"></i><span>Add more photos</span></button>`
+                : '';
         gallery.innerHTML = `<div class="entry-gallery-grid ${mode}">${baseCells.join('')}${addMoreCell}</div>`;
         gallery.querySelectorAll('[data-action="preview"]').forEach((btn) => {
             btn.addEventListener('click', () => openLightbox(Number(btn.dataset.index || 0)));

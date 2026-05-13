@@ -991,6 +991,7 @@ def update_journal_entry(
     emotion_label: str,
     emotion_score: float,
     all_probs_json: str | None = None,
+    image_urls_json: str | None = None,
 ):
     """Update entry fields; never modifies created_at. Sets updated_at to now."""
     probs = all_probs_json if all_probs_json is not None else "{}"
@@ -998,6 +999,25 @@ def update_journal_entry(
     conn = get_conn()
     cur = conn.cursor()
     try:
+        images_sql = image_urls_json
+        if images_sql is None:
+            if USE_POSTGRES:
+                cur.execute(
+                    "SELECT image_urls_json FROM journal_entries WHERE id = %s AND user_id = %s",
+                    (entry_id, user_id),
+                )
+                r = cur.fetchone()
+                images_sql = (r.get("image_urls_json") if r else None) or "[]"
+            else:
+                cur.execute(
+                    "SELECT image_urls_json FROM journal_entries WHERE id = ? AND user_id = ?",
+                    (entry_id, user_id),
+                )
+                r = cur.fetchone()
+                images_sql = (r["image_urls_json"] if r else None) or "[]"
+        if images_sql is None:
+            images_sql = "[]"
+
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -1010,6 +1030,7 @@ def update_journal_entry(
                     emotion_label = %s,
                     emotion_score = %s,
                     all_probs_json = %s,
+                    image_urls_json = %s,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s AND user_id = %s
                 RETURNING id, user_id, title, entry_datetime_utc, text_content, tags_json, sentiment_label, sentiment_score, emotion_label, emotion_score, all_probs_json, image_urls_json, created_at, updated_at
@@ -1023,6 +1044,7 @@ def update_journal_entry(
                     emotion_label,
                     emotion_score,
                     probs,
+                    images_sql,
                     entry_id,
                     user_id,
                 ),
@@ -1042,6 +1064,7 @@ def update_journal_entry(
                 emotion_label = ?,
                 emotion_score = ?,
                 all_probs_json = ?,
+                image_urls_json = ?,
                 updated_at = datetime('now')
             WHERE id = ? AND user_id = ?
             """,
@@ -1054,6 +1077,7 @@ def update_journal_entry(
                 emotion_label,
                 emotion_score,
                 probs,
+                images_sql,
                 entry_id,
                 user_id,
             ),

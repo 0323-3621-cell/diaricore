@@ -126,6 +126,28 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 UPLOADS_DIR = os.path.join(STATIC_DIR, "img", "uploads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
+
+def _cleanup_removed_entry_uploads(old_urls: list[str], new_urls: list[str]) -> None:
+    """Remove files under UPLOADS_DIR that were dropped from an entry's image list."""
+    old_set = {str(u).strip() for u in (old_urls or []) if isinstance(u, str) and str(u).strip()}
+    new_set = {str(u).strip() for u in (new_urls or []) if isinstance(u, str) and str(u).strip()}
+    uploads_root = os.path.normpath(UPLOADS_DIR)
+    for url in old_set - new_set:
+        if not url.startswith("/uploads/"):
+            continue
+        fname = url[len("/uploads/") :].replace("\\", "/")
+        if not fname or ".." in fname or "/" in fname:
+            continue
+        abs_path = os.path.normpath(os.path.join(UPLOADS_DIR, fname))
+        if not abs_path.startswith(uploads_root + os.sep) and abs_path != uploads_root:
+            continue
+        if os.path.isfile(abs_path):
+            try:
+                os.remove(abs_path)
+            except OSError:
+                pass
+
+
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.secret_key = os.environ.get("SECRET_KEY", "diaricore-dev-secret")
@@ -973,6 +995,27 @@ def api_entries_patch(entry_id: int):
     if not existing:
         return jsonify({"success": False, "error": "Entry not found."}), 404
 
+    old_img_raw = existing.get("image_urls_json") or "[]"
+    try:
+        old_image_list = json.loads(old_img_raw) if isinstance(old_img_raw, str) else []
+        if not isinstance(old_image_list, list):
+            old_image_list = []
+    except Exception:
+        old_image_list = []
+
+    if "imageUrls" in data:
+        raw_images = data.get("imageUrls") or []
+        if not isinstance(raw_images, list):
+            raw_images = []
+        clean_images = [str(x).strip() for x in raw_images if isinstance(x, str) and str(x).strip()]
+        if len(clean_images) > 10:
+            return jsonify({"success": False, "error": "At most 10 images per entry."}), 400
+        _cleanup_removed_entry_uploads(old_image_list, clean_images)
+        images_json = json.dumps(clean_images)
+    else:
+        clean_images = [str(x).strip() for x in old_image_list if isinstance(x, str) and str(x).strip()]
+        images_json = json.dumps(clean_images)
+
     engine = None
     if reanalyze:
         analysis = space_nlp.analyze(text)
@@ -1000,6 +1043,7 @@ def api_entries_patch(entry_id: int):
         emotion_label=str(emotion_label).lower()[:32],
         emotion_score=emotion_score,
         all_probs_json=all_probs_json,
+        image_urls_json=images_json,
     )
     if not row:
         return jsonify({"success": False, "error": "Could not update entry."}), 500

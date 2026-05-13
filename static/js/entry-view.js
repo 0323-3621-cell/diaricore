@@ -64,11 +64,124 @@
         return navigator.onLine !== false;
     }
 
-    function serializeEditor(titleEl, bodyEl, tagSet) {
-        const title = (titleEl?.value || '').trim();
-        const text = (bodyEl?.value || '').trim();
-        const t = [...tagSet].map(normalizeTag).filter(Boolean).sort((a, b) => a.localeCompare(b));
-        return JSON.stringify({ title, text, tags: t });
+    const ENTRY_EDIT_MEDIA_DB = 'diariCoreOfflineEntryEditMedia';
+    const ENTRY_EDIT_MEDIA_STORE = 'records';
+    const MAX_ENTRY_IMAGES = 10;
+    const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+    function draftImagesKey(entryId) {
+        return `entryDraftImg_${entryId}`;
+    }
+
+    function openEntryEditMediaDb() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(ENTRY_EDIT_MEDIA_DB, 1);
+            req.onupgradeneeded = () => {
+                const d = req.result;
+                if (!d.objectStoreNames.contains(ENTRY_EDIT_MEDIA_STORE)) {
+                    d.createObjectStore(ENTRY_EDIT_MEDIA_STORE, { keyPath: 'key' });
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+        });
+    }
+
+    async function idbMediaPut(key, imagesPayload) {
+        const db = await openEntryEditMediaDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ENTRY_EDIT_MEDIA_STORE, 'readwrite');
+            tx.objectStore(ENTRY_EDIT_MEDIA_STORE).put({ key, images: imagesPayload });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error('idb put'));
+        });
+        db.close();
+    }
+
+    async function idbMediaGet(key) {
+        const db = await openEntryEditMediaDb();
+        const row = await new Promise((resolve, reject) => {
+            const tx = db.transaction(ENTRY_EDIT_MEDIA_STORE, 'readonly');
+            const r = tx.objectStore(ENTRY_EDIT_MEDIA_STORE).get(key);
+            r.onsuccess = () => resolve(r.result || null);
+            r.onerror = () => reject(r.error);
+        });
+        db.close();
+        return row;
+    }
+
+    async function idbMediaDelete(key) {
+        try {
+            const db = await openEntryEditMediaDb();
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(ENTRY_EDIT_MEDIA_STORE, 'readwrite');
+                tx.objectStore(ENTRY_EDIT_MEDIA_STORE).delete(key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+            db.close();
+        } catch (_) {}
+    }
+
+    function makeImageItem({ url = '', dataUrl = '', name = '' } = {}) {
+        return {
+            id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+            url: String(url || '').trim(),
+            dataUrl: String(dataUrl || '').trim(),
+            name: String(name || ''),
+            progress: String(url || '').trim() ? 100 : 0,
+        };
+    }
+
+    function imageItemsFromUrls(urls) {
+        return (Array.isArray(urls) ? urls : [])
+            .map((u) => {
+                const s = String(u || '').trim();
+                if (!s) return null;
+                if (s.startsWith('data:')) return makeImageItem({ dataUrl: s });
+                return makeImageItem({ url: s });
+            })
+            .filter(Boolean);
+    }
+
+    function reviveImageItems(arr) {
+        return (Array.isArray(arr) ? arr : [])
+            .map((raw) => {
+                if (raw && typeof raw === 'object') {
+                    const url = String(raw.url || '').trim();
+                    const dataUrl = String(raw.dataUrl || '').trim();
+                    if (!url && !dataUrl) return null;
+                    const pr = Number(raw.progress);
+                    return {
+                        id: String(raw.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+                        url,
+                        dataUrl,
+                        name: String(raw.name || ''),
+                        progress: Number.isFinite(pr) && pr >= 0 ? pr : url ? 100 : 0,
+                    };
+                }
+                const s = String(raw || '').trim();
+                if (!s) return null;
+                return s.startsWith('data:') ? makeImageItem({ dataUrl: s }) : makeImageItem({ url: s });
+            })
+            .filter(Boolean);
+    }
+
+    async function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error || new Error('Could not read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function dataUrlToBlob(dataUrl) {
+        const [meta, base64] = String(dataUrl || '').split(',');
+        const mimeMatch = /data:(.*?);base64/.exec(meta || '');
+        const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const bytes = Uint8Array.from(atob(base64 || ''), (c) => c.charCodeAt(0));
+        return new Blob([bytes], { type: mime });
     }
 
     function formatEntryDateLine(isoDate) {
@@ -137,6 +250,24 @@
         if (saveAnalyzeBtn) saveAnalyzeBtn.disabled = true;
         const delDlg = document.getElementById('entryDeleteDialog');
         if (delDlg) delDlg.hidden = true;
+        const aside = document.getElementById('entryViewImagesAside');
+        const cols = document.getElementById('entryViewColumns');
+        const stripScroll = document.getElementById('entryViewImageStripScroll');
+        const stripBadge = document.getElementById('entryViewImageStripBadge');
+        const stripFade = document.getElementById('entryViewImageStripFade');
+        const stripAdd = document.getElementById('entryViewImageStripAddBtn');
+        if (aside) aside.hidden = true;
+        if (cols) cols.classList.remove('entry-view-columns--split');
+        if (stripScroll) stripScroll.innerHTML = '';
+        if (stripBadge) {
+            stripBadge.hidden = true;
+            stripBadge.textContent = '';
+        }
+        if (stripFade) stripFade.hidden = true;
+        if (stripAdd) stripAdd.hidden = true;
+        const lb = document.getElementById('photoLightbox');
+        if (lb) lb.hidden = true;
+        document.body.style.overflow = '';
     }
 
     function unmount() {
@@ -187,6 +318,13 @@
         const deletePreviewDateEl = document.getElementById('entryDeletePreviewDate');
         const deleteCancelBtn = document.getElementById('entryDeleteCancelBtn');
         const deleteConfirmBtn = document.getElementById('entryDeleteConfirmBtn');
+        const columnsEl = document.getElementById('entryViewColumns');
+        const imagesAside = document.getElementById('entryViewImagesAside');
+        const imageStripScroll = document.getElementById('entryViewImageStripScroll');
+        const imageStripBadge = document.getElementById('entryViewImageStripBadge');
+        const imageStripFade = document.getElementById('entryViewImageStripFade');
+        const imageStripAddBtn = document.getElementById('entryViewImageStripAddBtn');
+        const imageFileInput = document.getElementById('entryViewImageFileInput');
 
         function setBothDateLines(innerHtml) {
             if (dateLine) dateLine.innerHTML = innerHtml;
@@ -266,10 +404,343 @@
         }
 
         let tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
+        let editorImages = imageItemsFromUrls(entry.imageUrls || []);
         let allTagChoices = [];
         let tagPickerOpen = false;
         let pendingNavigate = null;
         let deleteRequestPending = false;
+        let lightboxIndex = 0;
+        let stripDragDepth = 0;
+        let baseline = '';
+
+        function imagesPayloadStrings() {
+            return editorImages.map((im) => String(im.url || im.dataUrl || '').trim()).filter(Boolean);
+        }
+
+        function serializeState() {
+            const title = (titleEl?.value || '').trim();
+            const text = (bodyEl?.value || '').trim();
+            const t = [...tags].map(normalizeTag).filter(Boolean).sort((a, b) => a.localeCompare(b));
+            const images = imagesPayloadStrings();
+            return JSON.stringify({ title, text, tags: t, images });
+        }
+
+        function readModeStripUrls() {
+            try {
+                const p = JSON.parse(baseline);
+                return (Array.isArray(p.images) ? p.images : []).map((x) => String(x || '').trim()).filter(Boolean);
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function showImageAside() {
+            if (editMode) return true;
+            return readModeStripUrls().length > 0;
+        }
+
+        function updateColumnsLayout() {
+            if (!columnsEl || !imagesAside) return;
+            const show = showImageAside();
+            imagesAside.hidden = !show;
+            columnsEl.classList.toggle('entry-view-columns--split', show);
+        }
+
+        function stripDisplayItems() {
+            if (editMode) return editorImages;
+            return imageItemsFromUrls(readModeStripUrls());
+        }
+
+        function updateStripFade() {
+            if (!imageStripFade || !imageStripScroll) return;
+            const el = imageStripScroll;
+            const more = el.scrollHeight > el.clientHeight + 4;
+            imageStripFade.hidden = !more;
+        }
+
+        function serializeImagesForStorage() {
+            return editorImages.map((im) => ({
+                id: im.id,
+                url: im.url,
+                dataUrl: im.dataUrl,
+                name: im.name,
+                progress: im.progress,
+            }));
+        }
+
+        async function persistDraftImages() {
+            try {
+                if (editorImages.some((im) => im.dataUrl)) {
+                    await idbMediaPut(draftImagesKey(entryId), serializeImagesForStorage());
+                } else {
+                    await idbMediaDelete(draftImagesKey(entryId));
+                }
+            } catch (_) {}
+        }
+
+        function renderImageStrip() {
+            if (!imageStripScroll) return;
+            const items = stripDisplayItems();
+            const n = items.length;
+            if (imageStripBadge) {
+                if (n > 0) {
+                    imageStripBadge.hidden = false;
+                    imageStripBadge.textContent = `${n} photo${n === 1 ? '' : 's'}`;
+                } else {
+                    imageStripBadge.hidden = true;
+                    imageStripBadge.textContent = '';
+                }
+            }
+            if (imageStripAddBtn) {
+                imageStripAddBtn.hidden = !editMode || n === 0;
+            }
+            imageStripScroll.innerHTML = '';
+            if (editMode && n === 0) {
+                const empty = document.createElement('button');
+                empty.type = 'button';
+                empty.className = 'entry-view-strip-empty';
+                empty.innerHTML = '<i class="bi bi-image" aria-hidden="true"></i><span>Add photos to this entry</span>';
+                empty.addEventListener('click', () => imageFileInput?.click(), { signal });
+                imageStripScroll.appendChild(empty);
+            } else {
+                items.forEach((im, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = `entry-view-strip-item${editMode ? '' : ' entry-view-strip-item--readonly'}`;
+                    wrap.dataset.imageId = im.id;
+                    const src = im.url || im.dataUrl;
+                    const img = document.createElement('img');
+                    img.alt = 'Entry photo';
+                    img.loading = 'lazy';
+                    img.src = src || '';
+                    wrap.appendChild(img);
+                    const uploading = im.progress > 0 && im.progress < 100;
+                    if (uploading) {
+                        const bar = document.createElement('div');
+                        bar.className = 'entry-img-progress';
+                        bar.innerHTML = `<span style="width:${Math.max(8, im.progress)}%"></span>`;
+                        wrap.appendChild(bar);
+                    }
+                    const exp = document.createElement('button');
+                    exp.type = 'button';
+                    exp.className = 'entry-view-strip-item__expand';
+                    exp.setAttribute('aria-label', 'Expand image');
+                    exp.innerHTML = '<i class="bi bi-search" aria-hidden="true"></i>';
+                    exp.addEventListener(
+                        'click',
+                        (e) => {
+                            e.stopPropagation();
+                            openLightbox(idx);
+                        },
+                        { signal }
+                    );
+                    wrap.appendChild(exp);
+                    if (editMode) {
+                        const del = document.createElement('button');
+                        del.type = 'button';
+                        del.className = 'entry-view-strip-item__del';
+                        del.setAttribute('aria-label', 'Remove photo');
+                        del.innerHTML = '<i class="bi bi-trash3" aria-hidden="true"></i>';
+                        del.addEventListener(
+                            'click',
+                            (e) => {
+                                e.stopPropagation();
+                                if (
+                                    !window.confirm('Remove this photo from your entry?')
+                                ) {
+                                    return;
+                                }
+                                editorImages = editorImages.filter((x) => x.id !== im.id);
+                                renderImageStrip();
+                                updateColumnsLayout();
+                                if (!isOnline()) {
+                                    void persistDraftImages();
+                                    persistDraft();
+                                }
+                            },
+                            { signal }
+                        );
+                        wrap.appendChild(del);
+                    }
+                    imageStripScroll.appendChild(wrap);
+                });
+            }
+            updateColumnsLayout();
+            requestAnimationFrame(() => updateStripFade());
+        }
+
+        async function uploadImageOnlineLocal(file, localId) {
+            const form = new FormData();
+            form.append('file', file);
+            form.append('userId', String(userId));
+            editorImages = editorImages.map((img) => (img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img));
+            renderImageStrip();
+            const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+            editorImages = editorImages.map((img) => (img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img));
+            renderImageStrip();
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || !json?.success || !json?.url) {
+                throw new Error(json?.error || 'Upload failed');
+            }
+            return String(json.url);
+        }
+
+        async function addImagesFromFiles(fileList) {
+            const files = Array.from(fileList || []).filter((f) =>
+                ACCEPTED_IMAGE_TYPES.has(String(f.type || '').toLowerCase())
+            );
+            if (!files.length) return;
+            if (editorImages.length + files.length > MAX_ENTRY_IMAGES) {
+                window.alert(`Each entry allows at most ${MAX_ENTRY_IMAGES} images.`);
+                return;
+            }
+            if (editorImages.length + files.length === MAX_ENTRY_IMAGES && files.length > 0) {
+                window.alert('This entry will have 10 photos (the maximum per entry).');
+            }
+            for (const file of files) {
+                if (editorImages.length >= MAX_ENTRY_IMAGES) break;
+                const item = makeImageItem({ name: file.name });
+                editorImages.push(item);
+                renderImageStrip();
+                try {
+                    if (isOnline() && userId) {
+                        const url = await uploadImageOnlineLocal(file, item.id);
+                        editorImages = editorImages.map((img) =>
+                            img.id === item.id ? { ...img, url, dataUrl: '', progress: 100 } : img
+                        );
+                    } else {
+                        editorImages = editorImages.map((img) =>
+                            img.id === item.id ? { ...img, progress: 25 } : img
+                        );
+                        renderImageStrip();
+                        const dataUrl = await fileToDataUrl(file);
+                        editorImages = editorImages.map((img) =>
+                            img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
+                        );
+                    }
+                } catch (e) {
+                    console.error(e);
+                    editorImages = editorImages.filter((img) => img.id !== item.id);
+                    window.alert(e.message || 'Could not add image.');
+                }
+                renderImageStrip();
+                if (!isOnline()) {
+                    void persistDraftImages();
+                    persistDraft();
+                }
+            }
+            if (imageFileInput) imageFileInput.value = '';
+        }
+
+        function openLightbox(index) {
+            const list = stripDisplayItems();
+            if (!list.length) return;
+            lightboxIndex = Math.max(0, Math.min(index, list.length - 1));
+            const modal = document.getElementById('photoLightbox');
+            const imgEl = document.getElementById('photoLightboxImage');
+            if (!modal || !imgEl) return;
+            const cur = list[lightboxIndex];
+            imgEl.src = cur.url || cur.dataUrl || '';
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('photoLightbox');
+            if (!modal) return;
+            modal.hidden = true;
+            document.body.style.overflow = '';
+        }
+
+        function moveLightbox(step) {
+            const list = stripDisplayItems();
+            if (!list.length) return;
+            const next = (lightboxIndex + step + list.length) % list.length;
+            openLightbox(next);
+        }
+
+        function wireLightboxOnce() {
+            const modal = document.getElementById('photoLightbox');
+            const closeBtn = document.getElementById('photoLightboxClose');
+            const prevBtn = document.getElementById('photoLightboxPrev');
+            const nextBtn = document.getElementById('photoLightboxNext');
+            if (modal) {
+                modal.addEventListener(
+                    'click',
+                    (e) => {
+                        if (e.target === modal) closeLightbox();
+                    },
+                    { signal }
+                );
+            }
+            closeBtn?.addEventListener('click', () => closeLightbox(), { signal });
+            prevBtn?.addEventListener('click', () => moveLightbox(-1), { signal });
+            nextBtn?.addEventListener('click', () => moveLightbox(1), { signal });
+            document.addEventListener(
+                'keydown',
+                (e) => {
+                    if (e.key !== 'Escape') return;
+                    const m = document.getElementById('photoLightbox');
+                    if (m && !m.hidden) closeLightbox();
+                },
+                { signal }
+            );
+        }
+
+        wireLightboxOnce();
+
+        if (imageStripAddBtn) {
+            imageStripAddBtn.addEventListener('click', () => imageFileInput?.click(), { signal });
+        }
+        imageFileInput?.addEventListener(
+            'change',
+            () => {
+                void addImagesFromFiles(imageFileInput.files);
+            },
+            { signal }
+        );
+
+        if (imageStripScroll) {
+            imageStripScroll.addEventListener('scroll', () => updateStripFade(), { signal });
+            imageStripScroll.addEventListener(
+                'dragenter',
+                (e) => {
+                    if (!editMode) return;
+                    e.preventDefault();
+                    stripDragDepth += 1;
+                    imageStripScroll.classList.add('entry-view-image-strip__scroll--drag');
+                },
+                { signal }
+            );
+            imageStripScroll.addEventListener(
+                'dragleave',
+                () => {
+                    if (!editMode) return;
+                    stripDragDepth = Math.max(0, stripDragDepth - 1);
+                    if (stripDragDepth === 0) imageStripScroll.classList.remove('entry-view-image-strip__scroll--drag');
+                },
+                { signal }
+            );
+            imageStripScroll.addEventListener(
+                'dragover',
+                (e) => {
+                    if (!editMode) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                },
+                { signal }
+            );
+            imageStripScroll.addEventListener(
+                'drop',
+                (e) => {
+                    if (!editMode) return;
+                    e.preventDefault();
+                    stripDragDepth = 0;
+                    imageStripScroll.classList.remove('entry-view-image-strip__scroll--drag');
+                    void addImagesFromFiles(e.dataTransfer?.files);
+                },
+                { signal }
+            );
+        }
 
         function previewTitleForEntry(ent) {
             const t = (ent.title && String(ent.title).trim()) ? String(ent.title).trim() : '';
@@ -339,13 +810,21 @@
                 if (d.title != null) titleEl.value = String(d.title);
                 if (d.text != null) bodyEl.value = String(d.text);
                 if (Array.isArray(d.tags)) tags = new Set(d.tags.map(normalizeTag).filter(Boolean));
+                if (Array.isArray(d.images) && d.images.length) {
+                    editorImages = imageItemsFromUrls(d.images);
+                }
             } catch (_) {}
         }
 
         applyDraftFromStorage();
+        try {
+            const row = await idbMediaGet(draftImagesKey(entryId));
+            if (row?.images?.length) editorImages = reviveImageItems(row.images);
+        } catch (_) {}
 
-        titleEl.value = entry.title || '';
-        if (!localStorage.getItem(draftKey(entryId))) {
+        const hadDraft = Boolean(localStorage.getItem(draftKey(entryId)));
+        if (!hadDraft) {
+            titleEl.value = entry.title || '';
             bodyEl.value = entry.text || '';
         }
 
@@ -355,7 +834,7 @@
 
         autoResizeTextarea(bodyEl);
 
-        let baseline = serializeEditor(titleEl, bodyEl, tags);
+        baseline = serializeState();
 
         function syncReadPane() {
             let p = { title: '', text: '', tags: [] };
@@ -384,6 +863,7 @@
             titleRead.classList.toggle('entry-view-title-read--muted', !t);
             bodyRead.textContent = p.text || '';
             aiEmotionLabel.textContent = toTitleCaseEmotion(entry.emotionLabel || entry.feeling || 'neutral');
+            renderImageStrip();
         }
 
         function setEditMode(on) {
@@ -393,12 +873,14 @@
             readToolbar.hidden = editMode;
             cancelBtn.hidden = !editMode;
             if (actionsEl) actionsEl.hidden = !editMode;
+            renderImageStrip();
+            updateColumnsLayout();
         }
 
         syncReadPane();
 
         function isDirty() {
-            return serializeEditor(titleEl, bodyEl, tags) !== baseline;
+            return serializeState() !== baseline;
         }
 
         function persistDraft() {
@@ -409,12 +891,15 @@
                     text: bodyEl.value,
                     tags: Array.from(tags),
                     savedAt: new Date().toISOString(),
+                    images: editorImages.some((im) => im.dataUrl) ? [] : imagesPayloadStrings(),
                 })
             );
+            void persistDraftImages();
         }
 
         function clearDraft() {
             localStorage.removeItem(draftKey(entryId));
+            void idbMediaDelete(draftImagesKey(entryId));
         }
 
         async function loadTagChoices() {
@@ -513,7 +998,9 @@
                 titleEl.value = p.title || '';
                 bodyEl.value = p.text || '';
                 tags = new Set((Array.isArray(p.tags) ? p.tags : []).map(normalizeTag).filter(Boolean));
+                editorImages = imageItemsFromUrls(Array.isArray(p.images) ? p.images : []);
                 renderTags();
+                renderImageStrip();
                 autoResizeTextarea(bodyEl);
             } catch (_) {}
         }
@@ -578,10 +1065,11 @@
                         `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(dRefresh)}</span>`
                     );
                     tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
+                    editorImages = imageItemsFromUrls(entry.imageUrls || []);
                     seedTagChoicesSync();
                     renderTags();
                     autoResizeTextarea(bodyEl);
-                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    baseline = serializeState();
                     syncReadPane();
                     void loadTagChoices().then(() => {
                         if (!signal.aborted) fillPicker();
@@ -793,12 +1281,13 @@
             }
         }
 
-        async function patchRemote(reanalyze) {
+        async function patchRemote(reanalyze, imageUrlsList) {
             const payload = {
                 userId,
                 title: titleEl.value.trim(),
                 text: bodyEl.value.trim(),
                 tags: Array.from(tags).map(normalizeTag).filter(Boolean),
+                imageUrls: imageUrlsList,
                 reanalyze: Boolean(reanalyze),
             };
             const res = await fetch(`/api/entries/${entryId}`, {
@@ -813,11 +1302,36 @@
             return data;
         }
 
+        async function uploadImageForQueue(file, uid) {
+            const form = new FormData();
+            form.append('file', file);
+            form.append('userId', String(uid));
+            const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || !json?.success || !json?.url) {
+                throw new Error(json?.error || 'Upload failed');
+            }
+            return String(json.url);
+        }
+
+        async function flushPendingDataUrlsForSave() {
+            for (const im of [...editorImages]) {
+                if (im.url || !im.dataUrl) continue;
+                const blob = dataUrlToBlob(im.dataUrl);
+                const ext = (blob.type || 'image/png').split('/')[1] || 'png';
+                const file = new File([blob], `pending-${Date.now()}.${ext}`, { type: blob.type || 'image/png' });
+                const url = await uploadImageOnlineLocal(file, im.id);
+                editorImages = editorImages.map((x) => (x.id === im.id ? { ...x, url, dataUrl: '', progress: 100 } : x));
+                renderImageStrip();
+            }
+        }
+
         function offlineMergedEntry(reanalyze) {
             const base = { ...entry, id: entryId };
             base.title = titleEl.value.trim();
             base.text = bodyEl.value.trim();
             base.tags = Array.from(tags).map(normalizeTag).filter(Boolean);
+            base.imageUrls = imagesPayloadStrings();
             if (reanalyze) {
                 base.feeling = 'neutral';
                 base.emotionLabel = 'neutral';
@@ -830,13 +1344,19 @@
             return base;
         }
 
-        function pushOfflineQueue(reanalyze) {
+        async function pushOfflineQueue(reanalyze) {
+            const mediaKey = `editq_${entryId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+            try {
+                await idbMediaPut(mediaKey, serializeImagesForStorage());
+            } catch (_) {}
             const record = {
                 entryId,
                 userId,
                 title: titleEl.value.trim(),
                 text: bodyEl.value.trim(),
                 tags: Array.from(tags).map(normalizeTag).filter(Boolean),
+                imageUrls: editorImages.map((im) => im.url).filter(Boolean),
+                imageMediaKey: mediaKey,
                 reanalyze: Boolean(reanalyze),
                 queuedAt: new Date().toISOString(),
             };
@@ -851,16 +1371,44 @@
             const next = [];
             for (const row of q) {
                 try {
+                    let imageUrls = Array.isArray(row.imageUrls) ? [...row.imageUrls] : [];
+                    if (row.imageMediaKey) {
+                        const blobRow = await idbMediaGet(row.imageMediaKey);
+                        if (blobRow?.images?.length) {
+                            const revived = reviveImageItems(blobRow.images);
+                            const merged = [];
+                            for (const im of revived) {
+                                if (im.url) {
+                                    merged.push(im.url);
+                                    continue;
+                                }
+                                if (im.dataUrl) {
+                                    const blob = dataUrlToBlob(im.dataUrl);
+                                    const ext = (blob.type || 'image/png').split('/')[1] || 'png';
+                                    const file = new File([blob], `offline-${Date.now()}.${ext}`, {
+                                        type: blob.type || 'image/png',
+                                    });
+                                    const url = await uploadImageForQueue(file, row.userId);
+                                    merged.push(url);
+                                }
+                            }
+                            if (merged.length) imageUrls = merged;
+                        }
+                    }
+                    const body = {
+                        userId: row.userId,
+                        title: row.title,
+                        text: row.text,
+                        tags: row.tags,
+                        reanalyze: row.reanalyze,
+                    };
+                    if (row.imageMediaKey || (Array.isArray(row.imageUrls) && row.imageUrls.length > 0)) {
+                        body.imageUrls = imageUrls;
+                    }
                     const res = await fetch(`/api/entries/${row.entryId}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            userId: row.userId,
-                            title: row.title,
-                            text: row.text,
-                            tags: row.tags,
-                            reanalyze: row.reanalyze,
-                        }),
+                        body: JSON.stringify(body),
                     });
                     const data = await res.json();
                     if (res.ok && data.success && data.entry) {
@@ -868,6 +1416,7 @@
                         try {
                             localStorage.removeItem(draftKey(Number(row.entryId)));
                         } catch (_) {}
+                        if (row.imageMediaKey) await idbMediaDelete(row.imageMediaKey);
                         continue;
                     }
                 } catch (_) {}
@@ -884,6 +1433,13 @@
             });
         };
         window.addEventListener('online', onOnline, { signal });
+        window.addEventListener(
+            'resize',
+            () => {
+                updateStripFade();
+            },
+            { signal }
+        );
 
         async function runSave(reanalyze) {
             const text = bodyEl.value.trim();
@@ -894,12 +1450,13 @@
             saveAnalyzeBtn.disabled = true;
             try {
                 if (!isOnline()) {
-                    pushOfflineQueue(reanalyze);
+                    await pushOfflineQueue(reanalyze);
                     const merged = offlineMergedEntry(reanalyze);
                     replaceEntryInList(merged);
                     entry = merged;
-                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    baseline = serializeState();
                     clearDraft();
+                    renderImageStrip();
                     if (reanalyze) {
                         global.DiariMoodAnalysis.resetSession();
                         const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
@@ -913,6 +1470,15 @@
                     return;
                 }
 
+                try {
+                    await flushPendingDataUrlsForSave();
+                } catch (e) {
+                    console.error(e);
+                    window.alert(e.message || 'Could not upload images. Try again when you have a stable connection.');
+                    return;
+                }
+                const imageSaveList = imagesPayloadStrings().filter((u) => !u.startsWith('data:'));
+
                 if (reanalyze) {
                     global.DiariMoodAnalysis.resetSession();
                     const overlay = global.DiariMoodAnalysis.ensureAnalysisOverlay();
@@ -921,21 +1487,22 @@
                     } catch (_) {}
                     global.DiariMoodAnalysis.showAnalysisLoading(overlay);
                     try {
-                        const data = await patchRemote(true);
+                        const data = await patchRemote(true, imageSaveList);
                         entry = data.entry;
+                        editorImages = imageItemsFromUrls(entry.imageUrls || []);
                         replaceEntryInList(entry);
                         const engine = (data.analysisEngine || '').toString().toLowerCase();
                         await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, data.entry, engine === 'fallback', moodOptions(overlay));
                         clearDraft();
-                        baseline = serializeEditor(titleEl, bodyEl, tags);
+                        baseline = serializeState();
                     } catch (err) {
                         console.error(err);
-                        pushOfflineQueue(true);
+                        await pushOfflineQueue(true);
                         const merged = offlineMergedEntry(true);
                         replaceEntryInList(merged);
                         entry = merged;
-                        baseline = serializeEditor(titleEl, bodyEl, tags);
+                        baseline = serializeState();
                         await global.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
                         global.DiariMoodAnalysis.showAnalysisResult(overlay, merged, true, moodOptions(overlay));
                     }
@@ -943,18 +1510,19 @@
                 }
 
                 try {
-                    const data = await patchRemote(false);
+                    const data = await patchRemote(false, imageSaveList);
                     entry = data.entry;
+                    editorImages = imageItemsFromUrls(entry.imageUrls || []);
                     replaceEntryInList(entry);
                     clearDraft();
-                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    baseline = serializeState();
                 } catch (err) {
                     console.error(err);
-                    pushOfflineQueue(false);
+                    await pushOfflineQueue(false);
                     const merged = offlineMergedEntry(false);
                     replaceEntryInList(merged);
                     entry = merged;
-                    baseline = serializeEditor(titleEl, bodyEl, tags);
+                    baseline = serializeState();
                     window.alert('Saved offline. We will sync when you are back online.');
                 }
             } finally {

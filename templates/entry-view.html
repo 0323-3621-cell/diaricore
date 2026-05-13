@@ -63,25 +63,40 @@
             </header>
 
             <div class="entry-view-card" id="entryViewCard">
-                <div class="entry-view-read-pane" id="entryViewReadPane">
-                    <div class="entry-view-tags-block">
-                        <span class="entry-view-tags-label">Tags:</span>
-                        <div class="entry-view-tags-read" id="entryViewTagsRead" aria-label="Tags"></div>
+                <div class="entry-view-columns" id="entryViewColumns">
+                    <div class="entry-view-main-column">
+                        <div class="entry-view-read-pane" id="entryViewReadPane">
+                            <div class="entry-view-tags-block">
+                                <span class="entry-view-tags-label">Tags:</span>
+                                <div class="entry-view-tags-read" id="entryViewTagsRead" aria-label="Tags"></div>
+                            </div>
+                            <hr class="entry-view-divider" />
+                            <p class="entry-view-datetime" id="entryViewDateLineRead"></p>
+                            <h1 class="entry-view-title-read" id="entryViewTitleRead"></h1>
+                            <div class="entry-view-body-read" id="entryViewBodyRead"></div>
+                        </div>
+                        <div class="entry-view-edit-pane" id="entryViewEditPane" hidden>
+                            <div class="entry-view-tags-block">
+                                <span class="entry-view-tags-label">Tags:</span>
+                                <div class="tags-container entry-view-tags-inner" id="entryViewTagsRow"></div>
+                            </div>
+                            <hr class="entry-view-divider" />
+                            <p class="entry-view-datetime" id="entryViewDateLine"></p>
+                            <input type="text" class="entry-view-title-input" id="entryViewTitle" maxlength="180" placeholder="Give your entry a title..." autocomplete="off" />
+                            <textarea class="entry-view-body-input" id="entryViewBody" rows="8" placeholder="Start writing..." spellcheck="true"></textarea>
+                        </div>
                     </div>
-                    <hr class="entry-view-divider" />
-                    <p class="entry-view-datetime" id="entryViewDateLineRead"></p>
-                    <h1 class="entry-view-title-read" id="entryViewTitleRead"></h1>
-                    <div class="entry-view-body-read" id="entryViewBodyRead"></div>
-                </div>
-                <div class="entry-view-edit-pane" id="entryViewEditPane" hidden>
-                    <div class="entry-view-tags-block">
-                        <span class="entry-view-tags-label">Tags:</span>
-                        <div class="tags-container entry-view-tags-inner" id="entryViewTagsRow"></div>
-                    </div>
-                    <hr class="entry-view-divider" />
-                    <p class="entry-view-datetime" id="entryViewDateLine"></p>
-                    <input type="text" class="entry-view-title-input" id="entryViewTitle" maxlength="180" placeholder="Give your entry a title..." autocomplete="off" />
-                    <textarea class="entry-view-body-input" id="entryViewBody" rows="8" placeholder="Start writing..." spellcheck="true"></textarea>
+                    <aside class="entry-view-images-aside" id="entryViewImagesAside" hidden aria-label="Entry photos">
+                        <div class="entry-view-image-strip" id="entryViewImageStrip">
+                            <p class="entry-view-image-strip__badge" id="entryViewImageStripBadge" hidden></p>
+                            <div class="entry-view-image-strip__scroll" id="entryViewImageStripScroll"></div>
+                            <div class="entry-view-image-strip__fade" id="entryViewImageStripFade" hidden aria-hidden="true"></div>
+                            <button type="button" class="entry-view-image-strip__add" id="entryViewImageStripAddBtn" hidden>
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                <span>Add photos</span>
+                            </button>
+                        </div>
+                    </aside>
                 </div>
             </div>
 
@@ -117,6 +132,21 @@
                 </button>
             </div>
         </div>
+    </div>
+
+    <input type="file" id="entryViewImageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+
+    <div class="photo-lightbox" id="photoLightbox" hidden>
+        <button type="button" class="photo-lightbox__close" id="photoLightboxClose" aria-label="Close preview">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <button type="button" class="photo-lightbox__nav photo-lightbox__nav--prev" id="photoLightboxPrev" aria-label="Previous image">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <img id="photoLightboxImage" alt="Entry image preview" />
+        <button type="button" class="photo-lightbox__nav photo-lightbox__nav--next" id="photoLightboxNext" aria-label="Next image">
+            <i class="bi bi-chevron-right"></i>
+        </button>
     </div>
 
     <div class="entry-view-dialog" id="entryUnsavedDialog" hidden role="dialog" aria-modal="true" aria-labelledby="entryUnsavedTitle">

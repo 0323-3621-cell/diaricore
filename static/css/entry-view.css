@@ -601,3 +601,255 @@ html.theme-dark .entry-view-actions {
     background: rgba(30, 36, 48, 0.96);
     border-top-color: rgba(255, 255, 255, 0.08);
 }
+
+/* —— Entry image strip (view / edit) —— */
+.entry-view-columns {
+    display: block;
+}
+
+.entry-view-main-column {
+    min-width: 0;
+}
+
+.entry-view-columns--split {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+}
+
+.entry-view-columns--split .entry-view-main-column {
+    flex: 1 1 70%;
+    max-width: 70%;
+    padding-right: 1rem;
+    box-sizing: border-box;
+}
+
+.entry-view-images-aside {
+    flex: 0 0 30%;
+    max-width: 30%;
+    min-width: 0;
+    box-sizing: border-box;
+    border-left: 0.5px solid rgba(76, 128, 96, 0.22);
+    padding-left: 1rem;
+}
+
+.entry-view-image-strip {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+}
+
+.entry-view-image-strip__badge {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted, #8a939d);
+    letter-spacing: 0.02em;
+}
+
+.entry-view-image-strip__scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    padding-bottom: 0.25rem;
+    box-sizing: border-box;
+    /* Fixed viewport-relative height; strip never grows with image count */
+    height: calc(100vh - 10.5rem);
+    max-height: calc(100vh - 10.5rem);
+    -webkit-overflow-scrolling: touch;
+}
+
+.entry-view-image-strip__scroll--drag {
+    outline: 2px dashed rgba(76, 128, 96, 0.45);
+    outline-offset: 2px;
+    background: rgba(76, 128, 96, 0.06);
+    border-radius: 12px;
+}
+
+.entry-view-image-strip__fade {
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2.75rem;
+    height: 2.5rem;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.96));
+    border-radius: 0 0 10px 10px;
+}
+
+.entry-view-image-strip__add {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    border: 1px dashed rgba(76, 128, 96, 0.35);
+    background: rgba(76, 128, 96, 0.04);
+    color: #3d6b4f;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.entry-view-image-strip__add:hover {
+    background: rgba(76, 128, 96, 0.09);
+    border-color: rgba(76, 128, 96, 0.5);
+}
+
+.entry-view-strip-item {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-secondary, #f4f6f8);
+}
+
+.entry-view-strip-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    vertical-align: middle;
+}
+
+.entry-view-strip-item__expand,
+.entry-view-strip-item__del {
+    position: absolute;
+    top: 0.45rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.92);
+    color: #2b3540;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.entry-view-strip-item:hover .entry-view-strip-item__expand,
+.entry-view-strip-item:hover .entry-view-strip-item__del {
+    opacity: 1;
+}
+
+.entry-view-strip-item__expand {
+    right: 0.45rem;
+}
+
+.entry-view-strip-item__del {
+    right: 2.85rem;
+}
+
+.entry-view-strip-item__expand:hover,
+.entry-view-strip-item__del:hover {
+    transform: scale(1.04);
+}
+
+.entry-view-strip-item--readonly .entry-view-strip-item__del {
+    display: none;
+}
+
+.entry-view-strip-item--readonly .entry-view-strip-item__expand {
+    right: 0.45rem;
+}
+
+.entry-view-strip-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 8rem;
+    padding: 1.25rem;
+    border: 1.5px dashed rgba(76, 128, 96, 0.28);
+    border-radius: 12px;
+    background: rgba(76, 128, 96, 0.03);
+    color: var(--text-muted, #7a8490);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.entry-view-strip-empty:hover {
+    background: rgba(76, 128, 96, 0.07);
+    border-color: rgba(76, 128, 96, 0.42);
+}
+
+.entry-view-strip-empty .bi {
+    font-size: 1.75rem;
+    color: rgba(76, 128, 96, 0.55);
+}
+
+@media (max-width: 768px) {
+    .entry-view-columns--split {
+        flex-direction: column;
+    }
+
+    .entry-view-columns--split .entry-view-main-column {
+        flex: 1 1 auto;
+        max-width: none;
+        width: 100%;
+        padding-right: 0;
+    }
+
+    .entry-view-images-aside {
+        flex: none;
+        max-width: none;
+        width: 100%;
+        border-left: none;
+        padding-left: 0;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 0.5px solid rgba(76, 128, 96, 0.18);
+    }
+
+    .entry-view-image-strip__scroll {
+        flex-direction: row;
+        gap: 0.55rem;
+        height: auto;
+        max-height: none;
+        overflow-y: hidden;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        padding-bottom: 0.35rem;
+    }
+
+    .entry-view-image-strip__fade {
+        left: auto;
+        right: 0;
+        top: 0;
+        bottom: 2.75rem;
+        width: 2rem;
+        height: auto;
+        background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.96));
+    }
+
+    .entry-view-strip-item {
+        flex: 0 0 auto;
+        width: 72vw;
+        max-width: 280px;
+    }
+}
+
+html.theme-dark .entry-view-image-strip__fade {
+    background: linear-gradient(to bottom, rgba(30, 36, 48, 0), rgba(30, 36, 48, 0.98));
+}
+
+@media (max-width: 768px) {
+    html.theme-dark .entry-view-image-strip__fade {
+        background: linear-gradient(to right, rgba(30, 36, 48, 0), rgba(30, 36, 48, 0.98));
+    }
+}

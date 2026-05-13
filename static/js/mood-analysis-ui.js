@@ -301,27 +301,49 @@
         mount.setAttribute('aria-label', 'Loading animation');
         wrap.appendChild(mount);
         entryUpdateEditingMountEl = mount;
-        try {
-            if (typeof global.lottie !== 'undefined' && typeof global.lottie.loadAnimation === 'function') {
-                const animConfig = {
-                    container: mount,
-                    renderer: 'svg',
-                    loop: true,
-                    autoplay: true,
-                };
-                if (entryUpdateEditingData) {
-                    animConfig.animationData = entryUpdateEditingData;
-                } else {
-                    animConfig.path = ENTRY_UPDATE_EDITING_LOTTIE_SRC;
+        const showMissingIcon = () => {
+            if (mount.querySelector('svg, canvas')) return;
+            mount.innerHTML = '<i class="bi bi-pencil-square" aria-hidden="true" style="font-size:56px;color:#7aa28e;"></i>';
+        };
+        const loadEditingAnimWithData = (data) => {
+            if (typeof global.lottie === 'undefined' || typeof global.lottie.loadAnimation !== 'function') return null;
+            try {
+                if (entryUpdateEditingAnim && typeof entryUpdateEditingAnim.destroy === 'function') {
+                    entryUpdateEditingAnim.destroy();
                 }
-                entryUpdateEditingAnim = global.lottie.loadAnimation(animConfig);
-                entryUpdateEditingAnim.addEventListener('DOMLoaded', () => {
-                    if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
+            } catch (_) {}
+            entryUpdateEditingAnim = global.lottie.loadAnimation({
+                container: mount,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData: data,
+            });
+            entryUpdateEditingAnim.addEventListener('DOMLoaded', () => {
+                if (!entryUpdateEditingReadyAt) entryUpdateEditingReadyAt = Date.now();
+            });
+            return entryUpdateEditingAnim;
+        };
+        const mountEditingAnimation = async () => {
+            try {
+                if (entryUpdateEditingData) {
+                    loadEditingAnimWithData(entryUpdateEditingData);
+                    return;
+                }
+                const res = await fetch(ENTRY_UPDATE_EDITING_LOTTIE_SRC, {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
                 });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                entryUpdateEditingData = data;
+                loadEditingAnimWithData(data);
+            } catch (e) {
+                console.warn('Editing-Loader render error:', e);
+                showMissingIcon();
             }
-        } catch (e) {
-            console.warn('Editing-Loader mount error:', e);
-        }
+        };
+        void mountEditingAnimation();
 
         const titleEl = document.createElement('h4');
         titleEl.className = 'mood-analysis-loading__title';

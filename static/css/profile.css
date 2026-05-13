@@ -54,14 +54,15 @@ body {
     color: var(--text-dark);
 }
 
-/* Avoid a flash of empty HTML placeholders before localStorage hydrates the profile */
-html.profile-await-storage .profile-name,
-html.profile-await-storage .profile-email,
-html.profile-await-storage .profile-edit-identity,
-html.profile-await-storage .profile-member-since,
-html.profile-await-storage .profile-stats-section {
+/* Profile card hidden until localStorage hydrates (inline head style handles first paint) */
+html.profile-await-storage .profile-overview-section .profile-card {
+    opacity: 0;
     visibility: hidden;
-    min-height: 4.5rem;
+    pointer-events: none;
+}
+
+body.page-profile .profile-overview-section .profile-card {
+    transition: opacity 0.22s ease-out, visibility 0.22s ease-out;
 }
 
 .profile-overview-section .profile-name {

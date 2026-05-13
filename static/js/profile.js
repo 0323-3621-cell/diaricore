@@ -42,7 +42,11 @@ function initializeProfileFromStorage() {
             avatarEl.src = user.avatarDataUrl;
         }
     } finally {
-        document.documentElement.classList.remove('profile-await-storage');
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                document.documentElement.classList.remove('profile-await-storage');
+            });
+        });
     }
 }
 

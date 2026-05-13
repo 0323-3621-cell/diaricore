@@ -326,6 +326,47 @@ function initializeInsightsHeroTabs() {
     consistency.addEventListener('click', () => activate('consistency'));
 }
 
+/** Pick 0..len-1 from local calendar day so snapshot copy rotates daily but stays deterministic. */
+function snapshotLedeDailyTemplateIndex(len) {
+    if (len <= 1) return 0;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const epochDays = Math.floor(d.getTime() / 86400000);
+    return ((epochDays % len) + len) % len;
+}
+
+/**
+ * Templated weekly snapshot ledes — all filled from the same Mon–Sun `weekly` series as the chart.
+ * Index rotates by calendar day so wording does not feel identical every visit.
+ */
+const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
+    (c) =>
+        `This week, your average mood is ${c.avg} / 10 with a ${c.trWord} trend between the first and second half of your logged days.`,
+    (c) =>
+        `From the days you journaled this week, mood averaged ${c.avg} / 10 — a ${c.trWord} arc from earlier entries toward later ones.`,
+    (c) =>
+        `Your check-ins this week center around ${c.avg} / 10 overall, with a ${c.trWord} shift between the first half of logged days and the second.`,
+    (c) =>
+        `Across ${c.n} ${c.n === 1 ? 'day' : 'days'} with entries, daily mood averages ${c.avg} / 10, reading ${c.trWord} through the span you captured.`,
+    (c) =>
+        `The moods you logged this week sit near ${c.avg} / 10 on average, showing a ${c.trWord} tilt from earlier journal days to the ones that followed.`,
+    (c) =>
+        `So far this week, when you wrote, scores averaged ${c.avg} / 10 with a ${c.trWord} pattern between the first and second halves of what you recorded.`,
+    (c) =>
+        `Weekly mood from your entries lands around ${c.avg} / 10, with a ${c.trWord} run across the days you journaled.`,
+    (c) =>
+        `Plotting the days you saved, the week averages ${c.avg} / 10 and carries a ${c.trWord} feel from earlier check-ins to later ones.`,
+];
+
+const WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES = [
+    (c) =>
+        `You logged mood on one day this week (${c.avg} / 10). Add a few more dated entries to see how the rest of the week shapes up.`,
+    (c) =>
+        `Only one mood check-in so far this week — ${c.avg} / 10. A fuller week of notes will make this summary richer.`,
+    (c) =>
+        `This week's journal shows a single mood snapshot at ${c.avg} / 10; keep logging to trace the arc across more days.`,
+];
+
 function updateInsightsSnapshotFromWeekly(weekly) {
     const lede = document.getElementById('insightsMemoryLede');
     const bestVal = document.getElementById('insightHighlightBestValue');
@@ -362,7 +403,7 @@ function updateInsightsSnapshotFromWeekly(weekly) {
         if (!n) {
             lede.textContent = 'Save a few dated entries to see your weekly mood snapshot here.';
         } else {
-            const avg = vals.reduce((a, b) => a + b, 0) / n;
+            const avgStr = (vals.reduce((a, b) => a + b, 0) / n).toFixed(1);
             const half = Math.max(1, Math.floor(n / 2));
             const first = vals.slice(0, half);
             const second = vals.slice(half);
@@ -370,7 +411,17 @@ function updateInsightsSnapshotFromWeekly(weekly) {
             const secondAvg = second.length ? second.reduce((a, b) => a + b, 0) / second.length : firstAvg;
             const tr = secondAvg - firstAvg;
             const trWord = tr > 0.08 ? 'lifting' : tr < -0.08 ? 'softening' : 'steady';
-            lede.textContent = `This week, your average mood is ${avg.toFixed(1)} / 10 with a ${trWord} trend between the first and second half of your logged days.`;
+            const ctx = { avg: avgStr, trWord, n };
+
+            if (n < 2) {
+                const pool = WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES;
+                const idx = snapshotLedeDailyTemplateIndex(pool.length);
+                lede.textContent = pool[idx](ctx);
+            } else {
+                const pool = WEEKLY_SNAPSHOT_LEDE_TEMPLATES;
+                const idx = snapshotLedeDailyTemplateIndex(pool.length);
+                lede.textContent = pool[idx](ctx);
+            }
         }
     }
 }

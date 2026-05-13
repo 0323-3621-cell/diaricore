@@ -1393,11 +1393,9 @@ button.profile-account-card .btn-edit {
     margin: 0.5rem 0 0 0;
 }
 
-/* Security settings: readable inputs, comfortable width, looser vertical rhythm */
+/* Security settings: light inputs + looser vertical rhythm (full width like other detail cards) */
 .profile-account-detail-card--security {
-    max-width: 28rem;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
     padding-top: 0.35rem;
 }
 

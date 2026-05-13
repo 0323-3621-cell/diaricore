@@ -69,6 +69,30 @@
     const MAX_ENTRY_IMAGES = 10;
     const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
+    /** Green top-right toast — same language as Entries “Filters applied successfully”. */
+    function showEntryEditSuccessToast(message) {
+        const existing = document.querySelector('.entry-edit-toast');
+        if (existing) existing.remove();
+
+        const el = document.createElement('div');
+        el.className = 'entry-edit-toast entry-edit-toast--success';
+        el.setAttribute('role', 'status');
+        el.innerHTML =
+            '<span class="entry-edit-toast__icon" aria-hidden="true"><i class="bi bi-check-lg"></i></span>' +
+            '<span class="entry-edit-toast__text"></span>';
+        const textEl = el.querySelector('.entry-edit-toast__text');
+        if (textEl) textEl.textContent = message;
+
+        document.body.appendChild(el);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => el.classList.add('entry-edit-toast--visible'));
+        });
+        window.setTimeout(() => {
+            el.classList.remove('entry-edit-toast--visible');
+            window.setTimeout(() => el.remove(), 300);
+        }, 3000);
+    }
+
     function draftImagesKey(entryId) {
         return `entryDraftImg_${entryId}`;
     }
@@ -944,6 +968,7 @@
             if (editorImages.length + files.length === MAX_ENTRY_IMAGES && files.length > 0) {
                 window.alert('This entry will have 10 photos (the maximum per entry).');
             }
+            let addedOk = 0;
             for (const file of files) {
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
                 const item = makeImageItem({ name: file.name });
@@ -965,6 +990,7 @@
                             img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
                         );
                     }
+                    addedOk += 1;
                 } catch (e) {
                     console.error(e);
                     editorImages = editorImages.filter((img) => img.id !== item.id);
@@ -977,6 +1003,11 @@
                 }
             }
             if (imageFileInput) imageFileInput.value = '';
+            if (addedOk === 1) {
+                showEntryEditSuccessToast('Successfully added the photo');
+            } else if (addedOk > 1) {
+                showEntryEditSuccessToast('Successfully added the photos');
+            }
         }
 
         function openLightbox(index) {
@@ -1714,6 +1745,7 @@
                 editorImages = editorImages.filter((x) => x.id !== id);
                 renderImageStrip();
                 updateColumnsLayout();
+                showEntryEditSuccessToast('Removed photos successfully');
                 if (!isOnline()) {
                     void persistDraftImages();
                     persistDraft();

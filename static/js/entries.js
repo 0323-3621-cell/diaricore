@@ -1006,7 +1006,7 @@ function showNotification(message, type = 'info') {
         transition: transform 0.3s ease;
         max-width: 400px;
         word-wrap: break-word;
-        background: ${type === 'success' ? '#7FBF9F' : type === 'error' ? '#E74C3C' : '#7FA7BF'};
+        background: ${type === 'success' ? '#6f8f7f' : type === 'error' ? '#E74C3C' : '#7FA7BF'};
         color: white;
         font-family: 'Inter', sans-serif;
     `;

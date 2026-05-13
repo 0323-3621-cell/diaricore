@@ -1013,6 +1013,10 @@ input:checked + .toggle-slider:before {
     align-items: stretch;
 }
 
+.profile-account-hub__grid--single {
+    grid-template-columns: 1fr;
+}
+
 button.profile-account-card.setting-card {
     width: 100%;
     margin: 0;

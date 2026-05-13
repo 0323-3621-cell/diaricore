@@ -57,7 +57,7 @@
                     <div class="insights-hero__row">
                         <div class="insights-hero__text">
                             <h1 class="insights-hero__title main-title">Insights &amp; Patterns</h1>
-                            <p class="insights-hero__subtitle subtitle">Deep dive into your emotional landscape.</p>
+                            <p id="insightsHeroSubtitle" class="insights-hero__subtitle subtitle">Deep dive into your emotional landscape.</p>
                         </div>
                         <div class="insights-hero__toggle" role="tablist" aria-label="Insights view">
                             <button type="button" class="insights-pill is-active" id="insightsTabEmotions" data-insights-tab="emotions" role="tab" aria-selected="true">Emotions</button>
@@ -233,12 +233,20 @@
                         </article>
                     </div>
                     <article class="ins-card ins-card--consistency-week chart-card">
-                        <div class="section-header">
-                            <h2 class="section-title">
-                                <i class="bi bi-calendar-week" aria-hidden="true"></i>
-                                Journaling Consistency
-                            </h2>
-                            <p class="insights-consistency-chart-caption">Last six weeks (Mon–Sun), entry count per week</p>
+                        <div class="insights-consistency-chart-head">
+                            <div class="insights-consistency-chart-head__left">
+                                <h2 class="section-title">
+                                    <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                                    Journaling Consistency
+                                </h2>
+                                <p id="insightsConsistencyChartCaption" class="insights-consistency-chart-caption">
+                                    Pick a month to see four calendar segments (W1–W4).
+                                </p>
+                            </div>
+                            <div class="insights-consistency-chart-head__right">
+                                <label for="insightsConsistencyMonthSelect" class="visually-hidden">Month</label>
+                                <select id="insightsConsistencyMonthSelect" class="insights-consistency-month-select" aria-label="Month for journaling consistency chart"></select>
+                            </div>
                         </div>
                         <div class="chart-container insights-consistency-chart-wrap">
                             <canvas id="insightsConsistencyWeekChart"></canvas>

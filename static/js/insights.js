@@ -3,6 +3,8 @@ let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
 let WEEKLY_DESKTOP_CHART = null;
 let INSIGHTS_CONSISTENCY_CHART = null;
+let consistencyMonthSelectBound = false;
+const CONSISTENCY_MONTH_STORAGE_KEY = 'diariCoreInsightsConsistencyMonth';
 
 function hexToRgba(hex, alpha) {
     const safe = String(hex || '').trim().replace('#', '');
@@ -284,7 +286,34 @@ function buildEntryDaySet(entries) {
 }
 
 /**
- * Consistency tab metrics + last six Mon–Sun weeks (W1 oldest … W6 current), aligned with `mondayStartOfLocalWeek`.
+ * Rolling six Mon–Sun ISO weeks (same logic as the former bar chart); used only for the “Entries / week” KPI.
+ */
+function sumSixIsoWeekEntryCounts() {
+    const entries = INSIGHTS_ENTRIES.filter((e) => e && (e.date || e.createdAt));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thisMonday = mondayStartOfLocalWeek(today);
+    const weekCounts = [];
+    for (let w = 0; w < 6; w += 1) {
+        const weekStart = new Date(thisMonday);
+        weekStart.setDate(thisMonday.getDate() - (5 - w) * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 7);
+        let cnt = 0;
+        entries.forEach((e) => {
+            const raw = e.date || e.createdAt;
+            const dm = localDayStartMs(raw);
+            if (Number.isNaN(dm)) return;
+            if (dm >= weekStart.getTime() && dm < weekEnd.getTime()) cnt += 1;
+        });
+        weekCounts.push(cnt);
+    }
+    return weekCounts;
+}
+
+/**
+ * Consistency tab KPIs (chart uses selected month via `getConsistencyChartSegmentMeta`).
  */
 function computeConsistencyInsightBundle() {
     const entries = INSIGHTS_ENTRIES.filter((e) => e && (e.date || e.createdAt));
@@ -302,28 +331,8 @@ function computeConsistencyInsightBundle() {
     }
     const consistencyRate = Math.round((activeInLast30 / 30) * 100);
 
-    const thisMonday = mondayStartOfLocalWeek(today);
-    const weekLabels = [];
-    const weekCounts = [];
-    for (let w = 0; w < 6; w += 1) {
-        const weekStart = new Date(thisMonday);
-        weekStart.setDate(thisMonday.getDate() - (5 - w) * 7);
-        weekStart.setHours(0, 0, 0, 0);
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 7);
-        let cnt = 0;
-        entries.forEach((e) => {
-            const raw = e.date || e.createdAt;
-            const dm = localDayStartMs(raw);
-            if (Number.isNaN(dm)) return;
-            if (dm >= weekStart.getTime() && dm < weekEnd.getTime()) cnt += 1;
-        });
-        weekLabels.push(`W${w + 1}`);
-        weekCounts.push(cnt);
-    }
-
-    const sumWeek = weekCounts.reduce((a, b) => a + b, 0);
-    const entriesPerWeek = Math.round((sumWeek / 6) * 10) / 10;
+    const isoWeeks = sumSixIsoWeekEntryCounts();
+    const entriesPerWeek = Math.round((isoWeeks.reduce((a, b) => a + b, 0) / 6) * 10) / 10;
 
     const hourBuckets = Array.from({ length: 24 }, () => 0);
     /** Hour-of-day uses each entry's clock time in the browser's local timezone. Prefer `createdAt` (save time); fall back to `date` if missing. */
@@ -359,9 +368,122 @@ function computeConsistencyInsightBundle() {
         consistencyRate,
         entriesPerWeek,
         mostActiveTimeLabel,
-        weekLabels,
-        weekCounts,
     };
+}
+
+function parseYearMonthKey(key) {
+    const m = /^(\d{4})-(\d{2})$/.exec(String(key || '').trim());
+    if (!m) return null;
+    const y = Number(m[1]);
+    const m0 = Number(m[2]) - 1;
+    if (!Number.isFinite(y) || m0 < 0 || m0 > 11) return null;
+    return { y, m0 };
+}
+
+/** W1–W4 = calendar day ranges within that month (22–end captures 8–11 days in long months). */
+function computeFourSegmentsForMonth(ymKey) {
+    const p = parseYearMonthKey(ymKey);
+    if (!p) {
+        return {
+            labels: ['W1', 'W2', 'W3', 'W4'],
+            counts: [0, 0, 0, 0],
+            ranges: ['Days 1–7', 'Days 8–14', 'Days 15–21', 'Days 22–28'],
+            monthLabel: '',
+            y: 0,
+            m0: 0,
+            dim: 28,
+        };
+    }
+    const { y, m0 } = p;
+    const dim = new Date(y, m0 + 1, 0).getDate();
+    const counts = [0, 0, 0, 0];
+    const entries = INSIGHTS_ENTRIES.filter((e) => e && (e.date || e.createdAt));
+    entries.forEach((e) => {
+        const d = new Date(e.date || e.createdAt);
+        if (Number.isNaN(d.getTime())) return;
+        if (d.getFullYear() !== y || d.getMonth() !== m0) return;
+        const dom = d.getDate();
+        if (dom <= 7) counts[0] += 1;
+        else if (dom <= 14) counts[1] += 1;
+        else if (dom <= 21) counts[2] += 1;
+        else if (dom <= dim) counts[3] += 1;
+    });
+    const ranges = ['Days 1–7', 'Days 8–14', 'Days 15–21', `Days 22–${dim}`];
+    const monthLabel = new Date(y, m0, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    return {
+        labels: ['W1', 'W2', 'W3', 'W4'],
+        counts,
+        ranges,
+        monthLabel,
+        y,
+        m0,
+        dim,
+    };
+}
+
+function getConsistencyChartSegmentMeta() {
+    const sel = document.getElementById('insightsConsistencyMonthSelect');
+    return computeFourSegmentsForMonth(sel?.value || '');
+}
+
+function monthStartMs(ts) {
+    const d = new Date(ts);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+}
+
+/** Newest-first month keys from oldest entry month through current calendar month. */
+function listMonthKeysNewestFirst() {
+    const entries = INSIGHTS_ENTRIES.filter((e) => e && (e.date || e.createdAt));
+    const now = new Date();
+    let endMs = monthStartMs(now.getTime());
+    let startMs = endMs;
+    if (entries.length) {
+        let minTs = Infinity;
+        entries.forEach((e) => {
+            const d = new Date(e.date || e.createdAt);
+            if (!Number.isNaN(d.getTime())) minTs = Math.min(minTs, d.getTime());
+        });
+        if (Number.isFinite(minTs)) startMs = monthStartMs(minTs);
+    }
+    if (startMs > endMs) startMs = endMs;
+    const keys = [];
+    const cur = new Date(endMs);
+    const stop = new Date(startMs);
+    for (;;) {
+        keys.push(`${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}`);
+        if (cur.getFullYear() === stop.getFullYear() && cur.getMonth() === stop.getMonth()) break;
+        cur.setMonth(cur.getMonth() - 1);
+    }
+    return keys;
+}
+
+function populateInsightsConsistencyMonthSelect(sel) {
+    if (!sel) return;
+    const keys = listMonthKeysNewestFirst();
+    const keepValue = sel.value;
+    sel.innerHTML = '';
+    keys.forEach((k) => {
+        const parsed = parseYearMonthKey(k);
+        if (!parsed) return;
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = new Date(parsed.y, parsed.m0, 1).toLocaleDateString(undefined, {
+            month: 'long',
+            year: 'numeric',
+        });
+        sel.appendChild(opt);
+    });
+    let stored = '';
+    try {
+        stored = sessionStorage.getItem(CONSISTENCY_MONTH_STORAGE_KEY) || '';
+    } catch (_) {
+        stored = '';
+    }
+    if (stored && keys.includes(stored)) sel.value = stored;
+    else if (keepValue && keys.includes(keepValue)) sel.value = keepValue;
+    else if (keys[0]) sel.value = keys[0];
 }
 
 function destroyInsightsConsistencyChart() {
@@ -371,39 +493,45 @@ function destroyInsightsConsistencyChart() {
     }
 }
 
-function renderInsightsConsistencyPanel() {
-    const bundle = computeConsistencyInsightBundle();
-    const dEl = document.getElementById('insightsConsTotalDays');
-    const rEl = document.getElementById('insightsConsRate');
-    const wEl = document.getElementById('insightsConsEntriesWeek');
-    const tEl = document.getElementById('insightsConsPeakTime');
-    if (dEl) dEl.textContent = String(bundle.totalActiveDays);
-    if (rEl) rEl.textContent = `${bundle.consistencyRate}%`;
-    if (wEl) wEl.textContent = bundle.entriesPerWeek.toFixed(1);
-    if (tEl) tEl.textContent = bundle.mostActiveTimeLabel;
-
-    destroyInsightsConsistencyChart();
+function updateConsistencyMonthBarChart() {
     const canvas = document.getElementById('insightsConsistencyWeekChart');
-    if (!canvas || typeof Chart === 'undefined') return;
+    const sel = document.getElementById('insightsConsistencyMonthSelect');
+    const capEl = document.getElementById('insightsConsistencyChartCaption');
+    if (!canvas || typeof Chart === 'undefined' || !sel || !sel.value) return;
 
-    const chartTheme = getChartTheme();
-    const maxC = Math.max(...bundle.weekCounts, 0);
+    const meta = getConsistencyChartSegmentMeta();
+    if (capEl) {
+        capEl.textContent = meta.monthLabel
+            ? `${meta.monthLabel}: W1 ${meta.ranges[0]}, W2 ${meta.ranges[1]}, W3 ${meta.ranges[2]}, W4 ${meta.ranges[3]} — your entry counts.`
+            : 'Pick a month to see four calendar segments (W1–W4).';
+    }
+
+    const maxC = Math.max(...meta.counts, 0);
     const suggestedMax = maxC <= 0 ? 6 : Math.max(6, Math.ceil(maxC * 1.08));
+    const chartTheme = getChartTheme();
+
+    if (INSIGHTS_CONSISTENCY_CHART) {
+        INSIGHTS_CONSISTENCY_CHART.data.labels = [...meta.labels];
+        INSIGHTS_CONSISTENCY_CHART.data.datasets[0].data = [...meta.counts];
+        INSIGHTS_CONSISTENCY_CHART.options.scales.y.suggestedMax = suggestedMax;
+        INSIGHTS_CONSISTENCY_CHART.update();
+        return;
+    }
 
     INSIGHTS_CONSISTENCY_CHART = new Chart(canvas, {
         type: 'bar',
         data: {
-            labels: bundle.weekLabels,
+            labels: [...meta.labels],
             datasets: [
                 {
                     label: 'Entries',
-                    data: bundle.weekCounts,
+                    data: [...meta.counts],
                     backgroundColor: chartTheme.primary,
                     borderColor: chartTheme.primary,
                     borderWidth: 1,
                     borderRadius: 8,
-                    barThickness: 36,
-                    maxBarThickness: 48,
+                    barThickness: 40,
+                    maxBarThickness: 52,
                 },
             ],
         },
@@ -420,6 +548,13 @@ function renderInsightsConsistencyPanel() {
                     padding: 12,
                     cornerRadius: 8,
                     callbacks: {
+                        title(items) {
+                            const m = getConsistencyChartSegmentMeta();
+                            const i = items[0]?.dataIndex ?? 0;
+                            const lab = m.labels[i] || 'W1';
+                            const rng = m.ranges[i] || '';
+                            return `${lab} (${rng})`;
+                        },
                         label(ctx) {
                             const n = Number(ctx.parsed.y ?? 0);
                             return `${n} ${n === 1 ? 'entry' : 'entries'}`;
@@ -454,9 +589,39 @@ function renderInsightsConsistencyPanel() {
     });
 }
 
+function renderInsightsConsistencyPanel() {
+    const bundle = computeConsistencyInsightBundle();
+    const dEl = document.getElementById('insightsConsTotalDays');
+    const rEl = document.getElementById('insightsConsRate');
+    const wEl = document.getElementById('insightsConsEntriesWeek');
+    const tEl = document.getElementById('insightsConsPeakTime');
+    if (dEl) dEl.textContent = String(bundle.totalActiveDays);
+    if (rEl) rEl.textContent = `${bundle.consistencyRate}%`;
+    if (wEl) wEl.textContent = bundle.entriesPerWeek.toFixed(1);
+    if (tEl) tEl.textContent = bundle.mostActiveTimeLabel;
+
+    destroyInsightsConsistencyChart();
+
+    const sel = document.getElementById('insightsConsistencyMonthSelect');
+    populateInsightsConsistencyMonthSelect(sel);
+    if (sel && !consistencyMonthSelectBound) {
+        consistencyMonthSelectBound = true;
+        sel.addEventListener('change', () => {
+            try {
+                sessionStorage.setItem(CONSISTENCY_MONTH_STORAGE_KEY, sel.value);
+            } catch (_) {
+                /* private mode */
+            }
+            updateConsistencyMonthBarChart();
+        });
+    }
+
+    updateConsistencyMonthBarChart();
+}
+
 function insightsHeroSetMode(mode) {
     const title = document.querySelector('.insights-hero__title');
-    const sub = document.querySelector('.insights-hero__subtitle');
+    const sub = document.getElementById('insightsHeroSubtitle');
     if (title && !title.dataset.insightsDefaultTitle) {
         title.dataset.insightsDefaultTitle = title.textContent.trim();
     }
@@ -743,7 +908,7 @@ function emotionBreakdownData() {
 
 function applyInsightsEmptyState() {
     if (HAS_INSIGHTS_DATA) return;
-    const moodHeader = document.querySelector('.insights-hero__subtitle');
+    const moodHeader = document.getElementById('insightsHeroSubtitle');
     if (moodHeader) moodHeader.textContent = 'Insights will appear once you start journaling.';
 }
 

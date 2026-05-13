@@ -87,6 +87,53 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/"/g, '&quot;');
     }
 
+    /** Top-right toast aligned with Entries page success style (`#6f8f7f`). */
+    function showWriteEntryNotification(message, type = 'success') {
+        const existing = document.querySelector('.write-entry-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.className = 'write-entry-notification';
+        notification.setAttribute('role', 'status');
+        const iconClass =
+            type === 'success' ? 'bi bi-check-circle-fill' : type === 'error' ? 'bi bi-exclamation-circle-fill' : 'bi bi-info-circle';
+        notification.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span></span>`;
+        const span = notification.querySelector('span');
+        if (span) span.textContent = message;
+
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 500;
+        z-index: 14000;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        max-width: 400px;
+        word-wrap: break-word;
+        background: ${type === 'success' ? '#6f8f7f' : type === 'error' ? '#E74C3C' : '#7FA7BF'};
+        color: white;
+        font-family: 'Inter', sans-serif;
+    `;
+
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) notification.remove();
+            }, 300);
+        }, 3000);
+    }
+
     function iconClassForTag(tagName) {
         const t = normalizeTag(tagName).toLowerCase();
         const match = DEFAULT_TAGS.find((x) => x.name.toLowerCase() === t);
@@ -968,7 +1015,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const tag = pendingDeleteTagName;
         if (!tag) return;
         closeWriteDeleteTagModal();
-        await deleteCustomTag(tag);
+        const ok = await deleteCustomTag(tag);
+        if (ok) showWriteEntryNotification('Deleted the Tag Successfully...');
     });
     writeDeleteTagModal?.addEventListener('click', (e) => {
         if (e.target?.matches?.('[data-write-delete-tag-dismiss]')) closeWriteDeleteTagModal();
@@ -1144,6 +1192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const ok = await createNewTag(tagName, selectedPickerIconName, 'bi');
             if (ok) {
                 closeCustomTagModal();
+                showWriteEntryNotification('Added the Tag Successfully...');
             } else {
                 customTagNameInput.focus();
                 customTagNameInput.select();
@@ -1347,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyCommittedLocalDatetime(localStr) {
         if (priorManualDateTimeOnPickerOpen === null && localStr === pickerOpenedAtLocalStr) {
             manualDateTime = null;
-        } else {
+            } else {
             manualDateTime = parseManualFromLocalDatetime(localStr);
         }
         updateJournalDateTime();
@@ -1650,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = 'dashboard.html';
         }
     });
-    
+
     function setSavingState(isSaving) {
         const buttons = document.querySelectorAll('#saveEntryBtn, .btn-save-entry');
         buttons.forEach((btn) => {

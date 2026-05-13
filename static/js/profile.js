@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePreferenceToggles();
     initializeStorageActions();
     initializeProfileSectionNavigation();
+    initializeAccountDetailPanels();
 });
 
 function initializeProfileFromStorage() {
@@ -112,6 +113,185 @@ function calculateMonthlyConsistency(entries) {
         return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     }).filter(Boolean));
     return Math.round((uniqueRecentDays.size / 30) * 100);
+}
+
+function toDateInputValue(raw) {
+    if (raw == null || raw === '') return '';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function normalizeGenderForSelect(g) {
+    const s = String(g || '').trim().toLowerCase();
+    if (s === 'male' || s === 'm') return 'male';
+    if (s === 'female' || s === 'f') return 'female';
+    if (s === 'other' || s === 'non-binary' || s === 'nonbinary') return 'other';
+    return '';
+}
+
+function hydratePersonalInfoPanel() {
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    } catch (_) {
+        user = null;
+    }
+    const img = document.getElementById('profilePersonalSummaryAvatar');
+    const initialsEl = document.getElementById('profilePersonalSummaryInitials');
+    const nameEl = document.getElementById('profilePersonalSummaryName');
+    const memberEl = document.getElementById('profilePersonalSummaryMember');
+    const firstEl = document.getElementById('profileFieldFirstName');
+    const lastEl = document.getElementById('profileFieldLastName');
+    const nickEl = document.getElementById('profileFieldNickname');
+    const emailEl = document.getElementById('profileFieldEmail');
+    const genderEl = document.getElementById('profileFieldGender');
+    const bdayEl = document.getElementById('profileFieldBirthday');
+
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    const displayName = fullName || user?.nickname || 'New User';
+    if (nameEl) nameEl.textContent = displayName;
+    if (memberEl) {
+        const parsed = user?.createdAt ? new Date(user.createdAt) : null;
+        const createdAt = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+        const monthYear = createdAt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        memberEl.textContent = `Member since ${monthYear}`;
+    }
+
+    const dataUrl = user && typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
+    if (img && initialsEl) {
+        if (dataUrl) {
+            img.src = dataUrl;
+            img.hidden = false;
+            initialsEl.style.display = 'none';
+        } else {
+            img.removeAttribute('src');
+            img.hidden = true;
+            initialsEl.style.display = 'flex';
+            const parts = displayName.split(/\s+/).filter(Boolean);
+            const ini = (parts[0]?.[0] || '?') + (parts[1]?.[0] || '');
+            initialsEl.textContent = ini.toUpperCase();
+        }
+    }
+
+    if (firstEl) firstEl.value = user?.firstName != null ? String(user.firstName) : '';
+    if (lastEl) lastEl.value = user?.lastName != null ? String(user.lastName) : '';
+    if (nickEl) nickEl.value = user?.nickname != null ? String(user.nickname) : '';
+    if (emailEl) emailEl.value = user?.email != null ? String(user.email) : '';
+    if (genderEl) genderEl.value = normalizeGenderForSelect(user?.gender);
+    if (bdayEl) bdayEl.value = toDateInputValue(user?.birthday);
+}
+
+function updatePasswordStrengthMeter(password) {
+    const bars = document.querySelectorAll('.profile-password-meter__bar');
+    const label = document.getElementById('profilePasswordStrengthLabel');
+    const pw = String(password || '');
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw) || /[A-Z]/.test(pw)) score++;
+    score = Math.min(4, score);
+    bars.forEach((b, i) => {
+        b.classList.toggle('is-active', i < score);
+    });
+    if (label) {
+        const texts = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+        label.textContent = pw ? texts[score] || '' : '';
+    }
+}
+
+function clearSecurityForm() {
+    ['profileSecCurrentPassword', 'profileSecNewPassword', 'profileSecConfirmPassword'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    updatePasswordStrengthMeter('');
+}
+
+function savePersonalInfoForm() {
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    } catch (_) {
+        user = null;
+    }
+    if (!user || typeof user !== 'object') {
+        showNotification('Sign in to save profile details.', 'warning');
+        return;
+    }
+
+    const first = (document.getElementById('profileFieldFirstName')?.value || '').trim();
+    const last = (document.getElementById('profileFieldLastName')?.value || '').trim();
+    const nick = (document.getElementById('profileFieldNickname')?.value || '').trim();
+    const email = (document.getElementById('profileFieldEmail')?.value || '').trim();
+    const gender = (document.getElementById('profileFieldGender')?.value || '').trim();
+    const bday = (document.getElementById('profileFieldBirthday')?.value || '').trim();
+
+    if (!nick) {
+        showNotification('Username is required.', 'warning');
+        return;
+    }
+    if (!email || !email.includes('@')) {
+        showNotification('Please enter a valid email address.', 'warning');
+        return;
+    }
+
+    user.firstName = first;
+    user.lastName = last;
+    user.nickname = nick;
+    user.email = email;
+    user.gender = gender || null;
+    user.birthday = bday || null;
+
+    localStorage.setItem('diariCoreUser', JSON.stringify(user));
+    document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
+    initializeProfileFromStorage();
+    showNotification('Profile updated.', 'success');
+    closeProfileSection();
+}
+
+function initializeAccountDetailPanels() {
+    document.getElementById('profilePersonalCancelBtn')?.addEventListener('click', function () {
+        closeProfileSection();
+    });
+    document.getElementById('profilePersonalSaveBtn')?.addEventListener('click', savePersonalInfoForm);
+    document.getElementById('profileSecurityCancelBtn')?.addEventListener('click', function () {
+        clearSecurityForm();
+        closeProfileSection();
+    });
+    document.getElementById('profileSecuritySaveBtn')?.addEventListener('click', function () {
+        showNotification('Password changes will be available in a future update.', 'info');
+    });
+    document.getElementById('profilePersonalChangePhotoBtn')?.addEventListener('click', function () {
+        const input = ensureProfileAvatarFileInput();
+        input.click();
+    });
+
+    document.querySelectorAll('.profile-account-field__reveal').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const id = btn.getAttribute('data-profile-pw');
+            const field = id && document.getElementById(id);
+            if (!field) return;
+            const show = field.type === 'password';
+            field.type = show ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('bi-eye', show);
+                icon.classList.toggle('bi-eye-slash', !show);
+            }
+        });
+    });
+
+    const np = document.getElementById('profileSecNewPassword');
+    if (np) {
+        np.addEventListener('input', function () {
+            updatePasswordStrengthMeter(np.value);
+        });
+    }
 }
 
 function processAvatarFileToDataUrl(file, done) {
@@ -260,6 +440,10 @@ function initializeProfileInteractions() {
                                     document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
                                 }
                                 showNotification('Profile photo updated.', 'success');
+                                const personalPanel = document.getElementById('profileSectionPersonalInfo');
+                                if (personalPanel && !personalPanel.hidden) {
+                                    hydratePersonalInfoPanel();
+                                }
                             })
                             .catch(function () {
                                 showNotification(
@@ -274,22 +458,12 @@ function initializeProfileInteractions() {
             });
         }
     }
-
-    // Setting edit buttons
-    const editButtons = document.querySelectorAll('.btn-edit');
-    editButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const settingTitle = this.closest('.setting-card').querySelector('.setting-title').textContent;
-            showNotification(`Opening ${settingTitle} settings...`, 'info');
-            console.log('Edit setting:', settingTitle);
-        });
-    });
 }
 
 // Initialize Preference Toggles
 function initializePreferenceToggles() {
     const toggleSwitches = document.querySelectorAll(
-        '.toggle-switch input[type="checkbox"], .switch input[type="checkbox"]'
+        '#profileSectionPreferences .toggle-switch input[type="checkbox"], #profileSectionPreferences .switch input[type="checkbox"]'
     );
 
     const darkModeToggle = document.getElementById('toggleDarkMode');
@@ -299,12 +473,14 @@ function initializePreferenceToggles() {
     
     toggleSwitches.forEach(toggle => {
         toggle.addEventListener('change', function() {
+            const row = this.closest('.appearance-item, .notifications-item, .preference-item');
+            if (!row) return;
+
             if (this.id === 'toggleDarkMode' && window.DiariTheme && typeof window.DiariTheme.setTheme === 'function') {
                 window.DiariTheme.setTheme(this.checked ? 'dark' : 'light');
             }
 
-            const row = this.closest('.appearance-item, .notifications-item, .preference-item');
-            const titleEl = row && row.querySelector(
+            const titleEl = row.querySelector(
                 '.appearance-subtitle, .notifications-subtitle, .preference-title'
             );
             const preferenceTitle = titleEl ? titleEl.textContent.trim() : 'Preference';
@@ -457,6 +633,7 @@ function updateStorageDisplay(textSize, attachmentSize, backupSize) {
 const PROFILE_SECTION_PANELS = {
     preferences: 'profileSectionPreferences',
     privacy: 'profileSectionPrivacy',
+    'personal-information': 'profileSectionPersonalInfo',
     security: 'profileSectionSecurity',
 };
 
@@ -469,9 +646,13 @@ const PROFILE_SECTION_COPY = {
         title: 'Privacy',
         subtitle: 'Data usage and sharing.',
     },
+    'personal-information': {
+        title: 'Personal Information',
+        subtitle: 'Update your name, email, and profile details',
+    },
     security: {
-        title: 'Security',
-        subtitle: 'Password and account security.',
+        title: 'Security Settings',
+        subtitle: 'Change password and enable two-factor authentication',
     },
 };
 
@@ -514,6 +695,13 @@ function openProfileSection(sectionKey) {
 
     setProfileUrlHash(sectionKey);
     window.scrollTo(0, 0);
+
+    if (sectionKey === 'personal-information') {
+        hydratePersonalInfoPanel();
+    }
+    if (sectionKey === 'security') {
+        clearSecurityForm();
+    }
 }
 
 function closeProfileSection() {
@@ -563,7 +751,7 @@ function initializeProfileSectionNavigation() {
     const editIdentityBtn = document.getElementById('profileEditIdentityBtn');
     if (editIdentityBtn) {
         editIdentityBtn.addEventListener('click', function () {
-            openProfileSection('security');
+            openProfileSection('personal-information');
         });
     }
 

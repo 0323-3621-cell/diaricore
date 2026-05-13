@@ -133,9 +133,38 @@
                                 <span class="profile-settings-row__icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
                                 <span class="profile-settings-row__text">
                                     <span class="profile-settings-row__label">Security</span>
-                                    <span class="profile-settings-row__hint">Password and account security</span>
+                                    <span class="profile-settings-row__hint">Password, two-factor authentication, and more</span>
                                 </span>
                                 <i class="bi bi-chevron-right profile-settings-row__chevron" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="profile-account-hub" aria-label="Account settings">
+                        <h2 class="profile-account-hub__title">Account Settings</h2>
+                        <p class="profile-account-hub__subtitle">Manage your account information and security</p>
+                        <div class="settings-grid profile-account-hub__grid">
+                            <button type="button" class="profile-account-card setting-card" data-profile-section="personal-information">
+                                <span class="setting-icon" aria-hidden="true"><i class="bi bi-person"></i></span>
+                                <span class="setting-content">
+                                    <span class="setting-title">Personal Information</span>
+                                    <span class="setting-description">Update your name, email, and profile details</span>
+                                </span>
+                                <span class="setting-action">
+                                    <span class="btn-edit" aria-hidden="true">Edit</span>
+                                    <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                                </span>
+                            </button>
+                            <button type="button" class="profile-account-card setting-card" data-profile-section="security">
+                                <span class="setting-icon" aria-hidden="true"><i class="bi bi-lock"></i></span>
+                                <span class="setting-content">
+                                    <span class="setting-title">Security</span>
+                                    <span class="setting-description">Change password and enable two-factor authentication</span>
+                                </span>
+                                <span class="setting-action">
+                                    <span class="btn-edit" aria-hidden="true">Edit</span>
+                                    <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                                </span>
                             </button>
                         </div>
                     </section>
@@ -323,41 +352,143 @@
                         </section>
                     </div>
 
-                    <div id="profileSectionSecurity" class="profile-section-panel" hidden>
-                        <section class="account-settings-section account-settings-section--profile-detail">
-                            <div class="section-header">
-                                <h2 class="section-title">Account Settings</h2>
-                                <p class="section-description">Manage your account information and security</p>
-                            </div>
-                            <div class="settings-grid">
-                                <div class="setting-card">
-                                    <div class="setting-icon">
-                                        <i class="bi bi-person"></i>
-                                    </div>
-                                    <div class="setting-content">
-                                        <h3 class="setting-title">Personal Info</h3>
-                                        <p class="setting-description">Update your name, email, and profile details</p>
-                                    </div>
-                                    <div class="setting-action">
-                                        <button type="button" class="btn-edit">Edit</button>
-                                        <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                                    </div>
+                    <div id="profileSectionPersonalInfo" class="profile-section-panel profile-account-detail-panel" hidden>
+                        <div class="profile-account-detail-card">
+                            <div class="profile-account-detail-summary">
+                                <div class="profile-account-detail-summary__avatar-wrap">
+                                    <img id="profilePersonalSummaryAvatar" src="" alt="Profile photo" class="profile-account-detail-summary__avatar" width="72" height="72" hidden>
+                                    <span id="profilePersonalSummaryInitials" class="profile-account-detail-summary__initials" aria-hidden="true"></span>
                                 </div>
-                                <div class="setting-card">
-                                    <div class="setting-icon">
-                                        <i class="bi bi-lock"></i>
-                                    </div>
-                                    <div class="setting-content">
-                                        <h3 class="setting-title">Security</h3>
-                                        <p class="setting-description">Change password and enable two-factor authentication</p>
-                                    </div>
-                                    <div class="setting-action">
-                                        <button type="button" class="btn-edit">Edit</button>
-                                        <span class="setting-chevron" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                                    </div>
+                                <div class="profile-account-detail-summary__text">
+                                    <p id="profilePersonalSummaryName" class="profile-account-detail-summary__name"></p>
+                                    <p id="profilePersonalSummaryMember" class="profile-account-detail-summary__meta"></p>
+                                </div>
+                                <button type="button" class="profile-account-detail-summary__change" id="profilePersonalChangePhotoBtn">
+                                    <i class="bi bi-camera" aria-hidden="true"></i>
+                                    Change
+                                </button>
+                            </div>
+                            <div class="profile-account-detail-form profile-account-detail-form--grid">
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">First name</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-person profile-account-field__icon" aria-hidden="true"></i>
+                                        <input type="text" id="profileFieldFirstName" class="profile-account-field__input" maxlength="64" autocomplete="given-name">
+                                    </span>
+                                </label>
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">Last name</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-person profile-account-field__icon" aria-hidden="true"></i>
+                                        <input type="text" id="profileFieldLastName" class="profile-account-field__input" maxlength="64" autocomplete="family-name">
+                                    </span>
+                                </label>
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">Username</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-at profile-account-field__icon" aria-hidden="true"></i>
+                                        <input type="text" id="profileFieldNickname" class="profile-account-field__input" maxlength="64" autocomplete="username">
+                                    </span>
+                                </label>
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">Email address</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-envelope profile-account-field__icon" aria-hidden="true"></i>
+                                        <input type="email" id="profileFieldEmail" class="profile-account-field__input" maxlength="255" autocomplete="email">
+                                    </span>
+                                </label>
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">Gender</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-gender-ambiguous profile-account-field__icon" aria-hidden="true"></i>
+                                        <select id="profileFieldGender" class="profile-account-field__input profile-account-field__select">
+                                            <option value="">Prefer not to say</option>
+                                            <option value="female">Female</option>
+                                            <option value="male">Male</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </span>
+                                </label>
+                                <label class="profile-account-field">
+                                    <span class="profile-account-field__label">Birthday</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <i class="bi bi-calendar3 profile-account-field__icon" aria-hidden="true"></i>
+                                        <input type="date" id="profileFieldBirthday" class="profile-account-field__input" autocomplete="bday">
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="profile-account-detail-footer">
+                                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profilePersonalCancelBtn">Cancel</button>
+                                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--primary" id="profilePersonalSaveBtn">
+                                    <i class="bi bi-check2" aria-hidden="true"></i>
+                                    Save changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="profileSectionSecurity" class="profile-section-panel profile-account-detail-panel" hidden>
+                        <div class="profile-account-detail-card profile-account-detail-card--security">
+                            <div class="profile-security-status" role="status">
+                                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                                <span>Your account is secured.</span>
+                            </div>
+                            <div class="profile-security-section">
+                                <p class="profile-security-section__eyebrow">Change password</p>
+                                <label class="profile-account-field profile-account-field--full">
+                                    <span class="profile-account-field__label">Current password</span>
+                                    <span class="profile-account-field__input-wrap">
+                                        <input type="password" id="profileSecCurrentPassword" class="profile-account-field__input" autocomplete="current-password" placeholder="Enter current password">
+                                        <button type="button" class="profile-account-field__reveal" data-profile-pw="profileSecCurrentPassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
+                                    </span>
+                                </label>
+                                <div class="profile-security-row2">
+                                    <label class="profile-account-field">
+                                        <span class="profile-account-field__label">New password</span>
+                                        <span class="profile-account-field__input-wrap">
+                                            <input type="password" id="profileSecNewPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="New password">
+                                            <button type="button" class="profile-account-field__reveal" data-profile-pw="profileSecNewPassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
+                                        </span>
+                                        <div class="profile-password-meter" aria-live="polite">
+                                            <span class="profile-password-meter__bar"></span>
+                                            <span class="profile-password-meter__bar"></span>
+                                            <span class="profile-password-meter__bar"></span>
+                                            <span class="profile-password-meter__bar"></span>
+                                            <span id="profilePasswordStrengthLabel" class="profile-password-meter__label"></span>
+                                        </div>
+                                    </label>
+                                    <label class="profile-account-field">
+                                        <span class="profile-account-field__label">Confirm new password</span>
+                                        <span class="profile-account-field__input-wrap">
+                                            <input type="password" id="profileSecConfirmPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="Confirm password">
+                                            <button type="button" class="profile-account-field__reveal" data-profile-pw="profileSecConfirmPassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
+                                        </span>
+                                    </label>
                                 </div>
                             </div>
-                        </section>
+                            <div class="profile-security-section">
+                                <p class="profile-security-section__eyebrow">Two-factor authentication</p>
+                                <div class="profile-security-2fa">
+                                    <span class="profile-security-2fa__icon" aria-hidden="true"><i class="bi bi-phone"></i></span>
+                                    <div class="profile-security-2fa__text">
+                                        <span class="profile-security-2fa__title">Authenticator app</span>
+                                        <span class="profile-security-2fa__hint">Use an app like Google Authenticator</span>
+                                    </div>
+                                    <label class="toggle-switch profile-security-2fa__toggle">
+                                        <input type="checkbox" id="profileSec2faToggle" disabled>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <p class="profile-security-2fa__note">Two-factor setup is coming soon.</p>
+                            </div>
+                            <div class="profile-account-detail-footer">
+                                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profileSecurityCancelBtn">Cancel</button>
+                                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--primary" id="profileSecuritySaveBtn">
+                                    <i class="bi bi-lock" aria-hidden="true"></i>
+                                    Update security
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

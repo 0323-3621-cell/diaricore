@@ -79,8 +79,8 @@
                                 </button>
                                 <div class="filter-menu" id="filterMenu">
                                     <div class="filter-section">
-                                        <h4 class="filter-section-title">Emotion</h4>
-                                        <div class="filter-options">
+                                        <h4 class="filter-section-title">Mood</h4>
+                                        <div class="filter-options entries-filter-mood-options">
                                             <label class="filter-option">
                                                 <input type="checkbox" value="happy">
                                                 <span class="checkmark"></span>
@@ -102,41 +102,15 @@
                                                 <span class="filter-label">Anxious</span>
                                             </label>
                                             <label class="filter-option">
-                                                <input type="checkbox" value="calm">
+                                                <input type="checkbox" value="neutral">
                                                 <span class="checkmark"></span>
-                                                <span class="filter-label">Calm</span>
+                                                <span class="filter-label">Neutral</span>
                                             </label>
                                         </div>
                                     </div>
                                     <div class="filter-section">
                                         <h4 class="filter-section-title">Tags</h4>
-                                        <div class="filter-options">
-                                            <label class="filter-option">
-                                                <input type="checkbox" value="work">
-                                                <span class="checkmark"></span>
-                                                <span class="filter-label">Work</span>
-                                            </label>
-                                            <label class="filter-option">
-                                                <input type="checkbox" value="personal">
-                                                <span class="checkmark"></span>
-                                                <span class="filter-label">Personal</span>
-                                            </label>
-                                            <label class="filter-option">
-                                                <input type="checkbox" value="health">
-                                                <span class="checkmark"></span>
-                                                <span class="filter-label">Health</span>
-                                            </label>
-                                            <label class="filter-option">
-                                                <input type="checkbox" value="relationships">
-                                                <span class="checkmark"></span>
-                                                <span class="filter-label">Relationships</span>
-                                            </label>
-                                            <label class="filter-option">
-                                                <input type="checkbox" value="goals">
-                                                <span class="checkmark"></span>
-                                                <span class="filter-label">Goals</span>
-                                            </label>
-                                        </div>
+                                        <div class="filter-options entries-filter-tags" id="entriesFilterTagOptions" aria-live="polite"></div>
                                     </div>
                                     <div class="filter-actions">
                                         <button class="btn-clear" id="clearFilters">Clear</button>

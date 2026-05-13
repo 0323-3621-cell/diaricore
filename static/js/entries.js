@@ -2,6 +2,12 @@
 
 const ENTRIES_PAGE_SIZE = 6;
 
+/** Mood filter chips — matches `resolveEntryFeeling` / card labels (lowercase values). */
+const MOOD_FILTER_VALUES = new Set(['happy', 'sad', 'angry', 'anxious', 'neutral']);
+
+/** Default tags aligned with Write Entry; merged with `/api/tags` and tags on stored entries. */
+const DEFAULT_ENTRIES_FILTER_TAGS = ['School', 'Home', 'Friends', 'Work', 'Family', 'Health', 'Money', 'Bills'];
+
 let entriesMasterSorted = [];
 let entriesByMonthKey = {};
 let entriesMonthKeysOrdered = [];
@@ -11,6 +17,7 @@ let entriesCurrentPage = 1;
 document.addEventListener('DOMContentLoaded', async function() {
     await syncEntriesFromApi();
     initializeEntriesFromStorage();
+    await syncEntriesFilterTagsFromApi();
     initializeFilterDropdown();
     initializeSearch();
     initializeEntryCards();
@@ -59,19 +66,104 @@ function getCheckedFilterValues() {
 }
 
 function partitionEmotionAndTagFilters(checked) {
-    const emotions = new Set(['happy', 'sad', 'angry', 'anxious', 'calm']);
-    const emotionVals = checked.filter((v) => emotions.has(v));
-    const tagVals = checked.filter((v) => !emotions.has(v));
+    const emotionVals = checked.filter((v) => MOOD_FILTER_VALUES.has(v));
+    const tagVals = checked.filter((v) => !MOOD_FILTER_VALUES.has(v));
     return { emotionVals, tagVals };
+}
+
+/** Normalize tag text for matching (handles #prefix, casing). */
+function normalizeTagCompare(raw) {
+    return String(raw || '')
+        .trim()
+        .replace(/^#+/i, '')
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
+}
+
+function formatTagDisplayLabel(raw) {
+    const s = String(raw || '').trim().replace(/^#+/i, '');
+    return s || '';
+}
+
+/** Build sorted [normalizedKey, displayLabel] pairs for the filter menu. */
+function mergeEntriesFilterTagPairs(apiTagList) {
+    const labelByNorm = new Map();
+    DEFAULT_ENTRIES_FILTER_TAGS.forEach((t) => {
+        const n = normalizeTagCompare(t);
+        if (n && !labelByNorm.has(n)) labelByNorm.set(n, formatTagDisplayLabel(t));
+    });
+    (Array.isArray(apiTagList) ? apiTagList : []).forEach((item) => {
+        const raw = typeof item === 'string' ? item : item?.tag;
+        const n = normalizeTagCompare(raw);
+        if (n && !labelByNorm.has(n)) labelByNorm.set(n, formatTagDisplayLabel(raw));
+    });
+    entriesMasterSorted.forEach((e) => {
+        (Array.isArray(e.tags) ? e.tags : []).forEach((t) => {
+            const n = normalizeTagCompare(t);
+            if (n && !labelByNorm.has(n)) labelByNorm.set(n, formatTagDisplayLabel(t));
+        });
+    });
+    return Array.from(labelByNorm.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function renderEntriesFilterTagOptions(pairs) {
+    const container = document.getElementById('entriesFilterTagOptions');
+    if (!container) return;
+    const prevChecked = new Set(
+        Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map((cb) =>
+            String(cb.value || '').toLowerCase()
+        )
+    );
+    container.innerHTML = '';
+    if (!pairs.length) {
+        const p = document.createElement('p');
+        p.className = 'entries-filter-tags-empty';
+        p.textContent = 'No tags yet. Tags from your entries and custom tags will appear here.';
+        container.appendChild(p);
+        return;
+    }
+    pairs.forEach(([norm, displayLabel]) => {
+        const lab = document.createElement('label');
+        lab.className = 'filter-option';
+        const inp = document.createElement('input');
+        inp.type = 'checkbox';
+        inp.value = norm;
+        if (prevChecked.has(norm)) inp.checked = true;
+        const cm = document.createElement('span');
+        cm.className = 'checkmark';
+        const sl = document.createElement('span');
+        sl.className = 'filter-label';
+        sl.textContent = displayLabel || norm;
+        lab.appendChild(inp);
+        lab.appendChild(cm);
+        lab.appendChild(sl);
+        container.appendChild(lab);
+    });
+}
+
+async function syncEntriesFilterTagsFromApi() {
+    const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    const userId = Number(user?.id || 0);
+    let apiTags = [];
+    if (userId) {
+        try {
+            const res = await fetch(`/api/tags?userId=${encodeURIComponent(String(userId))}`);
+            const data = await res.json();
+            if (res.ok && data.success && Array.isArray(data.tags)) apiTags = data.tags;
+        } catch (_) {}
+    }
+    renderEntriesFilterTagOptions(mergeEntriesFilterTagPairs(apiTags));
 }
 
 function entryMatchesFilters(entry, checked) {
     if (!checked.length) return true;
     const { emotionVals, tagVals } = partitionEmotionAndTagFilters(checked);
     const moodLabel = moodDisplayLabel(resolveEntryFeeling(entry)).toLowerCase();
-    const tags = (Array.isArray(entry.tags) ? entry.tags : []).map((t) => String(t).toLowerCase());
+    const rawTags = Array.isArray(entry.tags) ? entry.tags : [];
+    const entryTagsNorm = rawTags.map((t) => normalizeTagCompare(t)).filter(Boolean);
     const emotionMatch = emotionVals.length === 0 || emotionVals.includes(moodLabel);
-    const tagMatch = tagVals.length === 0 || tagVals.some((ft) => tags.includes(ft.toLowerCase()));
+    const tagMatch =
+        tagVals.length === 0 || tagVals.some((ft) => entryTagsNorm.includes(normalizeTagCompare(ft)));
     return emotionMatch && tagMatch;
 }
 
@@ -263,13 +355,14 @@ function initializeEntriesFromStorage(options = {}) {
 }
 
 function resolveEntryFeeling(entry) {
-    const feeling = (entry?.feeling || '').toLowerCase();
-    if (feeling && feeling !== 'unspecified') {
-        if (feeling === 'excited') return 'happy';
-        if (feeling === 'stressed' || feeling === 'calm' || feeling === 'peaceful') return 'anxious';
-        if (['happy', 'sad', 'angry', 'anxious', 'neutral'].includes(feeling)) return feeling;
+    const raw = String(entry?.emotionLabel || entry?.feeling || '').toLowerCase();
+    if (raw && raw !== 'unspecified') {
+        if (raw === 'excited') return 'happy';
+        if (raw === 'stressed') return 'anxious';
+        if (raw === 'calm' || raw === 'peaceful') return 'neutral';
+        if (['happy', 'sad', 'angry', 'anxious', 'neutral'].includes(raw)) return raw;
     }
-    const sentiment = (entry?.sentimentLabel || '').toLowerCase();
+    const sentiment = String(entry?.sentimentLabel || '').toLowerCase();
     if (sentiment === 'positive') return 'happy';
     if (sentiment === 'negative') return 'anxious';
     return 'neutral';
@@ -599,6 +692,7 @@ function closeEntriesDetailInline() {
     document.body.classList.remove('page-entries-detail-open');
     if (document.getElementById('entriesGrid')) {
         initializeEntriesFromStorage({ preserveNavigation: true });
+        void syncEntriesFilterTagsFromApi();
     }
 }
 

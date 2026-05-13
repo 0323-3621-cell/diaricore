@@ -846,11 +846,72 @@ html.theme-dark .entry-view-actions {
     background: var(--bg-secondary, #f4f6f8);
 }
 
-.entry-view-strip-item img {
+.entry-view-strip-imgwrap {
+    position: relative;
+    width: 100%;
+    min-height: 112px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e4e8ea;
+}
+
+.entry-view-strip-imgwrap .entry-img-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: 8px;
+}
+
+.entry-view-strip-imgwrap img {
     display: block;
     width: 100%;
     height: auto;
+    position: relative;
+    z-index: 1;
     vertical-align: middle;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.entry-view-strip-imgwrap--loaded img {
+    opacity: 1;
+}
+
+.entry-view-strip-imgwrap--loaded .entry-img-skeleton {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0s linear 0.3s;
+    pointer-events: none;
+}
+
+.entry-view-strip-imgwrap--error .entry-img-skeleton {
+    display: none;
+}
+
+.entry-view-strip-imgwrap--error::after {
+    content: 'Could not load image';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem;
+    text-align: center;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--text-muted, #6b7680);
+    background: #e8ecee;
+    border-radius: 8px;
+}
+
+html.theme-dark .entry-view-strip-imgwrap {
+    background: #2a3038;
+}
+
+html.theme-dark .entry-view-strip-imgwrap--error::after {
+    background: #2a3038;
+    color: rgba(228, 232, 238, 0.72);
 }
 
 .entry-view-strip-item__expand,

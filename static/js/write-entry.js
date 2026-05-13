@@ -196,6 +196,27 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    function wireGalleryImageLoads(gallery) {
+        gallery.querySelectorAll('.entry-gallery-img-wrap').forEach((wrap) => {
+            const img = wrap.querySelector('img');
+            if (!img) return;
+            const done = () => {
+                wrap.classList.remove('entry-gallery-img-wrap--loading');
+                wrap.classList.add('entry-gallery-img-wrap--loaded');
+            };
+            const fail = () => {
+                wrap.classList.remove('entry-gallery-img-wrap--loading');
+                wrap.classList.add('entry-gallery-img-wrap--error');
+            };
+            if (img.complete && img.naturalHeight > 0) {
+                done();
+            } else {
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', fail, { once: true });
+            }
+        });
+    }
+
     function renderImageGallery() {
         const gallery = document.getElementById('entryGallery');
         const toolbar = document.getElementById('entryGalleryToolbar');
@@ -227,8 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
                 : '';
             return `
-                <div class="${cls}" data-image-id="${img.id}">
-                    <img src="${escapeHtml(src)}" alt="Attached image" />
+                <div class="${cls}" data-image-id="${escapeHtml(img.id)}">
+                    <div class="entry-gallery-img-wrap entry-gallery-img-wrap--loading">
+                        <div class="entry-img-skeleton" aria-hidden="true"></div>
+                        <img src="${escapeHtml(src)}" alt="" decoding="async" />
+                    </div>
                     ${progress}
                     <div class="entry-gallery-item-actions">
                         <button type="button" class="entry-gallery-action-btn" data-action="preview" data-index="${idx}" aria-label="Preview image"><i class="bi bi-search"></i></button>
@@ -242,6 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<button type="button" class="entry-gallery-add-cell" id="entryGalleryAddMore"><i class="bi bi-plus-lg"></i><span>Add more photos</span></button>`
                 : '';
         gallery.innerHTML = `<div class="entry-gallery-grid ${mode}">${baseCells.join('')}${addMoreCell}</div>`;
+        wireGalleryImageLoads(gallery);
         gallery.querySelectorAll('[data-action="preview"]').forEach((btn) => {
             btn.addEventListener('click', () => openLightbox(Number(btn.dataset.index || 0)));
         });

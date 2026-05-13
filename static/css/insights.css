@@ -752,24 +752,25 @@ body {
     margin-top: 1rem;
 }
 
-/* Emotion breakdown desktop: donut left, five moods stacked on the right */
+/* Emotion breakdown desktop: donut left, legend uses full band to the right */
 .emotion-breakdown-desktop-row {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    gap: 0.75rem 1.15rem;
+    align-items: stretch;
+    gap: 1rem clamp(1.35rem, 4.5vw, 2.75rem);
     margin-top: 1rem;
     min-width: 0;
 }
 
 .ins-card--emotion .emotion-breakdown-desktop-chartwrap {
-    flex: 0 0 clamp(160px, 24vw, 220px);
-    width: clamp(160px, 24vw, 220px);
-    max-width: min(220px, 42%);
+    flex: 0 0 clamp(160px, 22vw, 210px);
+    width: clamp(160px, 22vw, 210px);
+    max-width: min(210px, 38%);
     margin-top: 0;
     height: clamp(196px, 20vw, 260px);
     min-height: 196px;
     max-height: 280px;
+    align-self: center;
 }
 
 .emotion-breakdown-desktop-legend {
@@ -777,28 +778,30 @@ body {
     min-width: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 0.85rem;
-    row-gap: 0.45rem;
+    column-gap: clamp(1.5rem, 5vw, 3.25rem);
+    row-gap: clamp(1.05rem, 2.5vh, 1.85rem);
     margin-top: 0;
     align-self: stretch;
-    align-content: start;
+    align-content: space-evenly;
     justify-items: stretch;
-    padding-top: 0.15rem;
+    min-height: clamp(196px, 20vw, 260px);
+    padding: 0.5rem 0 0.5rem clamp(0.75rem, 2.5vw, 1.75rem);
 }
 
 .emotion-legend-compact {
     display: flex;
     align-items: flex-start;
-    gap: 0.42rem;
+    gap: 0.55rem;
     min-width: 0;
+    padding: 0.15rem 0;
 }
 
 .emotion-legend-compact__dot {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
     border-radius: 999px;
-    flex: 0 0 10px;
-    margin-top: 0.32em;
+    flex: 0 0 11px;
+    margin-top: 0.28em;
     box-shadow: inset 0 0 0 1px rgba(47, 62, 54, 0.06);
 }
 
@@ -806,10 +809,10 @@ body {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.35rem;
+    gap: 0.45rem;
     min-width: 0;
-    font-size: 0.86rem;
-    line-height: 1.3;
+    font-size: 0.92rem;
+    line-height: 1.4;
 }
 
 .emotion-legend-compact__pct {
@@ -1583,6 +1586,10 @@ html.theme-dark .emotion-trigger-block__desc {
     height: clamp(200px, 24vh, 280px);
     min-height: 200px;
     max-height: 280px;
+}
+
+.insights-dashboard .ins-card--emotion .emotion-breakdown-desktop-legend {
+    min-height: clamp(200px, 24vh, 280px);
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {

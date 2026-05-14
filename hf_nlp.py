@@ -20,7 +20,8 @@ import httpx
 
 HF_API_TOKEN   = os.environ.get("HF_API_TOKEN", "").strip()
 EMOTION_MODEL  = os.environ.get("HF_EMOTION_MODEL", "sseia/diari-core-mood").strip()
-HF_BASE_URL    = "https://api-inference.huggingface.co/models"
+# Legacy api-inference.huggingface.co was retired; router + hf-inference is the supported serverless API.
+HF_INFERENCE_ROOT = os.environ.get("HF_INFERENCE_ROOT", "https://router.huggingface.co/hf-inference").rstrip("/")
 
 ALLOWED_LABELS = ("angry", "anxious", "happy", "neutral", "sad")
 
@@ -154,7 +155,7 @@ def analyze(text: str) -> Dict[str, object]:
 
     # Try the standard Inference API endpoint only — most reliable for custom models
     urls = [
-        f"{HF_BASE_URL}/{EMOTION_MODEL}",
+        f"{HF_INFERENCE_ROOT}/models/{EMOTION_MODEL}",
     ]
 
     with httpx.Client(timeout=timeout, headers=_hf_headers()) as client:

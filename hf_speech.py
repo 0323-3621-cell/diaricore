@@ -16,7 +16,22 @@ import httpx
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
 # Small model for faster cold starts on HF serverless; override via env if needed.
 HF_SPEECH_MODEL = os.environ.get("HF_SPEECH_MODEL", "openai/whisper-base").strip()
-HF_ASR_URL = f"https://api-inference.huggingface.co/models/{HF_SPEECH_MODEL}"
+# Must match hf_nlp.py — legacy api-inference.huggingface.co returns 404.
+HF_INFERENCE_ROOT = os.environ.get("HF_INFERENCE_ROOT", "https://router.huggingface.co/hf-inference").rstrip("/")
+HF_ASR_URL = f"{HF_INFERENCE_ROOT}/models/{HF_SPEECH_MODEL}"
+
+
+def _format_hf_error(status_code: int, detail: str) -> str:
+    """Avoid dumping full HTML error pages into the UI."""
+    d = (detail or "").strip()
+    if "<!DOCTYPE" in d or "<html" in d.lower():
+        if "Cannot POST" in d:
+            return (
+                f"Transcription HTTP {status_code}: Hugging Face inference URL is wrong or deprecated. "
+                "Deploy the latest app (uses router.huggingface.co/hf-inference)."
+            )
+        return f"Transcription HTTP {status_code}: unexpected HTML response from inference service."
+    return f"Transcription HTTP {status_code}: {d}"[:600]
 
 
 def transcribe_upload_bytes(data: bytes, content_type: str) -> Tuple[Optional[str], Optional[str]]:
@@ -62,7 +77,7 @@ def transcribe_upload_bytes(data: bytes, content_type: str) -> Tuple[Optional[st
                 detail = payload.get("error") or payload.get("message") or r.text
             except Exception:
                 detail = r.text or r.reason_phrase
-            last_err = f"Transcription HTTP {r.status_code}: {detail}"[:500]
+            last_err = _format_hf_error(r.status_code, str(detail))
             break
 
         try:

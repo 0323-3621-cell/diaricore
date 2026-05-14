@@ -435,6 +435,14 @@ function syncTotpSetupStepper(phase) {
         setLine(1, true);
         setLine(2, true);
     }
+
+    const setupPanel = document.getElementById('profileTotpModalSetup');
+    const qrBlock = document.getElementById('profileTotpQrBlock');
+    const hint = document.getElementById('profileTotpSetupVerifyHint');
+    if (setupPanel) setupPanel.dataset.totpStepperPhase = p;
+    if (hint) {
+        hint.hidden = !(p === 'verify' && qrBlock && !qrBlock.hidden);
+    }
 }
 
 /** While QR step is visible: highlight Verify when digits are focused or non-empty. */
@@ -688,6 +696,7 @@ function wireProfileTotpModal() {
                     return;
                 }
                 setPrimaryLoadingLabel('Enabling…');
+                syncTotpSetupStepper('verify');
                 fetch('/api/user/totp/confirm', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -704,6 +713,7 @@ function wireProfileTotpModal() {
                         if (!ok2 || !data2.success) {
                             showNotification(data2.error || 'Invalid code.', 'error');
                             setPrimaryEnableTwoFaButton();
+                            refreshTotpSetupStepperVerifyPhase();
                             return;
                         }
                         mergeDiariUserIntoStorage(data2.user);
@@ -714,6 +724,7 @@ function wireProfileTotpModal() {
                     })
                     .catch(function () {
                         setPrimaryEnableTwoFaButton();
+                        refreshTotpSetupStepperVerifyPhase();
                         showNotification('Could not reach the server.', 'error');
                     });
                 return;

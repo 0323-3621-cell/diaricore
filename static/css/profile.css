@@ -2987,6 +2987,43 @@ html.theme-dark .profile-account-detail-btn--primary.profile-totp-modal__btn--da
     color: var(--primary-color);
 }
 
+.profile-totp-setup-stepper[data-phase="verify"] .profile-totp-setup-stepper__dotCell[data-setup-step="3"].is-current .profile-totp-setup-stepper__dot {
+    box-shadow: 0 0 0 4px rgba(107, 142, 126, 0.32), 0 6px 16px rgba(61, 90, 74, 0.12);
+    transform: scale(1.08);
+    font-size: 0.78rem;
+}
+
+.profile-totp-setup-stepper[data-phase="verify"] .profile-totp-setup-stepper__label[data-setup-step="3"].is-current {
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+.profile-totp-setup-panel__verify-hint {
+    margin: -0.35rem 0 0.85rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--text-dark);
+    background: rgba(107, 142, 126, 0.12);
+    border: 1px solid rgba(107, 142, 126, 0.28);
+}
+
+.profile-totp-setup-panel__verify-hint strong {
+    color: var(--primary-color);
+}
+
+html.theme-dark .profile-totp-setup-stepper[data-phase="verify"] .profile-totp-setup-stepper__dotCell[data-setup-step="3"].is-current .profile-totp-setup-stepper__dot {
+    box-shadow: 0 0 0 4px rgba(143, 175, 159, 0.28), 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+html.theme-dark .profile-totp-setup-panel__verify-hint {
+    background: rgba(143, 175, 159, 0.12);
+    border-color: rgba(143, 175, 159, 0.32);
+}
+
 .profile-totp-setup-panel__qr-card {
     display: flex;
     flex-direction: column;

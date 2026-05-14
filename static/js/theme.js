@@ -15,6 +15,10 @@
         { id: 'theme-9', name: 'Mauve Pink', primary: '#A97B95' },
         { id: 'theme-10', name: 'Sage Gray', primary: '#7F9393' },
     ];
+    const VALID_PALETTE_IDS = new Set(PALETTES.map(function (p) {
+        return p.id;
+    }));
+    let prefsSyncTimer = null;
 
     function getSavedTheme() {
         const raw = (localStorage.getItem(STORAGE_KEY) || '').toLowerCase();
@@ -105,19 +109,96 @@
         }
     }
 
-    function setTheme(theme) {
+    function queueSyncUserUiPreferences() {
+        if (prefsSyncTimer) {
+            clearTimeout(prefsSyncTimer);
+        }
+        prefsSyncTimer = setTimeout(function () {
+            prefsSyncTimer = null;
+            let raw;
+            try {
+                raw = localStorage.getItem('diariCoreUser');
+            } catch (_) {
+                return;
+            }
+            if (!raw) return;
+            let u;
+            try {
+                u = JSON.parse(raw);
+            } catch (_) {
+                return;
+            }
+            if (!u || !u.isLoggedIn || !u.id) return;
+            const theme = getSavedTheme();
+            const palette = getSavedPaletteId();
+            const body = { userId: u.id };
+            if (theme === 'light' || theme === 'dark') {
+                body.uiTheme = theme;
+            }
+            if (palette && VALID_PALETTE_IDS.has(palette)) {
+                body.uiPaletteId = palette;
+            }
+            if (!body.uiTheme && !body.uiPaletteId) return;
+            fetch('/api/user/ui-preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                credentials: 'same-origin',
+            })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (!data || !data.success || !data.user) return;
+                    applyFromUserObject(data.user);
+                })
+                .catch(function () {});
+        }, 450);
+    }
+
+    function applyFromUserObject(u) {
+        if (!u || typeof u !== 'object') return;
+        const opts = { skipServerSync: true };
+        if (u.uiTheme === 'light' || u.uiTheme === 'dark') {
+            setTheme(u.uiTheme, opts);
+        }
+        if (typeof u.uiPaletteId === 'string' && VALID_PALETTE_IDS.has(u.uiPaletteId)) {
+            setPalette(u.uiPaletteId, opts);
+        }
+        try {
+            const raw = localStorage.getItem('diariCoreUser');
+            if (!raw) return;
+            const cur = JSON.parse(raw);
+            if (!cur || typeof cur !== 'object') return;
+            if (u.uiTheme === 'light' || u.uiTheme === 'dark') {
+                cur.uiTheme = u.uiTheme;
+            }
+            if (typeof u.uiPaletteId === 'string' && VALID_PALETTE_IDS.has(u.uiPaletteId)) {
+                cur.uiPaletteId = u.uiPaletteId;
+            }
+            localStorage.setItem('diariCoreUser', JSON.stringify(cur));
+        } catch (_) {}
+    }
+
+    function setTheme(theme, opts) {
         const nextTheme = theme === 'dark' ? 'dark' : 'light';
         localStorage.setItem(STORAGE_KEY, nextTheme);
         applyTheme(nextTheme);
         syncFabState(nextTheme);
         syncToggleState();
         window.dispatchEvent(new CustomEvent('diari-theme-changed', { detail: { theme: nextTheme } }));
+        if (!(opts && opts.skipServerSync)) {
+            queueSyncUserUiPreferences();
+        }
     }
 
-    function setPalette(paletteId) {
+    function setPalette(paletteId, opts) {
         const nextPalette = getPaletteById(paletteId);
         localStorage.setItem(PALETTE_KEY, nextPalette.id);
         applyPaletteById(nextPalette.id);
+        if (!(opts && opts.skipServerSync)) {
+            queueSyncUserUiPreferences();
+        }
     }
 
     function syncToggleState() {
@@ -203,10 +284,28 @@
     // Apply immediately to reduce theme flicker.
     applyTheme(getSavedTheme());
     applyPaletteById(getSavedPaletteId());
+    try {
+        const ru = localStorage.getItem('diariCoreUser');
+        if (ru) {
+            const parsed = JSON.parse(ru);
+            if (parsed && parsed.isLoggedIn && (parsed.uiTheme || parsed.uiPaletteId)) {
+                applyFromUserObject(parsed);
+            }
+        }
+    } catch (_) {}
 
     document.addEventListener('DOMContentLoaded', function () {
         applyTheme(getSavedTheme());
         applyPaletteById(getSavedPaletteId());
+        try {
+            const ru2 = localStorage.getItem('diariCoreUser');
+            if (ru2) {
+                const p2 = JSON.parse(ru2);
+                if (p2 && p2.isLoggedIn && (p2.uiTheme || p2.uiPaletteId)) {
+                    applyFromUserObject(p2);
+                }
+            }
+        } catch (_) {}
         createThemeToggleFab();
         bindPaletteButtons();
         bindPalettePanelToggle();
@@ -237,5 +336,6 @@
         applyTheme,
         applyPaletteById,
         syncToggleState,
+        applyFromUser: applyFromUserObject,
     };
 })();

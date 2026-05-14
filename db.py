@@ -17,10 +17,11 @@ SQLITE_PATH = os.environ.get("DATABASE_PATH", "diaricore.db")
 # Columns for auth-related user reads (includes TOTP secrets — never expose to client except via app serializers).
 _USER_AUTH_SELECT = (
     "id, nickname, email, password_hash, first_name, last_name, gender, birthday, created_at, avatar_data_url, "
-    "totp_secret, totp_enabled, totp_setup_secret, totp_setup_expires"
+    "totp_secret, totp_enabled, totp_setup_secret, totp_setup_expires, ui_preferences_json"
 )
 _USER_PUBLIC_SELECT = (
-    "id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled"
+    "id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled, "
+    "ui_preferences_json"
 )
 
 
@@ -107,6 +108,17 @@ def _ensure_user_avatar_column(cur):
         cols = [r[1] for r in cur.fetchall()]
         if "avatar_data_url" not in cols:
             cur.execute("ALTER TABLE users ADD COLUMN avatar_data_url TEXT")
+
+
+def _ensure_user_ui_preferences_column(cur):
+    """JSON blob for cross-device UI: theme (light|dark) and paletteId (theme-1 … theme-10)."""
+    if USE_POSTGRES:
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS ui_preferences_json TEXT")
+    else:
+        cur.execute("PRAGMA table_info(users)")
+        cols = {str(r[1]).lower() for r in (cur.fetchall() or [])}
+        if "ui_preferences_json" not in cols:
+            cur.execute("ALTER TABLE users ADD COLUMN ui_preferences_json TEXT")
 
 
 def _ensure_user_totp_columns(cur):
@@ -439,6 +451,7 @@ def init_db():
         _ensure_journal_updated_at_column(cur)
         _ensure_user_tags_icon_column(cur)
         _ensure_user_avatar_column(cur)
+        _ensure_user_ui_preferences_column(cur)
         _ensure_user_totp_columns(cur)
         _ensure_login_totp_challenges_table(cur)
         _ensure_login_totp_recovery_otps_table(cur)
@@ -703,6 +716,53 @@ def update_user_avatar_data_url(user_id: int, avatar_data_url: str | None) -> bo
         conn.close()
 
 
+def update_user_ui_preferences(user_id: int, theme: str | None, palette_id: str | None) -> bool:
+    """
+    Merge theme (light|dark) and/or paletteId into users.ui_preferences_json.
+    Pass None to leave that key unchanged.
+    """
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    row = get_user_by_id(user_id)
+    if not row:
+        return False
+    cur: dict = {}
+    raw = row.get("ui_preferences_json")
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                cur = parsed
+        except Exception:
+            cur = {}
+    if theme in ("light", "dark"):
+        cur["theme"] = theme
+    if palette_id and isinstance(palette_id, str) and palette_id.strip():
+        cur["paletteId"] = palette_id.strip()
+    blob = json.dumps(cur, separators=(",", ":"))
+
+    conn = get_conn()
+    cur_sql = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur_sql.execute(
+                "UPDATE users SET ui_preferences_json = %s WHERE id = %s",
+                (blob, user_id),
+            )
+        else:
+            cur_sql.execute(
+                "UPDATE users SET ui_preferences_json = ? WHERE id = ?",
+                (blob, user_id),
+            )
+        conn.commit()
+        return cur_sql.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
 def update_user_profile(
     user_id: int,
     first_name: str,
@@ -793,7 +853,7 @@ def create_user(
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled, ui_preferences_json
                 """,
                 (nickname_norm, email_norm, password_hash, first_name.strip(), last_name.strip(), gender, birthday),
             )
@@ -973,7 +1033,7 @@ def create_user_from_pending(pending: dict):
                 """
                 INSERT INTO users (nickname, email, password_hash, first_name, last_name, gender, birthday)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled
+                RETURNING id, nickname, email, first_name, last_name, gender, birthday, created_at, avatar_data_url, totp_enabled, ui_preferences_json
                 """,
                 (
                     (pending.get("nickname") or "").strip(),

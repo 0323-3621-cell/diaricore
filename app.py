@@ -414,6 +414,23 @@ def serialize_user(row):
         mapped["avatarDataUrl"] = av.strip()
     else:
         mapped["avatarDataUrl"] = None
+    # Cross-device appearance (stored in DB; see /api/user/ui-preferences)
+    _ALLOWED_UI_PALETTES = {f"theme-{i}" for i in range(1, 11)}
+    prefs = {}
+    ui_raw = out.get("ui_preferences_json")
+    if isinstance(ui_raw, str) and ui_raw.strip():
+        try:
+            parsed = json.loads(ui_raw)
+            if isinstance(parsed, dict):
+                prefs = parsed
+        except Exception:
+            prefs = {}
+    t = prefs.get("theme")
+    if t in ("light", "dark"):
+        mapped["uiTheme"] = t
+    pid = prefs.get("paletteId")
+    if isinstance(pid, str) and pid in _ALLOWED_UI_PALETTES:
+        mapped["uiPaletteId"] = pid
     return mapped
 
 
@@ -918,6 +935,54 @@ def api_user_avatar():
 
     if not db.update_user_avatar_data_url(user_id, avatar):
         return jsonify({"success": False, "error": "Could not save profile photo."}), 500
+
+    row = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row)}), 200
+
+
+_ALLOWED_UI_PALETTES = frozenset(f"theme-{i}" for i in range(1, 11))
+
+
+@app.route("/api/user/ui-preferences", methods=["POST"])
+def api_user_ui_preferences():
+    """Persist light/dark theme and accent palette for cross-device sync."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    theme = data.get("uiTheme")
+    if isinstance(theme, str):
+        theme = theme.strip().lower()
+        if theme == "":
+            theme = None
+    else:
+        theme = None
+    if theme is not None and theme not in ("light", "dark"):
+        return jsonify({"success": False, "error": "uiTheme must be light or dark."}), 400
+
+    palette = data.get("uiPaletteId")
+    if isinstance(palette, str):
+        palette = palette.strip()
+        if palette == "":
+            palette = None
+    else:
+        palette = None
+    if palette is not None and palette not in _ALLOWED_UI_PALETTES:
+        return jsonify({"success": False, "error": "Invalid uiPaletteId."}), 400
+
+    if theme is None and palette is None:
+        return jsonify({"success": False, "error": "Provide uiTheme and/or uiPaletteId."}), 400
+
+    if not db.update_user_ui_preferences(user_id, theme, palette):
+        return jsonify({"success": False, "error": "Could not save preferences."}), 500
 
     row = db.get_user_by_id(user_id)
     return jsonify({"success": True, "user": serialize_user(row)}), 200

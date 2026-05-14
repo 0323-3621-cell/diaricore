@@ -609,6 +609,9 @@ function mergeDiariUserIntoStorage(serverUser) {
         isLoggedIn: prev.isLoggedIn !== false,
     });
     localStorage.setItem('diariCoreUser', JSON.stringify(merged));
+    if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
+        window.DiariTheme.applyFromUser(merged);
+    }
     try {
         document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
     } catch (_) {}

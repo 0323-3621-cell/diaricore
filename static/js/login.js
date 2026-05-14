@@ -1045,6 +1045,9 @@ document.addEventListener('DOMContentLoaded', function() {
             isLoggedIn: true,
             loginTime: new Date().toISOString()
         }));
+        if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
+            window.DiariTheme.applyFromUser(Object.assign({}, u, { isLoggedIn: true }));
+        }
         if (u.isAdmin) {
             showNotification('Admin login successful! Redirecting...', 'success');
             setTimeout(function () {
@@ -1557,6 +1560,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         isLoggedIn: true,
                         loginTime: new Date().toISOString()
                     }));
+                    if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
+                        window.DiariTheme.applyFromUser(Object.assign({}, u, { isLoggedIn: true }));
+                    }
                     showNotification('Account verified successfully! Redirecting...', 'success');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';

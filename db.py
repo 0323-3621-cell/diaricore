@@ -219,6 +219,35 @@ def _ensure_user_password_change_challenges_table(cur):
         )
 
 
+def _ensure_user_profile_email_change_challenges_table(cur):
+    """Email OTP + JSON payload before applying profile update when email changes (logged-in)."""
+    if USE_POSTGRES:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_profile_email_change_challenges (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                otp_code VARCHAR(12) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                pending_payload TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+    else:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_profile_email_change_challenges (
+                user_id INTEGER PRIMARY KEY,
+                otp_code TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                pending_payload TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+
+
 def _parse_expires_at(val):
     if val is None:
         return None
@@ -414,6 +443,7 @@ def init_db():
         _ensure_login_totp_challenges_table(cur)
         _ensure_login_totp_recovery_otps_table(cur)
         _ensure_user_password_change_challenges_table(cur)
+        _ensure_user_profile_email_change_challenges_table(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -1593,6 +1623,99 @@ def delete_user_password_change_challenge(user_id: int) -> bool:
             cur.execute("DELETE FROM user_password_change_challenges WHERE user_id = %s", (user_id,))
         else:
             cur.execute("DELETE FROM user_password_change_challenges WHERE user_id = ?", (user_id,))
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def store_user_profile_email_change_challenge(user_id: int, otp_code: str, expires_at, pending_payload: str) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not (otp_code or "").strip():
+        return False
+    code = (otp_code or "").strip()
+    payload = (pending_payload or "").strip()
+    if not payload:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                INSERT INTO user_profile_email_change_challenges (user_id, otp_code, expires_at, pending_payload, created_at)
+                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    otp_code = EXCLUDED.otp_code,
+                    expires_at = EXCLUDED.expires_at,
+                    pending_payload = EXCLUDED.pending_payload,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, code, expires_at, payload),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO user_profile_email_change_challenges (user_id, otp_code, expires_at, pending_payload, created_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    otp_code = excluded.otp_code,
+                    expires_at = excluded.expires_at,
+                    pending_payload = excluded.pending_payload,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, code, str(expires_at), payload),
+            )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def get_user_profile_email_change_challenge(user_id: int):
+    if not isinstance(user_id, int) or user_id <= 0:
+        return None
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                SELECT user_id, otp_code, expires_at, pending_payload, created_at
+                FROM user_profile_email_change_challenges
+                WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT user_id, otp_code, expires_at, pending_payload, created_at
+                FROM user_profile_email_change_challenges
+                WHERE user_id = ?
+                """,
+                (user_id,),
+            )
+        return row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def delete_user_profile_email_change_challenge(user_id: int) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM user_profile_email_change_challenges WHERE user_id = %s", (user_id,))
+        else:
+            cur.execute("DELETE FROM user_profile_email_change_challenges WHERE user_id = ?", (user_id,))
         conn.commit()
         return True
     except Exception:

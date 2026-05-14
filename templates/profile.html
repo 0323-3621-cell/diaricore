@@ -665,6 +665,55 @@
         </div>
     </div>
 
+    <div class="profile-totp-modal profile-pwd-change-otp-modal-root" id="profileEmailChangeOtpModal" hidden>
+        <div class="profile-totp-modal__backdrop" id="profileEmailChangeOtpBackdrop"></div>
+        <div class="profile-totp-modal__dialog profile-pwd-change-otp-modal" role="dialog" aria-modal="true" aria-labelledby="profileEmailChangeOtpTitle">
+            <button type="button" class="profile-totp-modal__close profile-pwd-change-otp-modal__close" id="profileEmailChangeOtpCloseBtn" aria-label="Close dialog">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+            <div class="profile-pwd-change-otp-modal__body">
+                <div class="profile-pwd-change-otp-modal__icon-wrap" aria-hidden="true">
+                    <i class="bi bi-envelope-check profile-pwd-change-otp-modal__icon"></i>
+                </div>
+                <h3 class="profile-pwd-change-otp-modal__title" id="profileEmailChangeOtpTitle">Verify new email</h3>
+                <p class="profile-pwd-change-otp-modal__lead" id="profileEmailChangeOtpLead"></p>
+                <div class="profile-pwd-change-otp-modal__digits-wrap">
+                    <div class="profile-totp-digits profile-pwd-change-otp-modal__digits" id="profileEmailChangeOtpDigits" role="group" aria-label="6-digit email verification code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="1" aria-label="Digit 2 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="2" aria-label="Digit 3 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="3" aria-label="Digit 4 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="4" aria-label="Digit 5 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-email-change-otp="5" aria-label="Digit 6 of 6" autocomplete="off">
+                    </div>
+                </div>
+                <div class="profile-pwd-change-otp-alert" id="profileEmailChangeOtpError" hidden role="alert">
+                    <span class="profile-pwd-change-otp-alert__text" id="profileEmailChangeOtpErrorText"></span>
+                </div>
+                <div class="profile-pwd-change-otp-modal__meta">
+                    <p class="profile-pwd-change-otp-modal__cooldown" id="profileEmailChangeOtpCooldownRow">
+                        <span class="profile-pwd-change-otp-modal__cooldown-label">Resend code in </span>
+                        <span class="profile-pwd-change-otp-modal__cooldown-time" id="profileEmailChangeOtpTimer">00:00</span>
+                    </p>
+                    <p class="profile-pwd-change-otp-modal__resend" id="profileEmailChangeOtpResendRow" hidden>
+                        <span class="profile-pwd-change-otp-modal__resend-prefix">Didn't receive the code?</span>
+                        <button type="button" class="profile-pwd-change-otp-modal__resend-btn" id="profileEmailChangeOtpResendBtn">
+                            <span class="profile-pwd-change-otp-modal__resend-spinner" aria-hidden="true"></span>
+                            <span class="profile-pwd-change-otp-modal__resend-label">Resend code</span>
+                        </button>
+                    </p>
+                </div>
+                <div class="profile-pwd-change-otp-modal__actions">
+                    <button type="button" class="profile-pwd-change-otp-modal__verify-btn" id="profileEmailChangeOtpVerifyBtn">
+                        <span class="profile-totp-modal__spinner" aria-hidden="true"></span>
+                        <span class="profile-pwd-change-otp-modal__verify-label">Verify</span>
+                    </button>
+                    <button type="button" class="profile-pwd-change-otp-modal__cancel-link" id="profileEmailChangeOtpCancelBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="profile-totp-modal profile-pwd-change-success-modal-root" id="profilePwdChangeSuccessModal" hidden>
         <div class="profile-totp-modal__backdrop"></div>
         <div class="profile-totp-modal__dialog profile-pwd-change-success-dialog" role="alertdialog" aria-modal="true" aria-labelledby="profilePwdChangeSuccessTitle">

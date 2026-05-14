@@ -18,6 +18,34 @@ let profilePwdChangeOtpAutoVerifyTimeout = null;
 let profilePwdChangeSuccessLogoutTimer = null;
 let profilePwdChangeSuccessRedirectInterval = null;
 
+function profileBlockingModalIds() {
+    return [
+        'profilePwdChangeOtpModal',
+        'profileEmailChangeOtpModal',
+        'profilePwdChangeSuccessModal',
+        'profileTotpModal',
+    ];
+}
+
+function syncProfileModalBodyScrollLock() {
+    const anyOpen = profileBlockingModalIds().some(function (id) {
+        const el = document.getElementById(id);
+        return el && !el.hidden;
+    });
+    if (anyOpen) {
+        document.body.classList.add('profile-totp-modal-open');
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.classList.remove('profile-totp-modal-open');
+        document.body.style.overflow = '';
+    }
+}
+
+let profileEmailChangeOtpResendInterval = null;
+let profileEmailChangeOtpResendRemaining = 0;
+let profileEmailChangeOtpVerifyInProgress = false;
+let profileEmailChangeOtpAutoVerifyTimeout = null;
+
 function initializeProfileFromStorage() {
     try {
         const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
@@ -915,14 +943,14 @@ function resetTotpModal() {
     }
     const dialog = document.querySelector('.profile-totp-modal__dialog');
     if (dialog) dialog.setAttribute('aria-labelledby', 'profileTotpModalTitle');
-    document.body.classList.remove('profile-totp-modal-open');
+    syncProfileModalBodyScrollLock();
 }
 
 function openTotpModal() {
     const modal = document.getElementById('profileTotpModal');
     if (!modal) return;
     modal.hidden = false;
-    document.body.classList.add('profile-totp-modal-open');
+    syncProfileModalBodyScrollLock();
 }
 
 function openTotpSetupModal() {
@@ -1176,6 +1204,339 @@ function wireProfileTotpModal() {
     }
 }
 
+function finishProfilePersonalSaveSuccess(serverUser) {
+    if (!serverUser || typeof serverUser !== 'object') {
+        refreshProfilePersonalSaveButton();
+        showNotification('Invalid response from server.', 'error');
+        return;
+    }
+    mergeDiariUserIntoStorage(serverUser);
+    initializeProfileFromStorage();
+    showNotification('Profile updated.', 'success');
+    closeProfileSection();
+}
+
+function getProfileEmailChangeOtpDigitInputs() {
+    return Array.from(document.querySelectorAll('[data-profile-email-change-otp]'));
+}
+
+function getProfileEmailChangeOtpCode() {
+    return getProfileEmailChangeOtpDigitInputs()
+        .map(function (d) {
+            return (d.value || '').replace(/\D/g, '');
+        })
+        .join('');
+}
+
+function clearProfileEmailChangeOtpDigits() {
+    getProfileEmailChangeOtpDigitInputs().forEach(function (d) {
+        d.value = '';
+        d.disabled = false;
+    });
+}
+
+function setProfileEmailChangeOtpError(message) {
+    const wrap = document.getElementById('profileEmailChangeOtpError');
+    const text = document.getElementById('profileEmailChangeOtpErrorText');
+    if (!wrap || !text) return;
+    if (message) {
+        text.textContent = message;
+        wrap.hidden = false;
+    } else {
+        text.textContent = '';
+        wrap.hidden = true;
+    }
+}
+
+function clearProfileEmailChangeResendCooldown() {
+    if (profileEmailChangeOtpResendInterval) {
+        clearInterval(profileEmailChangeOtpResendInterval);
+        profileEmailChangeOtpResendInterval = null;
+    }
+    profileEmailChangeOtpResendRemaining = 0;
+    const timer = document.getElementById('profileEmailChangeOtpTimer');
+    if (timer) timer.textContent = '00:00';
+    const btn = document.getElementById('profileEmailChangeOtpResendBtn');
+    if (btn) btn.disabled = false;
+    const cooldownRow = document.getElementById('profileEmailChangeOtpCooldownRow');
+    const resendRow = document.getElementById('profileEmailChangeOtpResendRow');
+    if (cooldownRow) cooldownRow.hidden = true;
+    if (resendRow) resendRow.hidden = false;
+}
+
+function startProfileEmailChangeResendCooldown(seconds) {
+    const btn = document.getElementById('profileEmailChangeOtpResendBtn');
+    const timer = document.getElementById('profileEmailChangeOtpTimer');
+    const cooldownRow = document.getElementById('profileEmailChangeOtpCooldownRow');
+    const resendRow = document.getElementById('profileEmailChangeOtpResendRow');
+    profileEmailChangeOtpResendRemaining = seconds;
+    if (btn) btn.disabled = true;
+    if (cooldownRow) cooldownRow.hidden = false;
+    if (resendRow) resendRow.hidden = true;
+    if (profileEmailChangeOtpResendInterval) clearInterval(profileEmailChangeOtpResendInterval);
+    function tick() {
+        if (profileEmailChangeOtpResendRemaining <= 0) {
+            clearProfileEmailChangeResendCooldown();
+            return;
+        }
+        const mm = Math.floor(profileEmailChangeOtpResendRemaining / 60);
+        const ss = profileEmailChangeOtpResendRemaining % 60;
+        if (timer) {
+            timer.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+        }
+        profileEmailChangeOtpResendRemaining -= 1;
+    }
+    tick();
+    profileEmailChangeOtpResendInterval = setInterval(tick, 1000);
+}
+
+function setProfileEmailChangeOtpVerifyLoading(isLoading) {
+    const btn = document.getElementById('profileEmailChangeOtpVerifyBtn');
+    if (!btn) return;
+    const label = btn.querySelector('.profile-pwd-change-otp-modal__verify-label');
+    if (isLoading) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        if (label) label.textContent = 'Verifying…';
+    } else {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        if (label) label.textContent = 'Verify';
+    }
+}
+
+function setProfileEmailChangeOtpResendLoading(isLoading) {
+    const btn = document.getElementById('profileEmailChangeOtpResendBtn');
+    if (!btn) return;
+    const label = btn.querySelector('.profile-pwd-change-otp-modal__resend-label');
+    if (isLoading) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        if (label) label.textContent = 'Sending…';
+    } else {
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
+        if (label) label.textContent = 'Resend code';
+    }
+}
+
+function clearProfileEmailChangeOtpAutoVerify() {
+    if (profileEmailChangeOtpAutoVerifyTimeout) {
+        clearTimeout(profileEmailChangeOtpAutoVerifyTimeout);
+        profileEmailChangeOtpAutoVerifyTimeout = null;
+    }
+}
+
+function scheduleProfileEmailChangeOtpAutoVerify() {
+    clearProfileEmailChangeOtpAutoVerify();
+    profileEmailChangeOtpAutoVerifyTimeout = setTimeout(function () {
+        profileEmailChangeOtpAutoVerifyTimeout = null;
+        const modal = document.getElementById('profileEmailChangeOtpModal');
+        if (!modal || modal.hidden) return;
+        if (getProfileEmailChangeOtpCode().length !== 6) return;
+        if (profileEmailChangeOtpVerifyInProgress) return;
+        void verifyProfileEmailChangeOtp();
+    }, 260);
+}
+
+function openProfileEmailChangeOtpModal(newEmail) {
+    const modal = document.getElementById('profileEmailChangeOtpModal');
+    if (!modal) return;
+    clearProfileEmailChangeOtpAutoVerify();
+    profileEmailChangeOtpVerifyInProgress = false;
+    setProfileEmailChangeOtpVerifyLoading(false);
+    setProfileEmailChangeOtpError('');
+    clearProfileEmailChangeOtpDigits();
+    const lead = document.getElementById('profileEmailChangeOtpLead');
+    if (lead) {
+        lead.textContent = `We sent a 6-digit code to ${String(newEmail || '').trim()}. Enter it below to save your profile.`;
+    }
+    modal.hidden = false;
+    syncProfileModalBodyScrollLock();
+    startProfileEmailChangeResendCooldown(60);
+    const first = getProfileEmailChangeOtpDigitInputs()[0];
+    if (first) setTimeout(function () { first.focus(); }, 80);
+}
+
+function closeProfileEmailChangeOtpModal() {
+    const modal = document.getElementById('profileEmailChangeOtpModal');
+    if (!modal || modal.hidden) return;
+    clearProfileEmailChangeOtpAutoVerify();
+    modal.hidden = true;
+    syncProfileModalBodyScrollLock();
+    clearProfileEmailChangeResendCooldown();
+    profileEmailChangeOtpVerifyInProgress = false;
+    setProfileEmailChangeOtpVerifyLoading(false);
+}
+
+function wireProfileEmailChangeOtpDigits() {
+    const digits = getProfileEmailChangeOtpDigitInputs();
+    if (!digits.length || digits[0].dataset.emailChangeOtpWired === '1') return;
+    digits[0].dataset.emailChangeOtpWired = '1';
+    digits.forEach(function (input, idx) {
+        input.addEventListener('input', function (e) {
+            var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
+            e.target.value = v;
+            setProfileEmailChangeOtpError('');
+            if (v && idx < digits.length - 1) {
+                digits[idx + 1].focus();
+            }
+            clearProfileEmailChangeOtpAutoVerify();
+            if (getProfileEmailChangeOtpCode().length === 6) {
+                scheduleProfileEmailChangeOtpAutoVerify();
+            }
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !input.value && idx > 0) {
+                digits[idx - 1].focus();
+            }
+        });
+        input.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var raw = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+            digits.forEach(function (d, i) {
+                d.value = raw[i] || '';
+            });
+            var lastIdx = Math.min(raw.length, digits.length) - 1;
+            if (lastIdx >= 0) digits[lastIdx].focus();
+            setProfileEmailChangeOtpError('');
+            clearProfileEmailChangeOtpAutoVerify();
+            if (getProfileEmailChangeOtpCode().length === 6) {
+                scheduleProfileEmailChangeOtpAutoVerify();
+            }
+        });
+    });
+}
+
+async function submitProfileEmailChangeResend() {
+    const user = getStoredDiariUser();
+    if (!user || !user.id) {
+        showNotification('Sign in to continue.', 'warning');
+        return false;
+    }
+    setProfileEmailChangeOtpResendLoading(true);
+    try {
+        const res = await fetch('/api/user/profile/email-change-resend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id }),
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.success) {
+            showNotification(data.error || 'Could not resend code.', 'warning');
+            return false;
+        }
+        showNotification(data.message || 'A new code was sent.', 'success');
+        clearProfileEmailChangeOtpDigits();
+        setProfileEmailChangeOtpError('');
+        startProfileEmailChangeResendCooldown(60);
+        return true;
+    } catch (_) {
+        showNotification('Could not resend code. Check your connection.', 'error');
+        return false;
+    } finally {
+        setProfileEmailChangeOtpResendLoading(false);
+        const btn = document.getElementById('profileEmailChangeOtpResendBtn');
+        if (btn && !profileEmailChangeOtpResendInterval && profileEmailChangeOtpResendRemaining <= 0) {
+            btn.disabled = false;
+        }
+    }
+}
+
+async function verifyProfileEmailChangeOtp() {
+    if (profileEmailChangeOtpVerifyInProgress) return;
+    const user = getStoredDiariUser();
+    if (!user || !user.id) return;
+    const code = getProfileEmailChangeOtpCode();
+    if (code.length !== 6) {
+        setProfileEmailChangeOtpError('Please enter the 6-digit code from your email.');
+        return;
+    }
+    const uid = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+    if (!uid || Number.isNaN(uid)) {
+        setProfileEmailChangeOtpError('Your session is invalid. Please sign in again.');
+        return;
+    }
+    clearProfileEmailChangeOtpAutoVerify();
+    profileEmailChangeOtpVerifyInProgress = true;
+    setProfileEmailChangeOtpVerifyLoading(true);
+    setProfileEmailChangeOtpError('');
+    try {
+        const controller = new AbortController();
+        const abortTimer = setTimeout(function () {
+            controller.abort();
+        }, 30000);
+        let res;
+        try {
+            res = await fetch('/api/user/profile/email-change-confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: uid, code: code }),
+                signal: controller.signal,
+            });
+        } finally {
+            clearTimeout(abortTimer);
+        }
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.success) {
+            setProfileEmailChangeOtpError(data.error || 'Invalid or expired verification code.');
+            const fid = data.field;
+            if (fid) {
+                const fel = document.getElementById(fid);
+                if (fel) profilePersonalShowError(fel, data.error || '');
+            }
+            return;
+        }
+        if (!data.user || typeof data.user !== 'object') {
+            setProfileEmailChangeOtpError('Invalid response from server.');
+            return;
+        }
+        clearProfileEmailChangeOtpAutoVerify();
+        closeProfileEmailChangeOtpModal();
+        finishProfilePersonalSaveSuccess(data.user);
+    } catch (err) {
+        const aborted = err && (err.name === 'AbortError' || err.name === 'TimeoutError');
+        setProfileEmailChangeOtpError(
+            aborted
+                ? 'Request timed out. Check your connection and tap Verify again.'
+                : 'Could not reach the server. Check your connection and try again.'
+        );
+    } finally {
+        profileEmailChangeOtpVerifyInProgress = false;
+        setProfileEmailChangeOtpVerifyLoading(false);
+    }
+}
+
+function wireProfileEmailChangeOtpFlow() {
+    wireProfileEmailChangeOtpDigits();
+    const backdrop = document.getElementById('profileEmailChangeOtpBackdrop');
+    const closeBtn = document.getElementById('profileEmailChangeOtpCloseBtn');
+    const cancelBtn = document.getElementById('profileEmailChangeOtpCancelBtn');
+    [backdrop, closeBtn, cancelBtn].forEach(function (el) {
+        if (el && !el.dataset.emailChangeOtpCloseWired) {
+            el.dataset.emailChangeOtpCloseWired = '1';
+            el.addEventListener('click', function () {
+                closeProfileEmailChangeOtpModal();
+            });
+        }
+    });
+    const verifyBtn = document.getElementById('profileEmailChangeOtpVerifyBtn');
+    if (verifyBtn && !verifyBtn.dataset.emailChangeVerifyWired) {
+        verifyBtn.dataset.emailChangeVerifyWired = '1';
+        verifyBtn.addEventListener('click', function () {
+            void verifyProfileEmailChangeOtp();
+        });
+    }
+    const resendBtn = document.getElementById('profileEmailChangeOtpResendBtn');
+    if (resendBtn && !resendBtn.dataset.emailChangeResendWired) {
+        resendBtn.dataset.emailChangeResendWired = '1';
+        resendBtn.addEventListener('click', function () {
+            void submitProfileEmailChangeResend();
+        });
+    }
+}
+
 function savePersonalInfoForm() {
     const user = getStoredDiariUser();
     if (!user || typeof user !== 'object') {
@@ -1210,19 +1571,67 @@ function savePersonalInfoForm() {
             showNotification('Sign in to save profile details.', 'warning');
             return;
         }
+        const originalEmail = String(user.email || '')
+            .trim()
+            .toLowerCase();
+        const newEmailNorm = email.trim().toLowerCase();
+        const emailChanged = newEmailNorm !== originalEmail;
+
+        const profileBody = {
+            userId: uid,
+            firstName: first,
+            lastName: last,
+            nickname: nick,
+            email: email,
+            gender: gender || null,
+            birthday: bday || null,
+        };
+
         if (saveBtn) saveBtn.disabled = true;
+
+        if (emailChanged) {
+            fetch('/api/user/profile/email-change-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profileBody),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function (ref) {
+                    if (saveBtn) saveBtn.disabled = false;
+                    const data = ref.data || {};
+                    if (!ref.ok || !data.success) {
+                        refreshProfilePersonalSaveButton();
+                        const msg = data.error || 'Could not send verification email.';
+                        showNotification(msg, 'error');
+                        const fid = data.field;
+                        if (fid) {
+                            const fel = document.getElementById(fid);
+                            if (fel) profilePersonalShowError(fel, msg);
+                        }
+                        return;
+                    }
+                    showNotification(
+                        data.message || 'Check your new email for a verification code.',
+                        'success'
+                    );
+                    openProfileEmailChangeOtpModal(email.trim());
+                })
+                .catch(function () {
+                    if (saveBtn) saveBtn.disabled = false;
+                    refreshProfilePersonalSaveButton();
+                    showNotification('Could not reach the server.', 'error');
+                });
+            return;
+        }
+
         fetch('/api/user/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: uid,
-                firstName: first,
-                lastName: last,
-                nickname: nick,
-                email: email,
-                gender: gender || null,
-                birthday: bday || null,
-            }),
+            body: JSON.stringify(profileBody),
         })
             .then(function (res) {
                 return res.json().then(function (data) {
@@ -1243,15 +1652,7 @@ function savePersonalInfoForm() {
                     }
                     return;
                 }
-                if (!data.user || typeof data.user !== 'object') {
-                    refreshProfilePersonalSaveButton();
-                    showNotification('Invalid response from server.', 'error');
-                    return;
-                }
-                mergeDiariUserIntoStorage(data.user);
-                initializeProfileFromStorage();
-                showNotification('Profile updated.', 'success');
-                closeProfileSection();
+                finishProfilePersonalSaveSuccess(data.user);
             })
             .catch(function () {
                 if (saveBtn) saveBtn.disabled = false;
@@ -1388,8 +1789,7 @@ function openProfilePwdChangeOtpModal() {
     setProfilePwdChangeOtpError('');
     clearProfilePwdChangeOtpDigits();
     modal.hidden = false;
-    document.body.classList.add('profile-totp-modal-open');
-    document.body.style.overflow = 'hidden';
+    syncProfileModalBodyScrollLock();
     startProfilePwdChangeResendCooldown(60);
     const first = getProfilePwdChangeOtpDigitInputs()[0];
     if (first) setTimeout(function () { first.focus(); }, 80);
@@ -1400,10 +1800,7 @@ function closeProfilePwdChangeOtpModal() {
     if (!modal || modal.hidden) return;
     clearProfilePwdChangeOtpAutoVerify();
     modal.hidden = true;
-    if (!document.getElementById('profilePwdChangeSuccessModal') || document.getElementById('profilePwdChangeSuccessModal').hidden) {
-        document.body.classList.remove('profile-totp-modal-open');
-        document.body.style.overflow = '';
-    }
+    syncProfileModalBodyScrollLock();
     clearProfilePwdChangeResendCooldown();
     profilePwdChangeOtpVerifyInProgress = false;
     setProfilePwdChangeOtpVerifyLoading(false);
@@ -1468,8 +1865,7 @@ function openProfilePwdChangeSuccessModalThenLogout() {
         return;
     }
     modal.hidden = false;
-    document.body.classList.add('profile-totp-modal-open');
-    document.body.style.overflow = 'hidden';
+    syncProfileModalBodyScrollLock();
 
     destroyProfilePwdChangeSuccessAnim();
     mount.innerHTML = '';
@@ -1507,8 +1903,7 @@ function openProfilePwdChangeSuccessModalThenLogout() {
         if (labelEl) labelEl.textContent = 'Redirecting to login in 0s...';
         if (fillEl) fillEl.style.width = '100%';
         modal.hidden = true;
-        document.body.classList.remove('profile-totp-modal-open');
-        document.body.style.overflow = '';
+        syncProfileModalBodyScrollLock();
         destroyProfilePwdChangeSuccessAnim();
         performProfileLogout();
     }, redirectMs);
@@ -1790,8 +2185,7 @@ function wireProfilePwdChangeSuccessModal() {
         clearProfilePwdChangeSuccessRedirectAnim();
         const modal = document.getElementById('profilePwdChangeSuccessModal');
         if (modal) modal.hidden = true;
-        document.body.classList.remove('profile-totp-modal-open');
-        document.body.style.overflow = '';
+        syncProfileModalBodyScrollLock();
         destroyProfilePwdChangeSuccessAnim();
         performProfileLogout();
     });
@@ -1823,6 +2217,8 @@ function initializeAccountDetailPanels() {
     });
 
     wireProfilePasswordChangeFlow();
+
+    wireProfileEmailChangeOtpFlow();
 
     wireProfileTotpModal();
     const totpToggle = document.getElementById('profileSec2faToggle');
@@ -2294,6 +2690,7 @@ function closeProfileSection() {
     destroyProfileSecPasswordLive();
     lastOpenedProfileSectionKey = '';
     closeProfilePwdChangeOtpModal();
+    closeProfileEmailChangeOtpModal();
     if (profilePwdChangeSuccessLogoutTimer) {
         clearTimeout(profilePwdChangeSuccessLogoutTimer);
         profilePwdChangeSuccessLogoutTimer = null;
@@ -2301,8 +2698,7 @@ function closeProfileSection() {
     const successModal = document.getElementById('profilePwdChangeSuccessModal');
     if (successModal) successModal.hidden = true;
     destroyProfilePwdChangeSuccessAnim();
-    document.body.classList.remove('profile-totp-modal-open');
-    document.body.style.overflow = '';
+    syncProfileModalBodyScrollLock();
 }
 
 function initializeProfileSectionNavigation() {

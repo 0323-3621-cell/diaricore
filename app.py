@@ -972,6 +972,253 @@ def api_user_profile_update():
     return jsonify({"success": True, "user": serialize_user(row)}), 200
 
 
+def _send_profile_email_change_otp_email(new_email: str, code: str, nickname: str) -> bool:
+    """Email OTP to the *new* address before saving a profile email change."""
+    api_key = os.environ.get("BREVO_API_KEY") or db.get_system_setting("brevo_api_key")
+    sender_email = os.environ.get("BREVO_SENDER_EMAIL") or db.get_system_setting("brevo_sender_email")
+    sender_name = os.environ.get("BREVO_SENDER_NAME") or db.get_system_setting("brevo_sender_name", "DiariCore")
+    enable_notifications = (db.get_system_setting("enable_email_notifications", "true") or "true").lower() == "true"
+
+    if not enable_notifications:
+        print(f"[PROFILE EMAIL CHANGE DISABLED] OTP for {new_email}: {code}")
+        return True
+
+    if not api_key or not sender_email:
+        print(f"[PROFILE EMAIL CHANGE DEV MODE] {new_email} -> {code}")
+        return True
+
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": new_email, "name": nickname or new_email.split("@")[0]}],
+        "subject": "DiariCore — verify your new email",
+        "htmlContent": f"""
+            <html><body style='font-family: Arial, sans-serif; color: #2F3E36;'>
+            <h2>Confirm your new email</h2>
+            <p>Hello {nickname or 'there'},</p>
+            <p>Use this code to confirm updating your DiariCore account email to this address:</p>
+            <p style='font-size: 28px; font-weight: bold; letter-spacing: 6px;'>{code}</p>
+            <p>This code expires in 10 minutes. If you did not request this, ignore this email.</p>
+            </body></html>
+        """,
+        "textContent": (
+            f"Your DiariCore email verification code is {code}. It expires in 10 minutes. "
+            "If you did not request an email change, ignore this message."
+        ),
+    }
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "api-key": api_key},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15):
+            return True
+    except Exception:
+        return False
+
+
+def _profile_personal_field_error_response(field_key: str | None, err_msg: str):
+    field_map = {"nickname": "profileFieldNickname", "email": "profileFieldEmail"}
+    return (
+        jsonify(
+            {
+                "success": False,
+                "field": field_map.get(field_key or ""),
+                "error": err_msg or "Could not save profile.",
+            }
+        ),
+        400,
+    )
+
+
+@app.route("/api/user/profile/email-change-request", methods=["POST"])
+def api_user_profile_email_change_request():
+    """When email changes: validate, store pending profile JSON + OTP, email code to the new address."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    user = db.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    nickname = (data.get("nickname") or "").strip()
+    email = (data.get("email") or "").strip()
+    gender = (data.get("gender") or "").strip() or None
+    birthday = (data.get("birthday") or "").strip() or None
+
+    new_email_norm = email.lower().strip()
+    old_email_norm = (user.get("email") or "").strip().lower()
+    if new_email_norm == old_email_norm:
+        return jsonify({"success": False, "error": "Email address is unchanged."}), 400
+
+    if not first_name or not last_name:
+        return _profile_personal_field_error_response(None, "First and last name are required.")
+    if not nickname or len(nickname) < 4 or len(nickname) > 64:
+        return _profile_personal_field_error_response("nickname", "Username must be between 4 and 64 characters.")
+    if not email or "@" not in email:
+        return _profile_personal_field_error_response("email", "A valid email is required.")
+
+    other_email = db.get_user_by_email(new_email_norm)
+    if other_email and int(other_email.get("id") or 0) != user_id:
+        return _profile_personal_field_error_response("email", "Email already exists.")
+
+    other_nick = db.get_user_by_nickname(nickname)
+    if other_nick and int(other_nick.get("id") or 0) != user_id:
+        return _profile_personal_field_error_response("nickname", "Username already exists.")
+
+    pending = {
+        "firstName": first_name,
+        "lastName": last_name,
+        "nickname": nickname,
+        "email": new_email_norm,
+        "gender": gender,
+        "birthday": birthday,
+    }
+    try:
+        pending_json = json.dumps(pending, separators=(",", ":"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid profile data."}), 400
+
+    otp_code = _generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    if not db.store_user_profile_email_change_challenge(user_id, otp_code, expires_at, pending_json):
+        return jsonify({"success": False, "error": "Could not start email verification. Please try again."}), 500
+
+    if not _send_profile_email_change_otp_email(new_email_norm, otp_code, user.get("nickname") or ""):
+        db.delete_user_profile_email_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Failed to send verification code. Please try again."}), 500
+
+    return jsonify(
+        {
+            "success": True,
+            "message": "We sent a 6-digit code to your new email address. Enter it to save your profile.",
+        }
+    ), 200
+
+
+@app.route("/api/user/profile/email-change-resend", methods=["POST"])
+def api_user_profile_email_change_resend():
+    """Resend OTP for a pending profile email change (same pending fields)."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    user = db.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    row = db.get_user_profile_email_change_challenge(user_id)
+    if not row:
+        return jsonify({"success": False, "error": "No pending email change. Save your profile again."}), 400
+
+    pending_json = row.get("pending_payload") or ""
+    try:
+        pending = json.loads(pending_json)
+        new_email = (pending.get("email") or "").strip().lower()
+    except Exception:
+        db.delete_user_profile_email_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Pending change was invalid. Please try again."}), 400
+
+    if not new_email or "@" not in new_email:
+        db.delete_user_profile_email_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Pending change was invalid. Please try again."}), 400
+
+    otp_code = _generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    if not db.store_user_profile_email_change_challenge(user_id, otp_code, expires_at, pending_json):
+        return jsonify({"success": False, "error": "Could not resend code. Please try again."}), 500
+
+    if not _send_profile_email_change_otp_email(new_email, otp_code, user.get("nickname") or ""):
+        return jsonify({"success": False, "error": "Failed to send verification code. Please try again."}), 500
+
+    return jsonify({"success": True, "message": "A new code was sent to your new email address."}), 200
+
+
+@app.route("/api/user/profile/email-change-confirm", methods=["POST"])
+def api_user_profile_email_change_confirm():
+    """Verify email OTP and apply the stored profile update (including new email)."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    code = (data.get("code") or "").strip()
+    if not code or len(code) != 6 or not code.isdigit():
+        return jsonify({"success": False, "error": "Please enter the 6-digit code from your email."}), 400
+
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    row = db.get_user_profile_email_change_challenge(user_id)
+    if not row:
+        return jsonify({"success": False, "error": "No pending email change. Request a new code from Personal Information."}), 400
+
+    expires_raw = row.get("expires_at")
+    try:
+        if isinstance(expires_raw, str):
+            expires_at = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
+        else:
+            expires_at = expires_raw
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+
+    if datetime.now(timezone.utc) > expires_at or (row.get("otp_code") or "") != code:
+        return jsonify({"success": False, "error": "Invalid or expired verification code."}), 400
+
+    try:
+        pending = json.loads(row.get("pending_payload") or "{}")
+    except Exception:
+        db.delete_user_profile_email_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Pending change was invalid. Please try again."}), 400
+
+    first_name = (pending.get("firstName") or "").strip()
+    last_name = (pending.get("lastName") or "").strip()
+    nickname = (pending.get("nickname") or "").strip()
+    email = (pending.get("email") or "").strip()
+    gender = (pending.get("gender") or "").strip() or None
+    birthday = (pending.get("birthday") or "").strip() or None
+
+    ok, field_key, err_msg = db.update_user_profile(
+        user_id,
+        first_name,
+        last_name,
+        nickname,
+        email,
+        gender,
+        birthday,
+    )
+    if not ok:
+        db.delete_user_profile_email_change_challenge(user_id)
+        return _profile_personal_field_error_response(field_key, err_msg or "Could not save profile.")
+
+    db.delete_user_profile_email_change_challenge(user_id)
+    row_user = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row_user)}), 200
+
+
 def _send_profile_password_change_email(email: str, code: str, nickname: str) -> bool:
     """Email OTP before applying a password change from Profile → Security."""
     api_key = os.environ.get("BREVO_API_KEY") or db.get_system_setting("brevo_api_key")

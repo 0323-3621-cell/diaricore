@@ -36,8 +36,6 @@
             let mediaRecorder = null;
             let audioChunks = [];
             let mediaStream = null;
-            /** Clone used only for Web Audio visualizer so analyser and capture stay on separate tracks when possible. */
-            let visualInputStream = null;
             let startTime = null;
             let recognition = null;
             let wantRecognitionRunning = false;
@@ -70,9 +68,18 @@
 
             const speechSupported = Boolean(getSpeechRecognitionCtor());
             const isMobile = window.innerWidth <= 768;
+            /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
+            let speechCaptureRetries = 0;
+
+            if (speechSupported && window.isSecureContext === false && statusText) {
+                statusText.textContent =
+                    'Live voice captions need HTTPS (or localhost). This page is not a secure context, so dictation may not run.';
+            }
 
             if (isMobile && statusText) {
-                statusText.textContent = 'Tap to record';
+                if (!(speechSupported && window.isSecureContext === false)) {
+                    statusText.textContent = 'Tap to record';
+                }
             }
 
             if (isMobile && mobileRetryBtn) {
@@ -125,12 +132,6 @@
             }
 
             function stopMediaStream() {
-                if (visualInputStream) {
-                    visualInputStream.getTracks().forEach(function (t) {
-                        t.stop();
-                    });
-                    visualInputStream = null;
-                }
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(function (t) {
                         t.stop();
@@ -220,7 +221,41 @@
                 recognition.onerror = function (ev) {
                     const err = ev && ev.error ? ev.error : '';
                     if (err === 'no-speech' || err === 'aborted') return;
-                    if (err === 'audio-capture') return;
+                    if (err === 'audio-capture') {
+                        if (mediaStream && wantRecognitionRunning && speechCaptureRetries < 2) {
+                            speechCaptureRetries += 1;
+                            setTranscriptHint(
+                                'Speech engine could not read the microphone yet — retrying live captions…'
+                            );
+                            setTimeout(function () {
+                                if (!mediaStream || !wantRecognitionRunning) return;
+                                try {
+                                    recognition.onend = null;
+                                    recognition.stop();
+                                } catch (_) {}
+                                recognition = null;
+                                attachSpeechRecognition();
+                                wantRecognitionRunning = true;
+                                try {
+                                    recognition.start();
+                                    setTranscriptHint(
+                                        'Listening… speak clearly. Text will appear below as you talk.'
+                                    );
+                                } catch (_) {
+                                    stopSpeechRecognition();
+                                    setTranscriptHint(
+                                        'Live captions could not use the microphone. You can type your entry below.'
+                                    );
+                                }
+                            }, 350);
+                        } else if (mediaStream) {
+                            wantRecognitionRunning = false;
+                            setTranscriptHint(
+                                'Live captions could not access the microphone. Try closing other apps using the mic, or type below.'
+                            );
+                        }
+                        return;
+                    }
                     if (err === 'not-allowed') {
                         wantRecognitionRunning = false;
                         setTranscriptHint(
@@ -332,24 +367,6 @@
                     }
                     updateWordCountFromTranscript();
 
-                    /* Chromium ties SpeechRecognition to user activation: start() must run before any await in this handler. */
-                    let speechStartedOk = false;
-                    if (speechSupported) {
-                        attachSpeechRecognition();
-                        wantRecognitionRunning = true;
-                        try {
-                            recognition.start();
-                            speechStartedOk = true;
-                            setTranscriptHint(
-                                'Listening… speak clearly. Text will appear below as you talk.'
-                            );
-                        } catch (preMicErr) {
-                            console.warn('Speech start (before mic):', preMicErr);
-                            stopSpeechRecognition();
-                            setTranscriptHint('Connecting microphone, then starting live captions…');
-                        }
-                    }
-
                     mediaStream = await navigator.mediaDevices.getUserMedia({
                         audio: {
                             echoCancellation: true,
@@ -357,16 +374,38 @@
                         },
                     });
 
+                    /* Show transcript + hint while speech connects; otherwise errors are easy to miss (parent was hidden). */
+                    setPostPanelVisible(true);
+
+                    /*
+                     * Start Web Speech only after the mic is live. Starting earlier triggers `audio-capture`
+                     * on many Chromium builds (we used to ignore it and recognition never produced results).
+                     * Call start() before awaiting AudioContext.resume so we stay in the getUserMedia success
+                     * continuation where user activation is still available in Chrome.
+                     */
+                    speechCaptureRetries = 0;
+                    if (speechSupported) {
+                        attachSpeechRecognition();
+                        wantRecognitionRunning = true;
+                        try {
+                            recognition.start();
+                            setTranscriptHint(
+                                'Listening… speak clearly. Text will appear below as you talk.'
+                            );
+                        } catch (postMicErr) {
+                            console.error('SpeechRecognition.start failed:', postMicErr);
+                            stopSpeechRecognition();
+                            setTranscriptHint(
+                                'Could not start live captions. Type below, or try Chrome / Edge with microphone allowed.'
+                            );
+                        }
+                    }
+
                     const AC = window.AudioContext || window.webkitAudioContext;
                     if (AC) {
                         if (!audioContext) audioContext = new AC();
                         await audioContext.resume();
-                        try {
-                            visualInputStream = mediaStream.clone();
-                        } catch (_) {
-                            visualInputStream = mediaStream;
-                        }
-                        mediaSourceNode = audioContext.createMediaStreamSource(visualInputStream);
+                        mediaSourceNode = audioContext.createMediaStreamSource(mediaStream);
                         analyserNode = audioContext.createAnalyser();
                         analyserNode.fftSize = 256;
                         analyserNode.smoothingTimeConstant = 0.72;
@@ -374,23 +413,7 @@
                         freqData = new Uint8Array(analyserNode.frequencyBinCount);
                     }
 
-                    if (speechSupported && !speechStartedOk) {
-                        attachSpeechRecognition();
-                        wantRecognitionRunning = true;
-                        try {
-                            recognition.start();
-                            speechStartedOk = true;
-                            setTranscriptHint(
-                                'Listening… speak clearly. Text will appear below as you talk.'
-                            );
-                        } catch (postMicErr) {
-                            console.error(postMicErr);
-                            stopSpeechRecognition();
-                            setTranscriptHint(
-                                'Could not start live captions. Type below, or try Chrome / Edge with microphone allowed.'
-                            );
-                        }
-                    } else if (!speechSupported) {
+                    if (!speechSupported) {
                         mediaRecorder = new MediaRecorder(mediaStream);
                         audioChunks = [];
                         mediaRecorder.ondataavailable = function (event) {
@@ -403,7 +426,6 @@
                     isRecording = true;
                     startTime = Date.now();
                     updateTranscriptReadonly();
-                    setPostPanelVisible(true);
 
                     if (micIcon) micIcon.className = 'bi bi-stop-fill';
                     if (voiceCircle) voiceCircle.classList.add('recording');

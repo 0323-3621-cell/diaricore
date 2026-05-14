@@ -340,6 +340,7 @@ function clearProfileTotpSetupDigits() {
         d.disabled = false;
     });
     updateProfileTotpSetupCounter();
+    refreshTotpSetupStepperVerifyPhase();
 }
 
 function wireProfileTotpSetupDigits() {
@@ -351,6 +352,7 @@ function wireProfileTotpSetupDigits() {
             var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
             e.target.value = v;
             updateProfileTotpSetupCounter();
+            refreshTotpSetupStepperVerifyPhase();
             if (v && idx < digits.length - 1) {
                 digits[idx + 1].focus();
             }
@@ -360,6 +362,12 @@ function wireProfileTotpSetupDigits() {
                 digits[idx - 1].focus();
             }
         });
+        input.addEventListener('focusin', function () {
+            refreshTotpSetupStepperVerifyPhase();
+        });
+        input.addEventListener('focusout', function () {
+            setTimeout(refreshTotpSetupStepperVerifyPhase, 0);
+        });
         input.addEventListener('paste', function (e) {
             e.preventDefault();
             var raw = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
@@ -367,6 +375,7 @@ function wireProfileTotpSetupDigits() {
                 d.value = raw[i] || '';
             });
             updateProfileTotpSetupCounter();
+            refreshTotpSetupStepperVerifyPhase();
             var next = raw.length >= 6 ? 5 : raw.length;
             if (digits[next]) {
                 digits[next].focus();
@@ -386,8 +395,10 @@ function setProfileTotpSetupSubtitle(text) {
 function syncTotpSetupStepper(phase) {
     const root = document.getElementById('profileTotpSetupStepper');
     if (!root) return;
-    const scan = phase === 'scan';
-    root.dataset.phase = scan ? 'scan' : 'password';
+    var p = 'password';
+    if (phase === 'scan') p = 'scan';
+    else if (phase === 'verify') p = 'verify';
+    root.dataset.phase = p;
 
     function sel(step) {
         return root.querySelectorAll('[data-setup-step="' + step + '"]');
@@ -405,18 +416,40 @@ function syncTotpSetupStepper(phase) {
         if (line) line.classList.toggle('is-active', !!active);
     }
 
-    if (!scan) {
+    if (p === 'password') {
         setStepState(1, 'current');
         setStepState(2, 'upcoming');
         setStepState(3, 'upcoming');
         setLine(1, false);
         setLine(2, false);
-    } else {
+    } else if (p === 'scan') {
         setStepState(1, 'done');
         setStepState(2, 'current');
         setStepState(3, 'upcoming');
         setLine(1, true);
         setLine(2, false);
+    } else if (p === 'verify') {
+        setStepState(1, 'done');
+        setStepState(2, 'done');
+        setStepState(3, 'current');
+        setLine(1, true);
+        setLine(2, true);
+    }
+}
+
+/** While QR step is visible: highlight Verify when digits are focused or non-empty. */
+function refreshTotpSetupStepperVerifyPhase() {
+    const qrBlock = document.getElementById('profileTotpQrBlock');
+    if (!qrBlock || qrBlock.hidden) return;
+    const digits = getProfileTotpSetupDigitInputs();
+    if (!digits.length) return;
+    const code = getProfileTotpSetupConfirmCode();
+    const active = document.activeElement;
+    const focusedInDigits = digits.indexOf(active) !== -1;
+    if (focusedInDigits || code.length > 0) {
+        syncTotpSetupStepper('verify');
+    } else {
+        syncTotpSetupStepper('scan');
     }
 }
 

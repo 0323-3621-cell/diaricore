@@ -1266,6 +1266,10 @@ def admin_page():
 def api_check_availability():
     field = (request.args.get("field") or "").strip().lower()
     value = (request.args.get("value") or "").strip()
+    exclude_raw = (request.args.get("excludeUserId") or "").strip()
+    exclude_id = None
+    if exclude_raw.isdigit():
+        exclude_id = int(exclude_raw)
 
     if field not in ("nickname", "email"):
         return jsonify({"success": False, "error": "Invalid field."}), 400
@@ -1273,23 +1277,25 @@ def api_check_availability():
         return jsonify({"success": False, "error": "Value is required."}), 400
 
     if field == "nickname":
-        exists = db.get_user_by_nickname(value) is not None
+        row = db.get_user_by_nickname(value)
+        taken = row is not None and (exclude_id is None or int(row.get("id") or 0) != exclude_id)
         return jsonify(
             {
                 "success": True,
                 "field": "nickname",
-                "available": not exists,
-                "message": None if not exists else "Username already exists.",
+                "available": not taken,
+                "message": None if not taken else "Username already exists.",
             }
         )
 
-    exists = db.get_user_by_email(value) is not None
+    row = db.get_user_by_email(value)
+    taken = row is not None and (exclude_id is None or int(row.get("id") or 0) != exclude_id)
     return jsonify(
         {
             "success": True,
             "field": "signUpEmail",
-            "available": not exists,
-            "message": None if not exists else "Email already exists.",
+            "available": not taken,
+            "message": None if not taken else "Email already exists.",
         }
     )
 

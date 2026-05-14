@@ -193,6 +193,35 @@ function hydratePersonalInfoPanel() {
     if (emailEl) emailEl.value = user?.email != null ? String(user.email) : '';
     if (genderEl) genderEl.value = normalizeGenderForSelect(user?.gender);
     if (bdayEl) bdayEl.value = toDateInputValue(user?.birthday);
+
+    wireProfilePersonalLiveValidation();
+    PROFILE_PERSONAL_AVAIL_FIELD_IDS.forEach(function (fid) {
+        resetProfilePersonalAvailabilityField(fid);
+    });
+    [
+        'profileFieldFirstName',
+        'profileFieldLastName',
+        'profileFieldNickname',
+        'profileFieldEmail',
+        'profileFieldBirthday',
+    ].forEach(function (fid) {
+        var f = document.getElementById(fid);
+        if (f) {
+            f.classList.remove('error', 'success');
+            var err = document.getElementById(`${fid}-error`);
+            if (err) err.classList.remove('show');
+        }
+    });
+    [
+        'profileFieldFirstName',
+        'profileFieldLastName',
+        'profileFieldNickname',
+        'profileFieldEmail',
+        'profileFieldBirthday',
+    ].forEach(function (fid) {
+        validateProfilePersonalField(fid);
+    });
+    refreshProfilePersonalSaveButton();
 }
 
 function getProfileSecurityPersonal() {
@@ -207,6 +236,266 @@ function getProfileSecurityPersonal() {
         firstName: (firstEl && firstEl.value.trim()) || String(user.firstName || '').trim(),
         lastName: (lastEl && lastEl.value.trim()) || String(user.lastName || '').trim(),
     };
+}
+
+const PROFILE_PERSONAL_AVAIL_FIELD_IDS = ['profileFieldNickname', 'profileFieldEmail'];
+let profilePersonalAvailState = {
+    profileFieldNickname: { lastCheckedValue: '', isAvailable: null, pendingPromise: null },
+    profileFieldEmail: { lastCheckedValue: '', isAvailable: null, pendingPromise: null },
+};
+let profilePersonalAvailTimers = { profileFieldNickname: null, profileFieldEmail: null };
+let profilePersonalLiveValidationWired = false;
+
+function getProfilePersonalExcludeUserId() {
+    const u = getStoredDiariUser();
+    if (!u || u.id == null) return '';
+    const id = typeof u.id === 'number' ? u.id : parseInt(String(u.id), 10);
+    return id && !Number.isNaN(id) ? String(id) : '';
+}
+
+function resetProfilePersonalAvailabilityField(fieldInputId) {
+    if (!profilePersonalAvailState[fieldInputId]) return;
+    profilePersonalAvailState[fieldInputId].lastCheckedValue = '';
+    profilePersonalAvailState[fieldInputId].isAvailable = null;
+    profilePersonalAvailState[fieldInputId].pendingPromise = null;
+    if (profilePersonalAvailTimers[fieldInputId]) {
+        clearTimeout(profilePersonalAvailTimers[fieldInputId]);
+        profilePersonalAvailTimers[fieldInputId] = null;
+    }
+}
+
+function profilePersonalShowError(inputElement, message) {
+    if (!inputElement) return;
+    inputElement.classList.add('error');
+    inputElement.classList.remove('success');
+    const customError = document.getElementById(`${inputElement.id}-error`);
+    if (customError) {
+        customError.textContent = message;
+        customError.classList.add('show');
+    }
+}
+
+function profilePersonalShowSuccess(inputElement) {
+    if (!inputElement) return;
+    inputElement.classList.remove('error');
+    inputElement.classList.add('success');
+    const customError = document.getElementById(`${inputElement.id}-error`);
+    if (customError) customError.classList.remove('show');
+}
+
+function profilePersonalIsValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(String(email || '').trim());
+}
+
+function checkProfilePersonalAvailability(fieldInputId, value) {
+    if (!profilePersonalAvailState[fieldInputId]) return Promise.resolve(true);
+    const state = profilePersonalAvailState[fieldInputId];
+    if (state.lastCheckedValue === value && state.isAvailable !== null) {
+        const el = document.getElementById(fieldInputId);
+        if (el) {
+            if (state.isAvailable) {
+                profilePersonalShowSuccess(el);
+            } else {
+                profilePersonalShowError(
+                    el,
+                    fieldInputId === 'profileFieldNickname'
+                        ? 'Username already exists.'
+                        : 'Email already exists.'
+                );
+            }
+        }
+        return Promise.resolve(state.isAvailable);
+    }
+    if (state.lastCheckedValue === value && state.pendingPromise) return state.pendingPromise;
+
+    const apiField = fieldInputId === 'profileFieldNickname' ? 'nickname' : 'email';
+    state.lastCheckedValue = value;
+    state.isAvailable = null;
+    const ex = getProfilePersonalExcludeUserId();
+    const q =
+        `field=${encodeURIComponent(apiField)}&value=${encodeURIComponent(value)}` +
+        (ex ? `&excludeUserId=${encodeURIComponent(ex)}` : '');
+    state.pendingPromise = fetch(`/api/check-availability?${q}`)
+        .then(function (res) {
+            return res.json().then(function (data) {
+                return { ok: res.ok, data: data };
+            });
+        })
+        .then(function (_ref) {
+            var ok = _ref.ok;
+            var data = _ref.data;
+            if (!ok || !data.success) return true;
+            if (state.lastCheckedValue !== value) return true;
+            state.isAvailable = !!data.available;
+            var el = document.getElementById(fieldInputId);
+            if (!el) return state.isAvailable;
+            if (state.isAvailable) {
+                profilePersonalShowSuccess(el);
+                return true;
+            }
+            profilePersonalShowError(
+                el,
+                data.message ||
+                    (fieldInputId === 'profileFieldNickname'
+                        ? 'Username already exists.'
+                        : 'Email already exists.')
+            );
+            return false;
+        })
+        .catch(function () {
+            return true;
+        })
+        .finally(function () {
+            if (state.lastCheckedValue === value) state.pendingPromise = null;
+            refreshProfilePersonalSaveButton();
+        });
+    return state.pendingPromise;
+}
+
+function scheduleProfilePersonalAvailabilityCheck(fieldInputId, value) {
+    if (!profilePersonalAvailState[fieldInputId]) return;
+    if (profilePersonalAvailTimers[fieldInputId]) {
+        clearTimeout(profilePersonalAvailTimers[fieldInputId]);
+    }
+    profilePersonalAvailTimers[fieldInputId] = setTimeout(function () {
+        profilePersonalAvailTimers[fieldInputId] = null;
+        void checkProfilePersonalAvailability(fieldInputId, value);
+    }, 300);
+}
+
+function validateProfilePersonalField(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return true;
+    const value = (field.value || '').trim();
+
+    if (fieldId === 'profileFieldFirstName') {
+        if (!value) {
+            profilePersonalShowError(field, 'First name is required.');
+            return false;
+        }
+        profilePersonalShowSuccess(field);
+        return true;
+    }
+    if (fieldId === 'profileFieldLastName') {
+        if (!value) {
+            profilePersonalShowError(field, 'Last name is required.');
+            return false;
+        }
+        profilePersonalShowSuccess(field);
+        return true;
+    }
+    if (fieldId === 'profileFieldNickname') {
+        if (!value) {
+            resetProfilePersonalAvailabilityField('profileFieldNickname');
+            profilePersonalShowError(field, 'Username is required.');
+            return false;
+        }
+        if (value.length < 4 || value.length > 64) {
+            resetProfilePersonalAvailabilityField('profileFieldNickname');
+            profilePersonalShowError(field, 'Field must be between 4 and 64 characters long.');
+            return false;
+        }
+        var st = profilePersonalAvailState.profileFieldNickname;
+        if (st.lastCheckedValue === value && st.isAvailable === false) {
+            profilePersonalShowError(field, 'Username already exists.');
+            return false;
+        }
+        if (st.lastCheckedValue === value && st.isAvailable === true) {
+            profilePersonalShowSuccess(field);
+            return true;
+        }
+        scheduleProfilePersonalAvailabilityCheck('profileFieldNickname', value);
+        return true;
+    }
+    if (fieldId === 'profileFieldEmail') {
+        if (!value) {
+            resetProfilePersonalAvailabilityField('profileFieldEmail');
+            profilePersonalShowError(field, 'Email is required.');
+            return false;
+        }
+        if (!profilePersonalIsValidEmail(value)) {
+            resetProfilePersonalAvailabilityField('profileFieldEmail');
+            profilePersonalShowError(field, 'Please enter a valid email.');
+            return false;
+        }
+        var stE = profilePersonalAvailState.profileFieldEmail;
+        if (stE.lastCheckedValue === value && stE.isAvailable === false) {
+            profilePersonalShowError(field, 'Email already exists.');
+            return false;
+        }
+        if (stE.lastCheckedValue === value && stE.isAvailable === true) {
+            profilePersonalShowSuccess(field);
+            return true;
+        }
+        scheduleProfilePersonalAvailabilityCheck('profileFieldEmail', value);
+        return true;
+    }
+    if (fieldId === 'profileFieldBirthday') {
+        if (!value) {
+            profilePersonalShowError(field, 'Date of birth is required.');
+            return false;
+        }
+        profilePersonalShowSuccess(field);
+        return true;
+    }
+    return true;
+}
+
+function profilePersonalNickEmailConfirmedReady(fieldInputId, val) {
+    var st = profilePersonalAvailState[fieldInputId];
+    return st.lastCheckedValue === val && st.isAvailable === true;
+}
+
+function isProfilePersonalFormValid() {
+    if (!validateProfilePersonalField('profileFieldFirstName')) return false;
+    if (!validateProfilePersonalField('profileFieldLastName')) return false;
+    if (!validateProfilePersonalField('profileFieldBirthday')) return false;
+    if (!validateProfilePersonalField('profileFieldNickname')) return false;
+    if (!validateProfilePersonalField('profileFieldEmail')) return false;
+    var nickEl = document.getElementById('profileFieldNickname');
+    var emEl = document.getElementById('profileFieldEmail');
+    var nv = ((nickEl && nickEl.value) || '').trim();
+    var ev = ((emEl && emEl.value) || '').trim();
+    var nickLocal = nv.length >= 4 && nv.length <= 64;
+    var emLocal = !!ev && profilePersonalIsValidEmail(ev);
+    if (nickLocal && !profilePersonalNickEmailConfirmedReady('profileFieldNickname', nv)) return false;
+    if (emLocal && !profilePersonalNickEmailConfirmedReady('profileFieldEmail', ev)) return false;
+    return true;
+}
+
+function refreshProfilePersonalSaveButton() {
+    var btn = document.getElementById('profilePersonalSaveBtn');
+    if (!btn) return;
+    btn.disabled = !isProfilePersonalFormValid();
+}
+
+function wireProfilePersonalLiveValidation() {
+    if (profilePersonalLiveValidationWired) return;
+    profilePersonalLiveValidationWired = true;
+    [
+        'profileFieldFirstName',
+        'profileFieldLastName',
+        'profileFieldNickname',
+        'profileFieldEmail',
+        'profileFieldBirthday',
+    ].forEach(function (fid) {
+        var el = document.getElementById(fid);
+        if (!el) return;
+        var run = function () {
+            validateProfilePersonalField(fid);
+            refreshProfilePersonalSaveButton();
+        };
+        el.addEventListener('input', run);
+        el.addEventListener('change', run);
+        el.addEventListener('blur', run);
+    });
+    var genderEl = document.getElementById('profileFieldGender');
+    if (genderEl) {
+        genderEl.addEventListener('change', function () {
+            refreshProfilePersonalSaveButton();
+        });
+    }
 }
 
 function destroyProfileSecPasswordLive() {
@@ -873,14 +1162,14 @@ function wireProfileTotpModal() {
 }
 
 function savePersonalInfoForm() {
-    let user = null;
-    try {
-        user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-    } catch (_) {
-        user = null;
-    }
+    const user = getStoredDiariUser();
     if (!user || typeof user !== 'object') {
         showNotification('Sign in to save profile details.', 'warning');
+        return;
+    }
+
+    if (!isProfilePersonalFormValid()) {
+        showNotification('Please fix the highlighted fields before saving.', 'warning');
         return;
     }
 
@@ -891,27 +1180,28 @@ function savePersonalInfoForm() {
     const gender = (document.getElementById('profileFieldGender')?.value || '').trim();
     const bday = (document.getElementById('profileFieldBirthday')?.value || '').trim();
 
-    if (!nick) {
-        showNotification('Username is required.', 'warning');
-        return;
-    }
-    if (!email || !email.includes('@')) {
-        showNotification('Please enter a valid email address.', 'warning');
-        return;
-    }
+    void Promise.all([
+        checkProfilePersonalAvailability('profileFieldNickname', nick),
+        checkProfilePersonalAvailability('profileFieldEmail', email),
+    ]).then(function (results) {
+        if (!results[0] || !results[1]) {
+            refreshProfilePersonalSaveButton();
+            showNotification('Username or email is not available.', 'warning');
+            return;
+        }
+        user.firstName = first;
+        user.lastName = last;
+        user.nickname = nick;
+        user.email = email;
+        user.gender = gender || null;
+        user.birthday = bday || null;
 
-    user.firstName = first;
-    user.lastName = last;
-    user.nickname = nick;
-    user.email = email;
-    user.gender = gender || null;
-    user.birthday = bday || null;
-
-    localStorage.setItem('diariCoreUser', JSON.stringify(user));
-    document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
-    initializeProfileFromStorage();
-    showNotification('Profile updated.', 'success');
-    closeProfileSection();
+        localStorage.setItem('diariCoreUser', JSON.stringify(user));
+        document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
+        initializeProfileFromStorage();
+        showNotification('Profile updated.', 'success');
+        closeProfileSection();
+    });
 }
 
 function getProfilePwdChangePayload() {

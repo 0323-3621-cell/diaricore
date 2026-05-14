@@ -1147,6 +1147,53 @@ button.profile-account-card .btn-edit {
     gap: 1.3rem 1.25rem;
 }
 
+/* Personal info: inline validation (same pattern as login/register .custom-error) */
+.profile-account-detail-form .custom-error {
+    background: #fef2f2;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    line-height: 1.25;
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.22s ease, transform 0.22s ease, max-height 0.22s ease, margin-top 0.22s ease;
+    pointer-events: none;
+    overflow: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.profile-account-detail-form .custom-error.show {
+    opacity: 1;
+    max-height: 80px;
+    transform: translateY(0);
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+.profile-account-detail-form .profile-account-field__input.error,
+.profile-account-detail-form .profile-account-field__select.error {
+    border-color: #f59ca8;
+    box-shadow: 0 0 0 3px rgba(245, 156, 168, 0.16), inset 0 1px 2px rgba(47, 62, 54, 0.04);
+}
+
+.profile-account-detail-form .profile-account-field__input.success,
+.profile-account-detail-form .profile-account-field__select.success {
+    border-color: var(--success-color, #10b981);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12), inset 0 1px 2px rgba(47, 62, 54, 0.04);
+}
+
+html.theme-dark .profile-account-detail-form .custom-error {
+    background: rgba(185, 66, 82, 0.14);
+    border-color: rgba(248, 180, 191, 0.42);
+    color: #fecdd3;
+}
+
 .profile-account-field {
     display: flex;
     flex-direction: column;

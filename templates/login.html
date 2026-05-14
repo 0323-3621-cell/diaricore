@@ -202,29 +202,25 @@
                     </form>
 
                     <form id="resetPasswordForm" class="login-form login-reset-step__form" autocomplete="off" novalidate hidden>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <div class="input-wrapper" data-label="New Password">
-                                    <input id="resetNewPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
-                                    <span class="floating-label">New Password</span>
-                                    <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleNewPassword"></i>
-                                </div>
-                                <div class="custom-error" id="resetNewPassword-error">New password is required.</div>
+                        <div class="form-group">
+                            <div class="input-wrapper" data-label="New Password">
+                                <input id="resetNewPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
+                                <span class="floating-label">New Password</span>
+                                <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleNewPassword"></i>
                             </div>
-                            <div class="form-group">
-                                <div class="input-wrapper" data-label="Confirm New Password">
-                                    <input id="resetConfirmPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
-                                    <span class="floating-label">Confirm New Password</span>
-                                    <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleConfirmPassword"></i>
-                                </div>
-                                <div class="custom-error" id="resetConfirmPassword-error">Confirming new password is required.</div>
-                            </div>
+                            <div class="custom-error" id="resetNewPassword-error">New password is required.</div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group form-group--pwd-full">
-                                <div class="pwd-live" id="resetPwLive" hidden></div>
-                                <div class="custom-error" id="resetPassword-common-error"></div>
+                        <div class="form-group">
+                            <div class="input-wrapper" data-label="Confirm New Password">
+                                <input id="resetConfirmPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
+                                <span class="floating-label">Confirm New Password</span>
+                                <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleConfirmPassword"></i>
                             </div>
+                            <div class="custom-error" id="resetConfirmPassword-error">Confirming new password is required.</div>
+                        </div>
+                        <div class="form-group form-group--pwd-full">
+                            <div class="pwd-live" id="resetPwLive" hidden></div>
+                            <div class="custom-error" id="resetPassword-common-error"></div>
                         </div>
                         <button type="submit" class="btn-signin login-totp-step__verify" id="confirmResetBtn" disabled>Update Password</button>
                     </form>

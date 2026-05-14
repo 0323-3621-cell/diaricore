@@ -193,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function () {
     initFloatingLabels();
 
     const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
-    const signUpPwHint = document.getElementById('signUpPwHint');
     const signUpPwLive = document.getElementById('signUpPwLive');
     const signUpPwCommonErr = document.getElementById('signUpPassword-common-error');
     let signUpPwLiveInst = null;
@@ -201,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
         signUpPwLiveInst = window.DiariPasswordLive.attach({
             passwordEl: signUpPasswordInput,
             confirmEl: confirmPasswordInput,
-            hintEl: signUpPwHint,
+            hintEl: null,
             liveWrap: signUpPwLive,
             submitBtn: signUpSubmitBtn,
             commonErrorEl: signUpPwCommonErr,

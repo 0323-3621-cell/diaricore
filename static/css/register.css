@@ -22,3 +22,8 @@
 .form-section {
     opacity: 1 !important;
 }
+
+/* Space before primary button after full-width password checklist row */
+.signup-section .form-group.form-group--pwd-full {
+    margin-bottom: 0.5rem;
+}

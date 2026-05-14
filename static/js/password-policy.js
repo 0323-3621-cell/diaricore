@@ -279,7 +279,9 @@
         confirmEl.setAttribute('maxlength', String(MAX_LEN));
         passwordEl.addEventListener('input', onInput);
         passwordEl.addEventListener('blur', onBlurPassword);
-        passwordEl.addEventListener('focus', updateHint);
+        if (hintEl) {
+            passwordEl.addEventListener('focus', updateHint);
+        }
         confirmEl.addEventListener('input', onInput);
 
         opts.submitBtn.disabled = true;
@@ -290,7 +292,9 @@
             destroy: function () {
                 passwordEl.removeEventListener('input', onInput);
                 passwordEl.removeEventListener('blur', onBlurPassword);
-                passwordEl.removeEventListener('focus', updateHint);
+                if (hintEl) {
+                    passwordEl.removeEventListener('focus', updateHint);
+                }
                 confirmEl.removeEventListener('input', onInput);
             },
         };

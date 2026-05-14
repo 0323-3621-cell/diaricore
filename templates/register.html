@@ -85,28 +85,27 @@
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group form-group--pwd-full">
+                        <div class="form-group">
                             <div class="input-wrapper" data-label="Password">
                                 <input type="password" id="signUpPassword" name="register_password" class="form-input" placeholder=" " autocomplete="new-password" required maxlength="64">
                                 <span class="floating-label">Password</span>
                                 <i class="bi bi-eye-slash input-icon toggle-password" id="toggleSignUpPassword"></i>
                             </div>
-                            <p class="pwd-passphrase-hint" id="signUpPwHint">
-                                Tip: Passphrases like CoffeeRainyNight2026 are strong and easy to remember
-                            </p>
-                            <div class="pwd-live" id="signUpPwLive" hidden></div>
-                            <div class="custom-error" id="signUpPassword-common-error"></div>
                             <div class="custom-error" id="signUpPassword-error">Password is required.</div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group form-group--pwd-full">
+                        <div class="form-group">
                             <div class="input-wrapper" data-label="Confirm password">
                                 <input type="password" id="confirmPassword" name="register_confirm_password" class="form-input" placeholder=" " autocomplete="new-password" required maxlength="64">
                                 <span class="floating-label">Confirm password</span>
                                 <i class="bi bi-eye-slash input-icon toggle-password" id="toggleConfirmPassword"></i>
                             </div>
                             <div class="custom-error" id="confirmPassword-error">Password confirmation is required.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-group--pwd-full">
+                            <div class="pwd-live" id="signUpPwLive" hidden></div>
+                            <div class="custom-error" id="signUpPassword-common-error"></div>
                         </div>
                     </div>
 

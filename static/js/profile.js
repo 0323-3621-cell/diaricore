@@ -1335,7 +1335,7 @@ async function verifyProfilePasswordChangeOtp() {
         }
         const data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data.success) {
-            setProfilePwdChangeOtpError(data.error || 'Invalid or expired code.');
+            setProfilePwdChangeOtpError(data.error || 'Invalid or expired verification code.');
             return;
         }
         clearProfilePwdChangeOtpAutoVerify();

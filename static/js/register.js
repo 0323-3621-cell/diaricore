@@ -77,7 +77,20 @@ document.addEventListener('DOMContentLoaded', function () {
     function checkFieldAvailability(fieldId, value) {
         if (!availabilityState[fieldId]) return Promise.resolve(true);
         const state = availabilityState[fieldId];
-        if (state.lastCheckedValue === value && state.isAvailable !== null) return Promise.resolve(state.isAvailable);
+        if (state.lastCheckedValue === value && state.isAvailable !== null) {
+            const el = document.getElementById(fieldId);
+            if (el) {
+                if (state.isAvailable) {
+                    showSuccess(el);
+                } else {
+                    showError(
+                        el,
+                        fieldId === 'nickname' ? 'Username already exists.' : 'Email already exists.'
+                    );
+                }
+            }
+            return Promise.resolve(state.isAvailable);
+        }
         if (state.lastCheckedValue === value && state.pendingPromise) return state.pendingPromise;
         const apiField = fieldId === 'nickname' ? 'nickname' : 'email';
         state.lastCheckedValue = value;
@@ -124,16 +137,48 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!field) return true;
         const value = field.value.trim();
         if (fieldId === 'nickname') {
-            if (!value) { resetAvailability('nickname'); showError(field, 'Username is required.'); return false; }
-            if (value.length < 4 || value.length > 64) { resetAvailability('nickname'); showError(field, 'Field must be between 4 and 64 characters long.'); return false; }
-            showSuccess(field);
+            if (!value) {
+                resetAvailability('nickname');
+                showError(field, 'Username is required.');
+                return false;
+            }
+            if (value.length < 4 || value.length > 64) {
+                resetAvailability('nickname');
+                showError(field, 'Field must be between 4 and 64 characters long.');
+                return false;
+            }
+            const st = availabilityState.nickname;
+            if (st.lastCheckedValue === value && st.isAvailable === false) {
+                showError(field, 'Username already exists.');
+                return false;
+            }
+            if (st.lastCheckedValue === value && st.isAvailable === true) {
+                showSuccess(field);
+                return true;
+            }
             scheduleAvailabilityCheck('nickname', value);
             return true;
         }
         if (fieldId === 'signUpEmail') {
-            if (!value) { resetAvailability('signUpEmail'); showError(field, 'Email is required.'); return false; }
-            if (!isValidEmail(value)) { resetAvailability('signUpEmail'); showError(field, 'Please enter a valid email.'); return false; }
-            showSuccess(field);
+            if (!value) {
+                resetAvailability('signUpEmail');
+                showError(field, 'Email is required.');
+                return false;
+            }
+            if (!isValidEmail(value)) {
+                resetAvailability('signUpEmail');
+                showError(field, 'Please enter a valid email.');
+                return false;
+            }
+            const stE = availabilityState.signUpEmail;
+            if (stE.lastCheckedValue === value && stE.isAvailable === false) {
+                showError(field, 'Email already exists.');
+                return false;
+            }
+            if (stE.lastCheckedValue === value && stE.isAvailable === true) {
+                showSuccess(field);
+                return true;
+            }
             scheduleAvailabilityCheck('signUpEmail', value);
             return true;
         }
@@ -208,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
             commonErrorEl: signUpPwCommonErr,
             formRoot: signUpForm,
             getPersonal: getSignUpPersonal,
+            strengthMeterIgnoresPersonal: true,
         });
         ['nickname', 'signUpEmail', 'firstName', 'lastName'].forEach((fid) => {
             const el = document.getElementById(fid);

@@ -796,6 +796,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const state = availabilityState[fieldId];
 
         if (state.lastCheckedValue === value && state.isAvailable !== null) {
+            const el = document.getElementById(fieldId);
+            if (el) {
+                if (state.isAvailable) {
+                    showSuccess(el);
+                } else {
+                    showError(
+                        el,
+                        fieldId === 'nickname' ? 'Username already exists.' : 'Email already exists.'
+                    );
+                }
+            }
             return Promise.resolve(state.isAvailable);
         }
         if (state.lastCheckedValue === value && state.pendingPromise) {
@@ -906,6 +917,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 resetAvailability('nickname');
                 return showError(field, 'Field must be between 4 and 64 characters long.'), false;
             }
+            const st = availabilityState.nickname;
+            if (st.lastCheckedValue === value && st.isAvailable === false) {
+                showError(field, 'Username already exists.');
+                return false;
+            }
+            if (st.lastCheckedValue === value && st.isAvailable === true) {
+                showSuccess(field);
+                return true;
+            }
             scheduleAvailabilityCheck('nickname', value);
             return true;
         }
@@ -918,6 +938,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isValidEmail(value)) {
                 resetAvailability('signUpEmail');
                 return showError(field, 'Please enter a valid email.'), false;
+            }
+            const stE = availabilityState.signUpEmail;
+            if (stE.lastCheckedValue === value && stE.isAvailable === false) {
+                showError(field, 'Email already exists.');
+                return false;
+            }
+            if (stE.lastCheckedValue === value && stE.isAvailable === true) {
+                showSuccess(field);
+                return true;
             }
             scheduleAvailabilityCheck('signUpEmail', value);
             return true;

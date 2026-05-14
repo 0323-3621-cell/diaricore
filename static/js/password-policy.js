@@ -99,6 +99,39 @@
         return c;
     }
 
+    /**
+     * Score 0–7: structural password rules + match only (excludes noPersonal).
+     * Use for the strength meter so typing name/email does not move the bar.
+     */
+    function getStrengthScoreMeterOnly(password, confirm) {
+        var p = password != null ? String(password) : '';
+        var state = {
+            len12: p.length >= MIN_LEN,
+            upper: /[A-Z]/.test(p),
+            lower: /[a-z]/.test(p),
+            digit: /[0-9]/.test(p),
+            special: hasSpecialChar(p),
+            noSpace: p.indexOf(' ') === -1,
+        };
+        var c = 0;
+        if (state.len12) c++;
+        if (state.upper) c++;
+        if (state.lower) c++;
+        if (state.digit) c++;
+        if (state.special) c++;
+        if (state.noSpace) c++;
+        if (passwordsMatch(password, confirm)) c += 1;
+        return c;
+    }
+
+    /** Bands for getStrengthScoreMeterOnly (0–7 scale). */
+    function getStrengthBandMeter(score) {
+        if (score <= 2) return { key: 'weak', label: 'Weak', color: '#c75c5c' };
+        if (score <= 4) return { key: 'fair', label: 'Fair', color: '#d4a017' };
+        if (score <= 5) return { key: 'good', label: 'Good', color: '#9db85a' };
+        return { key: 'strong', label: 'Strong', color: '#4a7c59' };
+    }
+
     function getStrengthBand(score) {
         if (score <= 3) return { key: 'weak', label: 'Weak', color: '#c75c5c' };
         if (score <= 6) return { key: 'fair', label: 'Fair', color: '#d4a017' };
@@ -129,7 +162,9 @@
         getChecklistState: getChecklistState,
         countChecklistPassed: countChecklistPassed,
         getStrengthScore: getStrengthScore,
+        getStrengthScoreMeterOnly: getStrengthScoreMeterOnly,
         getStrengthBand: getStrengthBand,
+        getStrengthBandMeter: getStrengthBandMeter,
         isCommonPassword: isCommonPassword,
         passwordsMatch: passwordsMatch,
         allChecklistPassed: allChecklistPassed,
@@ -161,6 +196,8 @@
         };
         var commonErrorEl = opts.commonErrorEl || null;
         var formRoot = opts.formRoot || null;
+        var strengthMeterIgnoresPersonal = !!opts.strengthMeterIgnoresPersonal;
+        var strengthScoreMax = strengthMeterIgnoresPersonal ? 7 : 8;
 
         var rows = {};
         if (liveWrap && !liveWrap.querySelector('.pwd-checklist')) {
@@ -214,9 +251,9 @@
         }
 
         function updateStrength(score) {
-            var band = P.getStrengthBand(score);
+            var band = strengthMeterIgnoresPersonal ? P.getStrengthBandMeter(score) : P.getStrengthBand(score);
             if (fillEl) {
-                fillEl.style.width = Math.min(100, (score / 8) * 100) + '%';
+                fillEl.style.width = Math.min(100, (score / strengthScoreMax) * 100) + '%';
                 fillEl.style.backgroundColor = band.color;
             }
             if (labelEl) {
@@ -224,6 +261,7 @@
                 labelEl.style.color = band.color;
             }
             if (trackEl) {
+                trackEl.setAttribute('aria-valuemax', String(strengthScoreMax));
                 trackEl.setAttribute('aria-valuenow', String(score));
                 trackEl.setAttribute('aria-valuetext', band.label);
             }
@@ -246,7 +284,9 @@
             updateHint();
             var personal = getPersonal();
             var state = P.getChecklistState(p, personal);
-            var score = P.getStrengthScore(p, c, personal);
+            var score = strengthMeterIgnoresPersonal
+                ? P.getStrengthScoreMeterOnly(p, c)
+                : P.getStrengthScore(p, c, personal);
             updateRows(state);
             updateStrength(score);
             var ready = P.isPasswordSubmitReady(p, c, personal);

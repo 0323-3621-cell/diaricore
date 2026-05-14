@@ -1146,42 +1146,6 @@ body {
     margin-bottom: 0.75rem;
 }
 
-/* Reset password: minimal vertical gap between New and Confirm (collapsed errors must not reserve space) */
-#resetPasswordForm > .form-group:first-of-type {
-    margin-bottom: 0;
-}
-
-#resetPasswordForm > .form-group:nth-of-type(2) {
-    margin-top: -0.35rem;
-    margin-bottom: 0.65rem;
-}
-
-#resetPasswordForm .form-group > .custom-error:not(.show) {
-    display: none;
-}
-
-#resetPasswordForm .form-group > .custom-error.show {
-    display: block;
-    margin-top: 4px;
-    margin-bottom: 6px;
-}
-
-#resetPasswordForm #resetPassword-common-error:not(.show) {
-    display: none;
-}
-
-#resetPasswordForm #resetPassword-common-error.show {
-    display: block;
-}
-
-#resetPasswordForm .pwd-live {
-    margin-top: 0.2rem;
-}
-
-#resetPasswordForm .pwd-live[hidden] {
-    display: none !important;
-}
-
 .btn-signin.is-loading {
     opacity: 0.92;
     pointer-events: none;

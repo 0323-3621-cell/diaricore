@@ -1,8 +1,9 @@
 """
-Hugging Face Inference API — automatic speech recognition (Whisper).
+Hugging Face automatic speech recognition (Whisper).
 
-Used when the browser Web Speech API is blocked (e.g. Brave Shields) but the
-client still captured audio with MediaRecorder.
+Uses huggingface_hub.InferenceClient so HF can route to a provider that actually
+hosts the model. Raw POSTs to hf-inference only work for models that provider
+exposes — e.g. openai/whisper-base is not on hf-inference (HTTP 400).
 """
 
 from __future__ import annotations
@@ -11,27 +12,9 @@ import os
 import time
 from typing import Optional, Tuple
 
-import httpx
-
 HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "").strip()
-# Small model for faster cold starts on HF serverless; override via env if needed.
-HF_SPEECH_MODEL = os.environ.get("HF_SPEECH_MODEL", "openai/whisper-base").strip()
-# Must match hf_nlp.py — legacy api-inference.huggingface.co returns 404.
-HF_INFERENCE_ROOT = os.environ.get("HF_INFERENCE_ROOT", "https://router.huggingface.co/hf-inference").rstrip("/")
-HF_ASR_URL = f"{HF_INFERENCE_ROOT}/models/{HF_SPEECH_MODEL}"
-
-
-def _format_hf_error(status_code: int, detail: str) -> str:
-    """Avoid dumping full HTML error pages into the UI."""
-    d = (detail or "").strip()
-    if "<!DOCTYPE" in d or "<html" in d.lower():
-        if "Cannot POST" in d:
-            return (
-                f"Transcription HTTP {status_code}: Hugging Face inference URL is wrong or deprecated. "
-                "Deploy the latest app (uses router.huggingface.co/hf-inference)."
-            )
-        return f"Transcription HTTP {status_code}: unexpected HTML response from inference service."
-    return f"Transcription HTTP {status_code}: {d}"[:600]
+# openai/whisper-large-v3 is on hf-inference; whisper-base is not deployed there.
+HF_SPEECH_MODEL = os.environ.get("HF_SPEECH_MODEL", "openai/whisper-large-v3").strip()
 
 
 def transcribe_upload_bytes(data: bytes, content_type: str) -> Tuple[Optional[str], Optional[str]]:
@@ -46,54 +29,41 @@ def transcribe_upload_bytes(data: bytes, content_type: str) -> Tuple[Optional[st
             "Server voice transcription is not configured (set HF_API_TOKEN on the host).",
         )
 
-    ct = (content_type or "application/octet-stream").split(";")[0].strip().lower()
-    if ct in ("", "application/octet-stream"):
-        ct = "audio/webm"
+    try:
+        from huggingface_hub import InferenceClient
+        from huggingface_hub.errors import HfHubHTTPError
+    except ImportError:
+        return (
+            None,
+            "Server is missing the huggingface_hub package; redeploy with updated requirements.txt.",
+        )
 
-    headers = {
-        "Authorization": f"Bearer {HF_API_TOKEN}",
-        "Content-Type": ct,
-    }
+    # content_type reserved for future format-specific handling
+    _ = content_type
+
+    client = InferenceClient(token=HF_API_TOKEN)
+    model_id = HF_SPEECH_MODEL or "openai/whisper-large-v3"
 
     last_err: Optional[str] = None
     for attempt in range(3):
         try:
-            with httpx.Client(timeout=120.0) as client:
-                r = client.post(HF_ASR_URL, headers=headers, content=data)
-        except httpx.RequestError as exc:
-            last_err = f"Network error calling transcription service: {exc}"
-            time.sleep(1.5 * (attempt + 1))
-            continue
-
-        if r.status_code == 503:
-            # Model cold start on HF — brief backoff then retry.
-            time.sleep(min(10.0, 2.0 * (attempt + 1)))
-            last_err = "Transcription service is warming up; try again in a moment."
-            continue
-
-        if r.status_code != 200:
-            try:
-                payload = r.json()
-                detail = payload.get("error") or payload.get("message") or r.text
-            except Exception:
-                detail = r.text or r.reason_phrase
-            last_err = _format_hf_error(r.status_code, str(detail))
-            break
-
-        try:
-            payload = r.json()
-        except Exception:
-            last_err = "Unexpected response from transcription service."
-            break
-
-        if isinstance(payload, dict):
-            if "error" in payload and not payload.get("text"):
-                last_err = str(payload.get("error") or "Transcription error")[:500]
-                break
-            text = payload.get("text")
+            out = client.automatic_speech_recognition(data, model=model_id)
+            text = getattr(out, "text", None)
             if isinstance(text, str) and text.strip():
                 return text.strip(), None
-        last_err = "Transcription returned no text."
-        break
+            last_err = "Transcription returned no text."
+            break
+        except HfHubHTTPError as exc:
+            status = getattr(getattr(exc, "response", None), "status_code", None) or 0
+            detail = str(exc).strip() or getattr(exc, "message", "") or "HTTP error"
+            if status == 503 or "503" in detail or "loading" in detail.lower():
+                time.sleep(min(10.0, 2.0 * (attempt + 1)))
+                last_err = "Transcription service is warming up; try again in a moment."
+                continue
+            last_err = f"Transcription HTTP {status or '?'}: {detail}"[:650]
+            break
+        except Exception as exc:
+            last_err = f"Transcription error: {exc}"[:650]
+            break
 
     return None, last_err or "Transcription failed."

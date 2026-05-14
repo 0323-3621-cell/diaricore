@@ -2,5 +2,6 @@ flask>=3.0.0
 gunicorn>=21.0.0
 psycopg2-binary>=2.9.9
 httpx>=0.28.0
+huggingface_hub>=0.28.0
 pyotp>=2.9.0
 segno>=1.6.0

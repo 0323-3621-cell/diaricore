@@ -1002,6 +1002,24 @@ def delete_login_totp_challenge(token: str) -> None:
         conn.close()
 
 
+def clear_login_totp_challenges_for_user(user_id: int) -> None:
+    """Remove any in-progress login TOTP challenges for this user (e.g. after admin 2FA reset)."""
+    if not isinstance(user_id, int) or user_id <= 0:
+        return
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM login_totp_challenges WHERE user_id = %s", (user_id,))
+        else:
+            cur.execute("DELETE FROM login_totp_challenges WHERE user_id = ?", (user_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
 def set_totp_setup_pending(user_id: int, secret: str) -> bool:
     if not isinstance(user_id, int) or user_id <= 0 or not secret:
         return False

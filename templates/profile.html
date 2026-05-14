@@ -525,9 +525,6 @@
                         <span class="profile-totp-setup-stepper__label" data-setup-step="3">Verify</span>
                     </div>
                 </div>
-                <p class="profile-totp-setup-panel__verify-hint" id="profileTotpSetupVerifyHint" hidden>
-                    <strong>Verify</strong> — enter the 6-digit code from your app below, then tap Enable 2FA.
-                </p>
                 <div id="profileTotpSetupPasswordStep">
                     <div class="profile-totp-setup-panel__info" role="status">
                         <i class="bi bi-info-circle-fill profile-totp-setup-panel__info-icon" aria-hidden="true"></i>
@@ -542,29 +539,38 @@
                         </span>
                     </label>
                 </div>
-                <div id="profileTotpQrBlock" class="profile-totp-modal__qr-block" hidden data-totp-secret="">
-                    <div class="profile-totp-setup-panel__qr-card">
-                        <p class="profile-totp-setup-panel__qr-lead">Scan this QR code with Google Authenticator or any TOTP app. You can also copy the secret key and enter it manually.</p>
-                        <div class="profile-totp-modal__qr-wrap">
-                            <img id="profileTotpQrImg" class="profile-totp-modal__qr-img" alt="Authenticator QR code" width="200" height="200">
+                <div id="profileTotpQrBlock" class="profile-totp-modal__qr-block" hidden data-totp-secret="" data-qr-ui="scan">
+                    <div id="profileTotpScanPhase" class="profile-totp-setup-panel__scan-phase">
+                        <div class="profile-totp-setup-panel__qr-card">
+                            <p class="profile-totp-setup-panel__qr-lead">Scan this QR code with Google Authenticator or any TOTP app. You can also copy the secret key and enter it manually.</p>
+                            <div class="profile-totp-modal__qr-wrap">
+                                <img id="profileTotpQrImg" class="profile-totp-modal__qr-img" alt="Authenticator QR code" width="200" height="200">
+                            </div>
+                            <button type="button" class="profile-totp-setup-panel__copy-secret" id="profileTotpCopySecretBtn">
+                                <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                Copy secret key
+                            </button>
                         </div>
-                        <button type="button" class="profile-totp-setup-panel__copy-secret" id="profileTotpCopySecretBtn">
-                            <i class="bi bi-clipboard" aria-hidden="true"></i>
-                            Copy secret key
-                        </button>
+                        <p class="profile-totp-setup-panel__scan-footnote">We can’t tell from the browser when the QR was scanned. When DiariCore appears in your app, use <strong>Continue to verification</strong> below.</p>
                     </div>
-                    <div class="profile-totp-setup-panel__code-block">
-                        <span class="profile-account-field__label profile-totp-setup-panel__code-label">Verification code</span>
-                        <div class="profile-totp-digits profile-totp-setup-panel__digits" id="profileTotpSetupDigits" role="group" aria-label="6-digit verification code">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="1" aria-label="Digit 2 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="2" aria-label="Digit 3 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="3" aria-label="Digit 4 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="4" aria-label="Digit 5 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="5" aria-label="Digit 6 of 6" autocomplete="off">
+                    <div id="profileTotpVerifyPhase" class="profile-totp-setup-panel__verify-phase" hidden>
+                        <button type="button" class="profile-totp-setup-panel__show-qr-again" id="profileTotpVerifyShowQrAgain">← Show QR code again</button>
+                        <p class="profile-totp-setup-panel__verify-hint" id="profileTotpSetupVerifyHint">
+                            <strong>Verify</strong> — enter the 6-digit code from your app below, then tap Enable 2FA.
+                        </p>
+                        <div class="profile-totp-setup-panel__code-block">
+                            <span class="profile-account-field__label profile-totp-setup-panel__code-label">Verification code</span>
+                            <div class="profile-totp-digits profile-totp-setup-panel__digits" id="profileTotpSetupDigits" role="group" aria-label="6-digit verification code">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="1" aria-label="Digit 2 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="2" aria-label="Digit 3 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="3" aria-label="Digit 4 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="4" aria-label="Digit 5 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="5" aria-label="Digit 6 of 6" autocomplete="off">
+                            </div>
+                            <span class="profile-totp-setup-panel__counter" id="profileTotpSetupCounter" aria-live="polite">0/6</span>
+                            <p class="profile-totp-setup-panel__code-hint">Enter the code shown in your authenticator app.</p>
                         </div>
-                        <span class="profile-totp-setup-panel__counter" id="profileTotpSetupCounter" aria-live="polite">0/6</span>
-                        <p class="profile-totp-setup-panel__code-hint">Enter the code shown in your authenticator app.</p>
                     </div>
                 </div>
             </div>

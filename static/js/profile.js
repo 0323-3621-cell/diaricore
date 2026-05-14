@@ -437,28 +437,65 @@ function syncTotpSetupStepper(phase) {
     }
 
     const setupPanel = document.getElementById('profileTotpModalSetup');
-    const qrBlock = document.getElementById('profileTotpQrBlock');
-    const hint = document.getElementById('profileTotpSetupVerifyHint');
     if (setupPanel) setupPanel.dataset.totpStepperPhase = p;
-    if (hint) {
-        hint.hidden = !(p === 'verify' && qrBlock && !qrBlock.hidden);
-    }
 }
 
-/** While QR step is visible: highlight Verify when digits are focused or non-empty. */
+function setProfileTotpQrUiPhase(phase) {
+    const qr = document.getElementById('profileTotpQrBlock');
+    const scanEl = document.getElementById('profileTotpScanPhase');
+    const verEl = document.getElementById('profileTotpVerifyPhase');
+    if (!qr) return;
+    var v = phase === 'verify' ? 'verify' : 'scan';
+    var prev = qr.dataset.qrUi || 'scan';
+    qr.dataset.qrUi = v;
+    if (scanEl) scanEl.hidden = v === 'verify';
+    if (verEl) verEl.hidden = v !== 'verify';
+    if (v === 'verify') {
+        syncTotpSetupStepper('verify');
+        if (prev === 'scan') {
+            clearProfileTotpSetupDigits();
+        }
+        var digits = getProfileTotpSetupDigitInputs();
+        setTimeout(function () {
+            if (digits[0]) digits[0].focus();
+        }, 50);
+    } else {
+        syncTotpSetupStepper('scan');
+        if (prev === 'verify') {
+            clearProfileTotpSetupDigits();
+        }
+    }
+    applyTotpSetupPrimaryForQrUi();
+}
+
+/** Footer primary: scan phase → continue; verify phase → Enable 2FA. */
+function applyTotpSetupPrimaryForQrUi() {
+    const setup = document.getElementById('profileTotpModalSetup');
+    const qr = document.getElementById('profileTotpQrBlock');
+    const primary = document.getElementById('profileTotpModalPrimary');
+    if (!setup || setup.hidden || !qr || qr.hidden || !primary) return;
+    if (primary.classList.contains('is-loading')) return;
+    var ui = qr.dataset.qrUi || 'scan';
+    if (ui === 'scan') {
+        primary.classList.remove('profile-totp-modal__btn--danger');
+        primary.disabled = false;
+        primary.innerHTML =
+            '<i class="bi bi-arrow-right-circle" aria-hidden="true"></i> Continue to verification';
+        primary.dataset.totpAction = 'setup-to-verify';
+        return;
+    }
+    setPrimaryEnableTwoFaButton();
+}
+
+/** While QR step is visible: scan UI keeps step 2; verify UI keeps step 3. */
 function refreshTotpSetupStepperVerifyPhase() {
     const qrBlock = document.getElementById('profileTotpQrBlock');
     if (!qrBlock || qrBlock.hidden) return;
-    const digits = getProfileTotpSetupDigitInputs();
-    if (!digits.length) return;
-    const code = getProfileTotpSetupConfirmCode();
-    const active = document.activeElement;
-    const focusedInDigits = digits.indexOf(active) !== -1;
-    if (focusedInDigits || code.length > 0) {
-        syncTotpSetupStepper('verify');
-    } else {
+    if ((qrBlock.dataset.qrUi || 'scan') === 'scan') {
         syncTotpSetupStepper('scan');
+        return;
     }
+    syncTotpSetupStepper('verify');
 }
 
 function setPrimaryShowQrCodeButton() {
@@ -504,6 +541,11 @@ function resetTotpModal() {
     if (disable) disable.hidden = true;
     if (qrBlock) qrBlock.hidden = true;
     if (qrBlock) qrBlock.removeAttribute('data-totp-secret');
+    if (qrBlock) qrBlock.dataset.qrUi = 'scan';
+    const scanPhReset = document.getElementById('profileTotpScanPhase');
+    const verPhReset = document.getElementById('profileTotpVerifyPhase');
+    if (scanPhReset) scanPhReset.hidden = false;
+    if (verPhReset) verPhReset.hidden = true;
     const qrImg = document.getElementById('profileTotpQrImg');
     if (qrImg) qrImg.removeAttribute('src');
     if (passStep) passStep.hidden = false;
@@ -542,6 +584,11 @@ function openTotpSetupModal() {
     if (title) title.textContent = 'Set up authenticator';
     if (qrBlock) qrBlock.hidden = true;
     if (qrBlock) qrBlock.removeAttribute('data-totp-secret');
+    if (qrBlock) qrBlock.dataset.qrUi = 'scan';
+    const scanPhOpen = document.getElementById('profileTotpScanPhase');
+    const verPhOpen = document.getElementById('profileTotpVerifyPhase');
+    if (scanPhOpen) scanPhOpen.hidden = false;
+    if (verPhOpen) verPhOpen.hidden = true;
     const img = document.getElementById('profileTotpQrImg');
     if (img) img.removeAttribute('src');
     const pw = document.getElementById('profileTotpSetupPassword');
@@ -626,6 +673,13 @@ function wireProfileTotpModal() {
         });
     }
 
+    const verifyShowQrAgain = document.getElementById('profileTotpVerifyShowQrAgain');
+    if (verifyShowQrAgain) {
+        verifyShowQrAgain.addEventListener('click', function () {
+            setProfileTotpQrUiPhase('scan');
+        });
+    }
+
     if (primary) {
         primary.addEventListener('click', function () {
             const user = getStoredDiariUser();
@@ -636,6 +690,11 @@ function wireProfileTotpModal() {
                 return;
             }
             const action = primary.dataset.totpAction || '';
+
+            if (action === 'setup-to-verify') {
+                setProfileTotpQrUiPhase('verify');
+                return;
+            }
 
             if (action === 'setup-qr') {
                 const password = (document.getElementById('profileTotpSetupPassword')?.value || '').trim();
@@ -675,12 +734,9 @@ function wireProfileTotpModal() {
                                 qrBlock.removeAttribute('data-totp-secret');
                             }
                         }
-                        syncTotpSetupStepper('scan');
                         setProfileTotpSetupSubtitle(PROFILE_TOTP_SETUP_SUBTITLE_SCAN);
                         clearProfileTotpSetupDigits();
-                        setPrimaryEnableTwoFaButton();
-                        const digits = getProfileTotpSetupDigitInputs();
-                        if (digits[0]) digits[0].focus();
+                        setProfileTotpQrUiPhase('scan');
                     })
                     .catch(function () {
                         setPrimaryShowQrCodeButton();

@@ -1336,7 +1336,7 @@ function showNotification(message, type = 'info') {
         align-items: center;
         gap: 0.75rem;
         font-weight: 500;
-        z-index: 10000;
+        z-index: 13000;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         transform: translateX(100%);
         transition: transform 0.3s ease;

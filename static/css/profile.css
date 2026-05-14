@@ -2586,7 +2586,8 @@ body.profile-totp-modal-open {
     position: relative;
     z-index: 1;
     width: min(26rem, 100%);
-    max-height: min(90vh, 36rem);
+    /* Taller cap so setup phase 2 (QR + digits + actions) fits without inner scroll on common viewports */
+    max-height: min(98vh, 64rem);
     overflow: auto;
     background: var(--card-background);
     border-radius: 16px;

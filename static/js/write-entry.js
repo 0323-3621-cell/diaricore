@@ -221,10 +221,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         badge.textContent = formatPhotoCount(count);
     }
 
-    /** 2×3 grid of square thumbs — lock viewport height in px (CSS % in calc was resolving wrong). */
-    const WRITE_GALLERY_ROWS = 3;
-    const WRITE_GALLERY_COLS = 2;
-    const WRITE_GALLERY_MAX_VISIBLE = WRITE_GALLERY_ROWS * WRITE_GALLERY_COLS;
+    function isWriteEntryMobileLayout() {
+        return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    }
+
+    /** Desktop: 2×3 visible cells; mobile: 2×2 (4) then scroll. */
+    function getWriteGalleryGridLayout() {
+        if (isWriteEntryMobileLayout()) {
+            return { rows: 2, cols: 2, maxVisible: 4 };
+        }
+        return { rows: 3, cols: 2, maxVisible: 6 };
+    }
+
     let writeGalleryResizeObserver = null;
 
     function syncWriteEntryGalleryViewport() {
@@ -238,6 +246,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
+        const { rows, cols, maxVisible } = getWriteGalleryGridLayout();
         const cs = getComputedStyle(scrollEl);
         const padL = parseFloat(cs.paddingLeft) || 0;
         const padR = parseFloat(cs.paddingRight) || 0;
@@ -250,12 +259,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             gapPx = parseFloat(gcs.columnGap) || parseFloat(gcs.gap) || gapPx;
         }
 
-        const cell = Math.max(0, (innerW - gapPx) / 2);
-        const viewportH = WRITE_GALLERY_ROWS * cell + (WRITE_GALLERY_ROWS - 1) * gapPx;
+        const cell = Math.max(0, (innerW - (cols - 1) * gapPx) / cols);
+        const viewportH = rows * cell + (rows - 1) * gapPx;
         scrollEl.style.setProperty('--gallery-viewport-px', `${Math.round(viewportH * 100) / 100}px`);
 
         const count = galleryEl.querySelectorAll('.entry-gallery-item').length;
-        scrollEl.classList.toggle('entry-gallery-scroll--overflow', count > WRITE_GALLERY_MAX_VISIBLE);
+        scrollEl.classList.toggle('entry-gallery-scroll--overflow', count > maxVisible);
     }
 
     function initWriteGalleryViewportObserver() {
@@ -318,7 +327,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         const gal = document.querySelector('.entry-gallery-pane');
         if (gal) {
             const titleH = titleEl ? titleEl.offsetHeight + 10 : 0;
-            const minPx = Math.max(96, gal.offsetHeight - titleH);
+            let minPx;
+            if (isWriteEntryMobileLayout()) {
+                minPx = Math.max(200, Math.min(420, Math.round(window.innerHeight * 0.32)));
+            } else {
+                minPx = Math.max(96, gal.offsetHeight - titleH);
+            }
             jt.style.minHeight = `${Math.round(minPx)}px`;
         }
         jt.style.height = 'auto';
@@ -1389,7 +1403,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         ro.observe(entrySplitLayout);
     }
     window.addEventListener('resize', () => {
-        window.requestAnimationFrame(() => autoAdjustJournalTextarea());
+        window.requestAnimationFrame(() => {
+            syncWriteEntryGalleryViewport();
+            autoAdjustJournalTextarea();
+        });
     });
     journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
 
@@ -1443,11 +1460,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         clearTimeout(journalDateTimeBlurHideTimer);
         journalDateTimeBlurHideTimer = null;
         clampFutureJournalDateTimeLocal();
-        if (journalDateTimeInput) journalDateTimeInput.style.display = 'none';
+        if (journalDateTimeInput) {
+            journalDateTimeInput.classList.remove('journal-datetime-input--open');
+            journalDateTimeInput.style.display = 'none';
+        }
     }
 
     function journalDateTimeEditorIsOpen() {
-        return journalDateTimeInput && journalDateTimeInput.style.display === 'inline-block';
+        return Boolean(journalDateTimeInput && journalDateTimeInput.classList.contains('journal-datetime-input--open'));
     }
 
     if (journalDateTimeInput) {
@@ -1475,7 +1495,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             pickerOpenedAtLocalStr = toLocalInputValue(safeBase);
             journalDateTimeBaselineLocal = pickerOpenedAtLocalStr;
             journalDateTimeInput.value = journalDateTimeBaselineLocal;
-            journalDateTimeInput.style.display = 'inline-block';
+            journalDateTimeInput.classList.add('journal-datetime-input--open');
+            if (isWriteEntryMobileLayout()) {
+                journalDateTimeInput.style.removeProperty('display');
+            } else {
+                journalDateTimeInput.style.display = 'inline-block';
+            }
             journalDateTimeInput.focus();
         });
 

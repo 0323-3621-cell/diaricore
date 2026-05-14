@@ -244,7 +244,6 @@ function initProfileSecPasswordLive() {
         commonErrorEl: commonErr,
         formRoot: formRoot,
         getPersonal: getProfileSecurityPersonal,
-        alwaysShowLive: true,
     });
 }
 

@@ -161,7 +161,6 @@
         };
         var commonErrorEl = opts.commonErrorEl || null;
         var formRoot = opts.formRoot || null;
-        var alwaysShowLive = !!opts.alwaysShowLive;
 
         var rows = {};
         if (liveWrap && !liveWrap.querySelector('.pwd-checklist')) {
@@ -251,8 +250,7 @@
             updateRows(state);
             updateStrength(score);
             var ready = P.isPasswordSubmitReady(p, c, personal);
-            if (liveWrap) liveWrap.hidden = p.length === 0 || (!alwaysShowLive && ready);
-            if (commonErrorEl && ready) commonErrorEl.classList.remove('show');
+            if (liveWrap) liveWrap.hidden = p.length === 0;
             opts.submitBtn.disabled = !ready;
             return { state: state, score: score, ready: ready };
         }

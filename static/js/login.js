@@ -1736,7 +1736,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     lastName: '',
                 };
             },
-            alwaysShowLive: true,
         });
     }
 

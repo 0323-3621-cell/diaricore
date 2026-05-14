@@ -64,7 +64,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetTitle = document.getElementById('resetTitle');
     const resetToggleNewPassword = document.getElementById('resetToggleNewPassword');
     const resetToggleConfirmPassword = document.getElementById('resetToggleConfirmPassword');
-    const resetPwHint = document.getElementById('resetPwHint');
     const resetPwLive = document.getElementById('resetPwLive');
     const resetPwCommonErr = document.getElementById('resetPassword-common-error');
     let resetPwLiveInst = null;
@@ -1728,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetPwLiveInst = window.DiariPasswordLive.attach({
             passwordEl: resetNewPasswordInput,
             confirmEl: resetConfirmPasswordInput,
-            hintEl: resetPwHint,
+            hintEl: null,
             liveWrap: resetPwLive,
             submitBtn: confirmResetBtn,
             commonErrorEl: resetPwCommonErr,

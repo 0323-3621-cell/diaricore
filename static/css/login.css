@@ -1160,6 +1160,10 @@ body {
     margin-bottom: 0.35rem;
 }
 
+.login-reset-step .form-group.form-group--pwd-full {
+    margin-bottom: 0.5rem;
+}
+
 .login-reset-step .login-form .btn-signin {
     margin-bottom: 0.75rem;
 }

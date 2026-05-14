@@ -16,6 +16,7 @@ let profilePwdChangeOtpResendRemaining = 0;
 let profilePwdChangeOtpVerifyInProgress = false;
 let profilePwdChangeOtpAutoVerifyTimeout = null;
 let profilePwdChangeSuccessLogoutTimer = null;
+let profilePwdChangeSuccessRedirectInterval = null;
 
 function initializeProfileFromStorage() {
     try {
@@ -243,6 +244,7 @@ function initProfileSecPasswordLive() {
         commonErrorEl: commonErr,
         formRoot: formRoot,
         getPersonal: getProfileSecurityPersonal,
+        alwaysShowLive: true,
     });
 }
 
@@ -1075,6 +1077,29 @@ function destroyProfilePwdChangeSuccessAnim() {
     }
 }
 
+function clearProfilePwdChangeSuccessRedirectAnim() {
+    if (profilePwdChangeSuccessRedirectInterval) {
+        clearInterval(profilePwdChangeSuccessRedirectInterval);
+        profilePwdChangeSuccessRedirectInterval = null;
+    }
+}
+
+function setProfilePwdChangeOtpResendLoading(isLoading) {
+    const btn = document.getElementById('profilePwdChangeOtpResendBtn');
+    if (!btn) return;
+    const label = btn.querySelector('.profile-pwd-change-otp-modal__resend-label');
+    if (isLoading) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+        if (label) label.textContent = 'Sending…';
+    } else {
+        btn.classList.remove('is-loading');
+        btn.removeAttribute('aria-busy');
+        if (label) label.textContent = 'Resend code';
+    }
+}
+
 function performProfileLogout() {
     try {
         localStorage.removeItem('diariCoreUser');
@@ -1087,8 +1112,11 @@ function openProfilePwdChangeSuccessModalThenLogout() {
         clearTimeout(profilePwdChangeSuccessLogoutTimer);
         profilePwdChangeSuccessLogoutTimer = null;
     }
+    clearProfilePwdChangeSuccessRedirectAnim();
     const modal = document.getElementById('profilePwdChangeSuccessModal');
     const mount = document.getElementById('profilePwdChangeSuccessLottie');
+    const labelEl = document.getElementById('profilePwdChangeSuccessRedirectLabel');
+    const fillEl = document.getElementById('profilePwdChangeSuccessRedirectFill');
     if (!modal || !mount) {
         performProfileLogout();
         return;
@@ -1113,14 +1141,31 @@ function openProfilePwdChangeSuccessModalThenLogout() {
         }
     }
 
+    const redirectMs = 5000;
+    const start = Date.now();
+    if (labelEl) labelEl.textContent = 'Redirecting to login in 5s...';
+    if (fillEl) fillEl.style.width = '0%';
+
+    function tickRedirectUi() {
+        const elapsed = Date.now() - start;
+        const rem = Math.max(0, Math.ceil((redirectMs - elapsed) / 1000));
+        if (labelEl) labelEl.textContent = `Redirecting to login in ${rem}s...`;
+        if (fillEl) fillEl.style.width = `${Math.min(100, (elapsed / redirectMs) * 100)}%`;
+    }
+    tickRedirectUi();
+    profilePwdChangeSuccessRedirectInterval = setInterval(tickRedirectUi, 200);
+
     profilePwdChangeSuccessLogoutTimer = setTimeout(function () {
         profilePwdChangeSuccessLogoutTimer = null;
+        clearProfilePwdChangeSuccessRedirectAnim();
+        if (labelEl) labelEl.textContent = 'Redirecting to login in 0s...';
+        if (fillEl) fillEl.style.width = '100%';
         modal.hidden = true;
         document.body.classList.remove('profile-totp-modal-open');
         document.body.style.overflow = '';
         destroyProfilePwdChangeSuccessAnim();
         performProfileLogout();
-    }, 4000);
+    }, redirectMs);
 }
 
 async function submitProfilePasswordChangeRequest(isResend) {
@@ -1173,6 +1218,7 @@ async function submitProfilePasswordChangeRequest(isResend) {
     };
 
     if (isResend) {
+        setProfilePwdChangeOtpResendLoading(true);
         try {
             const res = await fetch('/api/user/password/change-request', {
                 method: 'POST',
@@ -1192,6 +1238,12 @@ async function submitProfilePasswordChangeRequest(isResend) {
         } catch (_) {
             showNotification('Could not resend code. Check your connection.', 'error');
             return false;
+        } finally {
+            setProfilePwdChangeOtpResendLoading(false);
+            const btn = document.getElementById('profilePwdChangeOtpResendBtn');
+            if (btn && !profilePwdChangeOtpResendInterval && profilePwdChangeOtpResendRemaining <= 0) {
+                btn.disabled = false;
+            }
         }
     }
 
@@ -1345,6 +1397,7 @@ function wireProfilePwdChangeOtpDigits() {
 
 function wireProfilePasswordChangeFlow() {
     wireProfilePwdChangeOtpDigits();
+    wireProfilePwdChangeSuccessModal();
     const saveBtn = document.getElementById('profileSecuritySaveBtn');
     if (saveBtn && !saveBtn.dataset.pwdChangeWired) {
         saveBtn.dataset.pwdChangeWired = '1';
@@ -1377,6 +1430,25 @@ function wireProfilePasswordChangeFlow() {
             void submitProfilePasswordChangeRequest(true);
         });
     }
+}
+
+function wireProfilePwdChangeSuccessModal() {
+    const loginNow = document.getElementById('profilePwdChangeSuccessLoginNowBtn');
+    if (!loginNow || loginNow.dataset.pwdChangeSuccessLoginWired) return;
+    loginNow.dataset.pwdChangeSuccessLoginWired = '1';
+    loginNow.addEventListener('click', function () {
+        if (profilePwdChangeSuccessLogoutTimer) {
+            clearTimeout(profilePwdChangeSuccessLogoutTimer);
+            profilePwdChangeSuccessLogoutTimer = null;
+        }
+        clearProfilePwdChangeSuccessRedirectAnim();
+        const modal = document.getElementById('profilePwdChangeSuccessModal');
+        if (modal) modal.hidden = true;
+        document.body.classList.remove('profile-totp-modal-open');
+        document.body.style.overflow = '';
+        destroyProfilePwdChangeSuccessAnim();
+        performProfileLogout();
+    });
 }
 
 function initializeAccountDetailPanels() {

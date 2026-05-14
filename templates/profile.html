@@ -644,7 +644,10 @@
                     </p>
                     <p class="profile-pwd-change-otp-modal__resend" id="profilePwdChangeOtpResendRow" hidden>
                         <span class="profile-pwd-change-otp-modal__resend-prefix">Didn't receive the code?</span>
-                        <button type="button" class="profile-pwd-change-otp-modal__resend-btn" id="profilePwdChangeOtpResendBtn">Resend code</button>
+                        <button type="button" class="profile-pwd-change-otp-modal__resend-btn" id="profilePwdChangeOtpResendBtn">
+                            <span class="profile-pwd-change-otp-modal__resend-spinner" aria-hidden="true"></span>
+                            <span class="profile-pwd-change-otp-modal__resend-label">Resend code</span>
+                        </button>
                     </p>
                 </div>
                 <div class="profile-pwd-change-otp-modal__actions">
@@ -658,12 +661,28 @@
         </div>
     </div>
 
-    <div class="profile-totp-modal" id="profilePwdChangeSuccessModal" hidden>
+    <div class="profile-totp-modal profile-pwd-change-success-modal-root" id="profilePwdChangeSuccessModal" hidden>
         <div class="profile-totp-modal__backdrop"></div>
         <div class="profile-totp-modal__dialog profile-pwd-change-success-dialog" role="alertdialog" aria-modal="true" aria-labelledby="profilePwdChangeSuccessTitle">
-            <div id="profilePwdChangeSuccessLottie" class="profile-pwd-change-success-lottie" aria-hidden="true"></div>
-            <h3 class="profile-totp-modal__title" id="profilePwdChangeSuccessTitle">Password changed successfully.</h3>
-            <p class="profile-totp-modal__lead" id="profilePwdChangeSuccessLead">Your password has been successfully changed. For security purposes, you are required to log in again.</p>
+            <div class="profile-pwd-change-success-modal__accent" aria-hidden="true"></div>
+            <div class="profile-pwd-change-success-modal__inner">
+                <div id="profilePwdChangeSuccessLottie" class="profile-pwd-change-success-lottie" aria-hidden="true"></div>
+                <h3 class="profile-totp-modal__title" id="profilePwdChangeSuccessTitle">Password changed successfully.</h3>
+                <p class="profile-totp-modal__lead" id="profilePwdChangeSuccessLead">Your password has been successfully changed. For security purposes, you are required to log in again.</p>
+                <div class="profile-pwd-change-success-redirect" aria-live="polite">
+                    <div class="profile-pwd-change-success-redirect__row">
+                        <span class="profile-pwd-change-success-redirect__icon" aria-hidden="true"><i class="bi bi-clock"></i></span>
+                        <span class="profile-pwd-change-success-redirect__label" id="profilePwdChangeSuccessRedirectLabel">Redirecting to login in 5s...</span>
+                    </div>
+                    <div class="profile-pwd-change-success-redirect__track" aria-hidden="true">
+                        <div class="profile-pwd-change-success-redirect__fill" id="profilePwdChangeSuccessRedirectFill"></div>
+                    </div>
+                </div>
+                <button type="button" class="profile-pwd-change-success-login-now" id="profilePwdChangeSuccessLoginNowBtn">
+                    <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                    Log in now
+                </button>
+            </div>
         </div>
     </div>
 

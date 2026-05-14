@@ -97,6 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginTotpRecoveryBackToTotp = document.getElementById('loginTotpRecoveryBackToTotp');
     const loginRecoverySubmit = document.getElementById('loginRecoverySubmit');
     const loginRecoveryCodeError = document.getElementById('loginRecoveryCodeError');
+    const loginTotpRecoveryIntro = document.getElementById('loginTotpRecoveryIntro');
+    const loginTotpRecoveryResendBtn = document.getElementById('loginTotpRecoveryResendBtn');
+    const loginTotpRecoveryResendTimer = document.getElementById('loginTotpRecoveryResendTimer');
     let loginRecoverySendCooldownTimer = null;
     let loginRecoveryVerifyInProgress = false;
 
@@ -170,6 +173,41 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginRecoveryDigitsWrap) loginRecoveryDigitsWrap.classList.add('has-error');
     }
 
+    function getLoginFormHeaderEl() {
+        return signinSection ? signinSection.querySelector('.form-header') : null;
+    }
+
+    function setLoginTotpHeaderAuthenticator() {
+        var fh = getLoginFormHeaderEl();
+        if (!fh) return;
+        fh.hidden = false;
+        fh.innerHTML =
+            '<h2 class="form-title">Two-factor authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
+    }
+
+    function setLoginTotpHeaderRecoveryRequest() {
+        var fh = getLoginFormHeaderEl();
+        if (!fh) return;
+        fh.hidden = false;
+        fh.innerHTML = '<h2 class="form-title">Loss Authentication Access</h2>';
+    }
+
+    function setLoginTotpHeaderRecoveryVerify() {
+        var fh = getLoginFormHeaderEl();
+        if (fh) fh.hidden = true;
+    }
+
+    function isLoginRecoveryOtpPhase() {
+        return loginTotpRecoveryOtpBlock && !loginTotpRecoveryOtpBlock.hidden;
+    }
+
+    function formatRecoveryCooldownClock(seconds) {
+        var s = Math.max(0, parseInt(seconds, 10) || 0);
+        var m = Math.floor(s / 60);
+        var r = s % 60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
+    }
+
     function resetLoginRecoveryUi() {
         if (loginRecoverySendCooldownTimer) {
             clearInterval(loginRecoverySendCooldownTimer);
@@ -178,17 +216,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginTotpAuthenticatorPanel) loginTotpAuthenticatorPanel.hidden = false;
         if (loginTotpRecoveryPanel) loginTotpRecoveryPanel.hidden = true;
         if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = true;
+        if (loginTotpRecoveryIntro) loginTotpRecoveryIntro.hidden = false;
+        if (loginTotpRecoverySend) {
+            loginTotpRecoverySend.hidden = false;
+            loginTotpRecoverySend.disabled = false;
+            loginTotpRecoverySend.textContent = 'Email me a recovery code';
+            loginTotpRecoverySend.classList.remove('is-loading');
+        }
+        if (loginTotpRecoveryResendBtn) {
+            loginTotpRecoveryResendBtn.disabled = false;
+            loginTotpRecoveryResendBtn.classList.remove('is-loading');
+            loginTotpRecoveryResendBtn.textContent = 'Resend code';
+            loginTotpRecoveryResendBtn.removeAttribute('aria-disabled');
+        }
+        if (loginTotpRecoveryResendTimer) loginTotpRecoveryResendTimer.textContent = '';
         if (loginTotpRecoverySendStatus) {
             loginTotpRecoverySendStatus.hidden = true;
             loginTotpRecoverySendStatus.textContent = '';
         }
         clearLoginRecoveryDigits();
         clearLoginRecoveryErrorState();
-        if (loginTotpRecoverySend) {
-            loginTotpRecoverySend.disabled = false;
-            loginTotpRecoverySend.textContent = 'Email me a recovery code';
-            loginTotpRecoverySend.classList.remove('is-loading');
-        }
         if (loginRecoverySubmit) {
             loginRecoverySubmit.disabled = false;
             loginRecoverySubmit.classList.remove('is-loading');
@@ -200,32 +247,142 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showLoginTotpRecoveryPanel() {
+        if (loginRecoverySendCooldownTimer) {
+            clearInterval(loginRecoverySendCooldownTimer);
+            loginRecoverySendCooldownTimer = null;
+        }
+        if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = true;
+        if (loginTotpRecoveryIntro) loginTotpRecoveryIntro.hidden = false;
+        if (loginTotpRecoverySend) {
+            loginTotpRecoverySend.hidden = false;
+            loginTotpRecoverySend.disabled = false;
+            loginTotpRecoverySend.classList.remove('is-loading');
+            loginTotpRecoverySend.textContent = 'Email me a recovery code';
+        }
+        if (loginTotpRecoveryResendBtn) {
+            loginTotpRecoveryResendBtn.disabled = false;
+            loginTotpRecoveryResendBtn.classList.remove('is-loading');
+            loginTotpRecoveryResendBtn.textContent = 'Resend code';
+            loginTotpRecoveryResendBtn.removeAttribute('aria-disabled');
+        }
+        if (loginTotpRecoveryResendTimer) loginTotpRecoveryResendTimer.textContent = '';
+        if (loginTotpRecoverySendStatus) {
+            loginTotpRecoverySendStatus.hidden = true;
+            loginTotpRecoverySendStatus.textContent = '';
+        }
+        clearLoginRecoveryDigits();
+        clearLoginRecoveryErrorState();
         if (loginTotpAuthenticatorPanel) loginTotpAuthenticatorPanel.hidden = true;
         if (loginTotpRecoveryPanel) loginTotpRecoveryPanel.hidden = false;
+        setLoginTotpHeaderRecoveryRequest();
         if (loginTotpRecoverySend) loginTotpRecoverySend.focus();
     }
 
     function startRecoveryResendCooldown(seconds) {
         if (loginRecoverySendCooldownTimer) clearInterval(loginRecoverySendCooldownTimer);
         var left = Math.max(1, parseInt(seconds, 10) || 55);
-        if (loginTotpRecoverySend) {
-            loginTotpRecoverySend.disabled = true;
-            loginTotpRecoverySend.textContent = 'Resend in ' + left + 's';
+        function renderCooldown() {
+            var otpPhase = isLoginRecoveryOtpPhase();
+            if (otpPhase) {
+                if (loginTotpRecoveryResendBtn) {
+                    loginTotpRecoveryResendBtn.disabled = left > 0;
+                    if (left > 0) {
+                        loginTotpRecoveryResendBtn.setAttribute('aria-disabled', 'true');
+                    } else {
+                        loginTotpRecoveryResendBtn.removeAttribute('aria-disabled');
+                    }
+                }
+                if (loginTotpRecoveryResendTimer) {
+                    loginTotpRecoveryResendTimer.textContent =
+                        left > 0 ? ' (' + formatRecoveryCooldownClock(left) + ')' : '';
+                }
+                if (loginTotpRecoverySend) loginTotpRecoverySend.disabled = true;
+            } else if (loginTotpRecoverySend) {
+                loginTotpRecoverySend.disabled = left > 0;
+                loginTotpRecoverySend.textContent =
+                    left > 0 ? 'Resend in ' + left + 's' : 'Email me a recovery code';
+            }
         }
+        renderCooldown();
         loginRecoverySendCooldownTimer = setInterval(function () {
             left -= 1;
-            if (loginTotpRecoverySend) {
-                loginTotpRecoverySend.textContent = left > 0 ? 'Resend in ' + left + 's' : 'Email me a recovery code';
-            }
+            renderCooldown();
             if (left <= 0) {
                 clearInterval(loginRecoverySendCooldownTimer);
                 loginRecoverySendCooldownTimer = null;
-                if (loginTotpRecoverySend) {
-                    loginTotpRecoverySend.disabled = false;
-                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                if (!isLoginRecoveryOtpPhase()) {
+                    if (loginTotpRecoverySend) loginTotpRecoverySend.disabled = false;
+                } else if (loginTotpRecoveryResendBtn) {
+                    loginTotpRecoveryResendBtn.disabled = false;
+                    loginTotpRecoveryResendBtn.removeAttribute('aria-disabled');
                 }
             }
         }, 1000);
+    }
+
+    function postLoginRecoveryEmailRequest() {
+        return fetch('/api/login/totp/recovery/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken: pendingTwoFactorToken }),
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                return { ok: res.ok, status: res.status, data: data };
+            });
+        });
+    }
+
+    function clearRecoverySendLoading() {
+        if (!loginTotpRecoverySend) return;
+        loginTotpRecoverySend.classList.remove('is-loading');
+        if (loginTotpRecoverySend.hidden || isLoginRecoveryOtpPhase()) return;
+        loginTotpRecoverySend.disabled = false;
+        if (!loginRecoverySendCooldownTimer) {
+            loginTotpRecoverySend.textContent = 'Email me a recovery code';
+        }
+    }
+
+    function clearRecoveryResendLoading() {
+        if (!loginTotpRecoveryResendBtn) return;
+        loginTotpRecoveryResendBtn.classList.remove('is-loading');
+        loginTotpRecoveryResendBtn.innerHTML = 'Resend code';
+    }
+
+    function handleRecoveryEmailResponse(out, triggeredByResend) {
+        clearRecoverySendLoading();
+        clearRecoveryResendLoading();
+        if (out.status === 429 && out.data && out.data.retryAfterSeconds) {
+            if (!isLoginRecoveryOtpPhase() && loginTotpRecoverySend) {
+                loginTotpRecoverySend.textContent = 'Email me a recovery code';
+            }
+            showNotification(out.data.error || 'Please wait before requesting another code.', 'warning');
+            startRecoveryResendCooldown(out.data.retryAfterSeconds);
+            return;
+        }
+        if (!out.ok || !out.data.success) {
+            if (!isLoginRecoveryOtpPhase() && loginTotpRecoverySend) {
+                loginTotpRecoverySend.disabled = false;
+                loginTotpRecoverySend.textContent = 'Email me a recovery code';
+            } else if (loginTotpRecoveryResendBtn) {
+                loginTotpRecoveryResendBtn.disabled = false;
+            }
+            showNotification(out.data.error || 'Could not send recovery email.', 'error');
+            return;
+        }
+        if (loginTotpRecoveryIntro) loginTotpRecoveryIntro.hidden = true;
+        if (loginTotpRecoverySend) loginTotpRecoverySend.hidden = true;
+        if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = false;
+        setLoginTotpHeaderRecoveryVerify();
+        startRecoveryResendCooldown(56);
+        if (loginTotpRecoverySendStatus) {
+            loginTotpRecoverySendStatus.textContent =
+                'Check your inbox for a message from DiariCore. Codes expire in 15 minutes.';
+            loginTotpRecoverySendStatus.hidden = false;
+        }
+        if (!triggeredByResend) {
+            clearLoginRecoveryDigits();
+            if (loginRecoveryDigits[0]) loginRecoveryDigits[0].focus();
+        }
     }
 
     function submitLoginRecoveryVerification() {
@@ -772,6 +929,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginTotpStep) loginTotpStep.hidden = true;
         const fh = signinSection && signinSection.querySelector('.form-header');
         if (fh && signinSection.dataset.savedHeaderHtml) {
+            fh.hidden = false;
             fh.innerHTML = signinSection.dataset.savedHeaderHtml;
         }
     }
@@ -794,7 +952,7 @@ document.addEventListener('DOMContentLoaded', function() {
             signinSection.dataset.savedHeaderHtml = fh.innerHTML;
         }
         if (fh) {
-            fh.innerHTML = '<h2 class="form-title">Two-factor authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
+            setLoginTotpHeaderAuthenticator();
         }
         if (loginTotpDigits[0]) loginTotpDigits[0].focus();
     }
@@ -959,6 +1117,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loginTotpRecoveryBackToTotp.addEventListener('click', function () {
             clearLoginRecoveryErrorState();
             resetLoginRecoveryUi();
+            setLoginTotpHeaderAuthenticator();
             if (loginTotpDigits[0]) loginTotpDigits[0].focus();
         });
     }
@@ -974,45 +1133,41 @@ document.addEventListener('DOMContentLoaded', function() {
             loginTotpRecoverySend.disabled = true;
             loginTotpRecoverySend.innerHTML =
                 '<span class="login-totp-verify-spinner" aria-hidden="true"></span><span>Sending...</span>';
-            fetch('/api/login/totp/recovery/request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ challengeToken: pendingTwoFactorToken }),
-            })
-                .then(function (res) {
-                    return res.json().then(function (data) {
-                        return { ok: res.ok, status: res.status, data: data };
-                    });
-                })
+            postLoginRecoveryEmailRequest()
                 .then(function (out) {
-                    loginTotpRecoverySend.classList.remove('is-loading');
-                    if (out.status === 429 && out.data && out.data.retryAfterSeconds) {
-                        loginTotpRecoverySend.textContent = 'Email me a recovery code';
-                        showNotification(out.data.error || 'Please wait before requesting another code.', 'warning');
-                        startRecoveryResendCooldown(out.data.retryAfterSeconds);
-                        return;
-                    }
-                    if (!out.ok || !out.data.success) {
-                        loginTotpRecoverySend.disabled = false;
-                        loginTotpRecoverySend.textContent = 'Email me a recovery code';
-                        showNotification(out.data.error || 'Could not send recovery email.', 'error');
-                        return;
-                    }
-                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
-                    startRecoveryResendCooldown(56);
-                    if (loginTotpRecoverySendStatus) {
-                        loginTotpRecoverySendStatus.textContent =
-                            'Check your inbox for a message from DiariCore. Codes expire in 15 minutes.';
-                        loginTotpRecoverySendStatus.hidden = false;
-                    }
-                    if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = false;
-                    clearLoginRecoveryDigits();
-                    if (loginRecoveryDigits[0]) loginRecoveryDigits[0].focus();
+                    handleRecoveryEmailResponse(out, false);
                 })
                 .catch(function () {
-                    loginTotpRecoverySend.classList.remove('is-loading');
-                    loginTotpRecoverySend.disabled = false;
-                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                    clearRecoverySendLoading();
+                    if (loginTotpRecoverySend) {
+                        loginTotpRecoverySend.disabled = false;
+                        loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                    }
+                    showNotification('Could not reach the server. Please try again.', 'error');
+                });
+        });
+    }
+
+    if (loginTotpRecoveryResendBtn) {
+        loginTotpRecoveryResendBtn.addEventListener('click', function () {
+            if (!pendingTwoFactorToken) {
+                showNotification('Please sign in with your password again.', 'warning');
+                return;
+            }
+            if (!isLoginRecoveryOtpPhase()) return;
+            if (loginTotpRecoveryResendBtn.disabled || loginTotpRecoveryResendBtn.classList.contains('is-loading')) return;
+            if (loginTotpRecoveryResendTimer) loginTotpRecoveryResendTimer.textContent = '';
+            loginTotpRecoveryResendBtn.classList.add('is-loading');
+            loginTotpRecoveryResendBtn.disabled = true;
+            loginTotpRecoveryResendBtn.innerHTML =
+                '<span class="login-totp-recovery-resend-spinner" aria-hidden="true"></span><span>Sending...</span>';
+            postLoginRecoveryEmailRequest()
+                .then(function (out) {
+                    handleRecoveryEmailResponse(out, true);
+                })
+                .catch(function () {
+                    clearRecoveryResendLoading();
+                    if (loginTotpRecoveryResendBtn) loginTotpRecoveryResendBtn.disabled = false;
                     showNotification('Could not reach the server. Please try again.', 'error');
                 });
         });

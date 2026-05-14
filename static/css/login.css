@@ -1689,6 +1689,75 @@ body {
     margin-top: 0.15rem;
 }
 
+.login-totp-recovery__send.btn-signin.is-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+}
+
+.login-totp-recovery__resend-line {
+    margin: 0.75rem 0 0;
+    text-align: center;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.login-totp-recovery__resend-prefix {
+    margin-right: 0.2rem;
+}
+
+.login-totp-recovery__resend-action {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    color: #3d6b52;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+}
+
+.login-totp-recovery__resend-action:hover:not(:disabled) {
+    color: #2d4a3a;
+}
+
+.login-totp-recovery__resend-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    text-decoration: none;
+}
+
+.login-totp-recovery__resend-action.is-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    vertical-align: middle;
+    text-decoration: none;
+}
+
+.login-totp-recovery-resend-spinner {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(111, 143, 127, 0.35);
+    border-top-color: #5a7a68;
+    animation: resetBtnSpin 0.8s linear infinite;
+}
+
+.login-totp-recovery__resend-countdown {
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 0.1rem;
+}
+
 .login-totp-recovery__status {
     margin: 0;
     font-size: 0.82rem;
@@ -1720,6 +1789,18 @@ html.theme-dark .login-totp-step__recovery-link {
 
 html.theme-dark .login-totp-step__recovery-link:hover {
     color: #d4e5dc;
+}
+
+html.theme-dark .login-totp-recovery__resend-action {
+    color: #9fb8a8;
+}
+
+html.theme-dark .login-totp-recovery__resend-action:hover:not(:disabled) {
+    color: #d4e5dc;
+}
+
+html.theme-dark .login-totp-recovery__resend-countdown {
+    color: rgba(200, 212, 204, 0.75);
 }
 
 html.theme-dark .login-totp-recovery__status {

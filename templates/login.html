@@ -101,7 +101,7 @@
                         <button type="button" class="login-totp-step__recovery-link" id="loginTotpShowRecovery">Lost access to your authenticator?</button>
                     </div>
                     <div id="loginTotpRecoveryPanel" class="login-totp-recovery-panel" hidden>
-                        <p class="login-totp-recovery__text">If you removed DiariCore from your authenticator app, we can email a one-time code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
+                        <p class="login-totp-recovery__text" id="loginTotpRecoveryIntro">If you removed DiariCore from your authenticator app, we can email a one-time code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
                         <button type="button" class="btn-signin login-totp-recovery__send" id="loginTotpRecoverySend">Email me a recovery code</button>
                         <p class="login-totp-recovery__status" id="loginTotpRecoverySendStatus" hidden></p>
                         <div id="loginTotpRecoveryOtpBlock" class="login-totp-recovery__otp-block" hidden>
@@ -116,6 +116,11 @@
                             </div>
                             <div class="custom-error" id="loginRecoveryCodeError" hidden>Invalid code.</div>
                             <button type="button" class="btn-signin login-totp-step__verify" id="loginRecoverySubmit">USE EMAIL CODE &amp; SIGN IN</button>
+                            <p class="login-totp-recovery__resend-line" id="loginTotpRecoveryResendLine">
+                                <span class="login-totp-recovery__resend-prefix">Didn't receive the code?</span>
+                                <button type="button" class="login-totp-recovery__resend-action" id="loginTotpRecoveryResendBtn">Resend code</button>
+                                <span class="login-totp-recovery__resend-countdown" id="loginTotpRecoveryResendTimer" aria-live="polite"></span>
+                            </p>
                         </div>
                         <button type="button" class="login-totp-step__back login-totp-recovery__back" id="loginTotpRecoveryBackToTotp">← Use authenticator code instead</button>
                     </div>

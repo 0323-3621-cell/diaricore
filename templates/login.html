@@ -103,14 +103,9 @@
                     </div>
                     <div id="loginTotpRecoveryPanel" class="login-totp-recovery-panel" hidden>
                         <div id="loginTotpRecoveryRequestCard" class="login-totp-recovery-card">
-                            <div class="login-totp-recovery-card__header">
-                                <span class="login-totp-recovery-card__icon-slot login-totp-recovery-card__icon-slot--lock" aria-hidden="true">
-                                    <i class="bi bi-shield-lock"></i>
-                                </span>
-                                <div class="login-totp-recovery-card__headings">
-                                    <h2 class="login-totp-recovery-card__title">Lost Authentication Access</h2>
-                                    <p class="login-totp-recovery-card__subtitle">Account recovery</p>
-                                </div>
+                            <div class="login-totp-recovery-card__intro-block">
+                                <h2 class="form-title">Lost Authentication Access</h2>
+                                <p class="form-subtitle">Account Recovery</p>
                             </div>
                             <p class="login-totp-recovery-card__body" id="loginTotpRecoveryIntro">If you removed DiariCore from your authenticator app, we can email a one-time recovery code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
                             <button type="button" class="login-totp-recovery-card__primary" id="loginTotpRecoverySend">
@@ -119,15 +114,10 @@
                             </button>
                         </div>
                         <div id="loginTotpRecoveryVerifyCard" class="login-totp-recovery-card login-totp-recovery-card--verify" hidden>
-                            <div class="login-totp-recovery-card__header">
-                                <span class="login-totp-recovery-card__icon-slot login-totp-recovery-card__icon-slot--mail" aria-hidden="true">
-                                    <i class="bi bi-envelope-check"></i>
-                                </span>
-                                <div class="login-totp-recovery-card__headings">
-                                    <h2 class="login-totp-recovery-card__title">Verify Recovery Code</h2>
-                                    <p class="login-totp-recovery-card__subtitle" id="loginTotpRecoveryInboxSubtitle">Check your inbox</p>
-                                    <p class="login-totp-recovery-card__expire" id="loginTotpRecoveryCodeExpire" aria-live="polite"></p>
-                                </div>
+                            <div class="login-totp-recovery-card__intro-block">
+                                <h2 class="form-title">Verify Recovery Code</h2>
+                                <p class="form-subtitle" id="loginTotpRecoveryInboxSubtitle">Check your inbox</p>
+                                <p class="login-totp-recovery-card__expire-line" id="loginTotpRecoveryCodeExpire" aria-live="polite"></p>
                             </div>
                             <p class="login-totp-recovery-card__body" id="loginTotpRecoveryVerifyMessage" hidden></p>
                             <div class="login-totp-recovery-card__field">

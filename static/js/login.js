@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!fh) return;
         fh.hidden = false;
         fh.innerHTML =
-            '<h2 class="form-title">Two-factor authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
+            '<h2 class="form-title">Two-factor Authentication</h2><p class="form-subtitle">Open your authenticator app and enter your current 6-digit code.</p>';
     }
 
     function setLoginFormHeaderHiddenForRecovery() {
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearRecoveryResendLoading() {
         if (!loginTotpRecoveryResendBtn) return;
         loginTotpRecoveryResendBtn.classList.remove('is-loading');
-        loginTotpRecoveryResendBtn.innerHTML = 'Resend code';
+        loginTotpRecoveryResendBtn.textContent = 'Resend code';
     }
 
     function handleRecoveryEmailResponse(out, triggeredByResend) {

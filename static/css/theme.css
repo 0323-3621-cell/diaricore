@@ -2,6 +2,16 @@
 
 :root {
     --primary-rgb: 111, 143, 127;
+    /* Soft sage success system (toasts, success text, tints). Errors stay red via --diari-error-*. */
+    --diari-success-sage-text: #5d7268;
+    --diari-success-sage-solid: #8da399;
+    --diari-success-on-solid: #ffffff;
+    --diari-success-tint-bg: #e9f1eb;
+    --diari-error-toast-bg: #e74c3c;
+    --diari-warning-toast-bg: #d9822b;
+    --diari-info-toast-bg: #7fa7bf;
+    --success-color: var(--diari-success-sage-text);
+    --success-bg: var(--diari-success-tint-bg);
 }
 
 :root.theme-dark {
@@ -19,8 +29,12 @@
     --text-secondary: #b7c7cd;
     --text-muted: #91a6ae;
 
-    --success-color: #8dd8ae;
-    --success-bg: #1d3528;
+    --diari-success-sage-text: #b4cdc2;
+    --diari-success-sage-solid: #7a9485;
+    --diari-success-on-solid: #f6faf8;
+    --diari-success-tint-bg: #1a2822;
+    --success-color: var(--diari-success-sage-text);
+    --success-bg: var(--diari-success-tint-bg);
     --warning-color: #f4be72;
     --warning-bg: #3a2b16;
     --info-color: #8abce0;
@@ -428,4 +442,17 @@ body.page-write-entry .more-btn:hover {
     border-color: var(--primary-color) !important;
     color: var(--primary-color) !important;
     background-color: rgba(var(--primary-rgb), 0.08) !important;
+}
+
+/* Success copy + alerts: soft sage in light & dark (errors stay red in their own rules). */
+html.theme-dark .reset-alert.success {
+    background: var(--diari-success-tint-bg) !important;
+    border-color: rgba(164, 188, 176, 0.38) !important;
+    color: var(--diari-success-sage-text) !important;
+}
+
+html.theme-dark .alert-success {
+    background: var(--diari-success-tint-bg) !important;
+    border-color: rgba(164, 188, 176, 0.38) !important;
+    color: var(--diari-success-sage-text) !important;
 }

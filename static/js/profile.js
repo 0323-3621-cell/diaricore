@@ -2780,7 +2780,7 @@ function showNotification(message, type = 'info') {
         max-width: 400px;
         word-wrap: break-word;
         background: ${getNotificationColor(type)};
-        color: white;
+        color: ${window.DiariToastColors && window.DiariToastColors.fg ? window.DiariToastColors.fg(type) : 'white'};
         font-family: 'Inter', sans-serif;
     `;
 
@@ -2815,13 +2815,16 @@ function getNotificationIcon(type) {
 
 // Get Notification Color
 function getNotificationColor(type) {
+    if (window.DiariToastColors && window.DiariToastColors.bg) {
+        return window.DiariToastColors.bg(type);
+    }
     const colors = {
-        'success': '#7FBF9F',
-        'error': '#E74C3C',
-        'warning': '#F4A261',
-        'info': '#7FA7BF'
+        success: '#8da399',
+        error: '#E74C3C',
+        warning: '#d9822b',
+        info: '#7FA7BF',
     };
-    return colors[type] || '#7FA7BF';
+    return colors[type] || colors.info;
 }
 
 if (document.body && document.body.classList.contains('page-profile')) {

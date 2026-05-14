@@ -1638,12 +1638,26 @@ function showNotification(message, type = 'info') {
     let icon = 'info-circle';
     if (type === 'success') icon = 'check-circle';
     if (type === 'error') icon = 'exclamation-circle';
+    if (type === 'warning') icon = 'exclamation-triangle';
     
     notification.innerHTML = `
         <i class="bi bi-${icon}"></i>
         <span>${message}</span>
     `;
     
+    const toastBg =
+        window.DiariToastColors && window.DiariToastColors.bg
+            ? window.DiariToastColors.bg(type)
+            : type === 'success'
+              ? '#8da399'
+              : type === 'error'
+                ? '#E74C3C'
+                : type === 'warning'
+                  ? '#d9822b'
+                  : '#7FA7BF';
+    const toastFg =
+        window.DiariToastColors && window.DiariToastColors.fg ? window.DiariToastColors.fg(type) : '#ffffff';
+
     notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -1660,8 +1674,8 @@ function showNotification(message, type = 'info') {
         transition: transform 0.3s ease;
         max-width: 400px;
         word-wrap: break-word;
-        background: ${type === 'success' ? '#7FBF9F' : type === 'error' ? '#E74C3C' : '#7FA7BF'};
-        color: white;
+        background: ${toastBg};
+        color: ${toastFg};
         font-family: 'Inter', sans-serif;
     `;
     

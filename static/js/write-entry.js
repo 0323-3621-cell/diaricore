@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             .replace(/"/g, '&quot;');
     }
 
-    /** Top-right toast aligned with Entries page success style (`#6f8f7f`). */
+    /** Top-right toast — soft sage success (theme.css / DiariToastColors). */
     function showWriteEntryNotification(message, type = 'success') {
         const existing = document.querySelector('.write-entry-notification');
         if (existing) existing.remove();
@@ -101,6 +101,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         notification.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span></span>`;
         const span = notification.querySelector('span');
         if (span) span.textContent = message;
+
+        const bg =
+            window.DiariToastColors && window.DiariToastColors.bg
+                ? window.DiariToastColors.bg(type)
+                : type === 'success'
+                  ? '#8da399'
+                  : type === 'error'
+                    ? '#E74C3C'
+                    : '#7FA7BF';
+        const fg =
+            window.DiariToastColors && window.DiariToastColors.fg ? window.DiariToastColors.fg(type) : '#ffffff';
 
         notification.style.cssText = `
         position: fixed;
@@ -118,8 +129,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         transition: transform 0.3s ease;
         max-width: 400px;
         word-wrap: break-word;
-        background: ${type === 'success' ? '#6f8f7f' : type === 'error' ? '#E74C3C' : '#7FA7BF'};
-        color: white;
+        background: ${bg};
+        color: ${fg};
         font-family: 'Inter', sans-serif;
     `;
 

@@ -10,7 +10,7 @@
     --text-secondary: #6B7C74;
     --text-muted: #9AA9A1;
     --border-color: #E0E6E3;
-    --success-color: #7FBF9F;
+    --success-color: #5d7268;
     --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     --box-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
@@ -1015,8 +1015,8 @@ body {
 }
 
 .notification-success {
-    background-color: #7FBF9F;
-    color: white;
+    background-color: var(--diari-success-sage-solid, #8da399);
+    color: var(--diari-success-on-solid, #ffffff);
 }
 
 .notification-error {
@@ -1044,9 +1044,9 @@ body {
 }
 
 .reset-alert.success {
-    background: #ecfdf5;
-    border: 1px solid #86efac;
-    color: #166534;
+    background: var(--diari-success-tint-bg, #e9f1eb);
+    border: 1px solid rgba(141, 163, 153, 0.55);
+    color: var(--diari-success-sage-text, #5d7268);
 }
 
 .reset-btn-spinner {

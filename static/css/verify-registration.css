@@ -193,13 +193,13 @@ body {
 }
 
 .alert-success {
-    background: #e0f2fe;
-    border: 1px solid #7dd3fc;
-    color: #0c4a6e;
+    background: var(--diari-success-tint-bg, #e9f1eb);
+    border: 1px solid rgba(141, 163, 153, 0.55);
+    color: var(--diari-success-sage-text, #5d7268);
 }
 
 .alert-success .alert__close {
-    color: #0c4a6e;
+    color: var(--diari-success-sage-text, #5d7268);
 }
 
 .error {

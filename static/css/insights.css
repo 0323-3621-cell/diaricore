@@ -19,8 +19,8 @@
     --text-muted: #9AA9A1; /* Muted text */
     
     /* Status Colors */
-    --success-color: #7FBF9F; /* Success green */
-    --success-bg: #E8F5EF; /* Success background tint */
+    --success-color: #5d7268;
+    --success-bg: #e9f1eb;
     --warning-color: #F4A261; /* Warning orange */
     --warning-bg: #FFF4E6; /* Warning background tint */
     --info-color: #7FA7BF; /* Informational blue */
@@ -625,7 +625,7 @@ body {
     }
     
     .emotion-legend-dot.happy {
-        background-color: #7FBF9F !important;
+        background-color: var(--diari-success-sage-solid, #8da399) !important;
     }
     
     .emotion-legend-dot.neutral {

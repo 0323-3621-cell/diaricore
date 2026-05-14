@@ -303,7 +303,7 @@
         entryUpdateEditingMountEl = mount;
         const showMissingIcon = () => {
             if (mount.querySelector('svg, canvas')) return;
-            mount.innerHTML = '<i class="bi bi-pencil-square" aria-hidden="true" style="font-size:56px;color:#7aa28e;"></i>';
+            mount.innerHTML = '<i class="bi bi-pencil-square" aria-hidden="true" style="font-size:56px;color:#5d7268;"></i>';
         };
         const loadEditingAnimWithData = (data) => {
             if (typeof global.lottie === 'undefined' || typeof global.lottie.loadAnimation !== 'function') return null;

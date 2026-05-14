@@ -2139,15 +2139,21 @@ document.addEventListener('DOMContentLoaded', function() {
             word-wrap: break-word;
         `;
         
-        if (type === 'success') {
-            notification.style.backgroundColor = '#7FBF9F';
-            notification.style.color = 'white';
+        if (window.DiariToastColors && window.DiariToastColors.bg && window.DiariToastColors.fg) {
+            notification.style.backgroundColor = window.DiariToastColors.bg(type);
+            notification.style.color = window.DiariToastColors.fg(type);
+        } else if (type === 'success') {
+            notification.style.backgroundColor = '#8da399';
+            notification.style.color = '#ffffff';
         } else if (type === 'error') {
             notification.style.backgroundColor = '#e74c3c';
-            notification.style.color = 'white';
+            notification.style.color = '#ffffff';
+        } else if (type === 'warning') {
+            notification.style.backgroundColor = '#d9822b';
+            notification.style.color = '#ffffff';
         } else {
             notification.style.backgroundColor = '#7FA7BF';
-            notification.style.color = 'white';
+            notification.style.color = '#ffffff';
         }
         
         document.body.appendChild(notification);

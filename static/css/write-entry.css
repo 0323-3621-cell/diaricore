@@ -1549,8 +1549,8 @@ html.theme-dark .mood-result-emotion--secondary:not(.mood-result-emotion--empty)
 }
 
 .mood-result-badge--green {
-    background: rgba(var(--primary-rgb, 111, 143, 127), 0.22);
-    color: var(--primary-color);
+    background: var(--success-bg, #e9f1eb);
+    color: var(--success-color, #5d7268);
 }
 
 .mood-result-badge--amber {

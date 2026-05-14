@@ -270,7 +270,7 @@
                     if (err === 'network' || err === 'service-not-allowed') {
                         wantRecognitionRunning = false;
                         setTranscriptHint(
-                            'Live captions use your browser’s speech service. If nothing appears here, try turning off Brave Shields (or similar) for this site, or use Chrome/Edge with shields disabled — you can still type your words below.'
+                            'Browser live captions are blocked (often Brave Shields). Keep talking, then tap stop — we will transcribe the recording on the server if the box is still empty. You can also turn Shields down for this site or type below.'
                         );
                         return;
                     }
@@ -343,6 +343,81 @@
                 recordingRafId = requestAnimationFrame(tickRecordingUi);
             }
 
+            function startBackupMediaRecorder() {
+                mediaRecorder = null;
+                if (typeof MediaRecorder === 'undefined' || !mediaStream) return;
+                let mime = '';
+                if (typeof MediaRecorder.isTypeSupported === 'function') {
+                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                        mime = 'audio/webm;codecs=opus';
+                    } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                        mime = 'audio/webm';
+                    }
+                }
+                try {
+                    mediaRecorder = mime
+                        ? new MediaRecorder(mediaStream, { mimeType: mime })
+                        : new MediaRecorder(mediaStream);
+                } catch (_) {
+                    try {
+                        mediaRecorder = new MediaRecorder(mediaStream);
+                    } catch (e2) {
+                        mediaRecorder = null;
+                        console.warn('MediaRecorder unavailable:', e2);
+                    }
+                }
+                if (!mediaRecorder) return;
+                audioChunks = [];
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data && event.data.size) audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = function () {};
+                try {
+                    mediaRecorder.start();
+                } catch (e3) {
+                    console.warn('MediaRecorder.start failed:', e3);
+                    mediaRecorder = null;
+                }
+            }
+
+            async function transcribeRecordingBlobIfNeeded(blob) {
+                if (!blob || blob.size < 400) return;
+                if (!finalTranscript) return;
+                if (finalTranscript.value.trim()) return;
+                setTranscriptHint('Transcribing your recording on the server (a few seconds)…');
+                try {
+                    const fd = new FormData();
+                    fd.append('audio', blob, 'recording.webm');
+                    const r = await fetch('/api/voice/transcribe', {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin',
+                    });
+                    const j = await r.json().catch(function () {
+                        return {};
+                    });
+                    if (j.success && j.text && finalTranscript) {
+                        finalTranscript.value = String(j.text).replace(/\s+/g, ' ').trim();
+                        updateWordCountFromTranscript();
+                        setTranscriptHint(
+                            j.source === 'hf'
+                                ? 'Transcript from the server (used because browser live captions were unavailable).'
+                                : ''
+                        );
+                    } else {
+                        setTranscriptHint(
+                            (j && j.error) ||
+                                'Server transcription did not return text. Check HF_API_TOKEN on the host, or type your entry below.'
+                        );
+                    }
+                } catch (e) {
+                    console.error(e);
+                    setTranscriptHint(
+                        'Could not reach the server to transcribe. Check your connection, or type your entry below.'
+                    );
+                }
+            }
+
             if (voiceCircle) {
                 voiceCircle.addEventListener('click', function () {
                     if (!isRecording) {
@@ -413,15 +488,8 @@
                         freqData = new Uint8Array(analyserNode.frequencyBinCount);
                     }
 
-                    if (!speechSupported) {
-                        mediaRecorder = new MediaRecorder(mediaStream);
-                        audioChunks = [];
-                        mediaRecorder.ondataavailable = function (event) {
-                            if (event.data && event.data.size) audioChunks.push(event.data);
-                        };
-                        mediaRecorder.onstop = function () {};
-                        mediaRecorder.start();
-                    }
+                    /* Always capture a file so we can transcribe on the server when Web Speech is blocked (e.g. Brave). */
+                    startBackupMediaRecorder();
 
                     isRecording = true;
                     startTime = Date.now();
@@ -465,47 +533,67 @@
                     recordingRafId = null;
                 }
 
+                const elapsed = startTime ? Date.now() - startTime : 0;
+
+                function applyStoppedUi(blob) {
+                    stopSpeechRecognition();
+                    teardownAudioGraph();
+                    stopMediaStream();
+
+                    isRecording = false;
+                    if (micIcon) micIcon.className = 'bi bi-mic';
+                    if (voiceCircle) voiceCircle.classList.remove('recording');
+                    if (recordingState) recordingState.style.display = 'none';
+                    if (statusText) {
+                        statusText.style.display = 'block';
+                        statusText.textContent = 'Recording complete';
+                    }
+                    if (isMobile && mobileRetryBtn) {
+                        mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                    }
+
+                    startTime = null;
+                    if (recordingDuration) {
+                        recordingDuration.textContent = formatElapsed(elapsed);
+                    }
+                    if (recordingTimeEl) {
+                        recordingTimeEl.textContent = formatElapsed(elapsed);
+                    }
+
+                    updateTranscriptReadonly();
+                    updateWordCountFromTranscript();
+
+                    if (!speechSupported && finalTranscript && !finalTranscript.value.trim()) {
+                        finalTranscript.placeholder =
+                            'Type what you said here, or try Chrome / Edge on desktop for live dictation.';
+                    }
+
+                    setPostPanelVisible(true);
+
+                    if (blob && blob.size > 400) {
+                        void transcribeRecordingBlobIfNeeded(blob);
+                    }
+                }
+
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     try {
+                        mediaRecorder.onstop = function () {
+                            var t = mediaRecorder.mimeType || 'audio/webm';
+                            var blob = new Blob(audioChunks, { type: t });
+                            mediaRecorder = null;
+                            applyStoppedUi(blob);
+                        };
                         mediaRecorder.stop();
-                    } catch (_) {}
-                    mediaRecorder = null;
+                    } catch (_) {
+                        mediaRecorder = null;
+                        applyStoppedUi(null);
+                    }
+                } else {
+                    if (mediaRecorder) {
+                        mediaRecorder = null;
+                    }
+                    applyStoppedUi(null);
                 }
-
-                stopSpeechRecognition();
-                teardownAudioGraph();
-                stopMediaStream();
-
-                isRecording = false;
-                if (micIcon) micIcon.className = 'bi bi-mic';
-                if (voiceCircle) voiceCircle.classList.remove('recording');
-                if (recordingState) recordingState.style.display = 'none';
-                if (statusText) {
-                    statusText.style.display = 'block';
-                    statusText.textContent = 'Recording complete';
-                }
-                if (isMobile && mobileRetryBtn) {
-                    mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-                }
-
-                const elapsed = startTime ? Date.now() - startTime : 0;
-                startTime = null;
-                if (recordingDuration) {
-                    recordingDuration.textContent = formatElapsed(elapsed);
-                }
-                if (recordingTimeEl) {
-                    recordingTimeEl.textContent = formatElapsed(elapsed);
-                }
-
-                updateTranscriptReadonly();
-                updateWordCountFromTranscript();
-
-                if (!speechSupported && finalTranscript && !finalTranscript.value.trim()) {
-                    finalTranscript.placeholder =
-                        'Type what you said here, or try Chrome / Edge on desktop for live dictation.';
-                }
-
-                setPostPanelVisible(true);
             }
 
             function resetRecording() {

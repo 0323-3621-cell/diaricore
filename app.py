@@ -1944,6 +1944,31 @@ def api_upload_image():
     return jsonify({"success": True, "url": f"/uploads/{safe_name}"}), 201
 
 
+MAX_VOICE_TRANSCRIBE_BYTES = 8 * 1024 * 1024
+
+
+@app.route("/api/voice/transcribe", methods=["POST"])
+def api_voice_transcribe():
+    """Transcribe a short voice clip via Hugging Face (Whisper) when browser Web Speech is blocked."""
+    import hf_speech
+
+    f = request.files.get("audio")
+    if not f:
+        return jsonify({"success": False, "error": "Missing audio file (form field: audio)."}), 400
+    data = f.read()
+    if not data:
+        return jsonify({"success": False, "error": "Empty audio upload."}), 400
+    if len(data) > MAX_VOICE_TRANSCRIBE_BYTES:
+        return jsonify({"success": False, "error": "Recording is too large (max ~8 MB)."}), 413
+
+    content_type = (f.mimetype or "audio/webm").split(";")[0].strip()
+    text, err = hf_speech.transcribe_upload_bytes(data, content_type)
+    if text is not None:
+        return jsonify({"success": True, "text": text, "source": "hf"}), 200
+    status = 503 if err and "warming" in err.lower() else 502
+    return jsonify({"success": False, "error": err or "Transcription failed."}), status
+
+
 @app.route("/uploads/<path:filename>")
 def uploaded_images(filename):
     safe = os.path.normpath(filename)

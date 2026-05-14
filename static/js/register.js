@@ -110,6 +110,15 @@ document.addEventListener('DOMContentLoaded', function () {
         availabilityTimers[fieldId] = setTimeout(() => checkFieldAvailability(fieldId, value), 300);
     }
 
+    function getSignUpPersonal() {
+        return {
+            nickname: (document.getElementById('nickname')?.value || '').trim(),
+            email: (document.getElementById('signUpEmail')?.value || '').trim(),
+            firstName: (document.getElementById('firstName')?.value || '').trim(),
+            lastName: (document.getElementById('lastName')?.value || '').trim(),
+        };
+    }
+
     function validateSignUpField(fieldId) {
         const field = document.getElementById(fieldId);
         if (!field) return true;
@@ -131,17 +140,26 @@ document.addEventListener('DOMContentLoaded', function () {
         if (fieldId === 'gender') { if (!value) { showError(field, 'Gender is required.'); return false; } showSuccess(field); return true; }
         if (fieldId === 'birthday') { if (!value) { showError(field, 'Date of birth is required.'); return false; } showSuccess(field); return true; }
         if (fieldId === 'signUpPassword') {
-            if (!value) { showError(field, 'Password is required.'); return false; }
-            if (value.length < 8) { showError(field, 'Password must be at least 8 characters.'); return false; }
+            if (!value) {
+                showError(field, 'Password is required.');
+                return false;
+            }
             showSuccess(field);
             if (document.getElementById('confirmPassword')?.value.trim()) validateSignUpField('confirmPassword');
             return true;
         }
         if (fieldId === 'confirmPassword') {
             const pass = document.getElementById('signUpPassword').value;
-            if (!value) { showError(field, 'Password confirmation is required.'); return false; }
-            if (value !== pass) { showError(field, 'Passwords do not match.'); return false; }
-            showSuccess(field); return true;
+            if (!value) {
+                showError(field, 'Password confirmation is required.');
+                return false;
+            }
+            if (value !== pass) {
+                showError(field, 'Passwords do not match.');
+                return false;
+            }
+            showSuccess(field);
+            return true;
         }
         return true;
     }
@@ -174,6 +192,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initFloatingLabels();
 
+    const signUpSubmitBtn = document.getElementById('signUpSubmitBtn');
+    const signUpPwHint = document.getElementById('signUpPwHint');
+    const signUpPwLive = document.getElementById('signUpPwLive');
+    const signUpPwCommonErr = document.getElementById('signUpPassword-common-error');
+    let signUpPwLiveInst = null;
+    if (window.DiariPasswordLive && signUpPasswordInput && confirmPasswordInput && signUpSubmitBtn && signUpForm) {
+        signUpPwLiveInst = window.DiariPasswordLive.attach({
+            passwordEl: signUpPasswordInput,
+            confirmEl: confirmPasswordInput,
+            hintEl: signUpPwHint,
+            liveWrap: signUpPwLive,
+            submitBtn: signUpSubmitBtn,
+            commonErrorEl: signUpPwCommonErr,
+            formRoot: signUpForm,
+            getPersonal: getSignUpPersonal,
+        });
+        ['nickname', 'signUpEmail', 'firstName', 'lastName'].forEach((fid) => {
+            const el = document.getElementById(fid);
+            if (el) {
+                el.addEventListener('input', function () {
+                    if (signUpPwLiveInst) signUpPwLiveInst.refresh();
+                });
+            }
+        });
+    }
+
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
     if (googleSignUpBtn) googleSignUpBtn.addEventListener('click', () => showNotification('Google Sign Up coming soon!', 'info'));
 
@@ -200,11 +244,25 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!validateSignUpField('confirmPassword')) isValid = false;
             if (!isValid) return;
 
+            if (!navigator.onLine) {
+                showNotification('You must be online to create or reset your password.', 'error');
+                return;
+            }
+
+            const personal = getSignUpPersonal();
+            if (
+                window.DiariPasswordPolicy &&
+                !window.DiariPasswordPolicy.isPasswordSubmitReady(password, confirmPassword, personal)
+            ) {
+                showNotification('Please meet all password requirements before signing up.', 'warning');
+                return;
+            }
+
             const nicknameAvailable = await checkFieldAvailability('nickname', nickname);
             const emailAvailable = await checkFieldAvailability('signUpEmail', email);
             if (!nicknameAvailable || !emailAvailable) return;
 
-            const submitBtn = signUpForm.querySelector('.btn-signin');
+            const submitBtn = document.getElementById('signUpSubmitBtn') || signUpForm.querySelector('.btn-signin');
             submitBtn.textContent = 'Sending Code...';
             submitBtn.disabled = true;
 
@@ -248,6 +306,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');
                     submitBtn.textContent = 'SIGN UP';
                     submitBtn.disabled = false;
+                })
+                .finally(() => {
+                    if (signUpPwLiveInst) signUpPwLiveInst.refresh();
                 });
         });
     }

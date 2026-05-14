@@ -19,6 +19,7 @@ from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
 import db
+import password_policy
 import space_nlp
 
 INSIGHT_TEMPLATES = {
@@ -526,8 +527,15 @@ def api_register():
         return jsonify({"success": False, "field": "signUpEmail", "error": "Please enter a valid email."}), 400
     if not password:
         return jsonify({"success": False, "field": "signUpPassword", "error": "Password is required."}), 400
-    if len(password) < 8:
-        return jsonify({"success": False, "field": "signUpPassword", "error": "Password must be at least 8 characters."}), 400
+    ok_pw, field_pw, msg_pw = password_policy.validate_new_password(
+        password,
+        nickname=nickname,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+    )
+    if not ok_pw:
+        return jsonify({"success": False, "field": field_pw or "signUpPassword", "error": msg_pw}), 400
     if not first_name:
         return jsonify({"success": False, "field": "firstName", "error": "First name is required."}), 400
     if not last_name:
@@ -952,12 +960,14 @@ def api_password_reset():
         return jsonify({"success": False, "error": "Please enter a valid email address."}), 400
     if not reset_code:
         return jsonify({"success": False, "error": "Reset code is required."}), 400
-    if len(new_password) < 8:
-        return jsonify({"success": False, "error": "Password must be at least 8 characters."}), 400
 
     user = db.get_user_by_email(email)
     if not user:
         return jsonify({"success": False, "error": "Invalid reset request."}), 400
+
+    ok_pw, _field_pw, msg_pw = password_policy.validate_new_password_for_user_row(new_password, user)
+    if not ok_pw:
+        return jsonify({"success": False, "field": "resetNewPassword", "error": msg_pw}), 400
 
     if check_password_hash(user.get("password_hash") or "", new_password):
         return jsonify({"success": False, "error": "Please enter a password different from your previous one."}), 400

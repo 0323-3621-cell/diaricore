@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetTitle = document.getElementById('resetTitle');
     const resetToggleNewPassword = document.getElementById('resetToggleNewPassword');
     const resetToggleConfirmPassword = document.getElementById('resetToggleConfirmPassword');
+    const resetPwHint = document.getElementById('resetPwHint');
+    const resetPwLive = document.getElementById('resetPwLive');
+    const resetPwCommonErr = document.getElementById('resetPassword-common-error');
+    let resetPwLiveInst = null;
     let pendingRegistrationEmail = '';
     let otpTimerInterval = null;
     let otpExpirySeconds = 0;
@@ -943,7 +947,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (fieldId === 'signUpPassword') {
             if (!value) return showError(field, 'Password is required.'), false;
-            if (value.length < 8) return showError(field, 'Password must be at least 8 characters.'), false;
             showSuccess(field);
             // Re-validate confirm password when password changes
             if (document.getElementById('confirmPassword')?.value.trim()) {
@@ -1050,9 +1053,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!password) {
                 showError(document.getElementById('password'), 'Password is required.');
                 isValid = false;
-            } else if (password.length < 8) {
-                showError(document.getElementById('password'), 'Password must be at least 8 characters.');
-                isValid = false;
             } else {
                 showSuccess(document.getElementById('password'));
             }
@@ -1067,20 +1067,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: username, password: password })
                 })
-                    .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
-                    .then(({ ok, data }) => {
+                    .then((res) => res.json().then((data) => ({ ok: res.ok, status: res.status, data })))
+                    .then(({ ok, status, data }) => {
                         if (!ok || !data.success) {
                             const usernameField = document.getElementById('email');
                             const passwordField = document.getElementById('password');
-                            const loginError = data.error || 'Invalid username or password.';
-                            if (usernameField) {
-                                usernameField.classList.add('error');
-                                usernameField.classList.remove('success');
-                            }
-                            if (passwordField) {
-                                passwordField.value = '';
-                                showError(passwordField, loginError);
-                                passwordField.focus();
+                            if (status === 401) {
+                                if (usernameField) {
+                                    usernameField.classList.add('error');
+                                    usernameField.classList.remove('success');
+                                }
+                                if (passwordField) {
+                                    passwordField.value = '';
+                                    showError(passwordField, 'Incorrect username or password.');
+                                    passwordField.focus();
+                                }
+                            } else {
+                                showNotification(data.error || 'Something went wrong. Please try again.', 'error');
                             }
                             submitBtn.textContent = 'SIGN IN';
                             submitBtn.disabled = false;
@@ -1297,20 +1300,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 showError(this, 'Password is required.');
                 return;
             }
-            if (value.length < 8) {
-                showError(this, 'Password must be at least 8 characters.');
-                return;
-            }
             showSuccess(this);
         });
         signInPasswordField.addEventListener('blur', function () {
             const value = this.value;
             if (!value) {
                 showError(this, 'Password is required.');
-                return;
-            }
-            if (value.length < 8) {
-                showError(this, 'Password must be at least 8 characters.');
                 return;
             }
             showSuccess(this);
@@ -1387,9 +1382,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!password) {
                 showError(document.getElementById('signUpPassword'), 'Password is required.');
                 isValid = false;
-            } else if (password.length < 8) {
-                showError(document.getElementById('signUpPassword'), 'Password must be at least 8 characters.');
-                isValid = false;
             } else {
                 showSuccess(document.getElementById('signUpPassword'));
             }
@@ -1404,7 +1396,20 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 showSuccess(document.getElementById('confirmPassword'));
             }
-            
+
+            const personalEmbed = { nickname, email, firstName, lastName };
+            if (
+                window.DiariPasswordPolicy &&
+                !window.DiariPasswordPolicy.isPasswordSubmitReady(password, confirmPassword, personalEmbed)
+            ) {
+                showNotification('Please meet all password requirements before signing up.', 'warning');
+                isValid = false;
+            }
+
+            if (!navigator.onLine) {
+                showNotification('You must be online to create or reset your password.', 'error');
+                isValid = false;
+            }
             if (isValid) {
                 const nicknameAvailable = await checkFieldAvailability('nickname', nickname);
                 const emailAvailable = await checkFieldAvailability('signUpEmail', email);
@@ -1655,6 +1660,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (resetTitle) resetTitle.textContent = 'Reset Password';
                 if (resetSubtitle) resetSubtitle.textContent = 'Please choose a new password that is different from your old one.';
                 setResetAlert('Code verified. Set your new password.', 'success');
+                initResetPasswordLive();
             })
             .catch(() => setResetAlert('Could not reach the server. Please try again.'))
             .finally(() => {
@@ -1705,8 +1711,49 @@ document.addEventListener('DOMContentLoaded', function() {
         animateResetDialog('is-step-animating');
     }
 
+    function destroyResetPasswordLive() {
+        if (resetPwLiveInst) {
+            resetPwLiveInst.destroy();
+            resetPwLiveInst = null;
+        }
+    }
+
+    function initResetPasswordLive() {
+        destroyResetPasswordLive();
+        if (
+            !window.DiariPasswordLive ||
+            !resetNewPasswordInput ||
+            !resetConfirmPasswordInput ||
+            !confirmResetBtn ||
+            !resetPasswordForm ||
+            !resetPwLive
+        ) {
+            return;
+        }
+        resetPwLive.innerHTML = '';
+        resetPwLiveInst = window.DiariPasswordLive.attach({
+            passwordEl: resetNewPasswordInput,
+            confirmEl: resetConfirmPasswordInput,
+            hintEl: resetPwHint,
+            liveWrap: resetPwLive,
+            submitBtn: confirmResetBtn,
+            commonErrorEl: resetPwCommonErr,
+            formRoot: resetPasswordForm,
+            getPersonal: function () {
+                return {
+                    nickname: '',
+                    email: (resetIdentifier || (resetIdentifierInput && resetIdentifierInput.value) || '').trim(),
+                    firstName: '',
+                    lastName: '',
+                };
+            },
+        });
+    }
+
     function openResetModal() {
         if (!resetModal) return;
+        destroyResetPasswordLive();
+        if (confirmResetBtn) confirmResetBtn.disabled = true;
         resetModal.hidden = false;
         animateResetDialog('is-opening');
         resetIdentifier = '';
@@ -1740,6 +1787,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function closeResetModal() {
         if (!resetModal) return;
+        destroyResetPasswordLive();
         resetModal.hidden = true;
         resetIdentifier = '';
         verifiedResetCode = '';
@@ -1830,6 +1878,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetVerifyBackBtn) {
         resetVerifyBackBtn.addEventListener('click', function () {
             clearResetAlert();
+            destroyResetPasswordLive();
             if (resetConfirmForm) resetConfirmForm.hidden = true;
             if (resetRequestForm) showResetStep(resetRequestForm);
             if (resetPasswordForm) resetPasswordForm.hidden = true;
@@ -1845,6 +1894,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetPasswordBackBtn) {
         resetPasswordBackBtn.addEventListener('click', function () {
             clearResetAlert();
+            destroyResetPasswordLive();
             if (resetPasswordForm) resetPasswordForm.hidden = true;
             if (resetConfirmForm) showResetStep(resetConfirmForm);
             if (resetTitle) resetTitle.textContent = 'Verification';
@@ -1940,62 +1990,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (resetPasswordForm) {
-        const validateResetPasswordField = (fieldId) => {
-            if (!resetPasswordForm || resetPasswordForm.hidden) return true;
-            const newPassword = resetNewPasswordInput?.value || '';
-            const confirmPassword = resetConfirmPasswordInput?.value || '';
-
-            if (fieldId === 'resetNewPassword') {
-                if (!newPassword) {
-                    showError(resetNewPasswordInput, 'New password is required.');
-                    return false;
-                }
-                if (newPassword.length < 8) {
-                    showError(resetNewPasswordInput, 'Password must be at least 8 characters.');
-                    return false;
-                }
-                showSuccess(resetNewPasswordInput);
-                if (confirmPassword) validateResetPasswordField('resetConfirmPassword');
-                return true;
-            }
-
-            if (fieldId === 'resetConfirmPassword') {
-                if (!confirmPassword) {
-                    showError(resetConfirmPasswordInput, 'Confirming new password is required.');
-                    return false;
-                }
-                if (confirmPassword.length < 8) {
-                    showError(resetConfirmPasswordInput, 'Password must be at least 8 characters.');
-                    return false;
-                }
-                if (confirmPassword !== newPassword) {
-                    showError(resetConfirmPasswordInput, 'Passwords do not match.');
-                    return false;
-                }
-                showSuccess(resetConfirmPasswordInput);
-                return true;
-            }
-
-            return true;
-        };
-
-        if (resetNewPasswordInput) {
-            resetNewPasswordInput.addEventListener('input', () => validateResetPasswordField('resetNewPassword'));
-            resetNewPasswordInput.addEventListener('blur', () => validateResetPasswordField('resetNewPassword'));
-        }
-        if (resetConfirmPasswordInput) {
-            resetConfirmPasswordInput.addEventListener('input', () => validateResetPasswordField('resetConfirmPassword'));
-            resetConfirmPasswordInput.addEventListener('blur', () => validateResetPasswordField('resetConfirmPassword'));
-        }
-
         resetPasswordForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const newPassword = resetNewPasswordInput?.value || '';
             const confirmPassword = resetConfirmPasswordInput?.value || '';
 
-            const isNewPasswordValid = validateResetPasswordField('resetNewPassword');
-            const isConfirmPasswordValid = validateResetPasswordField('resetConfirmPassword');
-            if (!isNewPasswordValid || !isConfirmPasswordValid) return;
+            if (!navigator.onLine) {
+                setResetAlert('You must be online to create or reset your password.');
+                return;
+            }
+
+            const personalReset = {
+                nickname: '',
+                email: (resetIdentifier || (resetIdentifierInput?.value || '')).trim(),
+                firstName: '',
+                lastName: '',
+            };
+            if (
+                window.DiariPasswordPolicy &&
+                !window.DiariPasswordPolicy.isPasswordSubmitReady(newPassword, confirmPassword, personalReset)
+            ) {
+                setResetAlert('Please meet all password requirements.');
+                return;
+            }
 
             clearResetAlert();
             if (confirmResetBtn) {
@@ -2025,6 +2042,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 newPasswordCustomError.classList.remove('show');
                             }
                             showError(resetConfirmPasswordInput, errorMessage);
+                        } else if (data.field === 'resetNewPassword' && resetNewPasswordInput) {
+                            showError(resetNewPasswordInput, errorMessage);
                         } else {
                             setResetAlert(errorMessage);
                         }
@@ -2042,6 +2061,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         confirmResetBtn.disabled = false;
                         confirmResetBtn.textContent = 'Update Password';
                     }
+                    if (resetPwLiveInst) resetPwLiveInst.refresh();
                 });
         });
     }

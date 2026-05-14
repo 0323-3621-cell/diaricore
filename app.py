@@ -923,6 +923,55 @@ def api_user_avatar():
     return jsonify({"success": True, "user": serialize_user(row)}), 200
 
 
+@app.route("/api/user/profile", methods=["POST"])
+def api_user_profile_update():
+    """Persist personal information (name, username, email, gender, birthday) for the given user."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            user_id = 0
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+
+    if not db.get_user_by_id(user_id):
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    first_name = (data.get("firstName") or "").strip()
+    last_name = (data.get("lastName") or "").strip()
+    nickname = (data.get("nickname") or "").strip()
+    email = (data.get("email") or "").strip()
+    gender = (data.get("gender") or "").strip() or None
+    birthday = (data.get("birthday") or "").strip() or None
+
+    ok, field_key, err_msg = db.update_user_profile(
+        user_id,
+        first_name,
+        last_name,
+        nickname,
+        email,
+        gender,
+        birthday,
+    )
+    if not ok:
+        field_map = {"nickname": "profileFieldNickname", "email": "profileFieldEmail"}
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "field": field_map.get(field_key or ""),
+                    "error": err_msg or "Could not save profile.",
+                }
+            ),
+            400,
+        )
+
+    row = db.get_user_by_id(user_id)
+    return jsonify({"success": True, "user": serialize_user(row)}), 200
+
+
 def _send_profile_password_change_email(email: str, code: str, nickname: str) -> bool:
     """Email OTP before applying a password change from Profile → Security."""
     api_key = os.environ.get("BREVO_API_KEY") or db.get_system_setting("brevo_api_key")

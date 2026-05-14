@@ -673,6 +673,74 @@ def update_user_avatar_data_url(user_id: int, avatar_data_url: str | None) -> bo
         conn.close()
 
 
+def update_user_profile(
+    user_id: int,
+    first_name: str,
+    last_name: str,
+    nickname: str,
+    email: str,
+    gender: str | None,
+    birthday: str | None,
+) -> tuple[bool, str | None, str | None]:
+    """
+    Persist personal profile fields. Returns (True, None, None) on success,
+    or (False, field_key, error_message) on validation/unique conflict.
+    field_key is 'nickname' or 'email' for uniqueness errors.
+    """
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False, None, "Invalid user."
+    fn = (first_name or "").strip()
+    ln = (last_name or "").strip()
+    nick = (nickname or "").strip()
+    em = (email or "").strip().lower()
+    if not fn or not ln:
+        return False, None, "First and last name are required."
+    if not nick or len(nick) < 4 or len(nick) > 64:
+        return False, "nickname", "Username must be between 4 and 64 characters."
+    if not em or "@" not in em:
+        return False, "email", "A valid email is required."
+    g = (gender or "").strip() or None
+    bday = (birthday or "").strip() or None
+
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                UPDATE users
+                SET first_name = %s, last_name = %s, nickname = %s, email = %s, gender = %s, birthday = %s
+                WHERE id = %s
+                """,
+                (fn, ln, nick, em, g, bday, user_id),
+            )
+        else:
+            cur.execute(
+                """
+                UPDATE users
+                SET first_name = ?, last_name = ?, nickname = ?, email = ?, gender = ?, birthday = ?
+                WHERE id = ?
+                """,
+                (fn, ln, nick, em, g, bday, user_id),
+            )
+        if cur.rowcount <= 0:
+            conn.rollback()
+            return False, None, "User not found."
+        conn.commit()
+        return True, None, None
+    except Exception as e:
+        conn.rollback()
+        err = str(e).lower()
+        if any(s in err for s in ("unique", "duplicate", "integrity")):
+            if "nickname" in err:
+                return False, "nickname", "Username already exists."
+            if "email" in err:
+                return False, "email", "Email already exists."
+        return False, None, "Could not save profile. Please try again."
+    finally:
+        conn.close()
+
+
 def create_user(
     nickname: str,
     email: str,

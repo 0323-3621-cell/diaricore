@@ -1180,6 +1180,7 @@ function savePersonalInfoForm() {
     const gender = (document.getElementById('profileFieldGender')?.value || '').trim();
     const bday = (document.getElementById('profileFieldBirthday')?.value || '').trim();
 
+    const saveBtn = document.getElementById('profilePersonalSaveBtn');
     void Promise.all([
         checkProfilePersonalAvailability('profileFieldNickname', nick),
         checkProfilePersonalAvailability('profileFieldEmail', email),
@@ -1189,18 +1190,59 @@ function savePersonalInfoForm() {
             showNotification('Username or email is not available.', 'warning');
             return;
         }
-        user.firstName = first;
-        user.lastName = last;
-        user.nickname = nick;
-        user.email = email;
-        user.gender = gender || null;
-        user.birthday = bday || null;
-
-        localStorage.setItem('diariCoreUser', JSON.stringify(user));
-        document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
-        initializeProfileFromStorage();
-        showNotification('Profile updated.', 'success');
-        closeProfileSection();
+        const uid = Number(user.id ?? user.userId ?? 0);
+        if (!Number.isInteger(uid) || uid <= 0) {
+            showNotification('Sign in to save profile details.', 'warning');
+            return;
+        }
+        if (saveBtn) saveBtn.disabled = true;
+        fetch('/api/user/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: uid,
+                firstName: first,
+                lastName: last,
+                nickname: nick,
+                email: email,
+                gender: gender || null,
+                birthday: bday || null,
+            }),
+        })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok, data: data };
+                });
+            })
+            .then(function (ref) {
+                if (saveBtn) saveBtn.disabled = false;
+                const data = ref.data || {};
+                if (!ref.ok || !data.success) {
+                    refreshProfilePersonalSaveButton();
+                    const msg = data.error || 'Could not save profile.';
+                    showNotification(msg, 'error');
+                    const fid = data.field;
+                    if (fid) {
+                        const fel = document.getElementById(fid);
+                        if (fel) profilePersonalShowError(fel, msg);
+                    }
+                    return;
+                }
+                if (!data.user || typeof data.user !== 'object') {
+                    refreshProfilePersonalSaveButton();
+                    showNotification('Invalid response from server.', 'error');
+                    return;
+                }
+                mergeDiariUserIntoStorage(data.user);
+                initializeProfileFromStorage();
+                showNotification('Profile updated.', 'success');
+                closeProfileSection();
+            })
+            .catch(function () {
+                if (saveBtn) saveBtn.disabled = false;
+                refreshProfilePersonalSaveButton();
+                showNotification('Could not reach the server.', 'error');
+            });
     });
 }
 

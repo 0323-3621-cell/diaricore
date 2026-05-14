@@ -160,6 +160,73 @@
                     </div>
                     <button type="button" class="login-totp-step__back" id="loginTotpBack">← Back to sign in</button>
                 </div>
+
+                <div id="loginPasswordResetStep" class="login-reset-step" hidden>
+                    <div class="form-header login-reset-step__header">
+                        <h2 class="form-title" id="resetTitle">Forgot Your Password?</h2>
+                        <p class="form-subtitle" id="resetSubtitle">Enter the email associated with your account to reset your password.</p>
+                    </div>
+
+                    <div class="reset-alert" id="resetAlert" hidden></div>
+
+                    <form id="resetRequestForm" class="login-form login-reset-step__form" autocomplete="off" novalidate>
+                        <div class="form-group">
+                            <div class="input-wrapper" data-label="Email Address">
+                                <input id="resetIdentifier" class="form-input" type="text" placeholder=" " autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+                                <span class="floating-label">Email Address</span>
+                                <i class="bi bi-envelope input-icon"></i>
+                            </div>
+                            <div class="custom-error" id="resetIdentifier-error">Please enter a valid email.</div>
+                        </div>
+                        <button type="submit" class="btn-signin" id="sendResetCodeBtn">Send Reset Code</button>
+                    </form>
+
+                    <form id="resetConfirmForm" class="login-form login-reset-step__form" autocomplete="off" novalidate hidden>
+                        <div class="form-group login-totp-step__digits-group">
+                            <p class="login-totp-step__digits-label">Enter verification code</p>
+                            <div class="login-totp-digits" id="resetOtpInputs" role="group" aria-label="Verification code digits">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5">
+                                <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-signin login-totp-step__verify" id="verifyResetCodeBtn">Verify Code</button>
+                        <div class="login-reset-step__meta">
+                            <span class="login-reset-step__meta-text">Didn't receive the code?</span>
+                            <button type="button" class="login-reset-step__link-btn" id="resendResetCodeBtn">Resend OTP</button>
+                            <span class="login-reset-step__timer" id="resetTimerLabel"></span>
+                        </div>
+                    </form>
+
+                    <form id="resetPasswordForm" class="login-form login-reset-step__form" autocomplete="off" novalidate hidden>
+                        <div class="form-group">
+                            <div class="input-wrapper" data-label="New Password">
+                                <input id="resetNewPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
+                                <span class="floating-label">New Password</span>
+                                <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleNewPassword"></i>
+                            </div>
+                            <div class="custom-error" id="resetNewPassword-error">New password is required.</div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-wrapper" data-label="Confirm New Password">
+                                <input id="resetConfirmPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
+                                <span class="floating-label">Confirm New Password</span>
+                                <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleConfirmPassword"></i>
+                            </div>
+                            <div class="custom-error" id="resetConfirmPassword-error">Confirming new password is required.</div>
+                        </div>
+                        <div class="form-group form-group--pwd-full">
+                            <div class="pwd-live" id="resetPwLive" hidden></div>
+                            <div class="custom-error" id="resetPassword-common-error"></div>
+                        </div>
+                        <button type="submit" class="btn-signin login-totp-step__verify" id="confirmResetBtn" disabled>Update Password</button>
+                    </form>
+
+                    <button type="button" class="login-totp-step__back" id="resetCloseBtn">← Back to sign in</button>
+                </div>
             </div>
         </div>
         
@@ -174,78 +241,6 @@
                 <p class="welcome-text">To stay connected with DiariCore, login with your personal info.</p>
                 <a href="register.html" class="btn-switch">SIGN UP</a>
             </div>
-        </div>
-    </div>
-
-    <div class="reset-modal" id="resetModal" hidden>
-        <div class="reset-backdrop" id="resetBackdrop"></div>
-        <div class="reset-dialog" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
-            <button type="button" class="reset-close" id="resetModalXBtn" aria-label="Close">
-                <i class="bi bi-x-lg"></i>
-            </button>
-            <div class="reset-header">
-                <h3 id="resetTitle">Forgot Your Password?</h3>
-                <p id="resetSubtitle">Enter the email associated with your account to reset your password.</p>
-            </div>
-            <div class="reset-alert" id="resetAlert" hidden></div>
-
-            <form id="resetRequestForm" class="login-form reset-form" autocomplete="off" novalidate>
-                <div class="form-group">
-                    <div class="input-wrapper" data-label="Email Address">
-                        <input id="resetIdentifier" class="form-input" type="text" placeholder=" " autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
-                        <span class="floating-label">Email Address</span>
-                        <i class="bi bi-envelope input-icon"></i>
-                    </div>
-                    <div class="custom-error" id="resetIdentifier-error">Please enter a valid email.</div>
-                </div>
-                <button type="submit" class="btn-signin" id="sendResetCodeBtn">Send Reset Code</button>
-            </form>
-
-            <form id="resetConfirmForm" class="login-form reset-form" autocomplete="off" novalidate hidden>
-                <div class="form-group login-totp-step__digits-group">
-                    <p class="login-totp-step__digits-label">Enter verification code</p>
-                    <div class="login-totp-digits" id="resetOtpInputs" role="group" aria-label="Verification code digits">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5">
-                        <input class="login-totp-digit" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6">
-                    </div>
-                </div>
-                <button type="submit" class="btn-signin login-totp-step__verify" id="verifyResetCodeBtn">Verify Code</button>
-                <div class="reset-meta">
-                    <span class="reset-meta-text">Didn't receive the code?</span>
-                    <button type="button" class="reset-link-btn" id="resendResetCodeBtn">Resend OTP</button>
-                    <span class="reset-timer" id="resetTimerLabel"></span>
-                </div>
-            </form>
-
-            <form id="resetPasswordForm" class="login-form reset-form" autocomplete="off" novalidate hidden>
-                <div class="form-group">
-                    <div class="input-wrapper" data-label="New Password">
-                        <input id="resetNewPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
-                        <span class="floating-label">New Password</span>
-                        <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleNewPassword"></i>
-                    </div>
-                    <div class="custom-error" id="resetNewPassword-error">New password is required.</div>
-                </div>
-                <div class="form-group">
-                    <div class="input-wrapper" data-label="Confirm New Password">
-                        <input id="resetConfirmPassword" class="form-input" type="password" placeholder=" " autocomplete="new-password" required maxlength="64">
-                        <span class="floating-label">Confirm New Password</span>
-                        <i class="bi bi-eye-slash input-icon toggle-password" id="resetToggleConfirmPassword"></i>
-                    </div>
-                    <div class="custom-error" id="resetConfirmPassword-error">Confirming new password is required.</div>
-                </div>
-                <div class="form-group form-group--pwd-full">
-                    <div class="pwd-live" id="resetPwLive" hidden></div>
-                    <div class="custom-error" id="resetPassword-common-error"></div>
-                </div>
-                <button type="submit" class="btn-signin login-totp-step__verify" id="confirmResetBtn" disabled>Update Password</button>
-            </form>
-
-            <button type="button" class="reset-footer-back" id="resetFooterBackBtn">← Back to sign in</button>
         </div>
     </div>
 

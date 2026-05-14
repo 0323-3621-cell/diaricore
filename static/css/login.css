@@ -1141,143 +1141,68 @@ body {
     to { transform: rotate(360deg); }
 }
 
-.reset-modal[hidden] {
-    display: none !important;
-}
-
-.reset-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 11000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.reset-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(35, 44, 40, 0.45);
-    backdrop-filter: blur(2px);
-    animation: resetBackdropIn 0.24s ease forwards;
-}
-
-.reset-dialog {
-    position: relative;
-    width: min(460px, calc(100% - 20px));
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-    padding: 22px 22px 16px;
-}
-
-.reset-dialog.is-opening,
-.reset-dialog.is-step-animating {
-    animation: resetDialogPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.reset-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 16px;
-    cursor: pointer;
-    z-index: 1;
-}
-
-.reset-header {
-    text-align: center;
-    margin-bottom: 14px;
-    padding-right: 28px;
-}
-
-.reset-header h3 {
-    margin: 0 0 6px;
-    color: var(--primary-color);
-    font-size: 22px;
-    font-weight: 700;
-}
-
-.reset-header p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 15px;
-    line-height: 1.45;
-}
-
-.reset-dialog .login-form {
+/* Forgot password: inline in the sign-in column (same rhythm as the TOTP step, not a modal) */
+.login-reset-step {
+    margin-top: 0.25rem;
     width: 100%;
 }
 
-.reset-dialog .login-form .btn-signin {
-    width: 100%;
-    margin-bottom: 0.5rem;
+.login-reset-step__header {
+    margin-bottom: 1rem;
 }
 
-.reset-dialog .pwd-live {
+.login-reset-step__form {
+    margin-bottom: 0.35rem;
+}
+
+.login-reset-step .login-form .btn-signin {
+    margin-bottom: 0.75rem;
+}
+
+.login-reset-step .pwd-live {
     max-width: 100%;
 }
 
-.reset-footer-back {
-    display: block;
-    width: 100%;
-    margin-top: 0.35rem;
-    padding: 0.5rem 0.25rem;
-    border: none;
-    background: transparent;
+.login-reset-step__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    text-align: center;
 }
 
-.reset-footer-back:hover {
-    color: var(--text-dark);
-}
-
-.reset-form {
-    display: grid;
-    gap: 2px;
-}
-
-.reset-meta {
-    margin: 8px 0 4px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-.reset-meta-text {
-    color: var(--text-muted);
-}
-
-.reset-link-btn {
+.login-reset-step__link-btn {
     border: none;
     background: none;
-    color: var(--primary-color);
-    font-size: 13px;
+    padding: 0;
+    font: inherit;
     font-weight: 600;
+    font-size: 0.85rem;
+    color: #4a7c59;
     cursor: pointer;
     text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-.reset-link-btn.is-loading {
+.login-reset-step__link-btn:hover:not(:disabled) {
+    color: #3d5a4a;
+}
+
+.login-reset-step__link-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.login-reset-step__link-btn.is-loading {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    text-decoration: underline;
 }
 
-.reset-link-btn.is-loading::before {
+.login-reset-step__link-btn.is-loading::before {
     content: '';
     width: 12px;
     height: 12px;
@@ -1287,40 +1212,17 @@ body {
     animation: resetBtnSpin 0.8s linear infinite;
 }
 
-.reset-link-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+.login-reset-step__meta-text {
+    color: var(--text-secondary);
 }
 
-.reset-timer {
-    display: inline;
-    margin-left: 3px;
-    font-size: 12px;
+.login-reset-step__timer {
+    font-weight: 600;
     color: var(--text-muted);
 }
 
-@keyframes resetBackdropIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes resetDialogPop {
-    0% {
-        opacity: 0;
-        transform: translateY(22px) scale(0.92);
-    }
-    70% {
-        opacity: 1;
-        transform: translateY(-2px) scale(1.01);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+.login-reset-step .reset-alert {
+    margin-bottom: 0.75rem;
 }
 
 .btn-signin.is-loading {

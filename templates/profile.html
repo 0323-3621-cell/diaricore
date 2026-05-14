@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="side-bar.css" rel="stylesheet">
     <link href="profile.css" rel="stylesheet">
+    <link href="password-live.css" rel="stylesheet">
     <link href="theme.css" rel="stylesheet">
     <script src="theme.js"></script>
 </head>
@@ -437,26 +438,21 @@
                                         <span class="profile-account-field__label">New password</span>
                                         <span class="profile-account-field__input-wrap">
                                             <i class="bi bi-lock profile-account-field__icon" aria-hidden="true"></i>
-                                            <input type="password" id="profileSecNewPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="New password">
+                                            <input type="password" id="profileSecNewPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="New password" maxlength="64">
                                             <button type="button" class="profile-account-field__reveal" data-profile-pw="profileSecNewPassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
                                         </span>
-                                        <div class="profile-password-meter" aria-live="polite">
-                                            <span class="profile-password-meter__bar"></span>
-                                            <span class="profile-password-meter__bar"></span>
-                                            <span class="profile-password-meter__bar"></span>
-                                            <span class="profile-password-meter__bar"></span>
-                                            <span id="profilePasswordStrengthLabel" class="profile-password-meter__label"></span>
-                                        </div>
                                     </label>
                                     <label class="profile-account-field">
                                         <span class="profile-account-field__label">Confirm new password</span>
                                         <span class="profile-account-field__input-wrap">
                                             <i class="bi bi-lock profile-account-field__icon" aria-hidden="true"></i>
-                                            <input type="password" id="profileSecConfirmPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="Confirm password">
+                                            <input type="password" id="profileSecConfirmPassword" class="profile-account-field__input" autocomplete="new-password" placeholder="Confirm password" maxlength="64">
                                             <button type="button" class="profile-account-field__reveal" data-profile-pw="profileSecConfirmPassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
                                         </span>
                                     </label>
                                 </div>
+                                <div class="pwd-live" id="profileSecPwLive" hidden></div>
+                                <div class="custom-error" id="profileSecPwCommonErr" role="alert"></div>
                             </div>
                             <div class="profile-security-section">
                                 <p class="profile-security-section__eyebrow">Two-factor authentication</p>
@@ -615,6 +611,50 @@
         </div>
     </div>
 
+    <div class="profile-totp-modal" id="profilePwdChangeOtpModal" hidden>
+        <div class="profile-totp-modal__backdrop" id="profilePwdChangeOtpBackdrop"></div>
+        <div class="profile-totp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="profilePwdChangeOtpTitle">
+            <button type="button" class="profile-totp-modal__close" id="profilePwdChangeOtpCloseBtn" aria-label="Close dialog">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+            <h3 class="profile-totp-modal__title" id="profilePwdChangeOtpTitle">Check your email</h3>
+            <p class="profile-totp-modal__lead" id="profilePwdChangeOtpLead">We sent a 6-digit code to your email. Enter it below to confirm your password change.</p>
+            <div class="profile-totp-setup-panel__code-block profile-pwd-change-otp-block">
+                <span class="profile-account-field__label profile-totp-setup-panel__code-label">Verification code</span>
+                <div class="profile-totp-digits profile-totp-setup-panel__digits" id="profilePwdChangeOtpDigits" role="group" aria-label="6-digit email verification code">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="1" aria-label="Digit 2 of 6" autocomplete="off">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="2" aria-label="Digit 3 of 6" autocomplete="off">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="3" aria-label="Digit 4 of 6" autocomplete="off">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="4" aria-label="Digit 5 of 6" autocomplete="off">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="5" aria-label="Digit 6 of 6" autocomplete="off">
+                </div>
+                <p class="profile-pwd-change-otp-error" id="profilePwdChangeOtpError" hidden role="alert"></p>
+                <p class="profile-pwd-change-otp-meta">
+                    <span>Didn’t receive the code?</span>
+                    <button type="button" class="profile-pwd-change-otp-resend" id="profilePwdChangeOtpResendBtn">Resend</button>
+                    <span class="profile-pwd-change-otp-timer" id="profilePwdChangeOtpTimer" aria-live="polite"></span>
+                </p>
+            </div>
+            <div class="profile-totp-modal__actions">
+                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profilePwdChangeOtpCancelBtn">Cancel</button>
+                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--primary" id="profilePwdChangeOtpVerifyBtn">
+                    <span class="profile-totp-modal__spinner" aria-hidden="true"></span>
+                    <span>Verify code</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-totp-modal" id="profilePwdChangeSuccessModal" hidden>
+        <div class="profile-totp-modal__backdrop"></div>
+        <div class="profile-totp-modal__dialog profile-pwd-change-success-dialog" role="alertdialog" aria-modal="true" aria-labelledby="profilePwdChangeSuccessTitle">
+            <div id="profilePwdChangeSuccessLottie" class="profile-pwd-change-success-lottie" aria-hidden="true"></div>
+            <h3 class="profile-totp-modal__title" id="profilePwdChangeSuccessTitle">Password changed successfully.</h3>
+            <p class="profile-totp-modal__lead" id="profilePwdChangeSuccessLead">Your password has been successfully changed. For security purposes, you are required to log in again.</p>
+        </div>
+    </div>
+
     <noscript>
         <style>
             html.diari-shell-pending .diari-shell-main {
@@ -627,6 +667,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="side-bar.js"></script>
     <script src="diari-shell.js"></script>
+    <script src="lottie-web.min.js"></script>
+    <script src="password-policy.js"></script>
     <script src="profile.js"></script>
 </body>
 </html>

@@ -923,6 +923,171 @@ def api_user_avatar():
     return jsonify({"success": True, "user": serialize_user(row)}), 200
 
 
+def _send_profile_password_change_email(email: str, code: str, nickname: str) -> bool:
+    """Email OTP before applying a password change from Profile → Security."""
+    api_key = os.environ.get("BREVO_API_KEY") or db.get_system_setting("brevo_api_key")
+    sender_email = os.environ.get("BREVO_SENDER_EMAIL") or db.get_system_setting("brevo_sender_email")
+    sender_name = os.environ.get("BREVO_SENDER_NAME") or db.get_system_setting("brevo_sender_name", "DiariCore")
+    enable_notifications = (db.get_system_setting("enable_email_notifications", "true") or "true").lower() == "true"
+
+    if not enable_notifications:
+        print(f"[PROFILE PASSWORD CHANGE DISABLED] OTP for {email}: {code}")
+        return True
+
+    if not api_key or not sender_email:
+        print(f"[PROFILE PASSWORD CHANGE DEV MODE] {email} -> {code}")
+        return True
+
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": email, "name": nickname or email.split("@")[0]}],
+        "subject": "DiariCore — confirm password change",
+        "htmlContent": f"""
+            <html><body style='font-family: Arial, sans-serif; color: #2F3E36;'>
+            <h2>Confirm your password change</h2>
+            <p>Hello {nickname or 'there'},</p>
+            <p>Someone requested to change the password on your DiariCore account. Enter this code to confirm:</p>
+            <p style='font-size: 28px; font-weight: bold; letter-spacing: 6px;'>{code}</p>
+            <p>This code expires in 10 minutes. If you did not request this, ignore this email.</p>
+            </body></html>
+        """,
+        "textContent": (
+            f"Your DiariCore password change confirmation code is {code}. It expires in 10 minutes. "
+            "If you did not request a password change, ignore this email."
+        ),
+    }
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "api-key": api_key},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15):
+            return True
+    except Exception:
+        return False
+
+
+def _profile_pw_field(api_field: str | None) -> str:
+    if api_field == "signUpPassword":
+        return "profileSecNewPassword"
+    return api_field or "profileSecNewPassword"
+
+
+@app.route("/api/user/password/change-request", methods=["POST"])
+def api_user_password_change_request():
+    """Verify current password and policy, then email a 6-digit OTP (logged-in profile flow)."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        user_id = 0
+    current_password = data.get("currentPassword") or ""
+    new_password = data.get("newPassword") or ""
+    confirm_password = data.get("confirmPassword") or ""
+
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({"success": False, "error": "Current password, new password, and confirmation are required."}), 400
+    if new_password != confirm_password:
+        return jsonify({"success": False, "error": "New password and confirmation do not match."}), 400
+
+    user = db.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    if not db.verify_user_password_by_id(user_id, current_password):
+        return jsonify({"success": False, "error": "Current password is incorrect."}), 401
+
+    if check_password_hash(user.get("password_hash") or "", new_password):
+        return jsonify({"success": False, "error": "Please choose a password different from your current one."}), 400
+
+    ok_pw, field_pw, msg_pw = password_policy.validate_new_password_for_user_row(new_password, user)
+    if not ok_pw:
+        return jsonify({"success": False, "field": _profile_pw_field(field_pw), "error": msg_pw}), 400
+
+    otp_code = _generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    if not db.store_user_password_change_challenge(user_id, otp_code, expires_at):
+        return jsonify({"success": False, "error": "Could not start password change. Please try again."}), 500
+
+    email = (user.get("email") or "").strip()
+    if not email:
+        db.delete_user_password_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Your account has no email address on file."}), 400
+
+    if not _send_profile_password_change_email(email, otp_code, user.get("nickname") or ""):
+        db.delete_user_password_change_challenge(user_id)
+        return jsonify({"success": False, "error": "Failed to send verification code. Please try again."}), 500
+
+    return jsonify({"success": True, "message": "Verification code sent to your email."}), 200
+
+
+@app.route("/api/user/password/change-confirm", methods=["POST"])
+def api_user_password_change_confirm():
+    """Confirm email OTP and apply the new password."""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("userId")
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        user_id = 0
+    current_password = data.get("currentPassword") or ""
+    new_password = data.get("newPassword") or ""
+    confirm_password = data.get("confirmPassword") or ""
+    code = (data.get("code") or "").strip()
+
+    if user_id <= 0:
+        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    if not current_password or not new_password or not confirm_password:
+        return jsonify({"success": False, "error": "Current password, new password, and confirmation are required."}), 400
+    if new_password != confirm_password:
+        return jsonify({"success": False, "error": "New password and confirmation do not match."}), 400
+    if not code or len(code) != 6 or not code.isdigit():
+        return jsonify({"success": False, "error": "Please enter the 6-digit code from your email."}), 400
+
+    user = db.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not found."}), 404
+
+    if not db.verify_user_password_by_id(user_id, current_password):
+        return jsonify({"success": False, "error": "Current password is incorrect."}), 401
+
+    if check_password_hash(user.get("password_hash") or "", new_password):
+        return jsonify({"success": False, "error": "Please choose a password different from your current one."}), 400
+
+    ok_pw, field_pw, msg_pw = password_policy.validate_new_password_for_user_row(new_password, user)
+    if not ok_pw:
+        return jsonify({"success": False, "field": _profile_pw_field(field_pw), "error": msg_pw}), 400
+
+    row = db.get_user_password_change_challenge(user_id)
+    if not row:
+        return jsonify({"success": False, "error": "No pending password change. Request a new code from Security."}), 400
+
+    expires_raw = row.get("expires_at")
+    try:
+        if isinstance(expires_raw, str):
+            expires_at = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
+        else:
+            expires_at = expires_raw
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+
+    if datetime.now(timezone.utc) > expires_at or (row.get("otp_code") or "") != code:
+        return jsonify({"success": False, "error": "Invalid or expired verification code."}), 400
+
+    if not db.update_user_password_by_id(user_id, new_password):
+        return jsonify({"success": False, "error": "Could not update password. Please try again."}), 500
+
+    db.delete_user_password_change_challenge(user_id)
+    return jsonify({"success": True, "message": "Password changed successfully."}), 200
+
+
 @app.route("/api/password/forgot", methods=["POST"])
 def api_password_forgot():
     data = request.get_json(silent=True) or {}

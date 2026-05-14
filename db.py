@@ -192,6 +192,33 @@ def _ensure_login_totp_recovery_otps_table(cur):
         )
 
 
+def _ensure_user_password_change_challenges_table(cur):
+    """Email OTP while changing password from Profile (logged-in)."""
+    if USE_POSTGRES:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_password_change_challenges (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                otp_code VARCHAR(12) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+    else:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_password_change_challenges (
+                user_id INTEGER PRIMARY KEY,
+                otp_code TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+
+
 def _parse_expires_at(val):
     if val is None:
         return None
@@ -386,6 +413,7 @@ def init_db():
         _ensure_user_totp_columns(cur)
         _ensure_login_totp_challenges_table(cur)
         _ensure_login_totp_recovery_otps_table(cur)
+        _ensure_user_password_change_challenges_table(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -1399,6 +1427,106 @@ def update_user_password_by_email(email: str, password: str):
             )
         conn.commit()
         return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def update_user_password_by_id(user_id: int, password: str) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not password:
+        return False
+    password_hash = generate_password_hash(password)
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("UPDATE users SET password_hash = %s WHERE id = %s", (password_hash, user_id))
+        else:
+            cur.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, user_id))
+        conn.commit()
+        return cur.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def store_user_password_change_challenge(user_id: int, otp_code: str, expires_at) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0 or not (otp_code or "").strip():
+        return False
+    code = (otp_code or "").strip()
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                INSERT INTO user_password_change_challenges (user_id, otp_code, expires_at, created_at)
+                VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    otp_code = EXCLUDED.otp_code,
+                    expires_at = EXCLUDED.expires_at,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, code, expires_at),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO user_password_change_challenges (user_id, otp_code, expires_at, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    otp_code = excluded.otp_code,
+                    expires_at = excluded.expires_at,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (user_id, code, str(expires_at)),
+            )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def get_user_password_change_challenge(user_id: int):
+    if not isinstance(user_id, int) or user_id <= 0:
+        return None
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                "SELECT user_id, otp_code, expires_at, created_at FROM user_password_change_challenges WHERE user_id = %s",
+                (user_id,),
+            )
+        else:
+            cur.execute(
+                "SELECT user_id, otp_code, expires_at, created_at FROM user_password_change_challenges WHERE user_id = ?",
+                (user_id,),
+            )
+        return row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def delete_user_password_change_challenge(user_id: int) -> bool:
+    if not isinstance(user_id, int) or user_id <= 0:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM user_password_change_challenges WHERE user_id = %s", (user_id,))
+        else:
+            cur.execute("DELETE FROM user_password_change_challenges WHERE user_id = ?", (user_id,))
+        conn.commit()
+        return True
     except Exception:
         conn.rollback()
         return False

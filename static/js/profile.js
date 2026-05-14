@@ -8,6 +8,14 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAccountDetailPanels();
 });
 
+let profileSecPwLiveInst = null;
+let lastOpenedProfileSectionKey = '';
+let profilePwdChangeSuccessAnim = null;
+let profilePwdChangeOtpResendInterval = null;
+let profilePwdChangeOtpResendRemaining = 0;
+let profilePwdChangeOtpVerifyInProgress = false;
+let profilePwdChangeSuccessLogoutTimer = null;
+
 function initializeProfileFromStorage() {
     try {
         const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
@@ -185,31 +193,71 @@ function hydratePersonalInfoPanel() {
     if (bdayEl) bdayEl.value = toDateInputValue(user?.birthday);
 }
 
-function updatePasswordStrengthMeter(password) {
-    const bars = document.querySelectorAll('.profile-password-meter__bar');
-    const label = document.getElementById('profilePasswordStrengthLabel');
-    const pw = String(password || '');
-    let score = 0;
-    if (pw.length >= 6) score++;
-    if (pw.length >= 10) score++;
-    if (/[0-9]/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw) || /[A-Z]/.test(pw)) score++;
-    score = Math.min(4, score);
-    bars.forEach((b, i) => {
-        b.classList.toggle('is-active', i < score);
-    });
-    if (label) {
-        const texts = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-        label.textContent = pw ? texts[score] || '' : '';
+function getProfileSecurityPersonal() {
+    const user = getStoredDiariUser() || {};
+    const nickEl = document.getElementById('profileFieldNickname');
+    const emailEl = document.getElementById('profileFieldEmail');
+    const firstEl = document.getElementById('profileFieldFirstName');
+    const lastEl = document.getElementById('profileFieldLastName');
+    return {
+        nickname: (nickEl && nickEl.value.trim()) || String(user.nickname || '').trim(),
+        email: (emailEl && emailEl.value.trim()) || String(user.email || '').trim(),
+        firstName: (firstEl && firstEl.value.trim()) || String(user.firstName || '').trim(),
+        lastName: (lastEl && lastEl.value.trim()) || String(user.lastName || '').trim(),
+    };
+}
+
+function destroyProfileSecPasswordLive() {
+    if (profileSecPwLiveInst) {
+        profileSecPwLiveInst.destroy();
+        profileSecPwLiveInst = null;
     }
 }
 
+function initProfileSecPasswordLive() {
+    destroyProfileSecPasswordLive();
+    const newEl = document.getElementById('profileSecNewPassword');
+    const confEl = document.getElementById('profileSecConfirmPassword');
+    const liveWrap = document.getElementById('profileSecPwLive');
+    const submitBtn = document.getElementById('profileSecuritySaveBtn');
+    const commonErr = document.getElementById('profileSecPwCommonErr');
+    const formRoot = document.getElementById('profileSectionSecurity');
+    if (
+        !window.DiariPasswordLive ||
+        !newEl ||
+        !confEl ||
+        !liveWrap ||
+        !submitBtn ||
+        !formRoot
+    ) {
+        return;
+    }
+    liveWrap.innerHTML = '';
+    profileSecPwLiveInst = window.DiariPasswordLive.attach({
+        passwordEl: newEl,
+        confirmEl: confEl,
+        hintEl: null,
+        liveWrap: liveWrap,
+        submitBtn: submitBtn,
+        commonErrorEl: commonErr,
+        formRoot: formRoot,
+        getPersonal: getProfileSecurityPersonal,
+    });
+}
+
 function clearSecurityForm() {
-    ['profileSecCurrentPassword', 'profileSecNewPassword', 'profileSecConfirmPassword'].forEach((id) => {
+    ['profileSecCurrentPassword', 'profileSecNewPassword', 'profileSecConfirmPassword'].forEach(function (id) {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    updatePasswordStrengthMeter('');
+    const err = document.getElementById('profileSecPwCommonErr');
+    if (err) {
+        err.textContent = '';
+        err.classList.remove('show');
+    }
+    if (profileSecPwLiveInst && typeof profileSecPwLiveInst.refresh === 'function') {
+        profileSecPwLiveInst.refresh();
+    }
 }
 
 function getStoredDiariUser() {
@@ -864,6 +912,406 @@ function savePersonalInfoForm() {
     closeProfileSection();
 }
 
+function getProfilePwdChangePayload() {
+    const user = getStoredDiariUser();
+    return {
+        userId: user && user.id,
+        currentPassword: (document.getElementById('profileSecCurrentPassword')?.value || '').trim(),
+        newPassword: document.getElementById('profileSecNewPassword')?.value || '',
+        confirmPassword: document.getElementById('profileSecConfirmPassword')?.value || '',
+    };
+}
+
+function getProfilePwdChangeOtpDigitInputs() {
+    return Array.from(document.querySelectorAll('[data-profile-pwd-change-otp]'));
+}
+
+function getProfilePwdChangeOtpCode() {
+    return getProfilePwdChangeOtpDigitInputs()
+        .map(function (d) {
+            return (d.value || '').replace(/\D/g, '');
+        })
+        .join('');
+}
+
+function clearProfilePwdChangeOtpDigits() {
+    getProfilePwdChangeOtpDigitInputs().forEach(function (d) {
+        d.value = '';
+        d.disabled = false;
+    });
+}
+
+function setProfilePwdChangeOtpError(message) {
+    const el = document.getElementById('profilePwdChangeOtpError');
+    if (!el) return;
+    if (message) {
+        el.textContent = message;
+        el.hidden = false;
+    } else {
+        el.textContent = '';
+        el.hidden = true;
+    }
+}
+
+function clearProfilePwdChangeResendCooldown() {
+    if (profilePwdChangeOtpResendInterval) {
+        clearInterval(profilePwdChangeOtpResendInterval);
+        profilePwdChangeOtpResendInterval = null;
+    }
+    profilePwdChangeOtpResendRemaining = 0;
+    const timer = document.getElementById('profilePwdChangeOtpTimer');
+    if (timer) timer.textContent = '';
+    const btn = document.getElementById('profilePwdChangeOtpResendBtn');
+    if (btn) btn.disabled = false;
+}
+
+function startProfilePwdChangeResendCooldown(seconds) {
+    const btn = document.getElementById('profilePwdChangeOtpResendBtn');
+    const timer = document.getElementById('profilePwdChangeOtpTimer');
+    profilePwdChangeOtpResendRemaining = seconds;
+    if (btn) btn.disabled = true;
+    if (profilePwdChangeOtpResendInterval) clearInterval(profilePwdChangeOtpResendInterval);
+    function tick() {
+        if (profilePwdChangeOtpResendRemaining <= 0) {
+            clearProfilePwdChangeResendCooldown();
+            return;
+        }
+        const m = Math.floor(profilePwdChangeOtpResendRemaining / 60);
+        const s = profilePwdChangeOtpResendRemaining % 60;
+        if (timer) timer.textContent = `(${m}:${String(s).padStart(2, '0')})`;
+        profilePwdChangeOtpResendRemaining -= 1;
+    }
+    tick();
+    profilePwdChangeOtpResendInterval = setInterval(tick, 1000);
+}
+
+function setProfilePwdChangeOtpVerifyLoading(isLoading) {
+    const btn = document.getElementById('profilePwdChangeOtpVerifyBtn');
+    if (!btn) return;
+    if (isLoading) {
+        btn.classList.add('is-loading');
+        btn.disabled = true;
+        btn.innerHTML =
+            '<span class="profile-totp-modal__spinner" aria-hidden="true"></span><span>Verifying…</span>';
+    } else {
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        btn.innerHTML =
+            '<span class="profile-totp-modal__spinner" aria-hidden="true"></span><span>Verify code</span>';
+    }
+}
+
+function openProfilePwdChangeOtpModal() {
+    const modal = document.getElementById('profilePwdChangeOtpModal');
+    if (!modal) return;
+    setProfilePwdChangeOtpError('');
+    clearProfilePwdChangeOtpDigits();
+    modal.hidden = false;
+    document.body.classList.add('profile-totp-modal-open');
+    document.body.style.overflow = 'hidden';
+    startProfilePwdChangeResendCooldown(60);
+    const first = getProfilePwdChangeOtpDigitInputs()[0];
+    if (first) setTimeout(function () { first.focus(); }, 80);
+}
+
+function closeProfilePwdChangeOtpModal() {
+    const modal = document.getElementById('profilePwdChangeOtpModal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if (!document.getElementById('profilePwdChangeSuccessModal') || document.getElementById('profilePwdChangeSuccessModal').hidden) {
+        document.body.classList.remove('profile-totp-modal-open');
+        document.body.style.overflow = '';
+    }
+    clearProfilePwdChangeResendCooldown();
+    profilePwdChangeOtpVerifyInProgress = false;
+    setProfilePwdChangeOtpVerifyLoading(false);
+}
+
+function destroyProfilePwdChangeSuccessAnim() {
+    if (profilePwdChangeSuccessAnim && typeof profilePwdChangeSuccessAnim.destroy === 'function') {
+        try {
+            profilePwdChangeSuccessAnim.destroy();
+        } catch (_) {}
+    }
+    profilePwdChangeSuccessAnim = null;
+    const mount = document.getElementById('profilePwdChangeSuccessLottie');
+    if (mount) {
+        mount.innerHTML = '';
+        delete mount.dataset.lottieReady;
+    }
+}
+
+function performProfileLogout() {
+    try {
+        localStorage.removeItem('diariCoreUser');
+    } catch (_) {}
+    window.location.href = 'login.html';
+}
+
+function openProfilePwdChangeSuccessModalThenLogout() {
+    if (profilePwdChangeSuccessLogoutTimer) {
+        clearTimeout(profilePwdChangeSuccessLogoutTimer);
+        profilePwdChangeSuccessLogoutTimer = null;
+    }
+    const modal = document.getElementById('profilePwdChangeSuccessModal');
+    const mount = document.getElementById('profilePwdChangeSuccessLottie');
+    if (!modal || !mount) {
+        performProfileLogout();
+        return;
+    }
+    modal.hidden = false;
+    document.body.classList.add('profile-totp-modal-open');
+    document.body.style.overflow = 'hidden';
+
+    destroyProfilePwdChangeSuccessAnim();
+    mount.innerHTML = '';
+    if (typeof window.lottie !== 'undefined' && typeof window.lottie.loadAnimation === 'function') {
+        try {
+            profilePwdChangeSuccessAnim = window.lottie.loadAnimation({
+                container: mount,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'noto-emoji/loading.json',
+            });
+        } catch (_) {
+            profilePwdChangeSuccessAnim = null;
+        }
+    }
+
+    profilePwdChangeSuccessLogoutTimer = setTimeout(function () {
+        profilePwdChangeSuccessLogoutTimer = null;
+        modal.hidden = true;
+        document.body.classList.remove('profile-totp-modal-open');
+        document.body.style.overflow = '';
+        destroyProfilePwdChangeSuccessAnim();
+        performProfileLogout();
+    }, 4000);
+}
+
+async function submitProfilePasswordChangeRequest(isResend) {
+    const user = getStoredDiariUser();
+    if (!user || !user.id) {
+        showNotification('Sign in to change your password.', 'warning');
+        return false;
+    }
+    const p = getProfilePwdChangePayload();
+    if (!p.currentPassword || !p.newPassword || !p.confirmPassword) {
+        if (!isResend) {
+            showNotification(
+                'To change your password, enter your current password, a new password, and confirmation. Use the switch above for two-factor authentication.',
+                'info'
+            );
+        }
+        return false;
+    }
+    if (p.newPassword !== p.confirmPassword) {
+        showNotification('New password and confirmation do not match.', 'warning');
+        return false;
+    }
+    if (profileSecPwLiveInst && typeof profileSecPwLiveInst.refresh === 'function') {
+        const r = profileSecPwLiveInst.refresh();
+        if (!r || !r.ready) {
+            if (!isResend) {
+                showNotification('Please meet all password requirements before continuing.', 'warning');
+            }
+            return false;
+        }
+    } else if (
+        window.DiariPasswordPolicy &&
+        !window.DiariPasswordPolicy.isPasswordSubmitReady(p.newPassword, p.confirmPassword, getProfileSecurityPersonal())
+    ) {
+        if (!isResend) {
+            showNotification('Please meet all password requirements before continuing.', 'warning');
+        }
+        return false;
+    }
+    if (!navigator.onLine) {
+        showNotification('You must be online to change your password.', 'error');
+        return false;
+    }
+
+    const body = {
+        userId: user.id,
+        currentPassword: p.currentPassword,
+        newPassword: p.newPassword,
+        confirmPassword: p.confirmPassword,
+    };
+
+    if (isResend) {
+        try {
+            const res = await fetch('/api/user/password/change-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            const data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) {
+                showNotification(data.error || 'Could not resend code.', 'warning');
+                return false;
+            }
+            showNotification(data.message || 'A new code was sent.', 'success');
+            clearProfilePwdChangeOtpDigits();
+            setProfilePwdChangeOtpError('');
+            startProfilePwdChangeResendCooldown(60);
+            return true;
+        } catch (_) {
+            showNotification('Could not resend code. Check your connection.', 'error');
+            return false;
+        }
+    }
+
+    const saveBtn = document.getElementById('profileSecuritySaveBtn');
+    const prevHtml = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="profile-totp-modal__spinner" aria-hidden="true"></span><span>Sending…</span>';
+        saveBtn.classList.add('is-loading');
+    }
+    try {
+        const res = await fetch('/api/user/password/change-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.success) {
+            if (data.field === 'profileSecNewPassword' && data.error) {
+                const err = document.getElementById('profileSecPwCommonErr');
+                if (err) {
+                    err.textContent = data.error;
+                    err.classList.add('show');
+                } else {
+                    showNotification(data.error, 'warning');
+                }
+            } else {
+                showNotification(data.error || 'Could not send verification code.', 'warning');
+            }
+            return false;
+        }
+        showNotification(data.message || 'Verification code sent. Check your email.', 'success');
+        openProfilePwdChangeOtpModal();
+        return true;
+    } catch (_) {
+        showNotification('Could not send verification code. Check your connection.', 'error');
+        return false;
+    } finally {
+        if (saveBtn) {
+            saveBtn.classList.remove('is-loading');
+            saveBtn.innerHTML = prevHtml;
+        }
+        if (profileSecPwLiveInst && typeof profileSecPwLiveInst.refresh === 'function') {
+            profileSecPwLiveInst.refresh();
+        }
+    }
+}
+
+async function verifyProfilePasswordChangeOtp() {
+    if (profilePwdChangeOtpVerifyInProgress) return;
+    const user = getStoredDiariUser();
+    if (!user || !user.id) return;
+    const code = getProfilePwdChangeOtpCode();
+    if (code.length !== 6) {
+        setProfilePwdChangeOtpError('Please enter the 6-digit code from your email.');
+        return;
+    }
+    const p = getProfilePwdChangePayload();
+    profilePwdChangeOtpVerifyInProgress = true;
+    setProfilePwdChangeOtpVerifyLoading(true);
+    setProfilePwdChangeOtpError('');
+    try {
+        const res = await fetch('/api/user/password/change-confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: user.id,
+                currentPassword: p.currentPassword,
+                newPassword: p.newPassword,
+                confirmPassword: p.confirmPassword,
+                code: code,
+            }),
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.success) {
+            setProfilePwdChangeOtpError(data.error || 'Invalid or expired code.');
+            return;
+        }
+        closeProfilePwdChangeOtpModal();
+        clearSecurityForm();
+        showNotification(data.message || 'Password changed successfully.', 'success');
+        openProfilePwdChangeSuccessModalThenLogout();
+    } finally {
+        profilePwdChangeOtpVerifyInProgress = false;
+        setProfilePwdChangeOtpVerifyLoading(false);
+    }
+}
+
+function wireProfilePwdChangeOtpDigits() {
+    const digits = getProfilePwdChangeOtpDigitInputs();
+    if (!digits.length || digits[0].dataset.pwdChangeOtpWired === '1') return;
+    digits[0].dataset.pwdChangeOtpWired = '1';
+    digits.forEach(function (input, idx) {
+        input.addEventListener('input', function (e) {
+            var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
+            e.target.value = v;
+            setProfilePwdChangeOtpError('');
+            if (v && idx < digits.length - 1) {
+                digits[idx + 1].focus();
+            }
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !input.value && idx > 0) {
+                digits[idx - 1].focus();
+            }
+        });
+        input.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var raw = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+            digits.forEach(function (d, i) {
+                d.value = raw[i] || '';
+            });
+            var lastIdx = Math.min(raw.length, digits.length) - 1;
+            if (lastIdx >= 0) digits[lastIdx].focus();
+        });
+    });
+}
+
+function wireProfilePasswordChangeFlow() {
+    wireProfilePwdChangeOtpDigits();
+    const saveBtn = document.getElementById('profileSecuritySaveBtn');
+    if (saveBtn && !saveBtn.dataset.pwdChangeWired) {
+        saveBtn.dataset.pwdChangeWired = '1';
+        saveBtn.addEventListener('click', function () {
+            void submitProfilePasswordChangeRequest(false);
+        });
+    }
+    const backdrop = document.getElementById('profilePwdChangeOtpBackdrop');
+    const closeBtn = document.getElementById('profilePwdChangeOtpCloseBtn');
+    const cancelBtn = document.getElementById('profilePwdChangeOtpCancelBtn');
+    [backdrop, closeBtn, cancelBtn].forEach(function (el) {
+        if (el && !el.dataset.pwdChangeOtpCloseWired) {
+            el.dataset.pwdChangeOtpCloseWired = '1';
+            el.addEventListener('click', function () {
+                closeProfilePwdChangeOtpModal();
+            });
+        }
+    });
+    const verifyBtn = document.getElementById('profilePwdChangeOtpVerifyBtn');
+    if (verifyBtn && !verifyBtn.dataset.pwdChangeVerifyWired) {
+        verifyBtn.dataset.pwdChangeVerifyWired = '1';
+        verifyBtn.addEventListener('click', function () {
+            void verifyProfilePasswordChangeOtp();
+        });
+    }
+    const resendBtn = document.getElementById('profilePwdChangeOtpResendBtn');
+    if (resendBtn && !resendBtn.dataset.pwdChangeResendWired) {
+        resendBtn.dataset.pwdChangeResendWired = '1';
+        resendBtn.addEventListener('click', function () {
+            void submitProfilePasswordChangeRequest(true);
+        });
+    }
+}
+
 function initializeAccountDetailPanels() {
     document.getElementById('profilePersonalCancelBtn')?.addEventListener('click', function () {
         closeProfileSection();
@@ -872,13 +1320,6 @@ function initializeAccountDetailPanels() {
     document.getElementById('profileSecurityCancelBtn')?.addEventListener('click', function () {
         clearSecurityForm();
         closeProfileSection();
-    });
-    document.getElementById('profileSecuritySaveBtn')?.addEventListener('click', function () {
-        showNotification('Password changes will be available in a future update.', 'info');
-    });
-    document.getElementById('profilePersonalChangePhotoBtn')?.addEventListener('click', function () {
-        const input = ensureProfileAvatarFileInput();
-        input.click();
     });
 
     document.querySelectorAll('.profile-account-field__reveal').forEach(function (btn) {
@@ -896,12 +1337,7 @@ function initializeAccountDetailPanels() {
         });
     });
 
-    const np = document.getElementById('profileSecNewPassword');
-    if (np) {
-        np.addEventListener('input', function () {
-            updatePasswordStrengthMeter(np.value);
-        });
-    }
+    wireProfilePasswordChangeFlow();
 
     wireProfileTotpModal();
     const totpToggle = document.getElementById('profileSec2faToggle');
@@ -1307,6 +1743,9 @@ function setProfileUrlHash(sectionKey) {
 
 function openProfileSection(sectionKey) {
     if (!PROFILE_SECTION_PANELS[sectionKey]) return;
+    if (lastOpenedProfileSectionKey === 'security' && sectionKey !== 'security') {
+        destroyProfileSecPasswordLive();
+    }
     const overview = document.getElementById('profileOverviewShell');
     const shell = document.getElementById('profileSectionShell');
     if (!overview || !shell) return;
@@ -1335,7 +1774,20 @@ function openProfileSection(sectionKey) {
     if (sectionKey === 'security') {
         clearSecurityForm();
         hydrateSecurity2fa();
+        initProfileSecPasswordLive();
+        ['profileFieldNickname', 'profileFieldEmail', 'profileFieldFirstName', 'profileFieldLastName'].forEach(function (fid) {
+            const el = document.getElementById(fid);
+            if (el && !el.dataset.profileSecPwdLiveRefresh) {
+                el.dataset.profileSecPwdLiveRefresh = '1';
+                el.addEventListener('input', function () {
+                    if (profileSecPwLiveInst && typeof profileSecPwLiveInst.refresh === 'function') {
+                        profileSecPwLiveInst.refresh();
+                    }
+                });
+            }
+        });
     }
+    lastOpenedProfileSectionKey = sectionKey;
 }
 
 function closeProfileSection() {
@@ -1354,6 +1806,18 @@ function closeProfileSection() {
 
     setProfileUrlHash(null);
     window.scrollTo(0, 0);
+    destroyProfileSecPasswordLive();
+    lastOpenedProfileSectionKey = '';
+    closeProfilePwdChangeOtpModal();
+    if (profilePwdChangeSuccessLogoutTimer) {
+        clearTimeout(profilePwdChangeSuccessLogoutTimer);
+        profilePwdChangeSuccessLogoutTimer = null;
+    }
+    const successModal = document.getElementById('profilePwdChangeSuccessModal');
+    if (successModal) successModal.hidden = true;
+    destroyProfilePwdChangeSuccessAnim();
+    document.body.classList.remove('profile-totp-modal-open');
+    document.body.style.overflow = '';
 }
 
 function initializeProfileSectionNavigation() {

@@ -3243,3 +3243,101 @@ html.theme-dark .profile-totp-setup-stepper__dotCell.is-done .profile-totp-setup
     background: var(--primary-color);
     color: #fff;
 }
+
+/* Security: live password checklist common error (see login.css .custom-error) */
+.profile-account-detail-card--security .custom-error {
+    background: #fef2f2;
+    border: 1px solid #f8b4bf;
+    color: #b84252;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+    line-height: 1.25;
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.22s ease, transform 0.22s ease, max-height 0.22s ease, margin-top 0.22s ease;
+    pointer-events: none;
+    overflow: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.profile-account-detail-card--security .custom-error.show {
+    opacity: 1;
+    max-height: 80px;
+    transform: translateY(0);
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+.profile-pwd-change-otp-block {
+    margin-top: 0.5rem;
+}
+
+.profile-pwd-change-otp-error {
+    font-size: 13px;
+    font-weight: 500;
+    color: #b84252;
+    margin: 0.5rem 0 0;
+}
+
+.profile-pwd-change-otp-error[hidden] {
+    display: none !important;
+}
+
+.profile-pwd-change-otp-meta {
+    margin: 0.85rem 0 0;
+    font-size: 13px;
+    color: var(--text-secondary, #6b7280);
+    line-height: 1.5;
+}
+
+.profile-pwd-change-otp-resend {
+    display: inline;
+    margin: 0 0 0 0.25rem;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary-color, #4a7c59);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.profile-pwd-change-otp-resend:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.profile-pwd-change-otp-timer {
+    margin-left: 0.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.profile-pwd-change-success-dialog {
+    text-align: center;
+    max-width: 420px;
+}
+
+.profile-pwd-change-success-lottie {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 1rem;
+}
+
+.profile-pwd-change-success-lottie svg {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+html.theme-dark .profile-account-detail-card--security .custom-error {
+    background: rgba(185, 66, 82, 0.12);
+    border-color: rgba(248, 180, 191, 0.45);
+    color: #f0a8b0;
+}

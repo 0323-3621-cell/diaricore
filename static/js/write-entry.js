@@ -1505,6 +1505,43 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
         autoAdjustJournalTextarea();
     });
+
+    const VOICE_TO_WRITE_STORAGE_KEY = 'diariCoreVoiceDraftForWrite';
+
+    function applyVoiceTranscriptHandoff() {
+        if (!journalText) return;
+        let raw = '';
+        try {
+            raw = sessionStorage.getItem(VOICE_TO_WRITE_STORAGE_KEY) || '';
+        } catch (_) {
+            return;
+        }
+        if (!raw) return;
+        try {
+            sessionStorage.removeItem(VOICE_TO_WRITE_STORAGE_KEY);
+        } catch (_) {}
+
+        let text = '';
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && typeof parsed.text === 'string') {
+                text = parsed.text;
+            }
+        } catch (_) {
+            text = String(raw).trim();
+        }
+        text = String(text || '').trim();
+        if (!text) return;
+
+        journalText.value = text;
+        journalText.dispatchEvent(new Event('input', { bubbles: true }));
+        showWriteEntryNotification(
+            'Voice transcript added — add tags or photos if you like, then save to analyze your mood.',
+            'info'
+        );
+    }
+
+    applyVoiceTranscriptHandoff();
     
     // Voice input button functionality
     const voiceInputBtn = document.getElementById('voiceInputBtn');

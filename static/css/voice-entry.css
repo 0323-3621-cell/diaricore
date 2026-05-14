@@ -403,6 +403,33 @@
     min-height: 80px;
 }
 
+.voice-transcript-field {
+    display: block;
+    width: 100%;
+    font-size: 1.1rem;
+    font-family: inherit;
+    color: var(--text-dark);
+    line-height: 1.6;
+    margin: 0;
+    min-height: 140px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-background);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.voice-transcript-field:focus {
+    outline: 2px solid rgba(111, 143, 127, 0.45);
+    outline-offset: 1px;
+}
+
+.voice-transcript-field:read-only {
+    background: var(--background-soft);
+    cursor: default;
+}
+
 .summary-header i {
     font-size: 2rem;
     color: var(--primary-color);
@@ -728,8 +755,8 @@
         display: none;
     }
     
-    .post-recording-container {
-        display: block !important;
+    .post-recording-container:not([hidden]) {
+        display: block;
         padding: 2rem 1.5rem;
         margin: 1rem 0 0 0;
         border-radius: 12px;
@@ -758,7 +785,8 @@
         font-size: 1.1rem;
     }
     
-    .transcript-preview p {
+    .transcript-preview p,
+    .voice-transcript-field {
         font-size: 1rem;
         min-height: 60px;
     }

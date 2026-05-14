@@ -107,18 +107,25 @@
                 </div>
             </div>
             
-            <!-- Post-Recording Container (Hidden by default) -->
-            <div class="post-recording-container" id="postRecordingContainer" style="display: none;">
+            <!-- Post-Recording Container (shown after a session; transcript is editable) -->
+            <div class="post-recording-container" id="postRecordingContainer" hidden>
                 <div class="recording-summary">
                     <div class="summary-header">
                         <h3>Transcript</h3>
-                        <button class="mobile-retry-btn" id="mobileRetryBtn">
+                        <button type="button" class="mobile-retry-btn" id="mobileRetryBtn" aria-label="Start over">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
                     </div>
                     <div class="summary-content">
                         <div class="transcript-preview">
-                            <p id="finalTranscript">Your speech will appear here as you speak...</p>
+                            <label class="visually-hidden" for="finalTranscript">Transcript text</label>
+                            <textarea
+                                id="finalTranscript"
+                                class="voice-transcript-field"
+                                rows="8"
+                                spellcheck="true"
+                                placeholder="Your speech will appear here as you speak. You can also type or paste if your browser does not support dictation."
+                            ></textarea>
                         </div>
                         <div class="recording-stats">
                             <div class="stat">
@@ -148,9 +155,9 @@
             <div class="tips-container">
                 <h3>Tips for voice journaling</h3>
                 <ul>
-                    <li>Find a quiet place for better recording quality</li>
-                    <li>Speak naturally and at your own pace</li>
-                    <li>You can review and edit the transcript before saving</li>
+                    <li>Live captions work best in <strong>Chrome</strong> or <strong>Edge</strong> on a secure (HTTPS) site.</li>
+                    <li>Find a quiet place for clearer dictation.</li>
+                    <li>You can edit the transcript, then use <strong>Save Entry</strong> to continue on Write Entry with tags and mood analysis.</li>
                 </ul>
             </div>
         </div>

@@ -43,10 +43,10 @@ function initializeProfileFromStorage() {
 
         const entryCount = safeEntries.length;
         const streak = calculateEntryStreak(safeEntries);
-        const consistency = calculateMonthlyConsistency(safeEntries);
+        const thisWeekCount = countEntriesThisCalendarWeek(safeEntries);
         if (statEls[0]) statEls[0].textContent = String(entryCount);
         if (statEls[1]) statEls[1].textContent = String(streak);
-        if (statEls[2]) statEls[2].textContent = `${consistency}%`;
+        if (statEls[2]) statEls[2].textContent = String(thisWeekCount);
 
         const avatarEl = document.querySelector('.profile-overview-section .avatar-image');
         if (avatarEl && user && typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
@@ -111,18 +111,33 @@ function calculateEntryStreak(entries) {
     return streak;
 }
 
-function calculateMonthlyConsistency(entries) {
-    if (!entries.length) return 0;
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(now.getDate() - 29);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-    const uniqueRecentDays = new Set(entries.map((e) => {
-        const d = new Date(e.date);
-        if (d < thirtyDaysAgo || d > now) return null;
-        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-    }).filter(Boolean));
-    return Math.round((uniqueRecentDays.size / 30) * 100);
+/** Monday 00:00 local for the Mon–Sun week containing `ref` (same week model as the dashboard). */
+function profileMondayStartMs(ref) {
+    const t = new Date(ref);
+    t.setHours(0, 0, 0, 0);
+    const dow = t.getDay();
+    const daysFromMonday = dow === 0 ? 6 : dow - 1;
+    const monday = new Date(t);
+    monday.setDate(t.getDate() - daysFromMonday);
+    monday.setHours(0, 0, 0, 0);
+    return monday.getTime();
+}
+
+/** How many entries fall on Mon–Sun of the current local calendar week. */
+function countEntriesThisCalendarWeek(entries) {
+    if (!Array.isArray(entries) || !entries.length) return 0;
+    const mondayMs = profileMondayStartMs(new Date());
+    const weekEndMs = mondayMs + 7 * PROFILE_MS_PER_DAY;
+    let n = 0;
+    entries.forEach((e) => {
+        if (!e) return;
+        const raw = e.date || e.createdAt;
+        if (!raw) return;
+        const ms = profileJournalDayStartMs(raw);
+        if (ms == null) return;
+        if (ms >= mondayMs && ms < weekEndMs) n += 1;
+    });
+    return n;
 }
 
 function toDateInputValue(raw) {

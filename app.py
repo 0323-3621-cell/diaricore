@@ -646,6 +646,7 @@ def api_user_totp_setup():
             "success": True,
             "otpauthUrl": otpauth_url,
             "qrDataUri": _totp_qr_data_uri(otpauth_url),
+            "totpSecret": secret,
         }
     ), 200
 

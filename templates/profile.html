@@ -500,7 +500,29 @@
                     </div>
                     <div class="profile-totp-setup-panel__titles">
                         <h3 class="profile-totp-setup-panel__title" id="profileTotpModalTitle">Set up authenticator</h3>
-                        <p class="profile-totp-setup-panel__subtitle">Two-factor authentication</p>
+                        <p class="profile-totp-setup-panel__subtitle" id="profileTotpSetupSubtitle">Enter your password to generate a QR code.</p>
+                    </div>
+                </div>
+                <div class="profile-totp-setup-stepper" id="profileTotpSetupStepper" data-phase="password" aria-label="Setup progress">
+                    <div class="profile-totp-setup-stepper__dots">
+                        <div class="profile-totp-setup-stepper__dotCell" data-setup-step="1">
+                            <span class="profile-totp-setup-stepper__dot"><span class="profile-totp-setup-stepper__num">1</span><i class="profile-totp-setup-stepper__check bi bi-check-lg" aria-hidden="true"></i></span>
+                        </div>
+                        <span class="profile-totp-setup-stepper__seg" data-setup-line="1" aria-hidden="true"></span>
+                        <div class="profile-totp-setup-stepper__dotCell" data-setup-step="2">
+                            <span class="profile-totp-setup-stepper__dot"><span class="profile-totp-setup-stepper__num">2</span></span>
+                        </div>
+                        <span class="profile-totp-setup-stepper__seg" data-setup-line="2" aria-hidden="true"></span>
+                        <div class="profile-totp-setup-stepper__dotCell" data-setup-step="3">
+                            <span class="profile-totp-setup-stepper__dot"><span class="profile-totp-setup-stepper__num">3</span></span>
+                        </div>
+                    </div>
+                    <div class="profile-totp-setup-stepper__labels">
+                        <span class="profile-totp-setup-stepper__label" data-setup-step="1">Password</span>
+                        <span class="profile-totp-setup-stepper__labelGap" aria-hidden="true"></span>
+                        <span class="profile-totp-setup-stepper__label" data-setup-step="2">Scan QR</span>
+                        <span class="profile-totp-setup-stepper__labelGap" aria-hidden="true"></span>
+                        <span class="profile-totp-setup-stepper__label" data-setup-step="3">Verify</span>
                     </div>
                 </div>
                 <div id="profileTotpSetupPasswordStep">
@@ -517,17 +539,20 @@
                         </span>
                     </label>
                 </div>
-                <div id="profileTotpQrBlock" class="profile-totp-modal__qr-block" hidden>
-                    <div class="profile-totp-setup-panel__info profile-totp-setup-panel__info--compact" role="status">
-                        <i class="bi bi-info-circle-fill profile-totp-setup-panel__info-icon" aria-hidden="true"></i>
-                        <p class="profile-totp-setup-panel__info-text">Scan this QR code in Google Authenticator (or another TOTP app), then enter the 6-digit code to confirm.</p>
-                    </div>
-                    <div class="profile-totp-modal__qr-wrap">
-                        <img id="profileTotpQrImg" class="profile-totp-modal__qr-img" alt="Authenticator QR code" width="200" height="200">
+                <div id="profileTotpQrBlock" class="profile-totp-modal__qr-block" hidden data-totp-secret="">
+                    <div class="profile-totp-setup-panel__qr-card">
+                        <p class="profile-totp-setup-panel__qr-lead">Scan this QR code with Google Authenticator or any TOTP app. You can also copy the secret key and enter it manually.</p>
+                        <div class="profile-totp-modal__qr-wrap">
+                            <img id="profileTotpQrImg" class="profile-totp-modal__qr-img" alt="Authenticator QR code" width="200" height="200">
+                        </div>
+                        <button type="button" class="profile-totp-setup-panel__copy-secret" id="profileTotpCopySecretBtn">
+                            <i class="bi bi-clipboard" aria-hidden="true"></i>
+                            Copy secret key
+                        </button>
                     </div>
                     <div class="profile-totp-setup-panel__code-block">
                         <span class="profile-account-field__label profile-totp-setup-panel__code-label">Verification code</span>
-                        <div class="profile-totp-digits" id="profileTotpSetupDigits" role="group" aria-label="6-digit verification code">
+                        <div class="profile-totp-digits profile-totp-setup-panel__digits" id="profileTotpSetupDigits" role="group" aria-label="6-digit verification code">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="1" aria-label="Digit 2 of 6" autocomplete="off">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="2" aria-label="Digit 3 of 6" autocomplete="off">
@@ -536,6 +561,7 @@
                             <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-setup-digit="5" aria-label="Digit 6 of 6" autocomplete="off">
                         </div>
                         <span class="profile-totp-setup-panel__counter" id="profileTotpSetupCounter" aria-live="polite">0/6</span>
+                        <p class="profile-totp-setup-panel__code-hint">Enter the code shown in your authenticator app.</p>
                     </div>
                 </div>
             </div>

@@ -375,6 +375,51 @@ function wireProfileTotpSetupDigits() {
     });
 }
 
+var PROFILE_TOTP_SETUP_SUBTITLE_PASSWORD = 'Enter your password to generate a QR code.';
+var PROFILE_TOTP_SETUP_SUBTITLE_SCAN = 'Scan & verify to enable 2FA';
+
+function setProfileTotpSetupSubtitle(text) {
+    const el = document.getElementById('profileTotpSetupSubtitle');
+    if (el) el.textContent = text || '';
+}
+
+function syncTotpSetupStepper(phase) {
+    const root = document.getElementById('profileTotpSetupStepper');
+    if (!root) return;
+    const scan = phase === 'scan';
+    root.dataset.phase = scan ? 'scan' : 'password';
+
+    function sel(step) {
+        return root.querySelectorAll('[data-setup-step="' + step + '"]');
+    }
+
+    function setStepState(step, state) {
+        sel(step).forEach(function (el) {
+            el.classList.remove('is-done', 'is-current', 'is-upcoming');
+            if (state) el.classList.add('is-' + state);
+        });
+    }
+
+    function setLine(n, active) {
+        const line = root.querySelector('[data-setup-line="' + n + '"]');
+        if (line) line.classList.toggle('is-active', !!active);
+    }
+
+    if (!scan) {
+        setStepState(1, 'current');
+        setStepState(2, 'upcoming');
+        setStepState(3, 'upcoming');
+        setLine(1, false);
+        setLine(2, false);
+    } else {
+        setStepState(1, 'done');
+        setStepState(2, 'current');
+        setStepState(3, 'upcoming');
+        setLine(1, true);
+        setLine(2, false);
+    }
+}
+
 function setPrimaryShowQrCodeButton() {
     const primary = document.getElementById('profileTotpModalPrimary');
     if (!primary) return;
@@ -417,11 +462,16 @@ function resetTotpModal() {
     if (setup) setup.hidden = true;
     if (disable) disable.hidden = true;
     if (qrBlock) qrBlock.hidden = true;
+    if (qrBlock) qrBlock.removeAttribute('data-totp-secret');
+    const qrImg = document.getElementById('profileTotpQrImg');
+    if (qrImg) qrImg.removeAttribute('src');
     if (passStep) passStep.hidden = false;
     if (pw) pw.value = '';
     if (dpw) dpw.value = '';
     clearProfileTotpDisableDigits();
     clearProfileTotpSetupDigits();
+    syncTotpSetupStepper('password');
+    setProfileTotpSetupSubtitle(PROFILE_TOTP_SETUP_SUBTITLE_PASSWORD);
     if (primary) {
         primary.disabled = false;
         primary.classList.remove('profile-totp-modal__btn--danger', 'is-loading');
@@ -450,11 +500,14 @@ function openTotpSetupModal() {
     if (passStep) passStep.hidden = false;
     if (title) title.textContent = 'Set up authenticator';
     if (qrBlock) qrBlock.hidden = true;
+    if (qrBlock) qrBlock.removeAttribute('data-totp-secret');
     const img = document.getElementById('profileTotpQrImg');
     if (img) img.removeAttribute('src');
     const pw = document.getElementById('profileTotpSetupPassword');
     if (pw) pw.value = '';
     clearProfileTotpSetupDigits();
+    syncTotpSetupStepper('password');
+    setProfileTotpSetupSubtitle(PROFILE_TOTP_SETUP_SUBTITLE_PASSWORD);
     setPrimaryShowQrCodeButton();
     const dialog = document.querySelector('.profile-totp-modal__dialog');
     if (dialog) dialog.setAttribute('aria-labelledby', 'profileTotpModalTitle');
@@ -508,6 +561,30 @@ function wireProfileTotpModal() {
     wireProfileTotpDisableDigits();
     wireProfileTotpSetupDigits();
 
+    const copySecretBtn = document.getElementById('profileTotpCopySecretBtn');
+    if (copySecretBtn) {
+        copySecretBtn.addEventListener('click', function () {
+            const qrBlock = document.getElementById('profileTotpQrBlock');
+            const secret = (qrBlock && qrBlock.getAttribute('data-totp-secret')) || '';
+            if (!secret.trim()) {
+                showNotification('Secret key is not available yet.', 'warning');
+                return;
+            }
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard
+                    .writeText(secret.trim())
+                    .then(function () {
+                        showNotification('Secret key copied to clipboard.', 'success');
+                    })
+                    .catch(function () {
+                        showNotification('Could not copy to clipboard.', 'error');
+                    });
+            } else {
+                showNotification('Clipboard is not supported in this browser.', 'warning');
+            }
+        });
+    }
+
     if (primary) {
         primary.addEventListener('click', function () {
             const user = getStoredDiariUser();
@@ -549,7 +626,16 @@ function wireProfileTotpModal() {
                         const qrBlock = document.getElementById('profileTotpQrBlock');
                         const passStep = document.getElementById('profileTotpSetupPasswordStep');
                         if (passStep) passStep.hidden = true;
-                        if (qrBlock) qrBlock.hidden = false;
+                        if (qrBlock) {
+                            qrBlock.hidden = false;
+                            if (data.totpSecret) {
+                                qrBlock.setAttribute('data-totp-secret', String(data.totpSecret));
+                            } else {
+                                qrBlock.removeAttribute('data-totp-secret');
+                            }
+                        }
+                        syncTotpSetupStepper('scan');
+                        setProfileTotpSetupSubtitle(PROFILE_TOTP_SETUP_SUBTITLE_SCAN);
                         clearProfileTotpSetupDigits();
                         setPrimaryEnableTwoFaButton();
                         const digits = getProfileTotpSetupDigitInputs();

@@ -14,6 +14,7 @@ let profilePwdChangeSuccessAnim = null;
 let profilePwdChangeOtpResendInterval = null;
 let profilePwdChangeOtpResendRemaining = 0;
 let profilePwdChangeOtpVerifyInProgress = false;
+let profilePwdChangeOtpAutoVerifyTimeout = null;
 let profilePwdChangeSuccessLogoutTimer = null;
 
 function initializeProfileFromStorage() {
@@ -1001,9 +1002,31 @@ function setProfilePwdChangeOtpVerifyLoading(isLoading) {
     }
 }
 
+function clearProfilePwdChangeOtpAutoVerify() {
+    if (profilePwdChangeOtpAutoVerifyTimeout) {
+        clearTimeout(profilePwdChangeOtpAutoVerifyTimeout);
+        profilePwdChangeOtpAutoVerifyTimeout = null;
+    }
+}
+
+function scheduleProfilePwdChangeOtpAutoVerify() {
+    clearProfilePwdChangeOtpAutoVerify();
+    profilePwdChangeOtpAutoVerifyTimeout = setTimeout(function () {
+        profilePwdChangeOtpAutoVerifyTimeout = null;
+        const modal = document.getElementById('profilePwdChangeOtpModal');
+        if (!modal || modal.hidden) return;
+        if (getProfilePwdChangeOtpCode().length !== 6) return;
+        if (profilePwdChangeOtpVerifyInProgress) return;
+        void verifyProfilePasswordChangeOtp();
+    }, 260);
+}
+
 function openProfilePwdChangeOtpModal() {
     const modal = document.getElementById('profilePwdChangeOtpModal');
     if (!modal) return;
+    clearProfilePwdChangeOtpAutoVerify();
+    profilePwdChangeOtpVerifyInProgress = false;
+    setProfilePwdChangeOtpVerifyLoading(false);
     setProfilePwdChangeOtpError('');
     clearProfilePwdChangeOtpDigits();
     modal.hidden = false;
@@ -1017,6 +1040,7 @@ function openProfilePwdChangeOtpModal() {
 function closeProfilePwdChangeOtpModal() {
     const modal = document.getElementById('profilePwdChangeOtpModal');
     if (!modal || modal.hidden) return;
+    clearProfilePwdChangeOtpAutoVerify();
     modal.hidden = true;
     if (!document.getElementById('profilePwdChangeSuccessModal') || document.getElementById('profilePwdChangeSuccessModal').hidden) {
         document.body.classList.remove('profile-totp-modal-open');
@@ -1215,31 +1239,55 @@ async function verifyProfilePasswordChangeOtp() {
         setProfilePwdChangeOtpError('Please enter the 6-digit code from your email.');
         return;
     }
-    const p = getProfilePwdChangePayload();
+    const uid = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+    if (!uid || Number.isNaN(uid)) {
+        setProfilePwdChangeOtpError('Your session is invalid. Please sign in again.');
+        return;
+    }
+    clearProfilePwdChangeOtpAutoVerify();
     profilePwdChangeOtpVerifyInProgress = true;
     setProfilePwdChangeOtpVerifyLoading(true);
     setProfilePwdChangeOtpError('');
     try {
-        const res = await fetch('/api/user/password/change-confirm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: user.id,
-                currentPassword: p.currentPassword,
-                newPassword: p.newPassword,
-                confirmPassword: p.confirmPassword,
-                code: code,
-            }),
-        });
+        const p = getProfilePwdChangePayload();
+        const controller = new AbortController();
+        const abortTimer = setTimeout(function () {
+            controller.abort();
+        }, 30000);
+        let res;
+        try {
+            res = await fetch('/api/user/password/change-confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: uid,
+                    currentPassword: p.currentPassword,
+                    newPassword: p.newPassword,
+                    confirmPassword: p.confirmPassword,
+                    code: code,
+                }),
+                signal: controller.signal,
+            });
+        } finally {
+            clearTimeout(abortTimer);
+        }
         const data = await res.json().catch(function () { return {}; });
         if (!res.ok || !data.success) {
             setProfilePwdChangeOtpError(data.error || 'Invalid or expired code.');
             return;
         }
+        clearProfilePwdChangeOtpAutoVerify();
         closeProfilePwdChangeOtpModal();
         clearSecurityForm();
         showNotification(data.message || 'Password changed successfully.', 'success');
         openProfilePwdChangeSuccessModalThenLogout();
+    } catch (err) {
+        const aborted = err && (err.name === 'AbortError' || err.name === 'TimeoutError');
+        setProfilePwdChangeOtpError(
+            aborted
+                ? 'Request timed out. Check your connection and tap Verify code again.'
+                : 'Could not reach the server. Check your connection and try again.'
+        );
     } finally {
         profilePwdChangeOtpVerifyInProgress = false;
         setProfilePwdChangeOtpVerifyLoading(false);
@@ -1258,6 +1306,10 @@ function wireProfilePwdChangeOtpDigits() {
             if (v && idx < digits.length - 1) {
                 digits[idx + 1].focus();
             }
+            clearProfilePwdChangeOtpAutoVerify();
+            if (getProfilePwdChangeOtpCode().length === 6) {
+                scheduleProfilePwdChangeOtpAutoVerify();
+            }
         });
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Backspace' && !input.value && idx > 0) {
@@ -1272,6 +1324,11 @@ function wireProfilePwdChangeOtpDigits() {
             });
             var lastIdx = Math.min(raw.length, digits.length) - 1;
             if (lastIdx >= 0) digits[lastIdx].focus();
+            setProfilePwdChangeOtpError('');
+            clearProfilePwdChangeOtpAutoVerify();
+            if (getProfilePwdChangeOtpCode().length === 6) {
+                scheduleProfilePwdChangeOtpAutoVerify();
+            }
         });
     });
 }

@@ -2043,11 +2043,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         return;
                     }
-                    setResetAlert(data.message || 'Password updated successfully.', 'success');
-                    setTimeout(() => {
-                        closeResetModal();
-                        showPasswordResetSuccessToast();
-                    }, 700);
+                    clearResetAlert();
+                    closeResetModal();
+                    requestAnimationFrame(function () {
+                        showNotification('Password updated successfully. You can now sign in.', 'success', 5200);
+                    });
                 })
                 .catch(() => setResetAlert('Could not reach the server. Please try again.'))
                 .finally(() => {
@@ -2074,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Notification function
-    function showNotification(message, type = 'info') {
+    function showNotification(message, type = 'info', durationMs = 3000) {
         const existingNotification = document.querySelector('.notification');
         if (existingNotification) {
             existingNotification.remove();
@@ -2134,38 +2134,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     notification.remove();
                 }
             }, 300);
-        }, 3000);
+        }, durationMs);
     }
 
-    function showPasswordResetSuccessToast() {
-        const existingToast = document.querySelector('.auth-toast');
-        if (existingToast) existingToast.remove();
-
-        const toast = document.createElement('div');
-        toast.className = 'auth-toast';
-        toast.innerHTML = `
-            <span class="auth-toast__icon"><i class="bi bi-check-lg"></i></span>
-            <div class="auth-toast__body">
-                <div class="auth-toast__title">Password Reset Successful!</div>
-                <div class="auth-toast__text">You can now login with your new password.</div>
-            </div>
-            <button class="auth-toast__close" aria-label="Close notification">×</button>
-        `;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => toast.classList.add('show'));
-
-        const closeToast = () => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 250);
-        };
-
-        const closeBtn = toast.querySelector('.auth-toast__close');
-        if (closeBtn) closeBtn.addEventListener('click', closeToast);
-        setTimeout(closeToast, 4200);
-    }
-    
     // Check auth status
     function checkAuthStatus() {
         const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');

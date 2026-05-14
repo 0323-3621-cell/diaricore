@@ -490,8 +490,11 @@
     <div class="profile-totp-modal" id="profileTotpModal" hidden>
         <div class="profile-totp-modal__backdrop" id="profileTotpModalBackdrop"></div>
         <div class="profile-totp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="profileTotpModalTitle">
-            <h3 class="profile-totp-modal__title" id="profileTotpModalTitle">Authenticator</h3>
+            <button type="button" class="profile-totp-modal__close" id="profileTotpModalCloseBtn" aria-label="Close dialog">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
             <div id="profileTotpModalSetup" hidden>
+                <h3 class="profile-totp-modal__title" id="profileTotpModalTitle">Set up authenticator</h3>
                 <p class="profile-totp-modal__lead" id="profileTotpSetupLead">Enter your account password to generate a setup QR code.</p>
                 <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
                     <span class="profile-account-field__label">Password</span>
@@ -514,22 +517,40 @@
                     </label>
                 </div>
             </div>
-            <div id="profileTotpModalDisable" hidden>
-                <p class="profile-totp-modal__lead">Enter your password and a current code from your authenticator app to turn off two-factor sign-in.</p>
+            <div id="profileTotpModalDisable" hidden class="profile-totp-disable-panel">
+                <div class="profile-totp-disable-panel__header">
+                    <div class="profile-totp-disable-panel__icon" aria-hidden="true">
+                        <i class="bi bi-shield-slash"></i>
+                    </div>
+                    <div class="profile-totp-disable-panel__titles">
+                        <h3 class="profile-totp-disable-panel__title" id="profileTotpDisableTitle">Turn off authenticator</h3>
+                        <p class="profile-totp-disable-panel__subtitle">This will disable two-factor sign-in</p>
+                    </div>
+                </div>
+                <div class="profile-totp-disable-panel__warning" role="status">
+                    <i class="bi bi-exclamation-triangle-fill profile-totp-disable-panel__warning-icon" aria-hidden="true"></i>
+                    <p class="profile-totp-disable-panel__warning-text">Disabling 2FA will make your account less secure. Enter your password and a current authenticator code to confirm.</p>
+                </div>
                 <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
                     <span class="profile-account-field__label">Password</span>
                     <span class="profile-account-field__input-wrap">
                         <i class="bi bi-lock profile-account-field__icon" aria-hidden="true"></i>
                         <input type="password" id="profileTotpDisablePassword" class="profile-account-field__input" autocomplete="current-password" placeholder="Your password">
+                        <button type="button" class="profile-account-field__reveal" data-profile-pw="profileTotpDisablePassword" aria-label="Show password"><i class="bi bi-eye-slash" aria-hidden="true"></i></button>
                     </span>
                 </label>
-                <label class="profile-account-field profile-account-field--full profile-totp-modal__field">
-                    <span class="profile-account-field__label">Authenticator code</span>
-                    <span class="profile-account-field__input-wrap">
-                        <i class="bi bi-shield-lock profile-account-field__icon" aria-hidden="true"></i>
-                        <input type="text" id="profileTotpDisableCode" class="profile-account-field__input" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="6-digit code">
-                    </span>
-                </label>
+                <div class="profile-totp-disable-panel__code-block">
+                    <span class="profile-account-field__label profile-totp-disable-panel__code-label">Authenticator code</span>
+                    <div class="profile-totp-digits" id="profileTotpDisableDigits" role="group" aria-label="6-digit authenticator code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="1" aria-label="Digit 2 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="2" aria-label="Digit 3 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="3" aria-label="Digit 4 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="4" aria-label="Digit 5 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-totp-disable-digit="5" aria-label="Digit 6 of 6" autocomplete="off">
+                    </div>
+                    <span class="profile-totp-disable-panel__counter" id="profileTotpDisableCounter" aria-live="polite">0/6</span>
+                </div>
             </div>
             <div class="profile-totp-modal__actions">
                 <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profileTotpModalCancel">Cancel</button>

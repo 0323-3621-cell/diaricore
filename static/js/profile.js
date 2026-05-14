@@ -249,6 +249,72 @@ function hydrateSecurity2fa() {
     updateSecurityStatusPill(user);
 }
 
+function getProfileTotpDisableDigitInputs() {
+    return Array.from(document.querySelectorAll('[data-profile-totp-disable-digit]'));
+}
+
+function getProfileTotpDisableCode() {
+    return getProfileTotpDisableDigitInputs()
+        .map(function (d) {
+            return (d.value || '').replace(/\D/g, '');
+        })
+        .join('');
+}
+
+function updateProfileTotpDisableCounter() {
+    const el = document.getElementById('profileTotpDisableCounter');
+    if (!el) return;
+    el.textContent = `${getProfileTotpDisableCode().length}/6`;
+}
+
+function clearProfileTotpDisableDigits() {
+    getProfileTotpDisableDigitInputs().forEach(function (d) {
+        d.value = '';
+        d.disabled = false;
+    });
+    updateProfileTotpDisableCounter();
+}
+
+function setProfileTotpDisablePrimaryButton() {
+    const primary = document.getElementById('profileTotpModalPrimary');
+    if (!primary) return;
+    primary.classList.add('profile-totp-modal__btn--danger');
+    primary.innerHTML = '<i class="bi bi-shield-slash" aria-hidden="true"></i> Disable 2FA';
+}
+
+function wireProfileTotpDisableDigits() {
+    const digits = getProfileTotpDisableDigitInputs();
+    if (!digits.length || digits[0].dataset.totpDigitsWired === '1') return;
+    digits[0].dataset.totpDigitsWired = '1';
+    digits.forEach(function (input, idx) {
+        input.addEventListener('input', function (e) {
+            var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
+            e.target.value = v;
+            updateProfileTotpDisableCounter();
+            if (v && idx < digits.length - 1) {
+                digits[idx + 1].focus();
+            }
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !input.value && idx > 0) {
+                digits[idx - 1].focus();
+            }
+        });
+        input.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var raw = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+            digits.forEach(function (d, i) {
+                d.value = raw[i] || '';
+            });
+            updateProfileTotpDisableCounter();
+            var next = raw.length >= 6 ? 5 : raw.length;
+            if (digits[next]) {
+                digits[next].focus();
+            }
+        });
+    });
+}
+
 function resetTotpModal() {
     const modal = document.getElementById('profileTotpModal');
     const setup = document.getElementById('profileTotpModalSetup');
@@ -257,7 +323,6 @@ function resetTotpModal() {
     const pw = document.getElementById('profileTotpSetupPassword');
     const code = document.getElementById('profileTotpConfirmCode');
     const dpw = document.getElementById('profileTotpDisablePassword');
-    const dcode = document.getElementById('profileTotpDisableCode');
     const primary = document.getElementById('profileTotpModalPrimary');
     if (modal) modal.hidden = true;
     if (setup) setup.hidden = true;
@@ -266,11 +331,14 @@ function resetTotpModal() {
     if (pw) pw.value = '';
     if (code) code.value = '';
     if (dpw) dpw.value = '';
-    if (dcode) dcode.value = '';
+    clearProfileTotpDisableDigits();
     if (primary) {
         primary.disabled = false;
+        primary.classList.remove('profile-totp-modal__btn--danger');
         primary.textContent = 'Continue';
     }
+    const dialog = document.querySelector('.profile-totp-modal__dialog');
+    if (dialog) dialog.setAttribute('aria-labelledby', 'profileTotpModalTitle');
     document.body.classList.remove('profile-totp-modal-open');
 }
 
@@ -303,9 +371,12 @@ function openTotpSetupModal() {
     const code = document.getElementById('profileTotpConfirmCode');
     if (code) code.value = '';
     if (primary) {
+        primary.classList.remove('profile-totp-modal__btn--danger');
         primary.textContent = 'Show QR code';
         primary.dataset.totpAction = 'setup-qr';
     }
+    const dialog = document.querySelector('.profile-totp-modal__dialog');
+    if (dialog) dialog.setAttribute('aria-labelledby', 'profileTotpModalTitle');
     openTotpModal();
     setTimeout(function () {
         if (pw) pw.focus();
@@ -315,19 +386,19 @@ function openTotpSetupModal() {
 function openTotpDisableModal() {
     const setup = document.getElementById('profileTotpModalSetup');
     const disable = document.getElementById('profileTotpModalDisable');
-    const title = document.getElementById('profileTotpModalTitle');
     const primary = document.getElementById('profileTotpModalPrimary');
     if (setup) setup.hidden = true;
     if (disable) disable.hidden = false;
-    if (title) title.textContent = 'Turn off authenticator';
     const dpw = document.getElementById('profileTotpDisablePassword');
-    const dcode = document.getElementById('profileTotpDisableCode');
     if (dpw) dpw.value = '';
-    if (dcode) dcode.value = '';
+    clearProfileTotpDisableDigits();
     if (primary) {
-        primary.textContent = 'Disable 2FA';
+        primary.disabled = false;
         primary.dataset.totpAction = 'disable';
+        setProfileTotpDisablePrimaryButton();
     }
+    const dialog = document.querySelector('.profile-totp-modal__dialog');
+    if (dialog) dialog.setAttribute('aria-labelledby', 'profileTotpDisableTitle');
     openTotpModal();
     setTimeout(function () {
         if (dpw) dpw.focus();
@@ -350,6 +421,10 @@ function wireProfileTotpModal() {
 
     if (backdrop) backdrop.addEventListener('click', close);
     if (cancel) cancel.addEventListener('click', close);
+    const closeBtn = document.getElementById('profileTotpModalCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', close);
+
+    wireProfileTotpDisableDigits();
 
     if (primary) {
         primary.addEventListener('click', function () {
@@ -453,12 +528,13 @@ function wireProfileTotpModal() {
 
             if (action === 'disable') {
                 const password = (document.getElementById('profileTotpDisablePassword')?.value || '').trim();
-                const code = (document.getElementById('profileTotpDisableCode')?.value || '').replace(/\D/g, '');
+                const code = getProfileTotpDisableCode();
                 if (!password || code.length !== 6) {
                     showNotification('Enter your password and a 6-digit code.', 'warning');
                     return;
                 }
                 primary.disabled = true;
+                primary.classList.remove('profile-totp-modal__btn--danger');
                 primary.textContent = 'Disabling…';
                 fetch('/api/user/totp/disable', {
                     method: 'POST',
@@ -474,7 +550,7 @@ function wireProfileTotpModal() {
                         var ok3 = _ref3.ok;
                         var data3 = _ref3.data;
                         primary.disabled = false;
-                        primary.textContent = 'Disable 2FA';
+                        setProfileTotpDisablePrimaryButton();
                         if (!ok3 || !data3.success) {
                             showNotification(data3.error || 'Could not disable 2FA.', 'error');
                             return;
@@ -487,7 +563,7 @@ function wireProfileTotpModal() {
                     })
                     .catch(function () {
                         primary.disabled = false;
-                        primary.textContent = 'Disable 2FA';
+                        setProfileTotpDisablePrimaryButton();
                         showNotification('Could not reach the server.', 'error');
                     });
             }

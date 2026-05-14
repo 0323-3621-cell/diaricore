@@ -81,11 +81,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const signinMainFlow = document.getElementById('signinMainFlow');
     const loginTotpStep = document.getElementById('loginTotpStep');
+    const loginTotpAuthenticatorPanel = document.getElementById('loginTotpAuthenticatorPanel');
+    const loginTotpRecoveryPanel = document.getElementById('loginTotpRecoveryPanel');
     const loginTotpDigitsWrap = document.getElementById('loginTotpDigits');
-    const loginTotpDigits = Array.from(document.querySelectorAll('.login-totp-digit'));
+    const loginTotpDigits = Array.from(document.querySelectorAll('#loginTotpDigits .login-totp-digit'));
+    const loginRecoveryDigitsWrap = document.getElementById('loginRecoveryDigits');
+    const loginRecoveryDigits = Array.from(document.querySelectorAll('#loginRecoveryDigits .login-totp-digit'));
     const loginTotpSubmit = document.getElementById('loginTotpSubmit');
     const loginTotpBack = document.getElementById('loginTotpBack');
     const loginTotpCodeError = document.getElementById('loginTotpCodeError');
+    const loginTotpShowRecovery = document.getElementById('loginTotpShowRecovery');
+    const loginTotpRecoverySend = document.getElementById('loginTotpRecoverySend');
+    const loginTotpRecoverySendStatus = document.getElementById('loginTotpRecoverySendStatus');
+    const loginTotpRecoveryOtpBlock = document.getElementById('loginTotpRecoveryOtpBlock');
+    const loginTotpRecoveryBackToTotp = document.getElementById('loginTotpRecoveryBackToTotp');
+    const loginRecoverySubmit = document.getElementById('loginRecoverySubmit');
+    const loginRecoveryCodeError = document.getElementById('loginRecoveryCodeError');
+    let loginRecoverySendCooldownTimer = null;
+    let loginRecoveryVerifyInProgress = false;
 
     function getLoginTotpCode() {
         return loginTotpDigits.map(function (d) {
@@ -121,6 +134,176 @@ document.addEventListener('DOMContentLoaded', function() {
             loginTotpCodeError.classList.add('show');
         }
         if (loginTotpDigitsWrap) loginTotpDigitsWrap.classList.add('has-error');
+    }
+
+    function getLoginRecoveryCode() {
+        return loginRecoveryDigits
+            .map(function (d) {
+                return (d.value || '').replace(/\D/g, '');
+            })
+            .join('');
+    }
+
+    function clearLoginRecoveryDigits() {
+        loginRecoveryDigits.forEach(function (d) {
+            d.value = '';
+            d.classList.remove('error');
+        });
+        if (loginRecoveryDigitsWrap) loginRecoveryDigitsWrap.classList.remove('has-error');
+    }
+
+    function clearLoginRecoveryErrorState() {
+        if (loginRecoveryCodeError) {
+            loginRecoveryCodeError.classList.remove('show');
+            loginRecoveryCodeError.setAttribute('hidden', '');
+            loginRecoveryCodeError.textContent = 'Invalid code.';
+        }
+        if (loginRecoveryDigitsWrap) loginRecoveryDigitsWrap.classList.remove('has-error');
+    }
+
+    function setLoginRecoveryErrorState(message) {
+        if (loginRecoveryCodeError) {
+            loginRecoveryCodeError.textContent = message || 'Invalid code.';
+            loginRecoveryCodeError.removeAttribute('hidden');
+            loginRecoveryCodeError.classList.add('show');
+        }
+        if (loginRecoveryDigitsWrap) loginRecoveryDigitsWrap.classList.add('has-error');
+    }
+
+    function resetLoginRecoveryUi() {
+        if (loginRecoverySendCooldownTimer) {
+            clearInterval(loginRecoverySendCooldownTimer);
+            loginRecoverySendCooldownTimer = null;
+        }
+        if (loginTotpAuthenticatorPanel) loginTotpAuthenticatorPanel.hidden = false;
+        if (loginTotpRecoveryPanel) loginTotpRecoveryPanel.hidden = true;
+        if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = true;
+        if (loginTotpRecoverySendStatus) {
+            loginTotpRecoverySendStatus.hidden = true;
+            loginTotpRecoverySendStatus.textContent = '';
+        }
+        clearLoginRecoveryDigits();
+        clearLoginRecoveryErrorState();
+        if (loginTotpRecoverySend) {
+            loginTotpRecoverySend.disabled = false;
+            loginTotpRecoverySend.textContent = 'Email me a recovery code';
+            loginTotpRecoverySend.classList.remove('is-loading');
+        }
+        if (loginRecoverySubmit) {
+            loginRecoverySubmit.disabled = false;
+            loginRecoverySubmit.classList.remove('is-loading');
+            loginRecoverySubmit.textContent = 'USE EMAIL CODE & SIGN IN';
+        }
+        loginRecoveryDigits.forEach(function (d) {
+            d.disabled = false;
+        });
+    }
+
+    function showLoginTotpRecoveryPanel() {
+        if (loginTotpAuthenticatorPanel) loginTotpAuthenticatorPanel.hidden = true;
+        if (loginTotpRecoveryPanel) loginTotpRecoveryPanel.hidden = false;
+        if (loginTotpRecoverySend) loginTotpRecoverySend.focus();
+    }
+
+    function startRecoveryResendCooldown(seconds) {
+        if (loginRecoverySendCooldownTimer) clearInterval(loginRecoverySendCooldownTimer);
+        var left = Math.max(1, parseInt(seconds, 10) || 55);
+        if (loginTotpRecoverySend) {
+            loginTotpRecoverySend.disabled = true;
+            loginTotpRecoverySend.textContent = 'Resend in ' + left + 's';
+        }
+        loginRecoverySendCooldownTimer = setInterval(function () {
+            left -= 1;
+            if (loginTotpRecoverySend) {
+                loginTotpRecoverySend.textContent = left > 0 ? 'Resend in ' + left + 's' : 'Email me a recovery code';
+            }
+            if (left <= 0) {
+                clearInterval(loginRecoverySendCooldownTimer);
+                loginRecoverySendCooldownTimer = null;
+                if (loginTotpRecoverySend) {
+                    loginTotpRecoverySend.disabled = false;
+                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                }
+            }
+        }, 1000);
+    }
+
+    function submitLoginRecoveryVerification() {
+        if (loginRecoveryVerifyInProgress || !pendingTwoFactorToken) return;
+        var code = getLoginRecoveryCode();
+        if (code.length !== 6) {
+            setLoginRecoveryErrorState('Enter the 6-digit code from your email.');
+            return;
+        }
+        clearLoginRecoveryErrorState();
+        loginRecoveryVerifyInProgress = true;
+        if (loginRecoverySubmit) {
+            loginRecoverySubmit.classList.add('is-loading');
+            loginRecoverySubmit.disabled = true;
+            loginRecoverySubmit.innerHTML =
+                '<span class="login-totp-verify-spinner" aria-hidden="true"></span><span>Signing in...</span>';
+        }
+        loginRecoveryDigits.forEach(function (d) {
+            d.disabled = true;
+        });
+        fetch('/api/login/totp/recovery/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken: pendingTwoFactorToken, code: code }),
+        })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok, data: data };
+                });
+            })
+            .then(function (_refR) {
+                var okR = _refR.ok;
+                var dataR = _refR.data;
+                if (!okR || !dataR.success) {
+                    loginRecoveryVerifyInProgress = false;
+                    if (loginRecoverySubmit) {
+                        loginRecoverySubmit.classList.remove('is-loading');
+                        loginRecoverySubmit.disabled = false;
+                        loginRecoverySubmit.textContent = 'USE EMAIL CODE & SIGN IN';
+                    }
+                    loginRecoveryDigits.forEach(function (d) {
+                        d.disabled = false;
+                    });
+                    setLoginRecoveryErrorState(dataR.error || 'Invalid or expired recovery code.');
+                    clearLoginRecoveryDigits();
+                    if (loginRecoveryDigits[0]) loginRecoveryDigits[0].focus();
+                    return;
+                }
+                loginRecoveryVerifyInProgress = false;
+                if (loginRecoverySubmit) {
+                    loginRecoverySubmit.classList.remove('is-loading');
+                    loginRecoverySubmit.disabled = false;
+                    loginRecoverySubmit.textContent = 'USE EMAIL CODE & SIGN IN';
+                }
+                loginRecoveryDigits.forEach(function (d) {
+                    d.disabled = false;
+                });
+                showLoginCredentialsStep();
+                if (dataR.totpWasReset) {
+                    showNotification(
+                        'Authenticator sign-in was reset. You can turn it on again in Profile → Security.',
+                        'info'
+                    );
+                }
+                finishSuccessfulLogin(dataR.user);
+            })
+            .catch(function () {
+                loginRecoveryVerifyInProgress = false;
+                if (loginRecoverySubmit) {
+                    loginRecoverySubmit.classList.remove('is-loading');
+                    loginRecoverySubmit.disabled = false;
+                    loginRecoverySubmit.textContent = 'USE EMAIL CODE & SIGN IN';
+                }
+                loginRecoveryDigits.forEach(function (d) {
+                    d.disabled = false;
+                });
+                showNotification('Could not reach the server. Please try again.', 'error');
+            });
     }
 
     function setLoginTotpSubmitIdle() {
@@ -576,6 +759,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function showLoginCredentialsStep() {
         pendingTwoFactorToken = null;
         loginTotpVerifyInProgress = false;
+        loginRecoveryVerifyInProgress = false;
+        resetLoginRecoveryUi();
         if (loginTotpAutoVerifyTimeout) {
             clearTimeout(loginTotpAutoVerifyTimeout);
             loginTotpAutoVerifyTimeout = null;
@@ -593,6 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showLoginTotpStep(challengeToken) {
         pendingTwoFactorToken = challengeToken;
+        resetLoginRecoveryUi();
         if (signinMainFlow) signinMainFlow.hidden = true;
         if (loginTotpStep) loginTotpStep.hidden = false;
         loginTotpVerifyInProgress = false;
@@ -758,6 +944,115 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginTotpSubmit) {
         loginTotpSubmit.addEventListener('click', function () {
             submitLoginTotpVerification(false);
+        });
+    }
+
+    if (loginTotpShowRecovery) {
+        loginTotpShowRecovery.addEventListener('click', function () {
+            if (!pendingTwoFactorToken) return;
+            clearLoginTotpErrorState();
+            showLoginTotpRecoveryPanel();
+        });
+    }
+
+    if (loginTotpRecoveryBackToTotp) {
+        loginTotpRecoveryBackToTotp.addEventListener('click', function () {
+            clearLoginRecoveryErrorState();
+            resetLoginRecoveryUi();
+            if (loginTotpDigits[0]) loginTotpDigits[0].focus();
+        });
+    }
+
+    if (loginTotpRecoverySend) {
+        loginTotpRecoverySend.addEventListener('click', function () {
+            if (!pendingTwoFactorToken) {
+                showNotification('Please sign in with your password again.', 'warning');
+                return;
+            }
+            if (loginTotpRecoverySend.disabled || loginTotpRecoverySend.classList.contains('is-loading')) return;
+            loginTotpRecoverySend.classList.add('is-loading');
+            loginTotpRecoverySend.disabled = true;
+            loginTotpRecoverySend.innerHTML =
+                '<span class="login-totp-verify-spinner" aria-hidden="true"></span><span>Sending...</span>';
+            fetch('/api/login/totp/recovery/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ challengeToken: pendingTwoFactorToken }),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        return { ok: res.ok, status: res.status, data: data };
+                    });
+                })
+                .then(function (out) {
+                    loginTotpRecoverySend.classList.remove('is-loading');
+                    if (out.status === 429 && out.data && out.data.retryAfterSeconds) {
+                        loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                        showNotification(out.data.error || 'Please wait before requesting another code.', 'warning');
+                        startRecoveryResendCooldown(out.data.retryAfterSeconds);
+                        return;
+                    }
+                    if (!out.ok || !out.data.success) {
+                        loginTotpRecoverySend.disabled = false;
+                        loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                        showNotification(out.data.error || 'Could not send recovery email.', 'error');
+                        return;
+                    }
+                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                    startRecoveryResendCooldown(56);
+                    if (loginTotpRecoverySendStatus) {
+                        loginTotpRecoverySendStatus.textContent =
+                            'Check your inbox for a message from DiariCore. Codes expire in 15 minutes.';
+                        loginTotpRecoverySendStatus.hidden = false;
+                    }
+                    if (loginTotpRecoveryOtpBlock) loginTotpRecoveryOtpBlock.hidden = false;
+                    clearLoginRecoveryDigits();
+                    if (loginRecoveryDigits[0]) loginRecoveryDigits[0].focus();
+                })
+                .catch(function () {
+                    loginTotpRecoverySend.classList.remove('is-loading');
+                    loginTotpRecoverySend.disabled = false;
+                    loginTotpRecoverySend.textContent = 'Email me a recovery code';
+                    showNotification('Could not reach the server. Please try again.', 'error');
+                });
+        });
+    }
+
+    if (loginRecoveryDigits.length) {
+        loginRecoveryDigits.forEach(function (input, idx) {
+            input.addEventListener('input', function (e) {
+                var v = (e.target.value || '').replace(/\D/g, '').slice(-1);
+                e.target.value = v;
+                clearLoginRecoveryErrorState();
+                if (v && idx < loginRecoveryDigits.length - 1) {
+                    loginRecoveryDigits[idx + 1].focus();
+                }
+            });
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !input.value && idx > 0) {
+                    loginRecoveryDigits[idx - 1].focus();
+                }
+                if (e.key === 'Enter' && getLoginRecoveryCode().length === 6 && !loginRecoveryVerifyInProgress) {
+                    e.preventDefault();
+                    submitLoginRecoveryVerification();
+                }
+            });
+            input.addEventListener('paste', function (e) {
+                e.preventDefault();
+                var digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6).split('');
+                loginRecoveryDigits.forEach(function (d, i) {
+                    d.value = digits[i] || '';
+                });
+                clearLoginRecoveryErrorState();
+                var next = digits.length >= 6 ? 5 : digits.length;
+                if (loginRecoveryDigits[next]) loginRecoveryDigits[next].focus();
+            });
+        });
+    }
+
+    if (loginRecoverySubmit) {
+        loginRecoverySubmit.addEventListener('click', function () {
+            submitLoginRecoveryVerification();
         });
     }
 
@@ -1589,7 +1884,7 @@ document.addEventListener('DOMContentLoaded', function() {
             align-items: center;
             gap: 0.75rem;
             font-weight: 500;
-            z-index: 10000;
+            z-index: 13000;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             transform: translateX(100%);
             transition: transform 0.3s ease;

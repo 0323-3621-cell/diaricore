@@ -7,6 +7,7 @@ import os
 import json
 import uuid
 import random
+import secrets
 import urllib.parse
 import io
 import urllib.request
@@ -247,6 +248,77 @@ def _send_password_reset_email(email: str, reset_code: str, nickname: str) -> bo
             return True
     except Exception:
         return False
+
+
+def _send_login_totp_recovery_email(email: str, recovery_code: str, nickname: str) -> bool:
+    """Email a one-time code used to disable TOTP when the user cannot access their authenticator app."""
+    api_key = os.environ.get("BREVO_API_KEY") or db.get_system_setting("brevo_api_key")
+    sender_email = os.environ.get("BREVO_SENDER_EMAIL") or db.get_system_setting("brevo_sender_email")
+    sender_name = os.environ.get("BREVO_SENDER_NAME") or db.get_system_setting("brevo_sender_name", "DiariCore")
+    enable_notifications = (db.get_system_setting("enable_email_notifications", "true") or "true").lower() == "true"
+
+    if not enable_notifications:
+        print(f"[TOTP RECOVERY EMAIL DISABLED] {email} -> {recovery_code}")
+        return True
+
+    if not api_key or not sender_email:
+        print(f"[TOTP RECOVERY DEV MODE] {email} -> {recovery_code}")
+        return True
+
+    payload = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": email, "name": nickname or email.split("@")[0]}],
+        "subject": "DiariCore sign-in — authenticator recovery code",
+        "htmlContent": f"""
+            <html><body style='font-family: Arial, sans-serif; color: #2F3E36;'>
+            <h2>Authenticator recovery</h2>
+            <p>Hello {nickname or 'there'},</p>
+            <p>Someone started sign-in to DiariCore and asked to recover access without an authenticator app code.
+            If this was you, enter this one-time code on the website:</p>
+            <p style='font-size: 28px; font-weight: bold; letter-spacing: 6px;'>{recovery_code}</p>
+            <p>This code expires in 15 minutes. If you did not request this, you can ignore this email and your password
+            still protects your account.</p>
+            <p><strong>Note:</strong> using this code will turn off authenticator sign-in for your account until you enable it again in Profile.</p>
+            </body></html>
+        """,
+        "textContent": (
+            f"DiariCore authenticator recovery code: {recovery_code}. Expires in 15 minutes. "
+            "Using it turns off authenticator sign-in until you set it up again in Profile."
+        ),
+    }
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "api-key": api_key},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15):
+            return True
+    except Exception:
+        return False
+
+
+def _parse_db_datetime(val):
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        dt = val
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    s = str(val).strip()
+    if not s:
+        return None
+    if s.endswith("Z") or s.endswith("z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def _serialize_value(v):
@@ -609,9 +681,105 @@ def api_login_totp():
     if not secret or not _verify_totp_code(secret, code):
         return jsonify({"success": False, "error": "Invalid authentication code."}), 401
 
+    db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
     db.delete_login_totp_challenge(challenge_token)
     out = {k: v for k, v in user.items() if k != "password_hash"}
     return jsonify({"success": True, "user": serialize_user(out)}), 200
+
+
+@app.route("/api/login/totp/recovery/request", methods=["POST"])
+def api_login_totp_recovery_request():
+    """Email a 6-digit recovery code for the pending TOTP login challenge (lost authenticator)."""
+    data = request.get_json(silent=True) or {}
+    challenge_token = (data.get("challengeToken") or "").strip()
+    if len(challenge_token) < 8:
+        return jsonify({"success": False, "error": "Unable to send recovery email."}), 400
+
+    user_id = db.peek_login_totp_challenge_user_id(challenge_token)
+    if not user_id:
+        return jsonify({"success": False, "error": "Unable to send recovery email."}), 400
+
+    user = db.get_user_by_id(user_id)
+    if not user or not _truthy_db_flag(user.get("totp_enabled")):
+        return jsonify({"success": False, "error": "Unable to send recovery email."}), 400
+
+    row = db.get_login_totp_recovery_otp_row(challenge_token)
+    if row and row.get("created_at"):
+        cre = _parse_db_datetime(row.get("created_at"))
+        if cre:
+            elapsed = (datetime.now(timezone.utc) - cre).total_seconds()
+            if elapsed < 55:
+                retry = max(1, int(55 - elapsed) + 1)
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "Please wait a minute before requesting another code.",
+                            "retryAfterSeconds": retry,
+                        }
+                    ),
+                    429,
+                )
+
+    code = _generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    if not db.upsert_login_totp_recovery_otp(challenge_token, user_id, code, expires_at):
+        return jsonify({"success": False, "error": "Could not start recovery."}), 500
+
+    email_to = (user.get("email") or "").strip()
+    if not email_to:
+        db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
+        return jsonify({"success": False, "error": "Unable to send recovery email."}), 500
+
+    if not _send_login_totp_recovery_email(email_to, code, user.get("nickname") or ""):
+        db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
+        return jsonify({"success": False, "error": "Could not send email. Try again later."}), 500
+
+    return jsonify({"success": True, "message": "If this account has a valid sign-in in progress, a code was sent."}), 200
+
+
+@app.route("/api/login/totp/recovery/verify", methods=["POST"])
+def api_login_totp_recovery_verify():
+    """Verify email recovery code, disable TOTP, and complete login (same session as normal TOTP verify)."""
+    data = request.get_json(silent=True) or {}
+    challenge_token = (data.get("challengeToken") or "").strip()
+    code = _normalize_totp_code(data.get("code") or "")
+    if len(challenge_token) < 8 or len(code) != 6:
+        return jsonify({"success": False, "error": "Invalid or expired recovery code."}), 400
+
+    user_id = db.peek_login_totp_challenge_user_id(challenge_token)
+    if not user_id:
+        return jsonify({"success": False, "error": "This sign-in step expired. Please sign in again."}), 401
+
+    row = db.get_login_totp_recovery_otp_row(challenge_token)
+    if not row:
+        return jsonify({"success": False, "error": "Invalid or expired recovery code."}), 400
+
+    exp = _parse_db_datetime(row.get("expires_at"))
+    if exp is None or datetime.now(timezone.utc) > exp:
+        db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
+        return jsonify({"success": False, "error": "Invalid or expired recovery code."}), 401
+
+    stored = (row.get("code") or "").strip()
+    if len(stored) != 6 or not secrets.compare_digest(stored, code):
+        return jsonify({"success": False, "error": "Invalid or expired recovery code."}), 401
+
+    user = db.get_user_by_id(user_id)
+    if not user or not _truthy_db_flag(user.get("totp_enabled")):
+        db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
+        db.delete_login_totp_challenge(challenge_token)
+        return jsonify({"success": False, "error": "Two-factor authentication is not active for this account."}), 400
+
+    if not db.disable_totp_for_user(user_id):
+        return jsonify({"success": False, "error": "Could not complete recovery. Try again."}), 500
+
+    db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
+    db.delete_login_totp_challenge(challenge_token)
+    user_after = db.get_user_by_id(user_id)
+    if not user_after:
+        return jsonify({"success": False, "error": "Recovery failed."}), 500
+    out = {k: v for k, v in user_after.items() if k != "password_hash"}
+    return jsonify({"success": True, "user": serialize_user(out), "totpWasReset": True}), 200
 
 
 @app.route("/api/user/totp/setup", methods=["POST"])

@@ -157,6 +157,41 @@ def _ensure_login_totp_challenges_table(cur):
         cur.execute("CREATE INDEX IF NOT EXISTS idx_login_totp_challenges_user_id ON login_totp_challenges (user_id);")
 
 
+def _ensure_login_totp_recovery_otps_table(cur):
+    """One-time email codes to recover sign-in when authenticator app access is lost."""
+    if USE_POSTGRES:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS login_totp_recovery_otps (
+                challenge_token VARCHAR(256) PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                code VARCHAR(12) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_login_totp_recovery_otps_user_id ON login_totp_recovery_otps (user_id);"
+        )
+    else:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS login_totp_recovery_otps (
+                challenge_token TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                code TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            );
+            """
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_login_totp_recovery_otps_user_id ON login_totp_recovery_otps (user_id);"
+        )
+
+
 def _parse_expires_at(val):
     if val is None:
         return None
@@ -350,6 +385,7 @@ def init_db():
         _ensure_user_avatar_column(cur)
         _ensure_user_totp_columns(cur)
         _ensure_login_totp_challenges_table(cur)
+        _ensure_login_totp_recovery_otps_table(cur)
         if USE_POSTGRES:
             cur.execute(
                 """
@@ -1018,6 +1054,95 @@ def clear_login_totp_challenges_for_user(user_id: int) -> None:
         conn.commit()
     except Exception:
         conn.rollback()
+    finally:
+        conn.close()
+
+
+def delete_login_totp_recovery_otp_for_challenge(challenge_token: str) -> None:
+    raw = (challenge_token or "").strip()
+    if not raw:
+        return
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute("DELETE FROM login_totp_recovery_otps WHERE challenge_token = %s", (raw,))
+        else:
+            cur.execute("DELETE FROM login_totp_recovery_otps WHERE challenge_token = ?", (raw,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def get_login_totp_recovery_otp_row(challenge_token: str):
+    raw = (challenge_token or "").strip()
+    if not raw:
+        return None
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                SELECT challenge_token, user_id, code, expires_at, created_at
+                FROM login_totp_recovery_otps
+                WHERE challenge_token = %s
+                """,
+                (raw,),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT challenge_token, user_id, code, expires_at, created_at
+                FROM login_totp_recovery_otps
+                WHERE challenge_token = ?
+                """,
+                (raw,),
+            )
+        return row_to_dict(cur.fetchone())
+    finally:
+        conn.close()
+
+
+def upsert_login_totp_recovery_otp(challenge_token: str, user_id: int, code: str, expires_at: datetime) -> bool:
+    raw_tok = (challenge_token or "").strip()
+    if not raw_tok or not isinstance(user_id, int) or user_id <= 0:
+        return False
+    code_s = "".join(ch for ch in str(code or "") if ch.isdigit())[:6]
+    if len(code_s) != 6:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    try:
+        if USE_POSTGRES:
+            cur.execute(
+                """
+                INSERT INTO login_totp_recovery_otps (challenge_token, user_id, code, expires_at)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (challenge_token) DO UPDATE SET
+                    user_id = EXCLUDED.user_id,
+                    code = EXCLUDED.code,
+                    expires_at = EXCLUDED.expires_at,
+                    created_at = CURRENT_TIMESTAMP
+                """,
+                (raw_tok, user_id, code_s, expires_at),
+            )
+        else:
+            cur.execute("DELETE FROM login_totp_recovery_otps WHERE challenge_token = ?", (raw_tok,))
+            cur.execute(
+                """
+                INSERT INTO login_totp_recovery_otps (challenge_token, user_id, code, expires_at, created_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+                """,
+                (raw_tok, user_id, code_s, expires_at.isoformat()),
+            )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
     finally:
         conn.close()
 

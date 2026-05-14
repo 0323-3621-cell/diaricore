@@ -1643,3 +1643,85 @@ body {
 .login-totp-step__back:hover {
     color: var(--text-dark);
 }
+
+.login-totp-authenticator-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.login-totp-step__recovery-link {
+    display: block;
+    width: 100%;
+    margin-top: 0.85rem;
+    padding: 0.35rem 0.25rem;
+    border: none;
+    background: transparent;
+    color: #5a7a68;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+}
+
+.login-totp-step__recovery-link:hover {
+    color: #3d5a4a;
+}
+
+.login-totp-recovery-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+.login-totp-recovery__text {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.login-totp-recovery__send.btn-signin {
+    margin-top: 0.15rem;
+}
+
+.login-totp-recovery__status {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #3d6b52;
+    font-weight: 500;
+}
+
+.login-totp-recovery__otp-block {
+    margin-top: 0.35rem;
+}
+
+.login-totp-recovery__otp-block .login-totp-step__verify {
+    margin-top: 0.65rem;
+}
+
+.login-totp-recovery__back.login-totp-step__back {
+    margin-top: 0.35rem;
+}
+
+#loginRecoveryDigits.has-error .login-totp-digit {
+    border-color: #e07a7a;
+    animation: none;
+}
+
+html.theme-dark .login-totp-step__recovery-link {
+    color: #9fb8a8;
+}
+
+html.theme-dark .login-totp-step__recovery-link:hover {
+    color: #d4e5dc;
+}
+
+html.theme-dark .login-totp-recovery__status {
+    color: #9fb8a8;
+}

@@ -84,19 +84,41 @@
                 </div>
 
                 <div id="loginTotpStep" class="login-totp-step" hidden>
-                    <div class="form-group login-totp-step__digits-group">
-                        <p class="login-totp-step__digits-label" id="loginTotpDigitsLabel">Enter your 6-digit code</p>
-                        <div class="login-totp-digits" id="loginTotpDigits" role="group" aria-labelledby="loginTotpDigitsLabel">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="1" aria-label="Digit 2 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="2" aria-label="Digit 3 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="3" aria-label="Digit 4 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="4" aria-label="Digit 5 of 6" autocomplete="off">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="5" aria-label="Digit 6 of 6" autocomplete="off">
+                    <div id="loginTotpAuthenticatorPanel" class="login-totp-authenticator-panel">
+                        <div class="form-group login-totp-step__digits-group">
+                            <p class="login-totp-step__digits-label" id="loginTotpDigitsLabel">Enter your 6-digit code</p>
+                            <div class="login-totp-digits" id="loginTotpDigits" role="group" aria-labelledby="loginTotpDigitsLabel">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="1" aria-label="Digit 2 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="2" aria-label="Digit 3 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="3" aria-label="Digit 4 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="4" aria-label="Digit 5 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-totp-idx="5" aria-label="Digit 6 of 6" autocomplete="off">
+                            </div>
+                            <div class="custom-error" id="loginTotpCodeError" hidden>Invalid code.</div>
                         </div>
-                        <div class="custom-error" id="loginTotpCodeError" hidden>Invalid code.</div>
+                        <button type="button" class="btn-signin login-totp-step__verify" id="loginTotpSubmit">VERIFY &amp; CONTINUE</button>
+                        <button type="button" class="login-totp-step__recovery-link" id="loginTotpShowRecovery">Lost access to your authenticator?</button>
                     </div>
-                    <button type="button" class="btn-signin login-totp-step__verify" id="loginTotpSubmit">VERIFY &amp; CONTINUE</button>
+                    <div id="loginTotpRecoveryPanel" class="login-totp-recovery-panel" hidden>
+                        <p class="login-totp-recovery__text">If you removed DiariCore from your authenticator app, we can email a one-time code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
+                        <button type="button" class="btn-signin login-totp-recovery__send" id="loginTotpRecoverySend">Email me a recovery code</button>
+                        <p class="login-totp-recovery__status" id="loginTotpRecoverySendStatus" hidden></p>
+                        <div id="loginTotpRecoveryOtpBlock" class="login-totp-recovery__otp-block" hidden>
+                            <p class="login-totp-step__digits-label" id="loginRecoveryDigitsLabel">Enter the 6-digit code from your email</p>
+                            <div class="login-totp-digits" id="loginRecoveryDigits" role="group" aria-labelledby="loginRecoveryDigitsLabel">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="0" aria-label="Recovery digit 1 of 6" autocomplete="one-time-code">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="1" aria-label="Recovery digit 2 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="2" aria-label="Recovery digit 3 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="3" aria-label="Recovery digit 4 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="4" aria-label="Recovery digit 5 of 6" autocomplete="off">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="5" aria-label="Recovery digit 6 of 6" autocomplete="off">
+                            </div>
+                            <div class="custom-error" id="loginRecoveryCodeError" hidden>Invalid code.</div>
+                            <button type="button" class="btn-signin login-totp-step__verify" id="loginRecoverySubmit">USE EMAIL CODE &amp; SIGN IN</button>
+                        </div>
+                        <button type="button" class="login-totp-step__back login-totp-recovery__back" id="loginTotpRecoveryBackToTotp">← Use authenticator code instead</button>
+                    </div>
                     <button type="button" class="login-totp-step__back" id="loginTotpBack">← Back to sign in</button>
                 </div>
             </div>

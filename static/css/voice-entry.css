@@ -235,64 +235,27 @@
 .recording-animation {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 3px;
+    align-items: flex-end;
+    gap: 4px;
     margin-bottom: 1.5rem;
-    height: 40px;
+    height: 52px;
 }
 
-.wave-bar {
-    width: 4px;
-    height: 20px;
-    background-color: var(--primary-color);
-    border-radius: 2px;
-    animation: waveSlide 1.2s ease-in-out infinite;
+/* Bars are driven by Web Audio (idle = gentle motion, speech = spikes) */
+.voice-wave-bar {
+    display: block;
+    width: 5px;
+    height: 44px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--primary-light), var(--primary-color));
+    transform-origin: center bottom;
+    transform: scaleY(0.15);
+    opacity: 0.85;
+    will-change: transform;
 }
 
-.wave-bar:nth-child(1) {
-    animation-delay: 0s;
-    height: 25px;
-}
-
-.wave-bar:nth-child(2) {
-    animation-delay: 0.1s;
-    height: 35px;
-}
-
-.wave-bar:nth-child(3) {
-    animation-delay: 0.2s;
-    height: 30px;
-}
-
-.wave-bar:nth-child(4) {
-    animation-delay: 0.3s;
-    height: 40px;
-}
-
-.wave-bar:nth-child(5) {
-    animation-delay: 0.4s;
-    height: 30px;
-}
-
-.wave-bar:nth-child(6) {
-    animation-delay: 0.5s;
-    height: 35px;
-}
-
-.wave-bar:nth-child(7) {
-    animation-delay: 0.6s;
-    height: 25px;
-}
-
-@keyframes waveSlide {
-    0%, 100% {
-        transform: scaleY(0.5);
-        opacity: 0.4;
-    }
-    50% {
-        transform: scaleY(1);
-        opacity: 1;
-    }
+html.theme-dark .voice-wave-bar {
+    background: linear-gradient(180deg, #8FAF9F, #6F8F7F);
 }
 
 .recording-text h3 {
@@ -300,7 +263,11 @@
     font-weight: 600;
     color: var(--text-dark);
     margin-bottom: 0.5rem;
-    opacity: 0.6;
+    opacity: 0.92;
+}
+
+#voiceEntryRecordingTime {
+    font-variant-numeric: tabular-nums;
 }
 
 .recording-text p {

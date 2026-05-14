@@ -92,17 +92,17 @@
                 
                 <!-- Recording State (Hidden by default) -->
                 <div class="recording-state" id="recordingState" style="display: none;">
-                    <div class="recording-animation">
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
-                        <div class="wave-bar"></div>
+                    <div class="recording-animation recording-animation--live" id="voiceWaveBars" aria-hidden="true">
+                        <span class="voice-wave-bar" data-bar="0"></span>
+                        <span class="voice-wave-bar" data-bar="1"></span>
+                        <span class="voice-wave-bar" data-bar="2"></span>
+                        <span class="voice-wave-bar" data-bar="3"></span>
+                        <span class="voice-wave-bar" data-bar="4"></span>
+                        <span class="voice-wave-bar" data-bar="5"></span>
+                        <span class="voice-wave-bar" data-bar="6"></span>
                     </div>
                     <div class="recording-text">
-                        <h3 id="recordingText">Recording... 0:00</h3>
+                        <h3 id="voiceEntryRecordingLabel">Recording… <span id="voiceEntryRecordingTime">0:00</span></h3>
                     </div>
                 </div>
             </div>

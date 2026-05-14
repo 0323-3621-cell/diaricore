@@ -1,4 +1,4 @@
-// Voice Entry — live dictation via Web Speech API, then hand off to Write Entry for tags/photos/analysis.
+// Voice Entry — mic + Web Audio waveform, Web Speech dictation, hand off to Write Entry.
 (function () {
     const VOICE_TO_WRITE_STORAGE_KEY = 'diariCoreVoiceDraftForWrite';
 
@@ -12,6 +12,13 @@
         return s.split(/\s+/).filter(Boolean).length;
     }
 
+    function formatElapsed(ms) {
+        const totalSec = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSec / 60);
+        const seconds = totalSec % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         try {
             let isRecording = false;
@@ -19,17 +26,23 @@
             let audioChunks = [];
             let mediaStream = null;
             let startTime = null;
-            let timerInterval = null;
             let recognition = null;
             let wantRecognitionRunning = false;
             let speechFinalText = '';
 
+            let audioContext = null;
+            let mediaSourceNode = null;
+            let analyserNode = null;
+            let freqData = null;
+            let recordingRafId = null;
+
+            const voiceRoot = document.querySelector('.voice-entry-container');
             const voiceCircle = document.getElementById('voiceCircle');
             const micIcon = document.getElementById('micIcon');
             const statusText = document.getElementById('statusText');
             const finalTranscript = document.getElementById('finalTranscript');
             const recordingState = document.getElementById('recordingState');
-            const recordingText = document.getElementById('recordingText');
+            const recordingTimeEl = document.getElementById('voiceEntryRecordingTime');
             const postRecordingContainer = document.getElementById('postRecordingContainer');
             const recordingDuration = document.getElementById('recordingDuration');
             const wordCount = document.getElementById('wordCount');
@@ -37,6 +50,9 @@
             const saveBtn = document.getElementById('saveBtn');
             const mobileSaveBtn = document.getElementById('saveEntryBtn');
             const mobileRetryBtn = document.getElementById('mobileRetryBtn');
+            const waveBarEls = voiceRoot
+                ? Array.from(voiceRoot.querySelectorAll('.voice-wave-bar'))
+                : Array.from(document.querySelectorAll('.voice-wave-bar'));
 
             const speechSupported = Boolean(getSpeechRecognitionCtor());
             const isMobile = window.innerWidth <= 768;
@@ -60,7 +76,7 @@
 
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
-            if (sidebarToggle) {
+            if (sidebarToggle && sidebar) {
                 sidebarToggle.addEventListener('click', function () {
                     sidebar.classList.toggle('collapsed');
                 });
@@ -90,6 +106,27 @@
                 }
             }
 
+            function teardownAudioGraph() {
+                if (recordingRafId != null) {
+                    cancelAnimationFrame(recordingRafId);
+                    recordingRafId = null;
+                }
+                try {
+                    if (mediaSourceNode) {
+                        mediaSourceNode.disconnect();
+                        mediaSourceNode = null;
+                    }
+                } catch (_) {}
+                try {
+                    if (analyserNode) {
+                        analyserNode.disconnect();
+                        analyserNode = null;
+                    }
+                } catch (_) {}
+                freqData = null;
+                /* Keep AudioContext alive across sessions so iOS/Safari stay unlocked after first user gesture. */
+            }
+
             function stopSpeechRecognition() {
                 wantRecognitionRunning = false;
                 if (recognition) {
@@ -99,6 +136,17 @@
                     } catch (_) {}
                     recognition = null;
                 }
+            }
+
+            function primeAudioFromUserGesture() {
+                try {
+                    const Ctor = window.AudioContext || window.webkitAudioContext;
+                    if (!Ctor) return;
+                    if (!audioContext) audioContext = new Ctor();
+                    if (audioContext.state === 'suspended') {
+                        void audioContext.resume();
+                    }
+                } catch (_) {}
             }
 
             function attachSpeechRecognition() {
@@ -128,7 +176,8 @@
 
                 recognition.onerror = function (ev) {
                     const err = ev && ev.error ? ev.error : '';
-                    if (err === 'no-speech' || err === 'audio-capture') return;
+                    if (err === 'no-speech' || err === 'aborted') return;
+                    if (err === 'audio-capture') return;
                     if (statusText && err === 'not-allowed') {
                         statusText.textContent = 'Microphone blocked — allow access in browser settings.';
                     }
@@ -141,7 +190,7 @@
                         try {
                             recognition.start();
                         } catch (_) {}
-                    }, 120);
+                    }, 160);
                 };
             }
 
@@ -157,9 +206,62 @@
                 }
             }
 
+            function updateTimerDisplay() {
+                if (!recordingTimeEl || !startTime) return;
+                recordingTimeEl.textContent = formatElapsed(Date.now() - startTime);
+            }
+
+            function updateWaveBars(nowMs) {
+                if (!waveBarEls.length) return;
+                const t = nowMs * 0.001;
+                if (analyserNode && freqData) {
+                    analyserNode.getByteFrequencyData(freqData);
+                    const n = freqData.length;
+                    let energy = 0;
+                    const band = Math.min(24, n);
+                    for (let i = 0; i < band; i += 1) energy += freqData[i];
+                    energy = energy / (band * 255);
+
+                    waveBarEls.forEach(function (bar, i) {
+                        const binIdx = Math.min(n - 1, 3 + i * Math.max(1, Math.floor(n / (waveBarEls.length * 4))));
+                        const bin = freqData[binIdx] / 255;
+                        const idle = 0.1 + 0.09 * Math.sin(t * 2.4 + i * 0.5);
+                        const spike = energy * 1.25 + bin * 0.95;
+                        const scaleY = Math.min(1, Math.max(0.07, idle + spike));
+                        bar.style.transform = 'scaleY(' + scaleY + ')';
+                    });
+                } else {
+                    waveBarEls.forEach(function (bar, i) {
+                        const idle = 0.12 + 0.1 * Math.sin(t * 2.4 + i * 0.5);
+                        bar.style.transform = 'scaleY(' + idle + ')';
+                    });
+                }
+            }
+
+            function tickRecordingUi() {
+                if (!isRecording) {
+                    recordingRafId = null;
+                    return;
+                }
+                const now = performance.now();
+                updateTimerDisplay();
+                updateWaveBars(now);
+                recordingRafId = requestAnimationFrame(tickRecordingUi);
+            }
+
+            function startRecordingUiLoop() {
+                if (recordingRafId != null) {
+                    cancelAnimationFrame(recordingRafId);
+                    recordingRafId = null;
+                }
+                updateTimerDisplay();
+                recordingRafId = requestAnimationFrame(tickRecordingUi);
+            }
+
             if (voiceCircle) {
                 voiceCircle.addEventListener('click', function () {
                     if (!isRecording) {
+                        primeAudioFromUserGesture();
                         void startRecording();
                     } else {
                         stopRecording();
@@ -168,6 +270,9 @@
             }
 
             async function startRecording() {
+                teardownAudioGraph();
+                stopSpeechRecognition();
+
                 try {
                     speechFinalText = '';
                     if (finalTranscript) {
@@ -176,7 +281,24 @@
                     }
                     updateWordCountFromTranscript();
 
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                        },
+                    });
+
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (AC) {
+                        if (!audioContext) audioContext = new AC();
+                        await audioContext.resume();
+                        mediaSourceNode = audioContext.createMediaStreamSource(mediaStream);
+                        analyserNode = audioContext.createAnalyser();
+                        analyserNode.fftSize = 256;
+                        analyserNode.smoothingTimeConstant = 0.72;
+                        mediaSourceNode.connect(analyserNode);
+                        freqData = new Uint8Array(analyserNode.frequencyBinCount);
+                    }
 
                     if (speechSupported) {
                         attachSpeechRecognition();
@@ -187,9 +309,7 @@
                         mediaRecorder.ondataavailable = function (event) {
                             if (event.data && event.data.size) audioChunks.push(event.data);
                         };
-                        mediaRecorder.onstop = function () {
-                            /* No server STT — user types in the transcript box. */
-                        };
+                        mediaRecorder.onstop = function () {};
                         mediaRecorder.start();
                     }
 
@@ -209,20 +329,32 @@
                     if (!speechSupported && statusText) {
                         statusText.style.display = 'block';
                         statusText.textContent =
-                            'Recording… This browser has no live captioning. Speak, then stop — you can type your words below.';
+                            'Recording… Add text below, or use Chrome / Edge for live captions.';
                     }
 
-                    timerInterval = setInterval(updateRecordingTimer, 100);
+                    startRecordingUiLoop();
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
+                    teardownAudioGraph();
+                    stopMediaStream();
+                    isRecording = false;
+                    startTime = null;
                     if (statusText) {
                         statusText.style.display = 'block';
                         statusText.textContent = 'Microphone access denied or unavailable.';
                     }
+                    if (recordingState) recordingState.style.display = 'none';
+                    if (voiceCircle) voiceCircle.classList.remove('recording');
+                    if (micIcon) micIcon.className = 'bi bi-mic';
                 }
             }
 
             function stopRecording() {
+                if (recordingRafId != null) {
+                    cancelAnimationFrame(recordingRafId);
+                    recordingRafId = null;
+                }
+
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     try {
                         mediaRecorder.stop();
@@ -231,15 +363,10 @@
                 }
 
                 stopSpeechRecognition();
-
+                teardownAudioGraph();
                 stopMediaStream();
 
                 isRecording = false;
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
-
                 if (micIcon) micIcon.className = 'bi bi-mic';
                 if (voiceCircle) voiceCircle.classList.remove('recording');
                 if (recordingState) recordingState.style.display = 'none';
@@ -252,10 +379,12 @@
                 }
 
                 const elapsed = startTime ? Date.now() - startTime : 0;
-                const minutes = Math.floor(elapsed / 60000);
-                const seconds = Math.floor((elapsed % 60000) / 1000);
+                startTime = null;
                 if (recordingDuration) {
-                    recordingDuration.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    recordingDuration.textContent = formatElapsed(elapsed);
+                }
+                if (recordingTimeEl) {
+                    recordingTimeEl.textContent = formatElapsed(elapsed);
                 }
 
                 updateTranscriptReadonly();
@@ -269,15 +398,11 @@
                 setPostPanelVisible(true);
             }
 
-            function updateRecordingTimer() {
-                if (!startTime || !recordingText) return;
-                const elapsed = Date.now() - startTime;
-                const minutes = Math.floor(elapsed / 60000);
-                const seconds = Math.floor((elapsed % 60000) / 1000);
-                recordingText.textContent = `Recording... ${minutes}:${String(seconds).padStart(2, '0')}`;
-            }
-
             function resetRecording() {
+                if (recordingRafId != null) {
+                    cancelAnimationFrame(recordingRafId);
+                    recordingRafId = null;
+                }
                 stopSpeechRecognition();
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     try {
@@ -285,12 +410,10 @@
                     } catch (_) {}
                     mediaRecorder = null;
                 }
+                teardownAudioGraph();
                 stopMediaStream();
                 isRecording = false;
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
+                startTime = null;
                 speechFinalText = '';
 
                 setPostPanelVisible(false);
@@ -301,6 +424,7 @@
                         'Your speech will appear here as you speak. You can also type or paste if your browser does not support dictation.';
                 }
                 if (recordingDuration) recordingDuration.textContent = '00:00';
+                if (recordingTimeEl) recordingTimeEl.textContent = '0:00';
                 if (wordCount) wordCount.textContent = '0';
                 if (statusText) {
                     statusText.style.display = 'block';
@@ -312,6 +436,9 @@
                 if (isMobile && mobileRetryBtn) {
                     mobileRetryBtn.style.setProperty('display', 'flex', 'important');
                 }
+                waveBarEls.forEach(function (bar) {
+                    bar.style.transform = 'scaleY(0.15)';
+                });
                 audioChunks = [];
             }
 
@@ -337,7 +464,7 @@
             }
 
             function saveEntry() {
-                const transcript = (finalTranscript && finalTranscript.value) ? finalTranscript.value.trim() : '';
+                const transcript = finalTranscript && finalTranscript.value ? finalTranscript.value.trim() : '';
                 if (!transcript) {
                     window.alert('Add some text in the transcript (by speaking or typing) before saving.');
                     return;

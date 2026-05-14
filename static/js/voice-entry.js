@@ -36,6 +36,8 @@
             let mediaRecorder = null;
             let audioChunks = [];
             let mediaStream = null;
+            /** Clone used only for Web Audio visualizer so analyser and capture stay on separate tracks when possible. */
+            let visualInputStream = null;
             let startTime = null;
             let recognition = null;
             let wantRecognitionRunning = false;
@@ -123,6 +125,12 @@
             }
 
             function stopMediaStream() {
+                if (visualInputStream) {
+                    visualInputStream.getTracks().forEach(function (t) {
+                        t.stop();
+                    });
+                    visualInputStream = null;
+                }
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(function (t) {
                         t.stop();
@@ -187,14 +195,16 @@
                 }
 
                 recognition.onstart = function () {
-                    setTranscriptHint('');
+                    setTranscriptHint('Listening… speak clearly. Text will appear below as you talk.');
                 };
 
                 recognition.onresult = function (event) {
                     let interim = '';
                     for (let i = event.resultIndex; i < event.results.length; i += 1) {
-                        const piece = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
+                        const res = event.results[i];
+                        if (!res || !res[0]) continue;
+                        const piece = res[0].transcript || '';
+                        if (res.isFinal) {
                             speechFinalText += piece;
                         } else {
                             interim += piece;
@@ -244,18 +254,6 @@
                         } catch (_) {}
                     }, 160);
                 };
-            }
-
-            function startSpeechRecognitionSafe() {
-                const Ctor = getSpeechRecognitionCtor();
-                if (!Ctor || !recognition) return;
-                wantRecognitionRunning = true;
-                try {
-                    recognition.start();
-                } catch (e) {
-                    wantRecognitionRunning = false;
-                    console.error(e);
-                }
             }
 
             function updateTimerDisplay() {
@@ -334,6 +332,24 @@
                     }
                     updateWordCountFromTranscript();
 
+                    /* Chromium ties SpeechRecognition to user activation: start() must run before any await in this handler. */
+                    let speechStartedOk = false;
+                    if (speechSupported) {
+                        attachSpeechRecognition();
+                        wantRecognitionRunning = true;
+                        try {
+                            recognition.start();
+                            speechStartedOk = true;
+                            setTranscriptHint(
+                                'Listening… speak clearly. Text will appear below as you talk.'
+                            );
+                        } catch (preMicErr) {
+                            console.warn('Speech start (before mic):', preMicErr);
+                            stopSpeechRecognition();
+                            setTranscriptHint('Connecting microphone, then starting live captions…');
+                        }
+                    }
+
                     mediaStream = await navigator.mediaDevices.getUserMedia({
                         audio: {
                             echoCancellation: true,
@@ -345,7 +361,12 @@
                     if (AC) {
                         if (!audioContext) audioContext = new AC();
                         await audioContext.resume();
-                        mediaSourceNode = audioContext.createMediaStreamSource(mediaStream);
+                        try {
+                            visualInputStream = mediaStream.clone();
+                        } catch (_) {
+                            visualInputStream = mediaStream;
+                        }
+                        mediaSourceNode = audioContext.createMediaStreamSource(visualInputStream);
                         analyserNode = audioContext.createAnalyser();
                         analyserNode.fftSize = 256;
                         analyserNode.smoothingTimeConstant = 0.72;
@@ -353,9 +374,23 @@
                         freqData = new Uint8Array(analyserNode.frequencyBinCount);
                     }
 
-                    if (speechSupported) {
+                    if (speechSupported && !speechStartedOk) {
                         attachSpeechRecognition();
-                    } else {
+                        wantRecognitionRunning = true;
+                        try {
+                            recognition.start();
+                            speechStartedOk = true;
+                            setTranscriptHint(
+                                'Listening… speak clearly. Text will appear below as you talk.'
+                            );
+                        } catch (postMicErr) {
+                            console.error(postMicErr);
+                            stopSpeechRecognition();
+                            setTranscriptHint(
+                                'Could not start live captions. Type below, or try Chrome / Edge with microphone allowed.'
+                            );
+                        }
+                    } else if (!speechSupported) {
                         mediaRecorder = new MediaRecorder(mediaStream);
                         audioChunks = [];
                         mediaRecorder.ondataavailable = function (event) {
@@ -369,15 +404,6 @@
                     startTime = Date.now();
                     updateTranscriptReadonly();
                     setPostPanelVisible(true);
-
-                    if (speechSupported) {
-                        requestAnimationFrame(function () {
-                            requestAnimationFrame(function () {
-                                if (!isRecording) return;
-                                startSpeechRecognitionSafe();
-                            });
-                        });
-                    }
 
                     if (micIcon) micIcon.className = 'bi bi-stop-fill';
                     if (voiceCircle) voiceCircle.classList.add('recording');
@@ -397,6 +423,7 @@
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
                     teardownAudioGraph();
+                    stopSpeechRecognition();
                     stopMediaStream();
                     isRecording = false;
                     startTime = null;

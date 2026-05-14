@@ -208,6 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
             commonErrorEl: signUpPwCommonErr,
             formRoot: signUpForm,
             getPersonal: getSignUpPersonal,
+            alwaysShowLive: true,
         });
         ['nickname', 'signUpEmail', 'firstName', 'lastName'].forEach((fid) => {
             const el = document.getElementById(fid);

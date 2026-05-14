@@ -19,6 +19,17 @@
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
+    /** Full BCP-47 tag — never truncate (e.g. `en-GB` → `en-G` breaks Web Speech). */
+    function pickRecognitionLang() {
+        try {
+            const raw = (navigator.language || navigator.userLanguage || 'en-US').trim().replace(/_/g, '-');
+            if (!raw) return 'en-US';
+            return raw.length > 40 ? raw.slice(0, 40) : raw;
+        } catch (_) {
+            return 'en-US';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         try {
             let isRecording = false;
@@ -50,6 +61,7 @@
             const saveBtn = document.getElementById('saveBtn');
             const mobileSaveBtn = document.getElementById('saveEntryBtn');
             const mobileRetryBtn = document.getElementById('mobileRetryBtn');
+            const transcriptHint = document.getElementById('voiceTranscriptHint');
             const waveBarEls = voiceRoot
                 ? Array.from(voiceRoot.querySelectorAll('.voice-wave-bar'))
                 : Array.from(document.querySelectorAll('.voice-wave-bar'));
@@ -87,9 +99,22 @@
                 postRecordingContainer.hidden = !visible;
             }
 
+            function setTranscriptHint(message) {
+                if (!transcriptHint) return;
+                const s = String(message || '').trim();
+                if (s) {
+                    transcriptHint.textContent = s;
+                    transcriptHint.hidden = false;
+                } else {
+                    transcriptHint.textContent = '';
+                    transcriptHint.hidden = true;
+                }
+            }
+
             function updateTranscriptReadonly() {
                 if (!finalTranscript) return;
-                finalTranscript.readOnly = isRecording && speechSupported;
+                /* Always allow typing so users can fall back if live captions fail (e.g. Brave Shields). */
+                finalTranscript.readOnly = false;
             }
 
             function updateWordCountFromTranscript() {
@@ -156,7 +181,14 @@
                 recognition = new Ctor();
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.lang = (navigator.language || 'en-US').slice(0, 5);
+                recognition.lang = pickRecognitionLang();
+                if ('maxAlternatives' in recognition) {
+                    recognition.maxAlternatives = 1;
+                }
+
+                recognition.onstart = function () {
+                    setTranscriptHint('');
+                };
 
                 recognition.onresult = function (event) {
                     let interim = '';
@@ -169,7 +201,8 @@
                         }
                     }
                     if (finalTranscript) {
-                        finalTranscript.value = (speechFinalText + interim).trim();
+                        const combined = speechFinalText + interim;
+                        finalTranscript.value = combined.replace(/\s+/g, ' ').trim();
                         updateWordCountFromTranscript();
                     }
                 };
@@ -178,9 +211,28 @@
                     const err = ev && ev.error ? ev.error : '';
                     if (err === 'no-speech' || err === 'aborted') return;
                     if (err === 'audio-capture') return;
-                    if (statusText && err === 'not-allowed') {
-                        statusText.textContent = 'Microphone blocked — allow access in browser settings.';
+                    if (err === 'not-allowed') {
+                        wantRecognitionRunning = false;
+                        setTranscriptHint(
+                            'Speech recognition was blocked. Check site permissions for the microphone.'
+                        );
+                        if (statusText) {
+                            statusText.style.display = 'block';
+                            statusText.textContent = 'Microphone or speech access blocked.';
+                        }
+                        return;
                     }
+                    if (err === 'network' || err === 'service-not-allowed') {
+                        wantRecognitionRunning = false;
+                        setTranscriptHint(
+                            'Live captions use your browser’s speech service. If nothing appears here, try turning off Brave Shields (or similar) for this site, or use Chrome/Edge with shields disabled — you can still type your words below.'
+                        );
+                        return;
+                    }
+                    wantRecognitionRunning = false;
+                    setTranscriptHint(
+                        'Speech recognition stopped (' + err + '). You can type your entry in the box above.'
+                    );
                 };
 
                 recognition.onend = function () {
@@ -275,6 +327,7 @@
 
                 try {
                     speechFinalText = '';
+                    setTranscriptHint('');
                     if (finalTranscript) {
                         finalTranscript.value = '';
                         finalTranscript.readOnly = false;
@@ -302,7 +355,6 @@
 
                     if (speechSupported) {
                         attachSpeechRecognition();
-                        startSpeechRecognitionSafe();
                     } else {
                         mediaRecorder = new MediaRecorder(mediaStream);
                         audioChunks = [];
@@ -317,6 +369,15 @@
                     startTime = Date.now();
                     updateTranscriptReadonly();
                     setPostPanelVisible(true);
+
+                    if (speechSupported) {
+                        requestAnimationFrame(function () {
+                            requestAnimationFrame(function () {
+                                if (!isRecording) return;
+                                startSpeechRecognitionSafe();
+                            });
+                        });
+                    }
 
                     if (micIcon) micIcon.className = 'bi bi-stop-fill';
                     if (voiceCircle) voiceCircle.classList.add('recording');
@@ -417,6 +478,7 @@
                 speechFinalText = '';
 
                 setPostPanelVisible(false);
+                setTranscriptHint('');
                 if (finalTranscript) {
                     finalTranscript.value = '';
                     finalTranscript.readOnly = false;

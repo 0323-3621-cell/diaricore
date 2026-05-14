@@ -397,6 +397,13 @@ html.theme-dark .voice-wave-bar {
     cursor: default;
 }
 
+.voice-transcript-hint {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0;
+    line-height: 1.45;
+}
+
 .summary-header i {
     font-size: 2rem;
     color: var(--primary-color);

@@ -1545,7 +1545,7 @@ body {
         margin-left: 0;
         max-width: 100%;
         padding: 1rem;
-        padding-bottom: 5rem; /* Space for bottom nav */
+        padding-bottom: 6.75rem; /* bottom nav + wellness quote clearance */
         position: relative;
     }
     
@@ -1573,40 +1573,17 @@ body {
     .header-row {
         align-items: flex-start;
         padding-right: 0;
+        display: block;
     }
 
+    /* Hide analog clock + date/time card on mobile (device clock is enough). Desktop unchanged. */
     .greeting-clock {
-        padding: 0.35rem 0.5rem;
-        gap: 0.45rem;
+        display: none !important;
     }
 
-    .greeting-clock__dial {
-        width: 36px;
-        height: 36px;
-    }
-
-    .greeting-clock__hand--hour {
-        height: 9px;
-    }
-
-    .greeting-clock__hand--minute {
-        height: 12px;
-    }
-
-    .greeting-clock__hand--second {
-        height: 14px;
-    }
-
-    .greeting-clock__time {
-        min-width: 0;
-    }
-
-    .greeting-clock__date {
-        font-size: 0.62rem;
-    }
-
-    .greeting-clock__hour {
-        font-size: 0.72rem;
+    .header-copy {
+        width: 100%;
+        max-width: 100%;
     }
     
     .floating-streak-book {
@@ -1653,11 +1630,11 @@ body {
         flex: 1 1 calc(50% - 0.325rem);
         max-width: calc(50% - 0.325rem);
         min-width: 0;
-        padding: 0.5rem 0.55rem 0.55rem 0.45rem;
+        padding: 0.72rem 0.75rem 0.78rem 0.6rem;
         flex-direction: row;
         align-items: center;
         justify-content: flex-start;
-        gap: 0.55rem;
+        gap: 0.65rem;
         text-align: left;
         background: #fdfcf8;
         border-radius: 14px;
@@ -1685,7 +1662,7 @@ body {
         flex: 1 1 100% !important;
         max-width: 100% !important;
         width: 100%;
-        padding: 0.55rem 0.65rem 0.6rem 0.5rem;
+        padding: 0.75rem 0.8rem 0.82rem 0.62rem;
         border-color: rgba(212, 180, 140, 0.45);
         background: linear-gradient(135deg, #fffefb 0%, #faf6ef 100%);
     }
@@ -1702,7 +1679,7 @@ body {
     }
     
     .stat-title {
-        font-size: 0.58rem;
+        font-size: 0.7rem;
         font-weight: 700;
         margin: 0 0 0.1rem;
         padding: 0;
@@ -1725,7 +1702,7 @@ body {
     }
     
     .stat-value {
-        font-size: 1rem;
+        font-size: 1.12rem;
         margin: 0;
         font-weight: 700;
         color: #2c3d4d;
@@ -1734,7 +1711,7 @@ body {
     }
     
     .stat-card-mood .stat-value:not(.stat-value--score) {
-        font-size: 1.05rem;
+        font-size: 1.18rem;
     }
 
     .stat-card-average .stat-value--score {
@@ -1742,7 +1719,7 @@ body {
     }
 
     .stat-card-average .stat-value__num {
-        font-size: 1.05rem;
+        font-size: 1.18rem;
         font-weight: 700;
     }
 
@@ -1753,9 +1730,9 @@ body {
     }
     
     .stat-description {
-        font-size: 0.62rem;
+        font-size: 0.72rem;
         color: #6b7c74;
-        line-height: 1.3;
+        line-height: 1.35;
         font-weight: 500;
         margin: 0;
         max-width: 100%;
@@ -1766,11 +1743,11 @@ body {
     }
     
     .stat-value.insight-text {
-        font-size: 0.8125rem !important;
+        font-size: 0.95rem !important;
         font-style: normal !important;
         font-weight: 600 !important;
         color: #2c3d4d !important;
-        line-height: 1.35 !important;
+        line-height: 1.42 !important;
         margin: 0.08rem 0 0.1rem !important;
         display: -webkit-box;
         -webkit-line-clamp: 3;
@@ -1780,7 +1757,7 @@ body {
     }
     
     .stat-card-insight .stat-description {
-        font-size: 0.58rem;
+        font-size: 0.68rem;
         color: var(--text-muted);
         -webkit-line-clamp: 1;
     }
@@ -1788,9 +1765,9 @@ body {
     .stat-icon {
         order: 0;
         margin: 0;
-        width: 38px;
-        height: 38px;
-        font-size: 1.1rem;
+        width: 46px;
+        height: 46px;
+        font-size: 1.22rem;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -1822,8 +1799,34 @@ body {
     }
     
     .stat-card-mood .mood-emoji__img {
-        width: 26px;
-        height: 26px;
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Last Entry above Mood key (journal context first); comfortable gap on narrow screens */
+    .dashboard-side-stack {
+        gap: 1.25rem;
+    }
+
+    /* Remove decorative green quote mark on mobile; tighten + lift quote for bottom-nav clearance */
+    .wellness-quote-mark {
+        display: none !important;
+    }
+
+    .wellness-quote {
+        margin: 0.75rem 0 1.35rem;
+        padding-top: 0;
+        padding-bottom: 0.25rem;
+    }
+
+    .wellness-quote-text {
+        font-size: 1.02rem;
+        line-height: 1.68;
+    }
+
+    .wellness-quote-author {
+        font-size: 0.88rem;
+        margin-top: 0.45rem;
     }
     
     /* Write/Voice quick actions hidden on mobile (use bottom nav / FAB) */
@@ -1934,7 +1937,7 @@ body {
 
 @media (max-width: 480px) {
     .main-content {
-        padding: 1rem 0.5rem;
+        padding: 1rem 0.5rem 6.75rem;
     }
     
     .main-title {

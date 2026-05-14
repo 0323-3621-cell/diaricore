@@ -467,7 +467,10 @@ class SidebarComponent {
 
     applyCurrentUserIdentity() {
         const user = this.getCurrentUser();
-        if (!user) return;
+        if (!user) {
+            this.syncMobileTopbarProfile(null);
+            return;
+        }
 
         const sidebarName = document.querySelector('.user-name');
         const memberSinceEl = document.querySelector('.user-member-since');
@@ -498,6 +501,38 @@ class SidebarComponent {
                 avatarImg.src = 'https://picsum.photos/seed/diari-user/40/40.jpg';
             }
         }
+
+        this.syncMobileTopbarProfile(user);
+    }
+
+    /**
+     * Mobile header: show same avatar as desktop sidebar (uploaded photo or placeholder image).
+     */
+    syncMobileTopbarProfile(user) {
+        const link = document.querySelector('.mobile-app-topbar__profile');
+        if (!link) return;
+        const img = link.querySelector('.mobile-app-topbar__profile-img');
+        const fallback = link.querySelector('.mobile-app-topbar__profile-fallback');
+        if (!img || !fallback) return;
+
+        if (!user) {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            link.classList.remove('mobile-app-topbar__profile--photo');
+            return;
+        }
+
+        let src = '';
+        if (typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
+            src = user.avatarDataUrl;
+        } else {
+            src = 'https://picsum.photos/seed/diari-user/40/40.jpg';
+        }
+        img.src = src;
+        img.hidden = false;
+        fallback.hidden = true;
+        link.classList.add('mobile-app-topbar__profile--photo');
     }
 
     upsertGuestNotice(target, message) {
@@ -515,6 +550,7 @@ class SidebarComponent {
 
     applyGuestEmptyState() {
         if (!this.isGuestUser()) return;
+        this.syncMobileTopbarProfile(null);
         document.body.classList.add('guest-empty-state');
 
         const sidebarName = document.querySelector('.user-name');

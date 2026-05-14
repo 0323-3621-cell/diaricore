@@ -2637,7 +2637,7 @@ body.profile-totp-modal-open {
 }
 
 .profile-totp-modal__qr-block {
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
 }
 
 .profile-totp-modal__qr-wrap {
@@ -2855,4 +2855,129 @@ html.theme-dark .profile-totp-digit:focus {
 html.theme-dark .profile-account-detail-btn--primary.profile-totp-modal__btn--danger {
     background: linear-gradient(135deg, #c45c5c 0%, #a84848 100%);
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Set up authenticator panel (light default; dark via variables + html.theme-dark) */
+.profile-totp-setup-panel__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+    padding-right: 2rem;
+}
+
+.profile-totp-setup-panel__icon {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(107, 142, 126, 0.18);
+    color: #3d6b52;
+    font-size: 1.25rem;
+}
+
+.profile-totp-setup-panel__titles {
+    min-width: 0;
+}
+
+.profile-totp-setup-panel__title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 0.2rem 0;
+    line-height: 1.25;
+}
+
+.profile-totp-setup-panel__subtitle {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.profile-totp-setup-panel__info {
+    display: flex;
+    gap: 0.65rem;
+    align-items: flex-start;
+    padding: 0.75rem 0.9rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(107, 142, 126, 0.28);
+    background: rgba(107, 142, 126, 0.1);
+}
+
+.profile-totp-setup-panel__info--compact {
+    margin-bottom: 0.85rem;
+}
+
+.profile-totp-setup-panel__info-icon {
+    flex-shrink: 0;
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-top: 0.12rem;
+}
+
+.profile-totp-setup-panel__info-text {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--text-dark);
+}
+
+.profile-totp-setup-panel__code-block {
+    margin-top: 0.35rem;
+}
+
+.profile-totp-setup-panel__code-label {
+    display: block;
+    margin-bottom: 0.55rem;
+}
+
+.profile-totp-setup-panel__counter {
+    display: block;
+    text-align: right;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+#profileTotpModalPrimary.is-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+}
+
+@keyframes profileTotpModalSpinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.profile-totp-modal__spinner {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    animation: profileTotpModalSpinner 0.8s linear infinite;
+}
+
+html.theme-dark .profile-totp-setup-panel__icon {
+    background: rgba(143, 175, 159, 0.22);
+    color: var(--primary-light);
+}
+
+html.theme-dark .profile-totp-setup-panel__info {
+    border-color: rgba(143, 175, 159, 0.32);
+    background: rgba(143, 175, 159, 0.12);
+}
+
+html.theme-dark .profile-totp-setup-panel__info-icon {
+    color: var(--primary-light);
 }

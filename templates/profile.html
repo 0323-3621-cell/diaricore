@@ -611,37 +611,49 @@
         </div>
     </div>
 
-    <div class="profile-totp-modal" id="profilePwdChangeOtpModal" hidden>
+    <div class="profile-totp-modal profile-pwd-change-otp-modal-root" id="profilePwdChangeOtpModal" hidden>
         <div class="profile-totp-modal__backdrop" id="profilePwdChangeOtpBackdrop"></div>
-        <div class="profile-totp-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="profilePwdChangeOtpTitle">
-            <button type="button" class="profile-totp-modal__close" id="profilePwdChangeOtpCloseBtn" aria-label="Close dialog">
+        <div class="profile-totp-modal__dialog profile-pwd-change-otp-modal" role="dialog" aria-modal="true" aria-labelledby="profilePwdChangeOtpTitle">
+            <button type="button" class="profile-totp-modal__close profile-pwd-change-otp-modal__close" id="profilePwdChangeOtpCloseBtn" aria-label="Close dialog">
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
             </button>
-            <h3 class="profile-totp-modal__title" id="profilePwdChangeOtpTitle">Check your email</h3>
-            <p class="profile-totp-modal__lead" id="profilePwdChangeOtpLead">We sent a 6-digit code to your email. Enter it below to confirm your password change.</p>
-            <div class="profile-totp-setup-panel__code-block profile-pwd-change-otp-block">
-                <span class="profile-account-field__label profile-totp-setup-panel__code-label">Verification code</span>
-                <div class="profile-totp-digits profile-totp-setup-panel__digits" id="profilePwdChangeOtpDigits" role="group" aria-label="6-digit email verification code">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="1" aria-label="Digit 2 of 6" autocomplete="off">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="2" aria-label="Digit 3 of 6" autocomplete="off">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="3" aria-label="Digit 4 of 6" autocomplete="off">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="4" aria-label="Digit 5 of 6" autocomplete="off">
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit" data-profile-pwd-change-otp="5" aria-label="Digit 6 of 6" autocomplete="off">
+            <div class="profile-pwd-change-otp-modal__body">
+                <div class="profile-pwd-change-otp-modal__icon-wrap" aria-hidden="true">
+                    <i class="bi bi-envelope-check profile-pwd-change-otp-modal__icon"></i>
                 </div>
-                <p class="profile-pwd-change-otp-error" id="profilePwdChangeOtpError" hidden role="alert"></p>
-                <p class="profile-pwd-change-otp-meta">
-                    <span>Didn’t receive the code?</span>
-                    <button type="button" class="profile-pwd-change-otp-resend" id="profilePwdChangeOtpResendBtn">Resend</button>
-                    <span class="profile-pwd-change-otp-timer" id="profilePwdChangeOtpTimer" aria-live="polite"></span>
-                </p>
-            </div>
-            <div class="profile-totp-modal__actions">
-                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--ghost" id="profilePwdChangeOtpCancelBtn">Cancel</button>
-                <button type="button" class="profile-account-detail-btn profile-account-detail-btn--primary" id="profilePwdChangeOtpVerifyBtn">
-                    <span class="profile-totp-modal__spinner" aria-hidden="true"></span>
-                    <span>Verify code</span>
-                </button>
+                <h3 class="profile-pwd-change-otp-modal__title" id="profilePwdChangeOtpTitle">Check your email</h3>
+                <p class="profile-pwd-change-otp-modal__lead" id="profilePwdChangeOtpLead">We've sent a 6-digit verification code to your email address. Please enter it below to proceed.</p>
+                <div class="profile-pwd-change-otp-modal__digits-wrap">
+                    <div class="profile-totp-digits profile-pwd-change-otp-modal__digits" id="profilePwdChangeOtpDigits" role="group" aria-label="6-digit email verification code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="0" aria-label="Digit 1 of 6" autocomplete="one-time-code">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="1" aria-label="Digit 2 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="2" aria-label="Digit 3 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="3" aria-label="Digit 4 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="4" aria-label="Digit 5 of 6" autocomplete="off">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="profile-totp-digit profile-pwd-change-otp-modal__digit" data-profile-pwd-change-otp="5" aria-label="Digit 6 of 6" autocomplete="off">
+                    </div>
+                </div>
+                <div class="profile-pwd-change-otp-alert" id="profilePwdChangeOtpError" hidden role="alert">
+                    <span class="profile-pwd-change-otp-alert__icon" aria-hidden="true"><i class="bi bi-x-circle-fill"></i></span>
+                    <span class="profile-pwd-change-otp-alert__text" id="profilePwdChangeOtpErrorText"></span>
+                </div>
+                <div class="profile-pwd-change-otp-modal__meta">
+                    <p class="profile-pwd-change-otp-modal__cooldown" id="profilePwdChangeOtpCooldownRow">
+                        <span class="profile-pwd-change-otp-modal__cooldown-label">Resend code in </span>
+                        <span class="profile-pwd-change-otp-modal__cooldown-time" id="profilePwdChangeOtpTimer">00:00</span>
+                    </p>
+                    <p class="profile-pwd-change-otp-modal__resend" id="profilePwdChangeOtpResendRow" hidden>
+                        <span class="profile-pwd-change-otp-modal__resend-prefix">Didn't receive the code?</span>
+                        <button type="button" class="profile-pwd-change-otp-modal__resend-btn" id="profilePwdChangeOtpResendBtn">Resend code</button>
+                    </p>
+                </div>
+                <div class="profile-pwd-change-otp-modal__actions">
+                    <button type="button" class="profile-pwd-change-otp-modal__verify-btn" id="profilePwdChangeOtpVerifyBtn">
+                        <span class="profile-totp-modal__spinner" aria-hidden="true"></span>
+                        <span class="profile-pwd-change-otp-modal__verify-label">Verify</span>
+                    </button>
+                    <button type="button" class="profile-pwd-change-otp-modal__cancel-link" id="profilePwdChangeOtpCancelBtn">Cancel</button>
+                </div>
             </div>
         </div>
     </div>

@@ -943,14 +943,15 @@ function clearProfilePwdChangeOtpDigits() {
 }
 
 function setProfilePwdChangeOtpError(message) {
-    const el = document.getElementById('profilePwdChangeOtpError');
-    if (!el) return;
+    const wrap = document.getElementById('profilePwdChangeOtpError');
+    const text = document.getElementById('profilePwdChangeOtpErrorText');
+    if (!wrap || !text) return;
     if (message) {
-        el.textContent = message;
-        el.hidden = false;
+        text.textContent = message;
+        wrap.hidden = false;
     } else {
-        el.textContent = '';
-        el.hidden = true;
+        text.textContent = '';
+        wrap.hidden = true;
     }
 }
 
@@ -961,25 +962,35 @@ function clearProfilePwdChangeResendCooldown() {
     }
     profilePwdChangeOtpResendRemaining = 0;
     const timer = document.getElementById('profilePwdChangeOtpTimer');
-    if (timer) timer.textContent = '';
+    if (timer) timer.textContent = '00:00';
     const btn = document.getElementById('profilePwdChangeOtpResendBtn');
     if (btn) btn.disabled = false;
+    const cooldownRow = document.getElementById('profilePwdChangeOtpCooldownRow');
+    const resendRow = document.getElementById('profilePwdChangeOtpResendRow');
+    if (cooldownRow) cooldownRow.hidden = true;
+    if (resendRow) resendRow.hidden = false;
 }
 
 function startProfilePwdChangeResendCooldown(seconds) {
     const btn = document.getElementById('profilePwdChangeOtpResendBtn');
     const timer = document.getElementById('profilePwdChangeOtpTimer');
+    const cooldownRow = document.getElementById('profilePwdChangeOtpCooldownRow');
+    const resendRow = document.getElementById('profilePwdChangeOtpResendRow');
     profilePwdChangeOtpResendRemaining = seconds;
     if (btn) btn.disabled = true;
+    if (cooldownRow) cooldownRow.hidden = false;
+    if (resendRow) resendRow.hidden = true;
     if (profilePwdChangeOtpResendInterval) clearInterval(profilePwdChangeOtpResendInterval);
     function tick() {
         if (profilePwdChangeOtpResendRemaining <= 0) {
             clearProfilePwdChangeResendCooldown();
             return;
         }
-        const m = Math.floor(profilePwdChangeOtpResendRemaining / 60);
-        const s = profilePwdChangeOtpResendRemaining % 60;
-        if (timer) timer.textContent = `(${m}:${String(s).padStart(2, '0')})`;
+        const mm = Math.floor(profilePwdChangeOtpResendRemaining / 60);
+        const ss = profilePwdChangeOtpResendRemaining % 60;
+        if (timer) {
+            timer.textContent = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+        }
         profilePwdChangeOtpResendRemaining -= 1;
     }
     tick();
@@ -989,16 +1000,15 @@ function startProfilePwdChangeResendCooldown(seconds) {
 function setProfilePwdChangeOtpVerifyLoading(isLoading) {
     const btn = document.getElementById('profilePwdChangeOtpVerifyBtn');
     if (!btn) return;
+    const label = btn.querySelector('.profile-pwd-change-otp-modal__verify-label');
     if (isLoading) {
         btn.classList.add('is-loading');
         btn.disabled = true;
-        btn.innerHTML =
-            '<span class="profile-totp-modal__spinner" aria-hidden="true"></span><span>Verifying…</span>';
+        if (label) label.textContent = 'Verifying…';
     } else {
         btn.classList.remove('is-loading');
         btn.disabled = false;
-        btn.innerHTML =
-            '<span class="profile-totp-modal__spinner" aria-hidden="true"></span><span>Verify code</span>';
+        if (label) label.textContent = 'Verify';
     }
 }
 

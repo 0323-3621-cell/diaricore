@@ -101,28 +101,61 @@
                         <button type="button" class="login-totp-step__recovery-link" id="loginTotpShowRecovery">Lost access to your authenticator?</button>
                     </div>
                     <div id="loginTotpRecoveryPanel" class="login-totp-recovery-panel" hidden>
-                        <p class="login-totp-recovery__text" id="loginTotpRecoveryIntro">If you removed DiariCore from your authenticator app, we can email a one-time code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
-                        <button type="button" class="btn-signin login-totp-recovery__send" id="loginTotpRecoverySend">Email me a recovery code</button>
-                        <p class="login-totp-recovery__status" id="loginTotpRecoverySendStatus" hidden></p>
-                        <div id="loginTotpRecoveryOtpBlock" class="login-totp-recovery__otp-block" hidden>
-                            <p class="login-totp-step__digits-label" id="loginRecoveryDigitsLabel">Enter the 6-digit code from your email</p>
-                            <div class="login-totp-digits" id="loginRecoveryDigits" role="group" aria-labelledby="loginRecoveryDigitsLabel">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="0" aria-label="Recovery digit 1 of 6" autocomplete="one-time-code">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="1" aria-label="Recovery digit 2 of 6" autocomplete="off">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="2" aria-label="Recovery digit 3 of 6" autocomplete="off">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="3" aria-label="Recovery digit 4 of 6" autocomplete="off">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="4" aria-label="Recovery digit 5 of 6" autocomplete="off">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit" data-login-recovery-idx="5" aria-label="Recovery digit 6 of 6" autocomplete="off">
+                        <div id="loginTotpRecoveryRequestCard" class="login-totp-recovery-card">
+                            <div class="login-totp-recovery-card__header">
+                                <span class="login-totp-recovery-card__icon-slot login-totp-recovery-card__icon-slot--lock" aria-hidden="true">
+                                    <i class="bi bi-shield-lock"></i>
+                                </span>
+                                <div class="login-totp-recovery-card__headings">
+                                    <h2 class="login-totp-recovery-card__title">Lost Authentication Access</h2>
+                                    <p class="login-totp-recovery-card__subtitle">Account recovery</p>
+                                </div>
                             </div>
-                            <div class="custom-error" id="loginRecoveryCodeError" hidden>Invalid code.</div>
-                            <button type="button" class="btn-signin login-totp-step__verify" id="loginRecoverySubmit">USE EMAIL CODE &amp; SIGN IN</button>
+                            <p class="login-totp-recovery-card__body" id="loginTotpRecoveryIntro">If you removed DiariCore from your authenticator app, we can email a one-time recovery code to your registered address. Entering it will turn off authenticator sign-in until you set it up again under <strong>Profile → Security</strong>.</p>
+                            <button type="button" class="login-totp-recovery-card__primary" id="loginTotpRecoverySend">
+                                <i class="bi bi-envelope" aria-hidden="true"></i>
+                                <span>Email me a recovery code</span>
+                            </button>
+                        </div>
+                        <div id="loginTotpRecoveryVerifyCard" class="login-totp-recovery-card login-totp-recovery-card--verify" hidden>
+                            <div class="login-totp-recovery-card__header">
+                                <span class="login-totp-recovery-card__icon-slot login-totp-recovery-card__icon-slot--mail" aria-hidden="true">
+                                    <i class="bi bi-envelope-check"></i>
+                                </span>
+                                <div class="login-totp-recovery-card__headings">
+                                    <h2 class="login-totp-recovery-card__title">Verify Recovery Code</h2>
+                                    <p class="login-totp-recovery-card__subtitle" id="loginTotpRecoveryInboxSubtitle">Check your inbox</p>
+                                    <p class="login-totp-recovery-card__expire" id="loginTotpRecoveryCodeExpire" aria-live="polite"></p>
+                                </div>
+                            </div>
+                            <p class="login-totp-recovery-card__body" id="loginTotpRecoveryVerifyMessage" hidden></p>
+                            <div class="login-totp-recovery-card__field">
+                                <span class="login-totp-recovery-card__field-label" id="loginRecoveryDigitsLabel">Recovery code</span>
+                                <div class="login-totp-recovery__digits-float-wrap">
+                                    <div class="login-totp-digits login-totp-recovery__digits" id="loginRecoveryDigits" role="group" aria-labelledby="loginRecoveryDigitsLabel">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="0" aria-label="Recovery digit 1 of 6" autocomplete="one-time-code">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="1" aria-label="Recovery digit 2 of 6" autocomplete="off">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="2" aria-label="Recovery digit 3 of 6" autocomplete="off">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="3" aria-label="Recovery digit 4 of 6" autocomplete="off">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="4" aria-label="Recovery digit 5 of 6" autocomplete="off">
+                                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="login-totp-digit login-totp-digit--recovery" data-login-recovery-idx="5" aria-label="Recovery digit 6 of 6" autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="custom-error login-totp-recovery-card__error" id="loginRecoveryCodeError" hidden>Invalid code.</div>
+                            <button type="button" class="login-totp-recovery-card__primary login-totp-recovery-card__primary--wide" id="loginRecoverySubmit">
+                                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                                <span>Use email code &amp; sign in</span>
+                            </button>
                             <p class="login-totp-recovery__resend-line" id="loginTotpRecoveryResendLine">
                                 <span class="login-totp-recovery__resend-prefix">Didn't receive the code?</span>
                                 <button type="button" class="login-totp-recovery__resend-action" id="loginTotpRecoveryResendBtn">Resend code</button>
                                 <span class="login-totp-recovery__resend-countdown" id="loginTotpRecoveryResendTimer" aria-live="polite"></span>
                             </p>
                         </div>
-                        <button type="button" class="login-totp-step__back login-totp-recovery__back" id="loginTotpRecoveryBackToTotp">← Use authenticator code instead</button>
+                        <div class="login-totp-recovery-panel__footer">
+                            <button type="button" class="login-totp-recovery-panel__footer-link" id="loginTotpRecoveryBackToTotp">← Use authenticator code instead</button>
+                        </div>
                     </div>
                     <button type="button" class="login-totp-step__back" id="loginTotpBack">← Back to sign in</button>
                 </div>

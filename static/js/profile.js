@@ -672,13 +672,6 @@ function wireProfileTotpModal() {
         });
     }
 
-    const verifyShowQrAgain = document.getElementById('profileTotpVerifyShowQrAgain');
-    if (verifyShowQrAgain) {
-        verifyShowQrAgain.addEventListener('click', function () {
-            setProfileTotpQrUiPhase('scan');
-        });
-    }
-
     if (primary) {
         primary.addEventListener('click', function () {
             const user = getStoredDiariUser();

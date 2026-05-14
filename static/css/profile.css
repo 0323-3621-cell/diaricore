@@ -3100,33 +3100,6 @@ html.theme-dark .profile-totp-setup-panel__scan-footnote {
     gap: 0.65rem;
 }
 
-.profile-totp-setup-panel__show-qr-again {
-    align-self: flex-start;
-    margin: 0;
-    padding: 0;
-    font-size: 0.82rem;
-    font-weight: 600;
-    font-family: inherit;
-    color: #2d4a3a;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 0.12em;
-}
-
-.profile-totp-setup-panel__show-qr-again:hover {
-    color: #1f3528;
-}
-
-html.theme-dark .profile-totp-setup-panel__show-qr-again {
-    color: rgba(200, 220, 208, 0.95);
-}
-
-html.theme-dark .profile-totp-setup-panel__show-qr-again:hover {
-    color: #e8ece9;
-}
-
 .profile-totp-setup-panel__code-hint {
     margin: 0.35rem 0 0;
     font-size: 0.8rem;

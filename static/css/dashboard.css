@@ -1816,7 +1816,7 @@ body {
     .wellness-quote {
         margin: 0.75rem 0 1.35rem;
         padding-top: 0;
-        padding-bottom: 0.25rem;
+        padding-bottom: 1.35rem; /* space below author before bottom nav */
     }
 
     .wellness-quote-text {
@@ -1827,8 +1827,62 @@ body {
     .wellness-quote-author {
         font-size: 0.88rem;
         margin-top: 0.45rem;
+        margin-bottom: 0.35rem;
+        padding-bottom: 0.25rem;
     }
-    
+
+    /* Mood key: emoji + label left, anchor score right (same PNGs; desktop unchanged) */
+    .mood-key-tile {
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.65rem 0.58rem 0.5rem;
+    }
+
+    .mood-key-tile__text {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .mood-key-tile__name {
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+
+    .mood-key-tile__anchor {
+        margin-left: auto;
+        text-align: right;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .mood-key-scoring {
+        padding: 0.7rem 0.8rem 0.78rem;
+    }
+
+    .mood-key-scoring__title {
+        font-size: 0.74rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.5rem;
+    }
+
+    .mood-key-scoring__list {
+        font-size: 0.9rem;
+        line-height: 1.58;
+        padding-left: 1.1rem;
+    }
+
+    .mood-key-scoring__list li {
+        margin-bottom: 0.45rem;
+    }
+
     /* Write/Voice quick actions hidden on mobile (use bottom nav / FAB) */
     .quick-actions {
         display: none !important;

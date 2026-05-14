@@ -41,9 +41,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Google buttons
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
-    const passwordResetStep = document.getElementById('loginPasswordResetStep');
+    const resetModal = document.getElementById('resetModal');
+    const resetDialog = resetModal ? resetModal.querySelector('.reset-dialog') : null;
+    const resetBackdrop = document.getElementById('resetBackdrop');
+    const resetModalXBtn = document.getElementById('resetModalXBtn');
+    const resetFooterBackBtn = document.getElementById('resetFooterBackBtn');
     const signinMainFormHeader = document.getElementById('signinMainFormHeader');
-    const resetCloseBtn = document.getElementById('resetCloseBtn');
     const resetAlert = document.getElementById('resetAlert');
     const resetRequestForm = document.getElementById('resetRequestForm');
     const resetConfirmForm = document.getElementById('resetConfirmForm');
@@ -989,7 +992,6 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTwoFactorToken = challengeToken;
         resetLoginRecoveryUi();
         if (signinMainFlow) signinMainFlow.hidden = true;
-        if (passwordResetStep) passwordResetStep.hidden = true;
         if (loginTotpStep) loginTotpStep.hidden = false;
         loginTotpVerifyInProgress = false;
         if (loginTotpAutoVerifyTimeout) {
@@ -1694,8 +1696,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
 
-    function animateResetDialog() {
-        /* Inline reset: no modal pop animation */
+    function animateResetDialog(animationClass = 'is-step-animating') {
+        if (!resetDialog) return;
+        resetDialog.classList.remove('is-opening', 'is-step-animating');
+        requestAnimationFrame(function () {
+            resetDialog.classList.add(animationClass);
+        });
+        resetDialog.addEventListener(
+            'animationend',
+            function onEnd() {
+                resetDialog.classList.remove('is-opening', 'is-step-animating');
+            },
+            { once: true }
+        );
     }
 
     function showResetStep(form) {
@@ -1731,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', function() {
             liveWrap: resetPwLive,
             submitBtn: confirmResetBtn,
             commonErrorEl: resetPwCommonErr,
-            formRoot: passwordResetStep || resetPasswordForm,
+            formRoot: resetModal,
             getPersonal: function () {
                 return {
                     nickname: '',
@@ -1744,13 +1757,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openResetModal() {
-        if (!passwordResetStep) return;
+        if (!resetModal) return;
         destroyResetPasswordLive();
         if (confirmResetBtn) confirmResetBtn.disabled = true;
-        if (signinMainFlow) signinMainFlow.hidden = true;
-        if (loginTotpStep) loginTotpStep.hidden = true;
-        if (signinMainFormHeader) signinMainFormHeader.hidden = true;
-        passwordResetStep.hidden = false;
+        resetModal.hidden = false;
+        document.body.style.overflow = 'hidden';
         animateResetDialog('is-opening');
         resetIdentifier = '';
         verifiedResetCode = '';
@@ -1783,11 +1794,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function closeResetModal() {
-        if (!passwordResetStep) return;
+        if (!resetModal) return;
         destroyResetPasswordLive();
-        passwordResetStep.hidden = true;
-        if (signinMainFlow) signinMainFlow.hidden = false;
-        if (signinMainFormHeader) signinMainFormHeader.hidden = false;
+        resetModal.hidden = true;
+        document.body.style.overflow = '';
         resetIdentifier = '';
         verifiedResetCode = '';
         clearResetAlert();
@@ -1797,7 +1807,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (resetCloseBtn) resetCloseBtn.addEventListener('click', closeResetModal);
+    if (resetModalXBtn) resetModalXBtn.addEventListener('click', closeResetModal);
+    if (resetFooterBackBtn) resetFooterBackBtn.addEventListener('click', closeResetModal);
+    if (resetBackdrop) resetBackdrop.addEventListener('click', closeResetModal);
 
     if (resetRequestForm) {
         const validateResetIdentifierField = () => {
@@ -1812,6 +1824,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             clearValidation(resetIdentifierInput);
+            showSuccess(resetIdentifierInput);
             return true;
         };
 

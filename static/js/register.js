@@ -126,12 +126,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (fieldId === 'nickname') {
             if (!value) { resetAvailability('nickname'); showError(field, 'Username is required.'); return false; }
             if (value.length < 4 || value.length > 64) { resetAvailability('nickname'); showError(field, 'Field must be between 4 and 64 characters long.'); return false; }
+            showSuccess(field);
             scheduleAvailabilityCheck('nickname', value);
             return true;
         }
         if (fieldId === 'signUpEmail') {
             if (!value) { resetAvailability('signUpEmail'); showError(field, 'Email is required.'); return false; }
             if (!isValidEmail(value)) { resetAvailability('signUpEmail'); showError(field, 'Please enter a valid email.'); return false; }
+            showSuccess(field);
             scheduleAvailabilityCheck('signUpEmail', value);
             return true;
         }

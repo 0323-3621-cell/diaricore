@@ -244,13 +244,14 @@
                 c = confirmEl.value;
             }
             updateHint();
-            if (liveWrap) liveWrap.hidden = p.length === 0;
             var personal = getPersonal();
             var state = P.getChecklistState(p, personal);
             var score = P.getStrengthScore(p, c, personal);
             updateRows(state);
             updateStrength(score);
             var ready = P.isPasswordSubmitReady(p, c, personal);
+            if (liveWrap) liveWrap.hidden = p.length === 0 || ready;
+            if (commonErrorEl && ready) commonErrorEl.classList.remove('show');
             opts.submitBtn.disabled = !ready;
             return { state: state, score: score, ready: ready };
         }

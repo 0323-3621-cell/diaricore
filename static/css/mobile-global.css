@@ -1,0 +1,79 @@
+/**
+ * DiariCore — global mobile-only layout resilience (≤768px).
+ * Desktop (>768px): no rules here apply; existing page CSS is unchanged.
+ */
+
+@media (max-width: 768px) {
+    html {
+        overflow-x: hidden;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Top-level app shells: allow flex children to shrink instead of forcing min-content width */
+    .dashboard-container,
+    .entries-container,
+    .insights-container,
+    .suggestions-container,
+    .profile-container,
+    .admin-wrap,
+    .login-container {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .main-content.diari-shell-main,
+    main.diari-shell-main,
+    main.main-content,
+    .entry-view-main,
+    .admin-main,
+    .entries-content,
+    .write-entry-container,
+    .voice-entry-container,
+    .profile-content {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .header-section,
+    .header-row,
+    .header-copy,
+    .profile-section-shell,
+    .entries-section,
+    .entries-grid,
+    .entries-detail-shell,
+    .search-filter-container,
+    .journal-container,
+    .post-recording-container,
+    .voice-recording-container {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* Chart areas: scroll horizontally if canvas is wider than viewport */
+    .chart-container,
+    .insights-consistency-chart-wrap,
+    .emotion-breakdown-desktop-chartwrap {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .verify-shell,
+    .page {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    pre,
+    code {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    iframe {
+        max-width: 100%;
+    }
+}

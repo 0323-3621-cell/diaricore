@@ -523,8 +523,10 @@ def get_user_by_email(email: str):
     try:
         if USE_POSTGRES:
             cur.execute(
-                "SELECT " + _USER_AUTH_SELECT + " FROM users WHERE email = %s",
-                (email.lower().strip(),),
+                "SELECT "
+                + _USER_AUTH_SELECT
+                + " FROM users WHERE lower(trim(email)) = lower(trim(%s))",
+                (email,),
             )
         else:
             cur.execute(

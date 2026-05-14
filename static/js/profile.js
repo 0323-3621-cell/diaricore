@@ -474,10 +474,9 @@ function applyTotpSetupPrimaryForQrUi() {
     const qr = document.getElementById('profileTotpQrBlock');
     const primary = document.getElementById('profileTotpModalPrimary');
     if (!setup || setup.hidden || !qr || qr.hidden || !primary) return;
-    if (primary.classList.contains('is-loading')) return;
     var ui = qr.dataset.qrUi || 'scan';
     if (ui === 'scan') {
-        primary.classList.remove('profile-totp-modal__btn--danger');
+        primary.classList.remove('is-loading', 'profile-totp-modal__btn--danger');
         primary.disabled = false;
         primary.innerHTML =
             '<i class="bi bi-arrow-right-circle" aria-hidden="true"></i> Continue to verification';

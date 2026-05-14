@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializeProfileInteractions();
     initializePreferenceToggles();
+    initializeReminderTimePreference();
     initializeStorageActions();
     initializeProfileSectionNavigation();
     initializeAccountDetailPanels();
@@ -2413,6 +2414,65 @@ function initializeProfileInteractions() {
     }
 }
 
+const REMINDER_TIME_USER_OVERRIDE_KEY = 'diariCoreReminderTimeUserOverride';
+
+function getProfileEntriesForInsightsMostActive() {
+    try {
+        const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        if (!Array.isArray(entries)) return [];
+        return entries.filter((e) => e && e.date);
+    } catch (_) {
+        return [];
+    }
+}
+
+/** Matches Consistency “most active time”: Manila mode hour from save timestamps; falls back if no data. */
+function computeSuggestedReminderTimeHHmm() {
+    const MAT = window.DiariMostActiveTime;
+    const list = getProfileEntriesForInsightsMostActive();
+    if (!MAT || typeof MAT.computeMostActiveHour24FromEntries !== 'function') {
+        return '09:00';
+    }
+    const peak = MAT.computeMostActiveHour24FromEntries(list);
+    const t = MAT.hour24ToTimeInputValue(peak);
+    return t || '09:00';
+}
+
+function readReminderTimeUserOverride() {
+    try {
+        const v = localStorage.getItem(REMINDER_TIME_USER_OVERRIDE_KEY);
+        if (!v || typeof v !== 'string') return null;
+        const s = v.trim();
+        return /^\d{2}:\d{2}$/.test(s) ? s : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function hydrateProfileReminderTimeInput() {
+    const input = document.getElementById('profileReminderTimeInput');
+    if (!input) return;
+    const user = readReminderTimeUserOverride();
+    input.value = user || computeSuggestedReminderTimeHHmm();
+}
+
+function initializeReminderTimePreference() {
+    const input = document.getElementById('profileReminderTimeInput');
+    if (!input || input.dataset.reminderTimeBound === '1') return;
+    input.dataset.reminderTimeBound = '1';
+    hydrateProfileReminderTimeInput();
+    input.addEventListener('change', function () {
+        const suggested = computeSuggestedReminderTimeHHmm();
+        try {
+            if (this.value === suggested) {
+                localStorage.removeItem(REMINDER_TIME_USER_OVERRIDE_KEY);
+            } else {
+                localStorage.setItem(REMINDER_TIME_USER_OVERRIDE_KEY, this.value);
+            }
+        } catch (_) { /* ignore */ }
+    });
+}
+
 // Initialize Preference Toggles
 function initializePreferenceToggles() {
     const toggleSwitches = document.querySelectorAll(
@@ -2652,6 +2712,9 @@ function openProfileSection(sectionKey) {
     setProfileUrlHash(sectionKey);
     window.scrollTo(0, 0);
 
+    if (sectionKey === 'preferences') {
+        hydrateProfileReminderTimeInput();
+    }
     if (sectionKey === 'personal-information') {
         hydratePersonalInfoPanel();
     }

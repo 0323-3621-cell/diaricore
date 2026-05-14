@@ -41,9 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Google buttons
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignUpBtn = document.getElementById('googleSignUpBtn');
-    const resetModal = document.getElementById('resetModal');
-    const resetDialog = resetModal ? resetModal.querySelector('.reset-dialog') : null;
-    const resetBackdrop = document.getElementById('resetBackdrop');
+    const passwordResetStep = document.getElementById('loginPasswordResetStep');
+    const signinMainFormHeader = document.getElementById('signinMainFormHeader');
     const resetCloseBtn = document.getElementById('resetCloseBtn');
     const resetAlert = document.getElementById('resetAlert');
     const resetRequestForm = document.getElementById('resetRequestForm');
@@ -56,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const verifyResetCodeBtn = document.getElementById('verifyResetCodeBtn');
     const resendResetCodeBtn = document.getElementById('resendResetCodeBtn');
     const resetTimerLabel = document.getElementById('resetTimerLabel');
-    const resetOtpDigits = Array.from(document.querySelectorAll('.reset-otp-digit'));
+    const resetOtpDigits = Array.from(document.querySelectorAll('#resetOtpInputs .login-totp-digit'));
     const confirmResetBtn = document.getElementById('confirmResetBtn');
     const resetVerifyBackBtn = document.getElementById('resetVerifyBackBtn');
     const resetPasswordBackBtn = document.getElementById('resetPasswordBackBtn');
@@ -228,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getLoginFormHeaderEl() {
-        return signinSection ? signinSection.querySelector('.form-header') : null;
+        return signinMainFormHeader || null;
     }
 
     function setLoginTotpHeaderAuthenticator() {
@@ -741,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
         verifyOtpBtn.disabled = getOtpCode().length !== 6;
     }
 
-    function resetOtpInputs() {
+    function resetRegistrationOtpInputs() {
         otpDigits.forEach((d) => {
             d.value = '';
             d.classList.remove('error');
@@ -776,7 +775,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (otpEmailDisplay) otpEmailDisplay.textContent = email;
         signupSection.classList.add('hidden');
         if (otpSection) otpSection.classList.remove('hidden');
-        resetOtpInputs();
+        resetRegistrationOtpInputs();
         startOtpCountdown(10 * 60);
     }
 
@@ -979,10 +978,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setLoginTotpSubmitIdle();
         if (signinMainFlow) signinMainFlow.hidden = false;
         if (loginTotpStep) loginTotpStep.hidden = true;
-        const fh = signinSection && signinSection.querySelector('.form-header');
-        if (fh && signinSection.dataset.savedHeaderHtml) {
-            fh.hidden = false;
-            fh.innerHTML = signinSection.dataset.savedHeaderHtml;
+        if (signinMainFormHeader) {
+            signinMainFormHeader.hidden = false;
+            if (signinSection && signinSection.dataset.savedHeaderHtml) {
+                signinMainFormHeader.innerHTML = signinSection.dataset.savedHeaderHtml;
+            }
         }
     }
 
@@ -990,6 +990,7 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTwoFactorToken = challengeToken;
         resetLoginRecoveryUi();
         if (signinMainFlow) signinMainFlow.hidden = true;
+        if (passwordResetStep) passwordResetStep.hidden = true;
         if (loginTotpStep) loginTotpStep.hidden = false;
         loginTotpVerifyInProgress = false;
         if (loginTotpAutoVerifyTimeout) {
@@ -999,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearLoginTotpDigits();
         clearLoginTotpErrorState();
         setLoginTotpSubmitIdle();
-        const fh = signinSection && signinSection.querySelector('.form-header');
+        const fh = getLoginFormHeaderEl();
         if (fh && !signinSection.dataset.savedHeaderHtml) {
             signinSection.dataset.savedHeaderHtml = fh.innerHTML;
         }
@@ -1556,7 +1557,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     showNotification('Verification code resent.', 'success');
-                    resetOtpInputs();
+                    resetRegistrationOtpInputs();
                     startOtpCountdown(10 * 60);
                 })
                 .catch(() => showOtpError('Failed to resend code.'))
@@ -1607,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetAlert.className = 'reset-alert';
     }
 
-    function resetOtpInputs() {
+    function clearForgotPasswordOtpInputs() {
         if (resetAutoVerifyTimeout) {
             clearTimeout(resetAutoVerifyTimeout);
             resetAutoVerifyTimeout = null;
@@ -1694,15 +1695,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
 
-    function animateResetDialog(animationClass = 'is-step-animating') {
-        if (!resetDialog) return;
-        resetDialog.classList.remove('is-opening', 'is-step-animating');
-        requestAnimationFrame(() => {
-            resetDialog.classList.add(animationClass);
-        });
-        resetDialog.addEventListener('animationend', () => {
-            resetDialog.classList.remove('is-opening', 'is-step-animating');
-        }, { once: true });
+    function animateResetDialog() {
+        /* Inline reset: no modal pop animation */
     }
 
     function showResetStep(form) {
@@ -1738,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
             liveWrap: resetPwLive,
             submitBtn: confirmResetBtn,
             commonErrorEl: resetPwCommonErr,
-            formRoot: resetPasswordForm,
+            formRoot: passwordResetStep || resetPasswordForm,
             getPersonal: function () {
                 return {
                     nickname: '',
@@ -1751,10 +1745,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function openResetModal() {
-        if (!resetModal) return;
+        if (!passwordResetStep) return;
         destroyResetPasswordLive();
         if (confirmResetBtn) confirmResetBtn.disabled = true;
-        resetModal.hidden = false;
+        if (signinMainFlow) signinMainFlow.hidden = true;
+        if (loginTotpStep) loginTotpStep.hidden = true;
+        if (signinMainFormHeader) signinMainFormHeader.hidden = true;
+        passwordResetStep.hidden = false;
         animateResetDialog('is-opening');
         resetIdentifier = '';
         verifiedResetCode = '';
@@ -1766,9 +1763,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (resetSubtitle) resetSubtitle.textContent = 'Enter the email associated with your account to reset your password.';
         if (resetIdentifierInput) {
             resetIdentifierInput.value = '';
+            clearValidation(resetIdentifierInput);
             resetIdentifierInput.focus();
         }
-        resetOtpInputs();
+        clearForgotPasswordOtpInputs();
         if (resetNewPasswordInput) {
             resetNewPasswordInput.value = '';
             clearValidation(resetNewPasswordInput);
@@ -1786,9 +1784,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function closeResetModal() {
-        if (!resetModal) return;
+        if (!passwordResetStep) return;
         destroyResetPasswordLive();
-        resetModal.hidden = true;
+        passwordResetStep.hidden = true;
+        if (signinMainFlow) signinMainFlow.hidden = false;
+        if (signinMainFormHeader) signinMainFormHeader.hidden = false;
         resetIdentifier = '';
         verifiedResetCode = '';
         clearResetAlert();
@@ -1799,7 +1799,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (resetCloseBtn) resetCloseBtn.addEventListener('click', closeResetModal);
-    if (resetBackdrop) resetBackdrop.addEventListener('click', closeResetModal);
 
     if (resetRequestForm) {
         const validateResetIdentifierField = () => {
@@ -1970,7 +1969,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     setResetAlert('Verification code has been resent to your email.', 'success');
-                    resetOtpInputs();
+                    clearForgotPasswordOtpInputs();
                     startResetResendCooldown(60);
                     resendResetCodeBtn.classList.remove('is-loading');
                 })

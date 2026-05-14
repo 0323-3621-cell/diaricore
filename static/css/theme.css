@@ -155,8 +155,7 @@ html.theme-dark #activityImpactChart {
 }
 
 html.theme-dark .login-container,
-html.theme-dark .verify-shell,
-html.theme-dark .reset-dialog {
+html.theme-dark .verify-shell {
     background: var(--card-background) !important;
     color: var(--text-dark) !important;
     border-color: var(--border-color) !important;

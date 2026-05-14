@@ -1108,92 +1108,6 @@ body {
     background: linear-gradient(90deg, #36b96e 0%, #7fd3a3 100%);
 }
 
-.reset-modal[hidden] {
-    display: none !important;
-}
-
-.reset-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 11000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.reset-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(35, 44, 40, 0.45);
-    backdrop-filter: blur(2px);
-    animation: resetBackdropIn 0.24s ease forwards;
-}
-
-.reset-dialog {
-    position: relative;
-    width: min(460px, calc(100% - 20px));
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-    padding: 22px 22px 20px;
-}
-
-.reset-dialog.is-opening,
-.reset-dialog.is-step-animating {
-    animation: resetDialogPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.reset-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.reset-header {
-    text-align: left;
-    margin-bottom: 14px;
-}
-
-.reset-hero {
-    display: flex;
-    justify-content: center;
-    margin-top: 8px;
-}
-
-.reset-icon-wrap {
-    width: 52px;
-    height: 52px;
-    margin: 0 auto 8px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    color: white;
-    background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
-}
-
-.reset-header h3 {
-    margin: 0 0 2px;
-    color: var(--primary-color);
-    font-size: 22px;
-    font-weight: 700;
-}
-
-.reset-header p {
-    margin: 10px 0 0;
-    color: var(--text-secondary);
-    font-size: 16px;
-    line-height: 1.45;
-    max-width: 100%;
-    text-align: center;
-}
-
 .reset-alert {
     border-radius: 8px;
     margin: 2px 0 8px;
@@ -1214,75 +1128,6 @@ body {
     color: #166534;
 }
 
-.reset-form {
-    display: grid;
-    gap: 2px;
-}
-
-.reset-label {
-    font-size: 13px;
-    color: var(--text-dark);
-    font-weight: 600;
-}
-
-.reset-label-center {
-    text-align: center;
-}
-
-.reset-input {
-    width: 100%;
-    height: 42px;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    padding: 0 12px;
-    font-size: 14px;
-    color: var(--text-dark);
-    outline: none;
-}
-
-.reset-form .input-wrapper {
-    margin-bottom: 0;
-}
-
-.reset-form .custom-error.show {
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-#resetPasswordForm {
-    gap: 0;
-}
-
-#resetPasswordForm #resetNewPassword-error.show {
-    margin-bottom: 10px;
-}
-
-.reset-input:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.1);
-}
-
-.reset-btn {
-    margin-top: 2px;
-    width: 100%;
-    border: none;
-    border-radius: 24px;
-    height: 42px;
-    color: white;
-    font-weight: 700;
-    background: linear-gradient(135deg, #6F8F7F 0%, #8FAF9F 100%);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.reset-btn.is-loading {
-    opacity: 0.92;
-    pointer-events: none;
-}
-
 .reset-btn-spinner {
     width: 15px;
     height: 15px;
@@ -1296,59 +1141,69 @@ body {
     to { transform: rotate(360deg); }
 }
 
-.reset-otp {
+.btn-signin.is-loading {
+    opacity: 0.92;
+    pointer-events: none;
+}
+
+/* Forgot password: inline in the sign-in column (same rhythm as the TOTP step, not a modal) */
+.login-reset-step {
+    margin-top: 0.25rem;
+    width: 100%;
+}
+
+.login-reset-step__header {
+    margin-bottom: 1rem;
+}
+
+.login-reset-step__form {
+    margin-bottom: 0.35rem;
+}
+
+.login-reset-step .login-form .btn-signin {
+    margin-bottom: 0.75rem;
+}
+
+.login-reset-step__meta {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin: 2px 0 4px;
+    gap: 0.35rem 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 
-.reset-otp-digit {
-    width: 42px;
-    height: 48px;
-    border: 2px solid var(--border-color);
-    border-radius: 10px;
-    text-align: center;
-    font-size: 20px;
-    font-weight: 700;
-    outline: none;
-    color: var(--text-dark);
-}
-
-.reset-otp-digit:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.1);
-}
-
-.reset-meta {
-    margin: 2px 0 4px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-.reset-meta-text {
-    color: var(--text-muted);
-}
-
-.reset-link-btn {
+.login-reset-step__link-btn {
     border: none;
     background: none;
-    color: var(--primary-color);
-    font-size: 13px;
+    padding: 0;
+    font: inherit;
     font-weight: 600;
+    font-size: 0.85rem;
+    color: #4a7c59;
     cursor: pointer;
     text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-.reset-link-btn.is-loading {
+.login-reset-step__link-btn:hover:not(:disabled) {
+    color: #3d5a4a;
+}
+
+.login-reset-step__link-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.login-reset-step__link-btn.is-loading {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    text-decoration: underline;
 }
 
-.reset-link-btn.is-loading::before {
+.login-reset-step__link-btn.is-loading::before {
     content: '';
     width: 12px;
     height: 12px;
@@ -1358,46 +1213,21 @@ body {
     animation: resetBtnSpin 0.8s linear infinite;
 }
 
-.reset-link-btn:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+.login-reset-step__meta-text {
+    color: var(--text-secondary);
 }
 
-.reset-timer {
-    display: inline;
-    margin-left: 3px;
-    font-size: 12px;
+.login-reset-step__timer {
+    font-weight: 600;
     color: var(--text-muted);
 }
 
-.reset-btn-secondary {
-    background: #f2f5f3;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+.login-reset-step .reset-alert {
+    margin-bottom: 0.75rem;
 }
 
-@keyframes resetBackdropIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes resetDialogPop {
-    0% {
-        opacity: 0;
-        transform: translateY(22px) scale(0.92);
-    }
-    70% {
-        opacity: 1;
-        transform: translateY(-2px) scale(1.01);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+#resetPasswordForm #resetNewPassword-error.show {
+    margin-bottom: 10px;
 }
 
 /* Error States */
@@ -1681,12 +1511,13 @@ body {
     margin: 0 auto;
 }
 
+/* Recovery flows: same light, flat layout as the main 2FA step (no dark “card” box) */
 .login-totp-recovery-card {
-    background: #2c3036;
-    border-radius: 16px;
-    padding: 1.35rem 1.35rem 1.25rem;
-    box-shadow: 0 12px 40px rgba(24, 32, 28, 0.18);
-    color: rgba(255, 255, 255, 0.92);
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    color: var(--text-dark);
 }
 
 .login-totp-recovery-card__header {
@@ -1705,19 +1536,20 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1.15rem;
-    background: #fff;
+    background: #f3f6f4;
+    border: 1px solid var(--border-color);
 }
 
 .login-totp-recovery-card__icon-slot--lock {
     color: #c44f4f;
-    border: 2px solid rgba(200, 80, 80, 0.55);
-    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(200, 80, 80, 0.35);
+    background: #fff8f7;
 }
 
 .login-totp-recovery-card__icon-slot--mail {
-    color: #5a8f6e;
-    border: 2px solid rgba(90, 143, 110, 0.45);
-    background: rgba(255, 255, 255, 0.98);
+    color: #4a7c59;
+    border-color: rgba(74, 124, 89, 0.35);
+    background: #f0f6f2;
 }
 
 .login-totp-recovery-card__headings {
@@ -1730,28 +1562,28 @@ body {
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.25;
-    color: #fff;
+    color: var(--text-dark);
 }
 
 .login-totp-recovery-card__subtitle {
     margin: 0;
     font-size: 0.88rem;
     font-weight: 500;
-    color: rgba(220, 226, 222, 0.72);
+    color: var(--text-secondary);
 }
 
 .login-totp-recovery-card__expire {
     margin: 0.25rem 0 0;
     font-size: 0.82rem;
     font-weight: 600;
-    color: rgba(180, 210, 190, 0.88);
+    color: #4a7c59;
 }
 
 .login-totp-recovery-card__body {
     margin: 0 0 1rem;
     font-size: 0.88rem;
     line-height: 1.55;
-    color: rgba(232, 236, 233, 0.82);
+    color: var(--text-secondary);
 }
 
 .login-totp-recovery-card__field {
@@ -1765,17 +1597,15 @@ body {
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: rgba(200, 208, 202, 0.65);
+    color: var(--text-muted);
 }
 
 .login-totp-recovery__digits-float-wrap {
-    padding: 0.85rem 0.75rem;
-    border-radius: 14px;
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 8px 28px rgba(0, 0, 0, 0.35),
-        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 .login-totp-recovery__digits-float-wrap .login-totp-digits {
@@ -1783,15 +1613,15 @@ body {
 }
 
 .login-totp-digit--recovery {
-    background: #3a4048 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    color: #fff !important;
+    background: #fff !important;
+    border-color: rgba(111, 143, 127, 0.28) !important;
+    color: var(--text-dark) !important;
     animation: none;
 }
 
 .login-totp-digit--recovery:focus {
-    border-color: #6b9a7e !important;
-    box-shadow: 0 0 0 3px rgba(107, 154, 126, 0.25);
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(111, 143, 127, 0.22);
 }
 
 .login-totp-recovery-card__primary {
@@ -1803,19 +1633,19 @@ body {
     margin-top: 0.15rem;
     padding: 0.72rem 1rem;
     border: none;
-    border-radius: 12px;
+    border-radius: 24px;
     font-size: 0.88rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    background: linear-gradient(180deg, #5f9070 0%, #4a7a5c 100%);
+    background: linear-gradient(135deg, #6f8f7f 0%, #8faf9f 100%);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 14px rgba(47, 62, 54, 0.12);
     transition: filter 0.15s ease, transform 0.12s ease;
 }
 
 .login-totp-recovery-card__primary:hover:not(:disabled) {
-    filter: brightness(1.05);
+    filter: brightness(1.04);
 }
 
 .login-totp-recovery-card__primary:active:not(:disabled) {
@@ -1834,7 +1664,7 @@ body {
 
 .login-totp-recovery-card__error.custom-error {
     margin: 0 0 0.65rem;
-    color: #f4b2b2;
+    color: #b84252;
     text-align: left;
 }
 
@@ -1878,31 +1708,52 @@ html.theme-dark .login-totp-recovery-panel__footer-link:hover {
     color: #e8ece9;
 }
 
+html.theme-dark .login-totp-recovery-card__title {
+    color: #e8ece9;
+}
+
+html.theme-dark .login-totp-recovery-card__subtitle,
+html.theme-dark .login-totp-recovery-card__body {
+    color: rgba(200, 212, 204, 0.9);
+}
+
+html.theme-dark .login-totp-recovery-card__icon-slot {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.theme-dark .login-totp-digit--recovery {
+    background: rgba(28, 32, 30, 0.92) !important;
+    color: #e8ece9 !important;
+    border-color: rgba(200, 212, 204, 0.28) !important;
+}
+
 .login-totp-recovery-card--verify .login-totp-recovery__resend-line {
-    color: rgba(210, 218, 212, 0.78);
+    color: var(--text-secondary);
     margin-top: 0.85rem;
 }
 
 .login-totp-recovery-card--verify .login-totp-recovery__resend-action {
-    color: #8ec9a0;
+    color: #4a7c59;
+    font-weight: 600;
 }
 
 .login-totp-recovery-card--verify .login-totp-recovery__resend-action:hover:not(:disabled) {
-    color: #b8e4c8;
+    color: #3d5a4a;
 }
 
 .login-totp-recovery-card--verify .login-totp-recovery__resend-countdown {
-    color: rgba(200, 210, 204, 0.75);
+    color: var(--text-muted);
 }
 
 .login-totp-recovery-card--verify .login-totp-recovery-resend-spinner {
-    border-color: rgba(255, 255, 255, 0.25);
-    border-top-color: #b8e4c8;
+    border-color: rgba(74, 124, 89, 0.25);
+    border-top-color: #4a7c59;
 }
 
 #loginRecoveryDigits.has-error .login-totp-digit--recovery {
-    border-color: #e07a7a !important;
-    background: #423538 !important;
+    border-color: #e8a0a8 !important;
+    background: #fff8f8 !important;
     animation: none;
 }
 

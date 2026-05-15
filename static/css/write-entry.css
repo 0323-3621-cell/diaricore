@@ -1208,10 +1208,6 @@ html.theme-dark .entry-img-skeleton {
         padding: 0.85rem 1rem;
     }
 
-    body.page-write-entry .main-content {
-        padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
     body.page-write-entry .mobile-bottom-nav {
         display: none !important;
     }
@@ -1266,11 +1262,19 @@ html.theme-dark .entry-img-skeleton {
     }
 
     body.page-write-entry .write-entry-photos-panel {
+        display: block !important;
+        visibility: visible !important;
         width: 100%;
-        margin: 0;
+        margin: 0 0 0.75rem;
         padding: 0;
         border: none;
         background: transparent;
+        flex-shrink: 0;
+        order: 2;
+    }
+
+    body.page-write-entry .write-entry-stack .journal-container {
+        order: 1;
     }
 
     body.page-write-entry .write-entry-photos-panel__label {
@@ -1293,11 +1297,25 @@ html.theme-dark .entry-img-skeleton {
     body.page-write-entry .write-entry-photos-panel .entry-gallery-scroll {
         border: none;
         border-radius: 12px 12px 0 0;
-        min-height: 140px;
+        min-height: 160px;
+        height: auto !important;
+        max-height: none;
     }
 
     body.page-write-entry .write-entry-photos-panel .entry-gallery.is-empty {
-        min-height: 140px;
+        min-height: 160px;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-empty {
+        min-height: 160px;
+    }
+
+    body.page-write-entry .main-content {
+        padding-bottom: calc(6.25rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    .tag-btn[data-custom="1"] .tag-delete-btn {
+        right: 12px;
     }
 }
 

@@ -219,8 +219,13 @@
         fab.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
     }
 
+    function isMobileViewport() {
+        return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    }
+
     function createThemeToggleFab() {
         if (!document.body || document.getElementById(FAB_ID)) return;
+        if (isMobileViewport()) return;
 
         const fab = document.createElement('button');
         fab.type = 'button';

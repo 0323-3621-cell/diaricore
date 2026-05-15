@@ -1991,22 +1991,30 @@ def api_entries_delete(entry_id: int):
 
 @app.route("/api/uploads/image", methods=["POST"])
 def api_upload_image():
-    user_id = request.form.get("userId", type=int)
-    if not user_id or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
-    if not db.get_user_by_id(user_id):
-        return jsonify({"success": False, "error": "User not found."}), 404
-    file = request.files.get("file")
-    if not file or not file.filename:
-        return jsonify({"success": False, "error": "Image file is required."}), 400
-    if not _allowed_image_extension(file.filename):
-        return jsonify({"success": False, "error": "Unsupported file type."}), 400
+    try:
+        user_id = request.form.get("userId", type=int)
+        if not user_id or user_id <= 0:
+            return jsonify({"success": False, "error": "Valid userId is required."}), 400
+        if not db.get_user_by_id(user_id):
+            return jsonify({"success": False, "error": "User not found."}), 404
+        file = request.files.get("file")
+        if not file or not file.filename:
+            return jsonify({"success": False, "error": "Image file is required."}), 400
+        if not _allowed_image_extension(file.filename):
+            return jsonify({"success": False, "error": "Unsupported file type. Use JPEG, PNG, WebP, or GIF."}), 400
 
-    ext = os.path.splitext(file.filename)[1].lower()
-    safe_name = f"entry_{user_id}_{uuid.uuid4().hex}{ext}"
-    abs_path = os.path.join(UPLOADS_DIR, safe_name)
-    file.save(abs_path)
-    return jsonify({"success": True, "url": f"/uploads/{safe_name}"}), 201
+        ext = os.path.splitext(file.filename)[1].lower()
+        safe_name = f"entry_{user_id}_{uuid.uuid4().hex}{ext}"
+        abs_path = os.path.join(UPLOADS_DIR, safe_name)
+        try:
+            file.save(abs_path)
+        except OSError:
+            app.logger.exception("entry image save failed for %s", safe_name)
+            return jsonify({"success": False, "error": "Could not save image on server. Try again or use a smaller file."}), 503
+        return jsonify({"success": True, "url": f"/uploads/{safe_name}"}), 201
+    except Exception:
+        app.logger.exception("api_upload_image failed")
+        return jsonify({"success": False, "error": "Image upload failed. Please try again."}), 500
 
 
 MAX_VOICE_TRANSCRIBE_BYTES = 8 * 1024 * 1024

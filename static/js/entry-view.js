@@ -960,6 +960,9 @@
         }
 
         async function uploadImageOnlineLocal(file, localId) {
+            if (!userId) {
+                throw new Error('Please log in again to upload photos.');
+            }
             const form = new FormData();
             form.append('file', file);
             form.append('userId', String(userId));
@@ -1824,6 +1827,9 @@
         }
 
         async function uploadImageForQueue(file, uid) {
+            if (!uid) {
+                throw new Error('Please log in again to upload photos.');
+            }
             const form = new FormData();
             form.append('file', file);
             form.append('userId', String(uid));

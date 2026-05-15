@@ -1053,6 +1053,28 @@ html.theme-dark .entry-view-strip-imgwrap {
 }
 
 @media (max-width: 768px) {
+    /* View mode: compact inline tag pills (like desktop), not full-width bars */
+    body.page-entries-detail-open .entry-view-read-pane .entry-view-tags-read,
+    .page-entry-view .entry-view-read-pane .entry-view-tags-read {
+        flex: 0 1 auto !important;
+        width: auto !important;
+        min-height: 0 !important;
+        align-items: center !important;
+    }
+
+    body.page-entries-detail-open .entry-view-tag-pill--readonly,
+    .page-entry-view .entry-view-tag-pill--readonly {
+        width: auto !important;
+        max-width: 100% !important;
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+    }
+
+    body.page-entries-detail-open .entry-view-tags-block,
+    .page-entry-view .entry-view-tags-block {
+        align-items: center !important;
+    }
+
     /* Edit tags: 3 per row, remove (×) inside pill */
     body.page-entries-detail-open .entry-view-tags-inner,
     .page-entry-view .entry-view-tags-inner {
@@ -1069,15 +1091,17 @@ html.theme-dark .entry-view-strip-imgwrap {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        justify-content: space-between !important;
-        padding: 0.4rem 0.55rem 0.4rem 0.65rem !important;
+        justify-content: flex-start !important;
+        gap: 0.45rem !important;
+        padding: 0.4rem 0.7rem 0.4rem 0.65rem !important;
         overflow: hidden !important;
     }
 
     body.page-entries-detail-open .entry-view-tag-pill button,
     .page-entry-view .entry-view-tag-pill button {
         flex-shrink: 0 !important;
-        margin-left: 0.15rem !important;
+        margin-left: auto !important;
+        padding: 0 0.2rem !important;
     }
 
     body.page-entries-detail-open .entry-view-add-tag-wrap,
@@ -1085,18 +1109,55 @@ html.theme-dark .entry-view-strip-imgwrap {
         grid-column: 1 / -1 !important;
     }
 
-    /* Save & Analyze above bottom nav (inline entries edit) */
-    body.page-entries-detail-open .entries-detail-shell .entry-view-actions {
-        z-index: 1105 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: calc(4.85rem + env(safe-area-inset-bottom, 0px)) !important;
-        justify-content: center !important;
-        padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom, 0px)) !important;
+    /* Edit mode: photo strip visible below entry text */
+    body.page-entries-detail-open .entry-view-images-aside:not([hidden]),
+    .page-entry-view .entry-view-images-aside:not([hidden]) {
+        display: flex !important;
+        min-height: 200px;
     }
 
-    body.page-entries-detail-open .entries-detail-shell .entry-view-main {
-        padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    body.page-entries-detail-open .entry-view-image-strip__viewport,
+    .page-entry-view .entry-view-image-strip__viewport {
+        min-height: 180px;
+        height: auto !important;
+        max-height: min(52vw, 320px);
+    }
+
+    /* Save & Analyze: floating FAB where theme toggle was */
+    body.page-entries-detail-open .entries-detail-shell .entry-view-actions,
+    .page-entry-view .entry-view-actions {
+        position: fixed !important;
+        z-index: 1200 !important;
+        left: auto !important;
+        right: 0.9rem !important;
+        bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)) !important;
+        width: auto !important;
+        justify-content: flex-end !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+    }
+
+    body.page-entries-detail-open .entries-detail-shell .entry-view-actions .mood-analysis-btn--solid,
+    .page-entry-view .entry-view-actions .mood-analysis-btn--solid {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.4rem !important;
+        min-height: 46px !important;
+        padding: 0.65rem 1rem !important;
+        border-radius: 999px !important;
+        box-shadow: 0 4px 16px rgba(47, 62, 54, 0.22) !important;
+        font-size: 0.82rem !important;
+        white-space: nowrap !important;
+    }
+
+    body.page-entries-detail-open .entries-detail-shell .entry-view-main,
+    .page-entry-view .entry-view-main {
+        padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     .entry-view-columns--split {

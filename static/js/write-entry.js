@@ -337,6 +337,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     async function uploadImageOnline(file, userId, localId) {
+        if (!userId) {
+            throw new Error('Please log in again to upload photos.');
+        }
         const form = new FormData();
         form.append('file', file);
         form.append('userId', String(userId));
@@ -1463,6 +1466,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     renderImageGallery();
     initWriteGalleryViewportObserver();
+    requestAnimationFrame(() => {
+        syncWriteEntryGalleryViewport();
+        window.setTimeout(syncWriteEntryGalleryViewport, 120);
+    });
     syncWriteEntryGalleryViewport();
 
     const journalText = document.getElementById('journalText');

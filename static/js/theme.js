@@ -203,14 +203,18 @@
         }
     }
 
-    /** Restore system defaults after sign-out (light mode + Soft Sage Green). */
-    function resetToDefaults() {
+    function persistDefaultPreferences() {
         if (prefsSyncTimer) {
             clearTimeout(prefsSyncTimer);
             prefsSyncTimer = null;
         }
         localStorage.setItem(STORAGE_KEY, DEFAULT_THEME);
         localStorage.setItem(PALETTE_KEY, DEFAULT_PALETTE_ID);
+    }
+
+    /** Restore system defaults and apply to the current page (use when staying on-app). */
+    function resetToDefaults() {
+        persistDefaultPreferences();
         applyTheme(DEFAULT_THEME);
         applyPaletteById(DEFAULT_PALETTE_ID);
         syncFabState(DEFAULT_THEME);
@@ -230,9 +234,9 @@
         );
     }
 
-    /** Clear session and UI prefs, then redirect to login (desktop + mobile). */
+    /** Clear session and prefs, redirect to login without flashing theme on current page. */
     function logout(redirectUrl) {
-        resetToDefaults();
+        persistDefaultPreferences();
         try {
             localStorage.removeItem('diariCoreUser');
         } catch (_) {}
@@ -380,6 +384,7 @@
         applyPaletteById,
         syncToggleState,
         applyFromUser: applyFromUserObject,
+        persistDefaultPreferences,
         resetToDefaults,
         logout,
         DEFAULT_THEME,

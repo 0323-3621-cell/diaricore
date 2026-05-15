@@ -74,6 +74,23 @@ html.entries-restore-detail #entriesDetailShell[hidden] {
     background: var(--background-color);
 }
 
+@media (max-width: 768px) {
+    .entries-detail-loading-overlay.is-visible,
+    html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1305;
+        padding-bottom: 10vh;
+    }
+
+    .entries-detail-loading-overlay.is-visible ~ .main-content .entry-view-actions,
+    html.entries-restore-detail #entriesDetailShell .entry-view-actions {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
+
 .entries-detail-loading-overlay.is-visible,
 html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay {
     display: flex !important;

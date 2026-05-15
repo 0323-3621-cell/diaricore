@@ -2070,7 +2070,8 @@ html.theme-dark .ins-highlight-chip {
     }
 
     .ins-highlights__chips {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
     }
 
     /* Hide inline Emotions / Consistency pills; use floating FAB on the right */
@@ -2168,6 +2169,43 @@ html.theme-dark .ins-highlight-chip {
     .insights-panel--emotions .ins-card--tags {
         order: 5;
         margin-bottom: 0.25rem;
+    }
+
+    /* Full-width cards (display:contents reorder must not shrink chart blocks) */
+    .insights-panel--emotions .weekly-trend-card,
+    .insights-panel--emotions .ins-card--emotion,
+    .insights-panel--emotions .ins-card--tags,
+    .insights-panel--emotions .ins-card--triggers,
+    .insights-panel--emotions .ins-card--highlights {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0;
+        align-self: stretch !important;
+        box-sizing: border-box;
+    }
+
+    .insights-panel--emotions .weekly-trend-card.chart-card {
+        padding: 1.1rem !important;
+        background: var(--card-background) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 16px !important;
+        box-shadow: var(--box-shadow);
+    }
+
+    .insights-panel--emotions .ins-card--emotion.chart-card {
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .insights-panel--emotions .ins-card--emotion .emotion-breakdown-mobile {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .insights-panel--consistency .insights-consistency-metric-grid {
+        margin-bottom: 1.125rem !important;
     }
 
     /* Scroll clearance above fixed bottom nav (mood-by-tag is last) */

@@ -670,10 +670,12 @@ function performSearch() {
 
 function setEntriesDetailLoading(on) {
     const ov = document.getElementById('entriesDetailLoadingOverlay');
+    const actions = document.getElementById('entryViewActions');
     if (!ov) return;
     if (on) {
         ov.classList.add('is-visible');
         ov.setAttribute('aria-busy', 'true');
+        if (actions) actions.hidden = true;
     } else {
         ov.classList.remove('is-visible');
         ov.setAttribute('aria-busy', 'false');

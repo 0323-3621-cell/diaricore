@@ -3,8 +3,36 @@ let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
 let WEEKLY_DESKTOP_CHART = null;
 let INSIGHTS_CONSISTENCY_CHART = null;
+let MOOD_BY_TAG_CHART = null;
 let consistencyMonthSelectBound = false;
 const CONSISTENCY_MONTH_STORAGE_KEY = 'diariCoreInsightsConsistencyMonth';
+
+/** Mobile: tap same bar again to dismiss Chart.js tooltip. */
+function insightsBarChartOnClick(_evt, elements) {
+    const chart = this;
+    if (!chart) return;
+    if (!elements?.length) {
+        chart._diariTipIdx = -1;
+        if (typeof chart.setActiveElements === 'function') chart.setActiveElements([]);
+        if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
+            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        }
+        chart.update();
+        return;
+    }
+    const idx = elements[0].index;
+    if (chart._diariTipIdx === idx) {
+        chart._diariTipIdx = -1;
+        if (typeof chart.setActiveElements === 'function') chart.setActiveElements([]);
+        if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
+            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+        }
+    } else {
+        chart._diariTipIdx = idx;
+        if (typeof chart.setActiveElements === 'function') chart.setActiveElements(elements);
+    }
+    chart.update();
+}
 
 function hexToRgba(hex, alpha) {
     const safe = String(hex || '').trim().replace('#', '');
@@ -142,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Load Data
     loadInsightsData();
-
+    
     await loadEmotionTriggersDashboard();
 
     initializeInsightsHeroTabs();
@@ -217,9 +245,9 @@ function insightsCalendarWeekSeries() {
 
     const dayBuckets = Array.from({ length: 7 }, () => []);
     if (HAS_INSIGHTS_DATA) {
-        INSIGHTS_ENTRIES.forEach((entry) => {
+    INSIGHTS_ENTRIES.forEach((entry) => {
             if (!entry?.date) return;
-            const d = new Date(entry.date);
+        const d = new Date(entry.date);
             d.setHours(0, 0, 0, 0);
             const idx = Math.round((d.getTime() - monday.getTime()) / MS_PER_DAY);
             if (idx < 0 || idx > 6) return;
@@ -571,6 +599,7 @@ function updateConsistencyMonthBarChart() {
                 },
             },
             interaction: { intersect: false, mode: 'index' },
+            onClick: insightsBarChartOnClick,
         },
     });
 }
@@ -972,7 +1001,7 @@ function applyInsightsEmptyState() {
 function initializeWeeklyMoodChart() {
     const ctx = document.getElementById('weeklyChart');
     if (!ctx) return;
-
+    
     const chartTheme = getChartTheme();
     const weekly = insightsCalendarWeekSeries();
     const capEl = document.getElementById('weeklyTrendRangeCaption');
@@ -986,16 +1015,16 @@ function initializeWeeklyMoodChart() {
         labels: weekly.labels,
         datasets: [
             {
-                label: 'Mood Score',
-                data: weekly.data,
-                borderColor: chartTheme.primary,
-                backgroundColor: chartTheme.primarySoft,
-                borderWidth: 3,
-                fill: true,
+            label: 'Mood Score',
+            data: weekly.data,
+            borderColor: chartTheme.primary,
+            backgroundColor: chartTheme.primarySoft,
+            borderWidth: 3,
+            fill: true,
                 tension: 0.35,
                 spanGaps: false,
                 pointBorderColor: chartTheme.primary,
-                pointBorderWidth: 2,
+            pointBorderWidth: 2,
                 pointBackgroundColor: (context) => {
                     const i = context.dataIndex;
                     if (weekly.data[i] == null) return 'transparent';
@@ -1006,7 +1035,7 @@ function initializeWeeklyMoodChart() {
             },
         ],
     };
-
+    
     const config = {
         type: 'line',
         data: weeklyData,
@@ -1084,7 +1113,7 @@ function initializeWeeklyMoodChart() {
             },
         },
     };
-
+    
     new Chart(ctx, config);
 }
 
@@ -1092,7 +1121,7 @@ function initializeWeeklyMoodChart() {
 function initializeWeeklyMoodChartDesktop() {
     const ctx = document.getElementById('weeklyChartDesktop');
     if (!ctx) return;
-
+    
     const capEl = document.getElementById('weeklyTrendRangeCaption');
     const chartTheme = getChartTheme();
     const weekly = insightsCalendarWeekSeries();
@@ -1111,16 +1140,16 @@ function initializeWeeklyMoodChartDesktop() {
         labels: weekly.labels,
         datasets: [
             {
-                label: 'Mood Score',
-                data: weekly.data,
+            label: 'Mood Score',
+            data: weekly.data,
                 borderColor: '#1D9E75',
-                backgroundColor: chartTheme.primarySoft,
-                borderWidth: 3,
+            backgroundColor: chartTheme.primarySoft,
+            borderWidth: 3,
                 tension: 0.35,
-                fill: true,
+            fill: true,
                 spanGaps: false,
                 pointBorderColor: '#1D9E75',
-                pointBorderWidth: 2,
+            pointBorderWidth: 2,
                 pointBackgroundColor: (context) => {
                     const i = context.dataIndex;
                     if (weekly.data[i] == null) return 'transparent';
@@ -1164,7 +1193,7 @@ function initializeWeeklyMoodChartDesktop() {
             c.restore();
         },
     };
-
+    
     const config = {
         type: 'line',
         data: weeklyData,
@@ -1630,11 +1659,16 @@ function initializeMoodByTagChart() {
             interaction: {
                 intersect: false,
                 mode: 'index'
-            }
+            },
+            onClick: insightsBarChartOnClick,
         }
     };
     
-    new Chart(ctx, config);
+    if (MOOD_BY_TAG_CHART) {
+        MOOD_BY_TAG_CHART.destroy();
+        MOOD_BY_TAG_CHART = null;
+    }
+    MOOD_BY_TAG_CHART = new Chart(ctx, config);
 }
 
 // Load Insights Data
@@ -1677,7 +1711,7 @@ function showNotification(message, type = 'info') {
                   : '#7FA7BF';
     const toastFg =
         window.DiariToastColors && window.DiariToastColors.fg ? window.DiariToastColors.fg(type) : '#ffffff';
-
+    
     notification.style.cssText = `
         position: fixed;
         top: 20px;

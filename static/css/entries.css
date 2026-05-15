@@ -1790,14 +1790,22 @@ html.theme-dark .entry-edited-pill {
         top: calc(100% + 0.45rem) !important;
         left: auto !important;
         right: 0 !important;
-        width: min(320px, calc(100vw - 1.5rem)) !important;
-        min-width: 260px !important;
-        max-width: min(340px, calc(100vw - 1.5rem)) !important;
+        width: min(228px, calc(100vw - 1.25rem)) !important;
+        min-width: 0 !important;
+        max-width: min(228px, calc(100vw - 1.25rem)) !important;
         max-height: min(72vh, 520px) !important;
         overflow-y: auto !important;
         z-index: 1200 !important;
         transform: translateY(0) !important;
         box-shadow: var(--box-shadow-hover) !important;
+    }
+
+    body.page-entries .search-filter-section .filter-menu.show .filter-section {
+        padding: 0.85rem 0.75rem !important;
+    }
+
+    body.page-entries .search-filter-section .filter-menu.show .filter-actions {
+        padding: 0.65rem 0.75rem !important;
     }
 
     /* Stored list cards: match desktop hierarchy (date + icon, time, title, excerpt; mood + edited pills in a row). */
@@ -1866,13 +1874,13 @@ html.theme-dark .entry-edited-pill {
 
     body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-mood {
         grid-column: 2 !important;
-        grid-row: 1 / span 2 !important;
+        grid-row: 1 !important;
         justify-self: end !important;
         align-self: start !important;
         display: inline-flex !important;
         flex-direction: row !important;
-        flex-wrap: wrap !important;
-        align-items: flex-start !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
         justify-content: flex-end !important;
         gap: 0.35rem !important;
         margin: 0 !important;
@@ -1880,10 +1888,15 @@ html.theme-dark .entry-edited-pill {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        width: auto !important;
+        width: max-content !important;
+        max-width: 100% !important;
         height: auto !important;
         min-width: 0 !important;
-        max-width: min(52%, 11.5rem) !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-mood .mood-label,
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-mood .entry-edited-pill {
+        flex: 0 0 auto !important;
     }
 
     body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label {

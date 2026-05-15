@@ -71,6 +71,39 @@ document.addEventListener('DOMContentLoaded', async function () {
     const OFFLINE_DB_STORE = 'pendingEntries';
     const MAX_IMAGE_WARN = 10;
     const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const IMAGE_EXT_TO_MIME = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        webp: 'image/webp',
+        gif: 'image/gif',
+    };
+
+    function coerceImageUploadFile(file) {
+        if (!file) return null;
+        const type = String(file.type || '').toLowerCase();
+        if (ACCEPTED_IMAGE_TYPES.has(type)) return file;
+        const name = String(file.name || '');
+        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+        const mime = IMAGE_EXT_TO_MIME[ext];
+        if (!mime || !ACCEPTED_IMAGE_TYPES.has(mime)) return null;
+        try {
+            return new File([file], name, { type: mime });
+        } catch (_) {
+            return file;
+        }
+    }
+
+    function filterImageUploadFiles(fileList) {
+        const files = [];
+        const skipped = [];
+        Array.from(fileList || []).forEach((raw) => {
+            const coerced = coerceImageUploadFile(raw);
+            if (coerced) files.push(coerced);
+            else if (raw) skipped.push(String(raw.name || 'image'));
+        });
+        return { files, skipped };
+    }
     let attachedImages = [];
     let lightboxIndex = 0;
     let dragDepth = 0;
@@ -312,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         updateImageProgress(localId, 85);
         const json = await res.json().catch(() => ({}));
         if (!res.ok || !json?.success || !json?.url) {
-            throw new Error(json?.error || 'Upload failed');
+            throw new Error(json?.error || `Upload failed (${res.status})`);
         }
         return String(json.url);
     }
@@ -477,7 +510,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     async function addImagesFromFiles(fileList) {
-        const files = Array.from(fileList || []).filter((f) => ACCEPTED_IMAGE_TYPES.has(String(f.type || '').toLowerCase()));
+        const { files, skipped } = filterImageUploadFiles(fileList);
+        if (skipped.length) {
+            alert(
+                'Some files were skipped. Use JPEG, PNG, WebP, or GIF. '
+                + '(iPhone HEIC photos: turn on Settings → Camera → Formats → Most Compatible.)'
+            );
+        }
         if (!files.length) return;
         const userId = getCurrentUserId();
         if (attachedImages.length + files.length > MAX_IMAGE_WARN) {
@@ -486,24 +525,38 @@ document.addEventListener('DOMContentLoaded', async function () {
         for (const file of files) {
             const item = makeImageItem({ name: file.name });
             attachedImages.push(item);
+            try {
+                const previewUrl = await fileToDataUrl(file);
+                attachedImages = attachedImages.map((img) => (
+                    img.id === item.id ? { ...img, dataUrl: previewUrl, progress: 8 } : img
+                ));
+            } catch (_) { /* preview optional */ }
             renderImageGallery();
             try {
                 if (isOnlineNow() && userId) {
                     const url = await uploadImageOnline(file, userId, item.id);
                     attachedImages = attachedImages.map((img) => (
-                        img.id === item.id ? { ...img, url, progress: 100 } : img
+                        img.id === item.id ? { ...img, url, dataUrl: '', progress: 100 } : img
                     ));
                 } else {
-                    updateImageProgress(item.id, 20);
-                    const dataUrl = await fileToDataUrl(file);
-                    attachedImages = attachedImages.map((img) => (
-                        img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
-                    ));
+                    if (!attachedImages.find((img) => img.id === item.id)?.dataUrl) {
+                        const dataUrl = await fileToDataUrl(file);
+                        attachedImages = attachedImages.map((img) => (
+                            img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
+                        ));
+                    } else {
+                        updateImageProgress(item.id, 100);
+                    }
                 }
             } catch (e) {
                 console.error('Image add failed:', e);
                 attachedImages = attachedImages.filter((img) => img.id !== item.id);
-                alert(`Could not add image: ${e.message || 'Unknown error'}`);
+                const msg = e.message || 'Unknown error';
+                alert(
+                    msg.includes('Upload failed')
+                        ? `${msg}. Check your connection and try again, or use a smaller JPEG/PNG.`
+                        : `Could not add image: ${msg}`
+                );
             }
             renderImageGallery();
         }
@@ -1519,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (isWriteEntryMobileLayout()) {
                 journalDateTimeInput.style.removeProperty('display');
             } else {
-                journalDateTimeInput.style.display = 'inline-block';
+            journalDateTimeInput.style.display = 'inline-block';
             }
             journalDateTimeInput.focus();
         });

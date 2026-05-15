@@ -68,6 +68,39 @@
     const ENTRY_EDIT_MEDIA_STORE = 'records';
     const MAX_ENTRY_IMAGES = 10;
     const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const IMAGE_EXT_TO_MIME = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        webp: 'image/webp',
+        gif: 'image/gif',
+    };
+
+    function coerceImageUploadFile(file) {
+        if (!file) return null;
+        const type = String(file.type || '').toLowerCase();
+        if (ACCEPTED_IMAGE_TYPES.has(type)) return file;
+        const name = String(file.name || '');
+        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+        const mime = IMAGE_EXT_TO_MIME[ext];
+        if (!mime || !ACCEPTED_IMAGE_TYPES.has(mime)) return null;
+        try {
+            return new File([file], name, { type: mime });
+        } catch (_) {
+            return file;
+        }
+    }
+
+    function filterImageUploadFiles(fileList) {
+        const files = [];
+        const skipped = [];
+        Array.from(fileList || []).forEach((raw) => {
+            const coerced = coerceImageUploadFile(raw);
+            if (coerced) files.push(coerced);
+            else if (raw) skipped.push(String(raw.name || 'image'));
+        });
+        return { files, skipped };
+    }
 
     function draftImagesKey(entryId) {
         return `entryDraftImg_${entryId}`;
@@ -937,15 +970,19 @@
             renderImageStrip();
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json?.success || !json?.url) {
-                throw new Error(json?.error || 'Upload failed');
+                throw new Error(json?.error || `Upload failed (${res.status})`);
             }
             return String(json.url);
         }
 
         async function addImagesFromFiles(fileList) {
-            const files = Array.from(fileList || []).filter((f) =>
-                ACCEPTED_IMAGE_TYPES.has(String(f.type || '').toLowerCase())
-            );
+            const { files, skipped } = filterImageUploadFiles(fileList);
+            if (skipped.length) {
+                window.alert(
+                    'Some files were skipped. Use JPEG, PNG, WebP, or GIF. '
+                    + '(iPhone HEIC: Settings → Camera → Formats → Most Compatible.)'
+                );
+            }
             if (!files.length) return;
             if (editorImages.length + files.length > MAX_ENTRY_IMAGES) {
                 window.alert(`Each entry allows at most ${MAX_ENTRY_IMAGES} images.`);
@@ -958,6 +995,12 @@
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
                 const item = makeImageItem({ name: file.name });
                 editorImages.push(item);
+                try {
+                    const previewUrl = await fileToDataUrl(file);
+                    editorImages = editorImages.map((img) =>
+                        img.id === item.id ? { ...img, dataUrl: previewUrl, progress: 8 } : img
+                    );
+                } catch (_) { /* preview optional */ }
                 renderImageStrip();
                 try {
                     if (isOnline() && userId) {
@@ -978,7 +1021,12 @@
                 } catch (e) {
                     console.error(e);
                     editorImages = editorImages.filter((img) => img.id !== item.id);
-                    window.alert(e.message || 'Could not add image.');
+                    const msg = e.message || 'Could not add image.';
+                    window.alert(
+                        msg.includes('Upload failed')
+                            ? `${msg}. Check your connection and try a smaller JPEG/PNG.`
+                            : msg
+                    );
                 }
                 renderImageStrip();
                 if (!isOnline()) {

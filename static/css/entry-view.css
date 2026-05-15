@@ -1053,6 +1053,52 @@ html.theme-dark .entry-view-strip-imgwrap {
 }
 
 @media (max-width: 768px) {
+    /* Edit tags: 3 per row, remove (×) inside pill */
+    body.page-entries-detail-open .entry-view-tags-inner,
+    .page-entry-view .entry-view-tags-inner {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 0.5rem !important;
+        align-items: stretch !important;
+        min-height: 0 !important;
+    }
+
+    body.page-entries-detail-open .entry-view-tag-pill,
+    .page-entry-view .entry-view-tag-pill {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        justify-content: space-between !important;
+        padding: 0.4rem 0.55rem 0.4rem 0.65rem !important;
+        overflow: hidden !important;
+    }
+
+    body.page-entries-detail-open .entry-view-tag-pill button,
+    .page-entry-view .entry-view-tag-pill button {
+        flex-shrink: 0 !important;
+        margin-left: 0.15rem !important;
+    }
+
+    body.page-entries-detail-open .entry-view-add-tag-wrap,
+    .page-entry-view .entry-view-add-tag-wrap {
+        grid-column: 1 / -1 !important;
+    }
+
+    /* Save & Analyze above bottom nav (inline entries edit) */
+    body.page-entries-detail-open .entries-detail-shell .entry-view-actions {
+        z-index: 1105 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: calc(4.85rem + env(safe-area-inset-bottom, 0px)) !important;
+        justify-content: center !important;
+        padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.page-entries-detail-open .entries-detail-shell .entry-view-main {
+        padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
     .entry-view-columns--split {
         flex-direction: column;
     }

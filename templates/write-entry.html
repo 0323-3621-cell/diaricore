@@ -132,6 +132,7 @@
             <!-- Journal Input Section -->
             <div class="journal-input-section">
                 <h2 class="section-title">Your Thoughts</h2>
+                <div class="write-entry-stack" id="writeEntryStack">
                 <div class="journal-container">
                     <div class="journal-header">
                         <div class="journal-datetime-wrap">
@@ -145,10 +146,9 @@
                             <i class="bi bi-mic"></i>
                         </button>
                     </div>
-                    <div class="entry-split-layout" id="entrySplitLayout">
-                        <div class="entry-main-pane">
+                    <div class="entry-main-pane">
                             <input id="journalTitleInput" class="journal-title-input" type="text" maxlength="180" placeholder="Give your entry a title..." />
-                            <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden />
+                            <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif" multiple hidden />
                             <textarea
                                 id="journalText"
                                 class="journal-textarea"
@@ -162,26 +162,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="entry-gallery-pane">
-                            <div class="entry-gallery-pane__stack">
-                                <div class="entry-gallery-scroll" id="entryGalleryScroll">
-                                    <div class="entry-gallery diari-scrollbar" id="entryGallery"></div>
-                                </div>
-                                <div class="entry-gallery-pane__sticky">
-                                    <div class="entry-gallery-toolbar" id="entryGalleryToolbar" hidden>
-                                        <button type="button" class="entry-gallery-toolbar__btn" id="addPhotosBtn">
-                                            <i class="bi bi-images"></i>
-                                            <span>Add Photos</span>
-                                        </button>
-                                    </div>
-                                    <button type="button" class="entry-gallery-add-sticky" id="entryGalleryStickyAdd" hidden>
-                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                                        <span>Add more photos</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="journal-footer">
                         <div class="character-counter">
                             <span id="charCount">0</span> characters
@@ -189,8 +169,31 @@
                         <div class="photo-count-badge" id="photoCountBadge" hidden>0 photos attached</div>
                     </div>
                 </div>
+
+                <div class="entry-gallery-pane write-entry-photos-panel" id="writeEntryPhotosPanel">
+                    <p class="write-entry-photos-panel__label">Photos</p>
+                    <div class="entry-gallery-pane__stack">
+                        <div class="entry-gallery-scroll" id="entryGalleryScroll">
+                            <div class="entry-gallery diari-scrollbar" id="entryGallery"></div>
+                        </div>
+                        <div class="entry-gallery-pane__sticky">
+                            <div class="entry-gallery-toolbar" id="entryGalleryToolbar" hidden>
+                                <button type="button" class="entry-gallery-toolbar__btn" id="addPhotosBtn">
+                                    <i class="bi bi-images"></i>
+                                    <span>Add Photos</span>
+                                </button>
+                            </div>
+                            <button type="button" class="entry-gallery-add-sticky" id="entryGalleryStickyAdd" hidden>
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                <span>Add more photos</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
             </div>
-            
+
             <!-- Action Buttons -->
             <div class="action-buttons-section">
                 <button class="btn-save-entry" id="saveEntryBtn">

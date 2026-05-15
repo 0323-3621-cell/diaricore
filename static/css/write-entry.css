@@ -1253,6 +1253,112 @@ html.theme-dark .entry-img-skeleton {
             --g-viewport-h: calc(2 * var(--g-cell) + 1 * var(--g-gap));
         }
     }
+
+    /* Photos panel: separate block below journal input (mobile only layout) */
+    body.page-write-entry .write-entry-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    body.page-write-entry .journal-container {
+        margin-bottom: 0;
+    }
+
+    body.page-write-entry .write-entry-photos-panel {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
+    body.page-write-entry .write-entry-photos-panel__label {
+        margin: 0 0 0.45rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.7;
+        color: var(--text-secondary);
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-pane__stack {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--background-soft);
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-scroll {
+        border: none;
+        border-radius: 12px 12px 0 0;
+        min-height: 140px;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery.is-empty {
+        min-height: 140px;
+    }
+}
+
+/* Desktop: restore side-by-side journal + gallery inside one card */
+@media (min-width: 769px) {
+    body.page-write-entry .write-entry-stack {
+        display: grid;
+        grid-template-columns: 1fr minmax(200px, 42%);
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+            "we-header we-header"
+            "we-main we-gallery"
+            "we-footer we-footer";
+        background-color: var(--card-background);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--box-shadow);
+    }
+
+    body.page-write-entry .write-entry-stack .journal-container {
+        display: contents;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    body.page-write-entry .write-entry-stack .journal-header {
+        grid-area: we-header;
+    }
+
+    body.page-write-entry .write-entry-stack .entry-main-pane {
+        grid-area: we-main;
+        padding: 0 0 0 0.9rem;
+    }
+
+    body.page-write-entry .write-entry-stack .journal-footer {
+        grid-area: we-footer;
+    }
+
+    body.page-write-entry .write-entry-stack .write-entry-photos-panel {
+        grid-area: we-gallery;
+        align-self: stretch;
+        max-width: none;
+        width: auto;
+        margin: 0;
+        padding: 0.9rem 0.95rem 0.55rem 0;
+        border: none;
+        background: transparent;
+    }
+
+    body.page-write-entry .write-entry-photos-panel__label {
+        display: none;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-pane__stack {
+        height: 100%;
+        min-height: 200px;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+    }
 }
 
 @media (max-width: 480px) {

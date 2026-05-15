@@ -1087,13 +1087,9 @@ html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay 
         padding: 1rem;
     }
     
-    /* Inline search bar moved to mobile navbar expand panel; keep filter menu in DOM */
-    .search-filter-container {
-        display: none !important;
-    }
-    
+    /* Mobile: show the same search + filter row as desktop (entries page only loads this stylesheet). */
     .search-filter-section {
-        margin-bottom: 0 !important;
+        margin-bottom: 0.65rem !important;
         min-height: 0 !important;
     }
     
@@ -1733,4 +1729,145 @@ html.theme-dark .entry-edited-pill {
 
 .page-entries-detail-open .entries-content {
     min-height: 50vh;
+}
+
+/*
+ * Mobile-only entries list polish (max-width: 768px).
+ * Entries page loads this stylesheet after side-bar.css so these overrides win where intended.
+ * Desktop (min-width: 769px) is unchanged.
+ */
+@media (max-width: 768px) {
+    body.page-entries .mobile-app-topbar__btn--search-toggle {
+        display: none !important;
+    }
+
+    body.page-entries .mobile-app-topbar__filter-trigger {
+        display: none !important;
+    }
+
+    body.page-entries .filter-text {
+        display: inline !important;
+    }
+
+    body.page-entries .entries-section.entries-section--main > .entries-toolbar {
+        margin-bottom: 0.35rem !important;
+    }
+
+    body.page-entries .entries-section .month-header {
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+        padding: 0.35rem 0 0.45rem !important;
+    }
+
+    body.page-entries .entries-section .month-header::after {
+        background-color: var(--border-color) !important;
+    }
+
+    body.page-entries .entries-section .month-header .month-text {
+        color: var(--primary-color) !important;
+    }
+
+    body.page-entries .entries-section .entries-grid--paged {
+        margin-top: 0.85rem !important;
+    }
+
+    html.theme-dark body.page-entries .entries-month-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23c5d4cc' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M4 6l4 4 4-4'/%3E%3C/svg%3E") !important;
+    }
+
+    /* Stored list cards: match desktop hierarchy (date + icon, time, title, excerpt; mood + edited pills in a row). */
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-meta {
+        display: contents !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-header {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        grid-template-rows: auto auto auto !important;
+        column-gap: 0.65rem !important;
+        row-gap: 0.15rem !important;
+        align-items: start !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-date {
+        grid-column: 1 !important;
+        grid-row: 1 !important;
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 0.45rem !important;
+        align-self: start !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        color: var(--text-secondary) !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        flex-shrink: 1 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-date::before,
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-date::after {
+        content: none !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-date i {
+        font-size: 1rem !important;
+        color: var(--primary-color) !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-time {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        font-size: 0.8rem !important;
+        color: var(--text-muted) !important;
+        font-weight: 500 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-title {
+        grid-column: 1 / -1 !important;
+        grid-row: 3 !important;
+        margin: 0.35rem 0 0 !important;
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        line-height: 1.25 !important;
+        color: var(--text-dark) !important;
+        align-self: stretch !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-mood {
+        grid-column: 2 !important;
+        grid-row: 1 / span 2 !important;
+        justify-self: end !important;
+        align-self: start !important;
+        display: inline-flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: flex-start !important;
+        justify-content: flex-end !important;
+        gap: 0.35rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: auto !important;
+        height: auto !important;
+        min-width: 0 !important;
+        max-width: min(52%, 11.5rem) !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-content {
+        margin-top: 0 !important;
+        padding-top: 0.65rem !important;
+        border-top: 1px solid var(--border-color) !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-excerpt {
+        -webkit-line-clamp: 2 !important;
+    }
 }

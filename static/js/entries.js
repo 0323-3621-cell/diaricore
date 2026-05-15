@@ -636,8 +636,17 @@ function openMobileNavbarSearchFromQuery() {
     if (window.innerWidth > 768) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('openSearch') !== '1') return;
-    if (typeof window.diariOpenMobileTopbarSearch === 'function') {
+    const searchToggle = document.querySelector('.mobile-app-topbar__btn--search-toggle');
+    const toggleVisible = searchToggle && searchToggle.offsetParent !== null
+        && window.getComputedStyle(searchToggle).display !== 'none';
+    if (toggleVisible && typeof window.diariOpenMobileTopbarSearch === 'function') {
         window.diariOpenMobileTopbarSearch();
+    } else {
+        const inlineSearch = document.querySelector('.entries-content .search-input');
+        if (inlineSearch) {
+            inlineSearch.focus({ preventScroll: false });
+            inlineSearch.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
     }
     params.delete('openSearch');
     const q = params.toString();

@@ -1179,7 +1179,7 @@ html.theme-dark .entry-img-skeleton {
         padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
     }
 
-    body .mobile-bottom-nav {
+    body.page-write-entry .mobile-bottom-nav {
         display: none !important;
     }
 

@@ -24,62 +24,27 @@ document.addEventListener('DOMContentLoaded', async function () {
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
     }
 
-    let writeImageUploadChain = Promise.resolve();
     let writeImageItemSeq = 0;
-    const MOBILE_IMAGE_UPLOAD_PARALLEL = 3;
-    let mobileWriteUploadActive = 0;
-    const mobileWriteUploadWait = [];
-
-    function enqueueWriteImageUpload(task) {
-        const run = writeImageUploadChain.then(() => task());
-        writeImageUploadChain = run.catch(() => {});
-        return run;
-    }
-
-    function scheduleWriteImageUpload(task) {
-        if (!isWriteEntryMobileLayout()) {
-            return enqueueWriteImageUpload(task);
-        }
-        return new Promise((resolve, reject) => {
-            const run = async () => {
-                mobileWriteUploadActive += 1;
-                try {
-                    resolve(await task());
-                } catch (err) {
-                    reject(err);
-                } finally {
-                    mobileWriteUploadActive -= 1;
-                    const next = mobileWriteUploadWait.shift();
-                    if (next) next();
-                }
-            };
-            if (mobileWriteUploadActive < MOBILE_IMAGE_UPLOAD_PARALLEL) {
-                void run();
-            } else {
-                mobileWriteUploadWait.push(run);
-            }
-        });
-    }
+    const IU = window.DiariImageUpload || {};
+    const scheduleWriteImageUpload = typeof IU.createUploadPool === 'function'
+        ? IU.createUploadPool(IU.PARALLEL_UPLOADS)
+        : (task) => Promise.resolve().then(task);
 
     function isImageStillUploading(im) {
         const p = Number(im?.progress ?? 0);
         return p > 0 && p < 100;
     }
 
-    function entryImgSpinnerHtml() {
+    function entryImgSpinnerHtml(bytesLabel) {
+        if (typeof IU.spinnerHtml === 'function') return IU.spinnerHtml(bytesLabel);
         return '<div class="entry-img-spinner" role="status" aria-label="Uploading"><span class="entry-img-spinner__ring" aria-hidden="true"></span></div>';
     }
 
-    function cloneUploadFile(file) {
-        if (!file) return file;
-        try {
-            return new File([file], file.name || 'photo.jpg', {
-                type: file.type || 'image/jpeg',
-                lastModified: file.lastModified || Date.now(),
-            });
-        } catch (_) {
-            return file;
+    function uploadBytesLabel(im) {
+        if (typeof IU.formatProgress === 'function') {
+            return IU.formatProgress(im?.uploadLoaded, im?.uploadTotal);
         }
+        return '';
     }
 
     function patchAttachedImage(id, patch) {
@@ -386,25 +351,34 @@ document.addEventListener('DOMContentLoaded', async function () {
         writeGalleryResizeObserver.observe(scrollEl);
     }
 
-    function updateImageProgress(id, progress) {
-        patchAttachedImage(id, { progress });
-        if (isWriteEntryMobileLayout()) {
-            const bar = document.querySelector(`#entryGallery [data-image-id="${id}"] .entry-img-progress span`);
-            if (bar) bar.style.width = `${Math.max(8, progress)}%`;
-            const item = document.querySelector(`#entryGallery [data-image-id="${id}"]`);
-            const uploading = isImageStillUploading(attachedImages.find((img) => img.id === id) || {});
-            if (item) {
-                let spinner = item.querySelector('.entry-img-spinner');
-                if (uploading && !spinner) {
-                    const wrap = item.querySelector('.entry-gallery-img-wrap');
-                    if (wrap) wrap.insertAdjacentHTML('beforeend', entryImgSpinnerHtml());
-                } else if (!uploading && spinner) {
-                    spinner.remove();
-                }
+    function patchWriteImageUploadDom(id) {
+        const im = attachedImages.find((img) => img.id === id);
+        const item = document.querySelector(`#entryGallery [data-image-id="${id}"]`);
+        if (!im || !item) return false;
+        const bar = item.querySelector('.entry-img-progress span');
+        if (bar) bar.style.width = `${Math.max(8, im.progress)}%`;
+        const uploading = isImageStillUploading(im);
+        const wrap = item.querySelector('.entry-gallery-img-wrap');
+        let spinner = item.querySelector('.entry-img-spinner');
+        const label = uploadBytesLabel(im);
+        if (uploading) {
+            if (!spinner && wrap) {
+                wrap.insertAdjacentHTML('beforeend', entryImgSpinnerHtml(label));
+            } else if (spinner && typeof IU.setSpinnerBytes === 'function') {
+                IU.setSpinnerBytes(spinner, label);
+            } else if (spinner) {
+                const bytesEl = spinner.querySelector('.entry-img-spinner__bytes');
+                if (bytesEl) bytesEl.textContent = label;
             }
-            return;
+        } else if (spinner) {
+            spinner.remove();
         }
-        renderImageGallery();
+        return true;
+    }
+
+    function updateImageUploadState(id, patch) {
+        patchAttachedImage(id, patch);
+        if (!patchWriteImageUploadDom(id)) renderImageGallery();
     }
 
     async function fileToDataUrl(file) {
@@ -428,32 +402,44 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!userId) {
             throw new Error('Please log in again to upload photos.');
         }
-        const uploadFile = cloneUploadFile(file);
         return scheduleWriteImageUpload(async () => {
-            updateImageProgress(localId, 30);
+            const prepared = typeof IU.prepareUploadFile === 'function'
+                ? await IU.prepareUploadFile(file)
+                : file;
+            const total = prepared.size || file.size || 0;
+            updateImageUploadState(localId, { uploadTotal: total, uploadLoaded: 0, progress: 2 });
 
-            const retryDelay = isWriteEntryMobileLayout() ? 150 : 300;
-            let lastErr = null;
-            for (let attempt = 0; attempt < 3; attempt++) {
-                try {
-                    const attemptForm = new FormData();
-                    attemptForm.append('file', uploadFile);
-                    attemptForm.append('userId', String(userId));
-                    const res = await fetch('/api/uploads/image', { method: 'POST', body: attemptForm });
-                    updateImageProgress(localId, 85);
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok || !json?.success || !json?.url) {
-                        throw new Error(json?.error || `Upload failed (${res.status})`);
-                    }
-                    return String(json.url);
-                } catch (e) {
-                    lastErr = e;
-                    if (attempt < 2) {
-                        await new Promise((r) => setTimeout(r, retryDelay * (attempt + 1)));
-                    }
-                }
+            const onProgress = (loaded, uploadTotal) => {
+                const progress = typeof IU.progressFromBytes === 'function'
+                    ? IU.progressFromBytes(loaded, uploadTotal)
+                    : Math.min(99, Math.round((loaded / Math.max(1, uploadTotal)) * 100));
+                updateImageUploadState(localId, {
+                    uploadLoaded: loaded,
+                    uploadTotal,
+                    progress,
+                });
+            };
+
+            if (typeof IU.uploadWithRetries === 'function') {
+                const url = await IU.uploadWithRetries(prepared, userId, onProgress, 3);
+                updateImageUploadState(localId, {
+                    uploadLoaded: prepared.size || total,
+                    uploadTotal: prepared.size || total,
+                    progress: 100,
+                });
+                return url;
             }
-            throw lastErr || new Error('Upload failed');
+
+            const form = new FormData();
+            form.append('file', prepared);
+            form.append('userId', String(userId));
+            const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok || !json?.success || !json?.url) {
+                throw new Error(json?.error || `Upload failed (${res.status})`);
+            }
+            updateImageUploadState(localId, { progress: 100, uploadLoaded: total, uploadTotal: total });
+            return String(json.url);
         });
     }
 
@@ -465,6 +451,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             dataUrl,
             name,
             progress: 0,
+            uploadLoaded: 0,
+            uploadTotal: 0,
         };
     }
 
@@ -555,7 +543,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const progress = uploading
                 ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
                 : '';
-            const spinner = uploading ? entryImgSpinnerHtml() : '';
+            const spinner = uploading ? entryImgSpinnerHtml(uploadBytesLabel(img)) : '';
             const wrapState = hasSrc
                 ? 'entry-gallery-img-wrap entry-gallery-img-wrap--loading'
                 : 'entry-gallery-img-wrap entry-gallery-img-wrap--pending';
@@ -637,89 +625,52 @@ document.addEventListener('DOMContentLoaded', async function () {
             alert('You added more than 10 images. This is okay, but it may affect upload speed.');
         }
 
-        if (isWriteEntryMobileLayout()) {
-            const batch = [];
-            for (const file of uploadFiles) {
-                const item = makeImageItem({ name: file.name });
-                item.progress = 5;
-                attachedImages.push(item);
-                batch.push({ file, item });
-            }
-            renderImageGallery();
-
-            await Promise.all(
-                batch.map(async ({ file, item }) => {
-                    try {
-                        const previewUrl = await fileToDataUrl(file);
-                        patchAttachedImage(item.id, { dataUrl: previewUrl, progress: 10 });
-                    } catch (_) { /* preview optional */ }
-                })
-            );
-            renderImageGallery();
-
-            let uploadFailures = 0;
-            await Promise.all(
-                batch.map(async ({ file, item }) => {
-                    try {
-                        if (isOnlineNow() && userId) {
-                            const url = await uploadImageOnline(cloneUploadFile(file), userId, item.id);
-                            patchAttachedImage(item.id, { url, dataUrl: '', progress: 100 });
-                        } else {
-                            const dataUrl = await fileToDataUrl(file);
-                            patchAttachedImage(item.id, { dataUrl, progress: 100 });
-                        }
-                    } catch (e) {
-                        console.error('Image add failed:', e);
-                        attachedImages = attachedImages.filter((img) => img.id !== item.id);
-                        uploadFailures += 1;
-                    }
-                })
-            );
-            renderImageGallery();
-            if (uploadFailures) {
-                alert(
-                    uploadFailures === 1
-                        ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
-                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
-                );
-            }
-            return;
-        }
-
-        let uploadFailures = 0;
+        const batch = [];
         for (const file of uploadFiles) {
             const item = makeImageItem({ name: file.name });
+            item.progress = 5;
+            item.uploadTotal = file.size || 0;
+            item.uploadLoaded = 0;
             attachedImages.push(item);
-            try {
-                const previewUrl = await fileToDataUrl(file);
-                attachedImages = attachedImages.map((img) => (
-                    img.id === item.id ? { ...img, dataUrl: previewUrl, progress: 8 } : img
-                ));
-            } catch (_) { /* preview optional */ }
-            renderImageGallery();
-            try {
-                if (isOnlineNow() && userId) {
-                    const url = await uploadImageOnline(file, userId, item.id);
-                    attachedImages = attachedImages.map((img) => (
-                        img.id === item.id ? { ...img, url, dataUrl: '', progress: 100 } : img
-                    ));
-                } else {
-                    if (!attachedImages.find((img) => img.id === item.id)?.dataUrl) {
-                        const dataUrl = await fileToDataUrl(file);
-                        attachedImages = attachedImages.map((img) => (
-                            img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
-                        ));
-                    } else {
-                        updateImageProgress(item.id, 100);
-                    }
-                }
-            } catch (e) {
-                console.error('Image add failed:', e);
-                attachedImages = attachedImages.filter((img) => img.id !== item.id);
-                uploadFailures += 1;
-            }
-            renderImageGallery();
+            batch.push({ file, item });
         }
+        renderImageGallery();
+
+        await Promise.all(
+            batch.map(async ({ file, item }) => {
+                try {
+                    const previewUrl = await fileToDataUrl(file);
+                    patchAttachedImage(item.id, { dataUrl: previewUrl, progress: 10 });
+                    patchWriteImageUploadDom(item.id);
+                } catch (_) { /* preview optional */ }
+            })
+        );
+        renderImageGallery();
+
+        let uploadFailures = 0;
+        await Promise.all(
+            batch.map(async ({ file, item }) => {
+                try {
+                    if (isOnlineNow() && userId) {
+                        const url = await uploadImageOnline(file, userId, item.id);
+                        patchAttachedImage(item.id, {
+                            url,
+                            dataUrl: '',
+                            progress: 100,
+                            uploadLoaded: item.uploadTotal || file.size || 0,
+                        });
+                    } else {
+                        const dataUrl = await fileToDataUrl(file);
+                        patchAttachedImage(item.id, { dataUrl, progress: 100 });
+                    }
+                } catch (e) {
+                    console.error('Image add failed:', e);
+                    attachedImages = attachedImages.filter((img) => img.id !== item.id);
+                    uploadFailures += 1;
+                }
+            })
+        );
+        renderImageGallery();
         if (uploadFailures) {
             alert(
                 uploadFailures === 1

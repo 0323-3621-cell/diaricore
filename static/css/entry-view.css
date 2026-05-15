@@ -930,6 +930,50 @@ html.theme-dark .entry-view-image-strip__sticky {
     z-index: 5;
 }
 
+.entry-view-strip-item .entry-img-spinner {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.12);
+}
+
+.entry-view-strip-item .entry-img-spinner__ring {
+    width: 1.65rem;
+    height: 1.65rem;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    border-top-color: var(--primary-color, #4c8060);
+    border-radius: 50%;
+    animation: entry-img-spinner-spin 0.7s linear infinite;
+}
+
+.entry-view-strip-item .entry-img-spinner__bytes {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    text-align: center;
+    padding: 0 0.25rem;
+}
+
+@keyframes entry-img-spinner-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+html.theme-dark .entry-view-strip-item .entry-img-spinner__bytes {
+    color: rgba(255, 255, 255, 0.92);
+}
+
 .entry-view-strip-imgwrap .entry-img-skeleton {
     position: absolute;
     inset: 0;

@@ -219,7 +219,19 @@
 .tag-btn.selected {
     border-color: var(--primary-color);
     background-color: var(--primary-color);
-    color: white;
+    color: #fff;
+}
+
+html.theme-dark body.page-write-entry .tag-btn.selected {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+html.theme-dark body.page-write-entry .tag-btn.selected i,
+html.theme-dark body.page-write-entry .tag-btn.selected span,
+html.theme-dark body.page-write-entry .tag-btn.selected .tag-btn__icon-svg {
+    color: #fff !important;
 }
 
 .tag-btn.add-tag {
@@ -2299,19 +2311,29 @@ html.theme-dark .mood-result-badge--amber {
     font-size: 0.78rem;
 }
 
-/* Desktop: icon-only grid, 6 rows (8×6 = 48/page) — pagination visible without scrolling */
+/* Desktop: icon-only grid, 6 rows (8×6 = 48/page) — pagination always visible */
 @media (min-width: 769px) {
     .custom-tag-modal__body {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        max-height: min(58vh, 520px);
+        max-height: min(62vh, 560px);
+        min-height: 0;
+    }
+
+    .custom-tag-modal__body > .custom-tag-inline-alert,
+    .custom-tag-modal__body > .custom-tag-modal__label,
+    .custom-tag-modal__body > .custom-tag-modal__input,
+    .custom-tag-modal__body > .custom-tag-modal__hint {
+        flex-shrink: 0;
     }
 
     .custom-tag-icons-grid {
         grid-template-columns: repeat(8, minmax(0, 1fr));
         flex: 0 0 auto;
-        overflow: hidden;
+        max-height: calc(6 * 48px + 5 * 0.45rem);
+        overflow-x: hidden;
+        overflow-y: auto;
         align-content: start;
     }
 
@@ -2327,9 +2349,15 @@ html.theme-dark .mood-result-badge--amber {
     }
 
     .custom-tag-pagination {
+        display: flex !important;
         flex-shrink: 0;
-        margin-top: 0.65rem;
-        padding-top: 0.15rem;
+        margin-top: 0.75rem;
+        padding-top: 0.65rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-background);
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
     }
 }
 

@@ -141,7 +141,7 @@ html.theme-dark body.page-entries .search-input {
 }
 
 html.theme-dark .tag,
-html.theme-dark .tag-btn,
+html.theme-dark .tag-btn:not(.selected),
 html.theme-dark .filter-option,
 html.theme-dark .privacy-control .btn-export,
 html.theme-dark .privacy-control .btn-privacy,
@@ -149,6 +149,19 @@ html.theme-dark .btn-edit {
     background: #1c262b !important;
     color: var(--text-dark) !important;
     border-color: var(--border-color) !important;
+}
+
+html.theme-dark .tag-btn.selected,
+html.theme-dark body.page-write-entry .tag-btn.selected {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+html.theme-dark .tag-btn.selected i,
+html.theme-dark .tag-btn.selected span,
+html.theme-dark .tag-btn.selected .tag-btn__icon-svg {
+    color: #fff !important;
 }
 
 html.theme-dark .toggle-slider {

@@ -1720,6 +1720,16 @@ html.insights-consistency-await-data #insightsPanelConsistency .insights-consist
     min-height: 240px;
 }
 
+@media (min-width: 769px) {
+    .insights-panel--consistency {
+        gap: 2.35rem;
+    }
+
+    .insights-panel--consistency .ins-card--consistency-week {
+        margin-top: 0.35rem;
+    }
+}
+
 @media (max-width: 1024px) {
     .insights-consistency-metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));

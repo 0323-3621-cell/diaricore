@@ -795,6 +795,18 @@ html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay 
     display: none;
 }
 
+.entries-empty-state__icon--journal {
+    display: none;
+}
+
+.entries-content--no-journal-entries .entries-empty-state__icon--search {
+    display: none;
+}
+
+.entries-content--no-journal-entries .entries-empty-state__icon--journal {
+    display: block;
+}
+
 @media (max-width: 768px) {
     .entries-content--empty-results .entries-section:not(.entries-section--main),
     .entries-content--empty-results .load-more-section {

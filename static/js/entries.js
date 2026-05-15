@@ -299,14 +299,8 @@ function initializeEntriesFromStorage(options = {}) {
         if (paginationEl) paginationEl.hidden = true;
         main.classList.add('entries-content--empty-results');
 
-        const desktopTitle = emptyState.querySelector('.entries-empty-state__title--desktop');
-        const desktopHint = emptyState.querySelector('.entries-empty-state__hint--desktop');
-        const mobileTitle = emptyState.querySelector('.entries-empty-state__title--mobile');
-        const mobileHint = emptyState.querySelector('.entries-empty-state__hint--mobile');
-        if (desktopTitle) desktopTitle.textContent = 'No entries yet';
-        if (desktopHint) desktopHint.textContent = 'Your journal is still empty. Write your first entry to start tracking your journey.';
-        if (mobileTitle) mobileTitle.textContent = 'No entries yet';
-        if (mobileHint) mobileHint.textContent = 'Write your first entry to get started.';
+        main.classList.add('entries-content--no-journal-entries');
+        updateEntriesEmptyStateCopy(true);
         entriesByMonthKey = {};
         entriesMonthKeysOrdered = [];
         entriesSelectedMonthKey = '';
@@ -553,11 +547,43 @@ function hasActiveSearchOrFilters() {
     return document.querySelectorAll('.filter-option input[type="checkbox"]:checked').length > 0;
 }
 
+function updateEntriesEmptyStateCopy(noJournalEntries) {
+    const emptyState = document.getElementById('entriesEmptyState');
+    if (!emptyState) return;
+    const desktopTitle = emptyState.querySelector('.entries-empty-state__title--desktop');
+    const desktopHint = emptyState.querySelector('.entries-empty-state__hint--desktop');
+    const mobileTitle = emptyState.querySelector('.entries-empty-state__title--mobile');
+    const mobileHint = emptyState.querySelector('.entries-empty-state__hint--mobile');
+    if (noJournalEntries) {
+        if (desktopTitle) desktopTitle.textContent = 'No entries yet';
+        if (desktopHint) {
+            desktopHint.textContent = 'Your journal is still empty. Write your first entry to start tracking your journey.';
+        }
+        if (mobileTitle) mobileTitle.textContent = 'No entries yet';
+        if (mobileHint) mobileHint.textContent = 'Write your first entry to get started.';
+        return;
+    }
+    if (desktopTitle) desktopTitle.textContent = 'No entries match your search or filters';
+    if (desktopHint) {
+        desktopHint.textContent = 'Try different keywords, clear the search box, or adjust filters to see your journal entries.';
+    }
+    if (mobileTitle) mobileTitle.textContent = 'No matches';
+    if (mobileHint) mobileHint.textContent = 'Try other words or clear the search bar.';
+}
+
 function syncEntriesEmptyResultsLayout(visibleCount) {
     const main = document.querySelector('.entries-content');
     if (!main) return;
+    const noJournalEntries = entriesMasterSorted.length === 0;
+    if (noJournalEntries) {
+        main.classList.add('entries-content--empty-results', 'entries-content--no-journal-entries');
+        updateEntriesEmptyStateCopy(true);
+        return;
+    }
+    main.classList.remove('entries-content--no-journal-entries');
     if (visibleCount === 0 && hasActiveSearchOrFilters()) {
         main.classList.add('entries-content--empty-results');
+        updateEntriesEmptyStateCopy(false);
     } else {
         main.classList.remove('entries-content--empty-results');
     }

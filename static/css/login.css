@@ -918,9 +918,75 @@ body {
         display: block;
         font-size: 14px;
         font-weight: 400;
-        color: var(--text-secondary);
+        color: #4a5c68;
         margin-bottom: 2rem;
         text-align: left;
+    }
+
+    /* Light form card: readable secondary text + light inputs (overrides global dark-mode inputs) */
+    .login-left-panel .form-subtitle {
+        color: #4a5c68 !important;
+    }
+
+    .login-left-panel .forgot-password {
+        color: #4a5c68 !important;
+    }
+
+    .login-left-panel .divider,
+    .login-left-panel .divider span {
+        color: #4a5c68 !important;
+    }
+
+    .login-left-panel .signup-link {
+        color: #4a5c68 !important;
+    }
+
+    .login-left-panel .form-input,
+    .login-left-panel .input-wrapper .form-select-input {
+        background-color: #ffffff !important;
+        color: #1a2830 !important;
+        border-color: #cfd8dc !important;
+        -webkit-text-fill-color: #1a2830 !important;
+    }
+
+    .login-left-panel .form-input::placeholder {
+        color: #6b7d8a !important;
+    }
+
+    .login-left-panel .form-select-input option {
+        color: #1a2830 !important;
+        background: #ffffff !important;
+    }
+
+    .login-left-panel .input-icon {
+        color: #5a6d7a !important;
+    }
+
+    .login-left-panel .input-wrapper .floating-label {
+        color: #6b7d8a !important;
+    }
+
+    .login-left-panel .input-wrapper.has-content .floating-label,
+    .login-left-panel .input-wrapper:focus-within .floating-label,
+    .login-left-panel .input-wrapper--static-label .floating-label {
+        color: var(--primary-color) !important;
+    }
+
+    .login-left-panel .input-wrapper.has-content .floating-label::before,
+    .login-left-panel .input-wrapper:focus-within .floating-label::before,
+    .login-left-panel .input-wrapper--static-label .floating-label::before {
+        background: #ffffff !important;
+    }
+
+    .login-left-panel .btn-google {
+        background-color: #ffffff !important;
+        border-color: #cfd8dc !important;
+        color: #1a2830 !important;
+    }
+
+    .login-left-panel .btn-google:hover {
+        background-color: #f4f7f8 !important;
+        border-color: var(--primary-color) !important;
     }
 }
 

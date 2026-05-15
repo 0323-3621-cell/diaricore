@@ -2630,6 +2630,127 @@ html.theme-dark .profile-security-status span {
     body.page-profile.page-profile-section-open #profileSectionShell.profile-section-shell {
         padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));
     }
+
+    /* Dark mode — mobile profile, settings, preferences, privacy */
+    html.theme-dark body.page-profile .profile-card {
+        background: var(--card-background) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: var(--box-shadow) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-name {
+        color: var(--text-dark) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-email {
+        color: var(--text-secondary) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-stats-section {
+        border-top-color: var(--border-color) !important;
+    }
+
+    html.theme-dark body.page-profile .stat-number {
+        color: var(--primary-light) !important;
+    }
+
+    html.theme-dark body.page-profile .stat-label {
+        color: var(--text-muted) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-account-hub__title,
+    html.theme-dark body.page-profile .profile-account-hub__subtitle {
+        color: var(--text-dark) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-account-hub__subtitle {
+        color: var(--text-secondary) !important;
+    }
+
+    html.theme-dark body.page-profile .settings-grid.profile-account-hub__grid,
+    html.theme-dark body.page-profile button.profile-account-card.setting-card {
+        background: var(--card-background) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: var(--box-shadow) !important;
+    }
+
+    html.theme-dark body.page-profile .setting-icon {
+        background: var(--background-soft) !important;
+        color: var(--primary-light) !important;
+    }
+
+    html.theme-dark body.page-profile .setting-content .setting-title {
+        color: var(--text-dark) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-hub__title {
+        color: var(--text-muted) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-hub__card {
+        background: var(--card-background) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: var(--box-shadow) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-row {
+        border-bottom-color: var(--divider-color) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-row:hover {
+        background: var(--background-soft) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-row__label {
+        color: var(--text-dark) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-row__icon {
+        background: var(--background-soft) !important;
+        color: var(--primary-light) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-settings-row__chevron {
+        color: var(--text-muted) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-preferences-stack,
+    html.theme-dark body.page-profile .privacy-options {
+        background: var(--card-background) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: var(--box-shadow) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-prefs-eyebrow {
+        background: var(--background-soft) !important;
+        color: var(--text-secondary) !important;
+    }
+
+    html.theme-dark body.page-profile .profile-preferences-stack .notifications-item:first-of-type,
+    html.theme-dark body.page-profile .privacy-item:first-of-type {
+        border-bottom-color: var(--divider-color) !important;
+    }
+
+    html.theme-dark body.page-profile .appearance-info .appearance-subtitle,
+    html.theme-dark body.page-profile .notifications-info .notifications-subtitle,
+    html.theme-dark body.page-profile .privacy-info h3,
+    html.theme-dark body.page-profile .privacy-subtitle {
+        color: var(--text-dark) !important;
+    }
+
+    html.theme-dark body.page-profile .appearance-item__leading-icon,
+    html.theme-dark body.page-profile .notifications-item__leading-icon,
+    html.theme-dark body.page-profile .privacy-item__leading-icon {
+        background: var(--background-soft) !important;
+        color: var(--primary-light) !important;
+    }
+
+    html.theme-dark body.page-profile .btn-export,
+    html.theme-dark body.page-profile .btn-privacy {
+        background: var(--background-soft) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-dark) !important;
+    }
 }
 
 /* TOTP (authenticator) setup modal */

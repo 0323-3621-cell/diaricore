@@ -1306,17 +1306,43 @@ html.theme-dark .entry-img-skeleton {
         border-radius: 12px;
         overflow: hidden;
         background: var(--background-soft);
-        min-height: 200px;
+        min-height: 240px;
     }
 
     body.page-write-entry .write-entry-photos-panel .entry-gallery-scroll {
         border: none;
         border-radius: 12px 12px 0 0;
-        min-height: 180px;
+        min-height: 220px;
         height: auto !important;
-        max-height: min(52vw, 320px) !important;
+        max-height: min(68vw, 400px) !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-img-wrap .entry-img-spinner {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        background: rgba(15, 23, 42, 0.14);
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-img-spinner__ring {
+        width: 1.65rem;
+        height: 1.65rem;
+        border: 2.5px solid rgba(255, 255, 255, 0.4);
+        border-top-color: var(--primary-color, #4c8060);
+        border-radius: 50%;
+        animation: entry-img-spinner-spin 0.7s linear infinite;
+    }
+
+    @keyframes entry-img-spinner-spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     body.page-write-entry .write-entry-photos-panel .entry-gallery-grid,

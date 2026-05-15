@@ -26,11 +26,66 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     let writeImageUploadChain = Promise.resolve();
     let writeImageItemSeq = 0;
+    const MOBILE_IMAGE_UPLOAD_PARALLEL = 3;
+    let mobileWriteUploadActive = 0;
+    const mobileWriteUploadWait = [];
 
     function enqueueWriteImageUpload(task) {
         const run = writeImageUploadChain.then(() => task());
         writeImageUploadChain = run.catch(() => {});
         return run;
+    }
+
+    function scheduleWriteImageUpload(task) {
+        if (!isWriteEntryMobileLayout()) {
+            return enqueueWriteImageUpload(task);
+        }
+        return new Promise((resolve, reject) => {
+            const run = async () => {
+                mobileWriteUploadActive += 1;
+                try {
+                    resolve(await task());
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    mobileWriteUploadActive -= 1;
+                    const next = mobileWriteUploadWait.shift();
+                    if (next) next();
+                }
+            };
+            if (mobileWriteUploadActive < MOBILE_IMAGE_UPLOAD_PARALLEL) {
+                void run();
+            } else {
+                mobileWriteUploadWait.push(run);
+            }
+        });
+    }
+
+    function isImageStillUploading(im) {
+        const p = Number(im?.progress ?? 0);
+        return p > 0 && p < 100;
+    }
+
+    function entryImgSpinnerHtml() {
+        return '<div class="entry-img-spinner" role="status" aria-label="Uploading"><span class="entry-img-spinner__ring" aria-hidden="true"></span></div>';
+    }
+
+    function cloneUploadFile(file) {
+        if (!file) return file;
+        try {
+            return new File([file], file.name || 'photo.jpg', {
+                type: file.type || 'image/jpeg',
+                lastModified: file.lastModified || Date.now(),
+            });
+        } catch (_) {
+            return file;
+        }
+    }
+
+    function patchAttachedImage(id, patch) {
+        const idx = attachedImages.findIndex((img) => img.id === id);
+        if (idx === -1) return;
+        attachedImages[idx] = { ...attachedImages[idx], ...patch };
     }
 
     const DEFAULT_TAGS = [
@@ -332,7 +387,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function updateImageProgress(id, progress) {
-        attachedImages = attachedImages.map((img) => (img.id === id ? { ...img, progress } : img));
+        patchAttachedImage(id, { progress });
+        if (isWriteEntryMobileLayout()) {
+            const bar = document.querySelector(`#entryGallery [data-image-id="${id}"] .entry-img-progress span`);
+            if (bar) bar.style.width = `${Math.max(8, progress)}%`;
+            const item = document.querySelector(`#entryGallery [data-image-id="${id}"]`);
+            const uploading = isImageStillUploading(attachedImages.find((img) => img.id === id) || {});
+            if (item) {
+                let spinner = item.querySelector('.entry-img-spinner');
+                if (uploading && !spinner) {
+                    const wrap = item.querySelector('.entry-gallery-img-wrap');
+                    if (wrap) wrap.insertAdjacentHTML('beforeend', entryImgSpinnerHtml());
+                } else if (!uploading && spinner) {
+                    spinner.remove();
+                }
+            }
+            return;
+        }
         renderImageGallery();
     }
 
@@ -357,14 +428,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!userId) {
             throw new Error('Please log in again to upload photos.');
         }
-        return enqueueWriteImageUpload(async () => {
+        const uploadFile = cloneUploadFile(file);
+        return scheduleWriteImageUpload(async () => {
             updateImageProgress(localId, 30);
 
+            const retryDelay = isWriteEntryMobileLayout() ? 150 : 300;
             let lastErr = null;
             for (let attempt = 0; attempt < 3; attempt++) {
                 try {
                     const attemptForm = new FormData();
-                    attemptForm.append('file', file);
+                    attemptForm.append('file', uploadFile);
                     attemptForm.append('userId', String(userId));
                     const res = await fetch('/api/uploads/image', { method: 'POST', body: attemptForm });
                     updateImageProgress(localId, 85);
@@ -376,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 } catch (e) {
                     lastErr = e;
                     if (attempt < 2) {
-                        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+                        await new Promise((r) => setTimeout(r, retryDelay * (attempt + 1)));
                     }
                 }
             }
@@ -478,9 +551,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         const baseCells = attachedImages.map((img, idx) => {
             const src = (img.url || img.dataUrl || '').trim();
             const hasSrc = Boolean(src);
-            const progress = img.progress > 0 && img.progress < 100
+            const uploading = isImageStillUploading(img);
+            const progress = uploading
                 ? `<div class="entry-img-progress"><span style="width:${Math.max(8, img.progress)}%"></span></div>`
                 : '';
+            const spinner = uploading ? entryImgSpinnerHtml() : '';
             const wrapState = hasSrc
                 ? 'entry-gallery-img-wrap entry-gallery-img-wrap--loading'
                 : 'entry-gallery-img-wrap entry-gallery-img-wrap--pending';
@@ -492,6 +567,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <div class="${wrapState}">
                         <div class="entry-img-skeleton" aria-hidden="true"></div>
                         ${imgTag}
+                        ${spinner}
                     </div>
                     ${progress}
                     <div class="entry-gallery-item-overlay" aria-hidden="true"></div>
@@ -560,6 +636,56 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (attachedImages.length + uploadFiles.length > MAX_IMAGE_WARN) {
             alert('You added more than 10 images. This is okay, but it may affect upload speed.');
         }
+
+        if (isWriteEntryMobileLayout()) {
+            const batch = [];
+            for (const file of uploadFiles) {
+                const item = makeImageItem({ name: file.name });
+                item.progress = 5;
+                attachedImages.push(item);
+                batch.push({ file, item });
+            }
+            renderImageGallery();
+
+            await Promise.all(
+                batch.map(async ({ file, item }) => {
+                    try {
+                        const previewUrl = await fileToDataUrl(file);
+                        patchAttachedImage(item.id, { dataUrl: previewUrl, progress: 10 });
+                    } catch (_) { /* preview optional */ }
+                })
+            );
+            renderImageGallery();
+
+            let uploadFailures = 0;
+            await Promise.all(
+                batch.map(async ({ file, item }) => {
+                    try {
+                        if (isOnlineNow() && userId) {
+                            const url = await uploadImageOnline(cloneUploadFile(file), userId, item.id);
+                            patchAttachedImage(item.id, { url, dataUrl: '', progress: 100 });
+                        } else {
+                            const dataUrl = await fileToDataUrl(file);
+                            patchAttachedImage(item.id, { dataUrl, progress: 100 });
+                        }
+                    } catch (e) {
+                        console.error('Image add failed:', e);
+                        attachedImages = attachedImages.filter((img) => img.id !== item.id);
+                        uploadFailures += 1;
+                    }
+                })
+            );
+            renderImageGallery();
+            if (uploadFailures) {
+                alert(
+                    uploadFailures === 1
+                        ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
+                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+                );
+            }
+            return;
+        }
+
         let uploadFailures = 0;
         for (const file of uploadFiles) {
             const item = makeImageItem({ name: file.name });
@@ -1453,8 +1579,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     addPhotosBtn?.addEventListener('click', () => imageFileInput?.click());
     imageFileInput?.addEventListener('change', async () => {
-        await addImagesFromFiles(imageFileInput.files);
+        const picked = imageFileInput.files ? Array.from(imageFileInput.files) : [];
         imageFileInput.value = '';
+        await addImagesFromFiles(picked);
     });
 
     if (entrySplitLayout) {

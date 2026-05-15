@@ -5,10 +5,40 @@
     let entryImageUploadChain = Promise.resolve();
     let entryImageItemSeq = 0;
 
+    const MOBILE_IMAGE_UPLOAD_PARALLEL = 3;
+
     function enqueueEntryImageUpload(task) {
         const run = entryImageUploadChain.then(() => task());
         entryImageUploadChain = run.catch(() => {});
         return run;
+    }
+
+    let mobileEntryUploadActive = 0;
+    const mobileEntryUploadWait = [];
+
+    function scheduleEntryImageUpload(task) {
+        if (!isEntryEditMobileLayout()) {
+            return enqueueEntryImageUpload(task);
+        }
+        return new Promise((resolve, reject) => {
+            const run = async () => {
+                mobileEntryUploadActive += 1;
+                try {
+                    resolve(await task());
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    mobileEntryUploadActive -= 1;
+                    const next = mobileEntryUploadWait.shift();
+                    if (next) next();
+                }
+            };
+            if (mobileEntryUploadActive < MOBILE_IMAGE_UPLOAD_PARALLEL) {
+                void run();
+            } else {
+                mobileEntryUploadWait.push(run);
+            }
+        });
     }
 
     function isEntryEditMobileLayout() {
@@ -40,6 +70,32 @@
         });
         if (typeof saved.windowY === 'number') {
             window.scrollTo(0, saved.windowY);
+        }
+    }
+
+    function isImageStillUploading(im) {
+        const p = Number(im?.progress ?? 0);
+        return p > 0 && p < 100;
+    }
+
+    function createEntryImgSpinner() {
+        const spinner = document.createElement('div');
+        spinner.className = 'entry-img-spinner';
+        spinner.setAttribute('role', 'status');
+        spinner.setAttribute('aria-label', 'Uploading');
+        spinner.innerHTML = '<span class="entry-img-spinner__ring" aria-hidden="true"></span>';
+        return spinner;
+    }
+
+    function cloneUploadFile(file) {
+        if (!file) return file;
+        try {
+            return new File([file], file.name || 'photo.jpg', {
+                type: file.type || 'image/jpeg',
+                lastModified: file.lastModified || Date.now(),
+            });
+        } catch (_) {
+            return file;
         }
     }
 
@@ -931,12 +987,13 @@
                     }
 
                     wrap.appendChild(imgWrap);
-                    const uploading = im.progress > 0 && im.progress < 100;
+                    const uploading = isImageStillUploading(im);
                     if (uploading) {
                         const bar = document.createElement('div');
                         bar.className = 'entry-img-progress';
                         bar.innerHTML = `<span style="width:${Math.max(8, im.progress)}%"></span>`;
                         wrap.appendChild(bar);
+                        wrap.appendChild(createEntryImgSpinner());
                     }
 
                     const overlay = document.createElement('div');
@@ -1011,23 +1068,32 @@
             if (!userId) {
                 throw new Error('Please log in again to upload photos.');
             }
-            return enqueueEntryImageUpload(async () => {
-                editorImages = editorImages.map((img) =>
-                    img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img
-                );
-                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+            const uploadFile = cloneUploadFile(file);
+            return scheduleEntryImageUpload(async () => {
+                const setProgress = (progress) => {
+                    editorImages = editorImages.map((img) =>
+                        img.id === localId ? { ...img, progress: Math.max(img.progress || 0, progress) } : img
+                    );
+                    if (isEntryEditMobileLayout()) {
+                        const bar = imageStripScroll?.querySelector(
+                            `[data-image-id="${localId}"] .entry-img-progress span`
+                        );
+                        if (bar) bar.style.width = `${Math.max(8, progress)}%`;
+                    } else {
+                        renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+                    }
+                };
+                setProgress(30);
 
+                const retryDelay = isEntryEditMobileLayout() ? 150 : 300;
                 let lastErr = null;
                 for (let attempt = 0; attempt < 3; attempt++) {
                     try {
                         const attemptForm = new FormData();
-                        attemptForm.append('file', file);
+                        attemptForm.append('file', uploadFile);
                         attemptForm.append('userId', String(userId));
                         const res = await fetch('/api/uploads/image', { method: 'POST', body: attemptForm });
-                        editorImages = editorImages.map((img) =>
-                            img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img
-                        );
-                        renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+                        setProgress(85);
                         const json = await res.json().catch(() => ({}));
                         if (!res.ok || !json?.success || !json?.url) {
                             throw new Error(json?.error || `Upload failed (${res.status})`);
@@ -1036,7 +1102,7 @@
                     } catch (e) {
                         lastErr = e;
                         if (attempt < 2) {
-                            await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+                            await new Promise((r) => setTimeout(r, retryDelay * (attempt + 1)));
                         }
                     }
                 }
@@ -1061,6 +1127,71 @@
             if (editorImages.length + uploadFiles.length === MAX_ENTRY_IMAGES && uploadFiles.length > 0) {
                 window.alert('This entry will have 10 photos (the maximum per entry).');
             }
+
+            if (isEntryEditMobileLayout()) {
+                const batch = [];
+                for (const file of uploadFiles) {
+                    if (editorImages.length >= MAX_ENTRY_IMAGES) break;
+                    const item = makeImageItem({ name: file.name });
+                    item.progress = 5;
+                    editorImages.push(item);
+                    batch.push({ file, item });
+                }
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+
+                await Promise.all(
+                    batch.map(async ({ file, item }) => {
+                        try {
+                            const previewUrl = await fileToDataUrl(file);
+                            editorImages = editorImages.map((img) =>
+                                img.id === item.id ? { ...img, dataUrl: previewUrl, progress: 10 } : img
+                            );
+                        } catch (_) { /* preview optional */ }
+                    })
+                );
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+
+                let uploadFailures = 0;
+                await Promise.all(
+                    batch.map(async ({ file, item }) => {
+                        try {
+                            if (isOnline() && userId) {
+                                const url = await uploadImageOnlineLocal(cloneUploadFile(file), item.id);
+                                editorImages = editorImages.map((img) =>
+                                    img.id === item.id ? { ...img, url, dataUrl: '', progress: 100 } : img
+                                );
+                            } else {
+                                editorImages = editorImages.map((img) =>
+                                    img.id === item.id ? { ...img, progress: 25 } : img
+                                );
+                                const dataUrl = await fileToDataUrl(file);
+                                editorImages = editorImages.map((img) =>
+                                    img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
+                                );
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            editorImages = editorImages.filter((img) => img.id !== item.id);
+                            uploadFailures += 1;
+                        }
+                    })
+                );
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
+                if (!isOnline()) {
+                    void persistDraftImages();
+                    persistDraft();
+                }
+                if (uploadFailures) {
+                    window.alert(
+                        uploadFailures === 1
+                            ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
+                            : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+                    );
+                }
+                if (imageFileInput) imageFileInput.value = '';
+                return;
+            }
+
             let uploadFailures = 0;
             for (const file of uploadFiles) {
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
@@ -1104,7 +1235,7 @@
                 window.alert(
                     uploadFailures === 1
                         ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
-                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.'
                 );
             }
             if (imageFileInput) imageFileInput.value = '';
@@ -1173,7 +1304,9 @@
         imageFileInput?.addEventListener(
             'change',
             () => {
-                void addImagesFromFiles(imageFileInput.files);
+                const picked = imageFileInput.files ? Array.from(imageFileInput.files) : [];
+                imageFileInput.value = '';
+                void addImagesFromFiles(picked);
             },
             { signal }
         );

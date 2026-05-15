@@ -1091,17 +1091,30 @@ html.theme-dark .entry-view-strip-imgwrap {
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        justify-content: flex-start !important;
-        gap: 0.45rem !important;
-        padding: 0.4rem 0.7rem 0.4rem 0.65rem !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        padding: 0.4rem 0.5rem 0.4rem 0.65rem !important;
         overflow: hidden !important;
+    }
+
+    body.page-entries-detail-open .entry-view-tag-pill > span:first-child,
+    .page-entry-view .entry-view-tag-pill > span:first-child {
+        min-width: 0 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
 
     body.page-entries-detail-open .entry-view-tag-pill button,
     .page-entry-view .entry-view-tag-pill button {
         flex-shrink: 0 !important;
-        margin-left: auto !important;
-        padding: 0 0.2rem !important;
+        margin: 0 !important;
+        padding: 0 0.15rem !important;
+        width: 1.15rem !important;
+        min-width: 1.15rem !important;
+        justify-self: end !important;
     }
 
     body.page-entries-detail-open .entry-view-add-tag-wrap,

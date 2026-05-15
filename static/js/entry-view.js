@@ -2,6 +2,13 @@
     'use strict';
 
     const QUEUE_KEY = 'diariCoreEntryEditQueue';
+    let entryImageUploadChain = Promise.resolve();
+
+    function enqueueEntryImageUpload(task) {
+        const run = entryImageUploadChain.then(() => task());
+        entryImageUploadChain = run.catch(() => {});
+        return run;
+    }
 
     function draftKey(entryId) {
         return `diariCoreEntryEditDraft_${entryId}`;
@@ -963,19 +970,37 @@
             if (!userId) {
                 throw new Error('Please log in again to upload photos.');
             }
-            const form = new FormData();
-            form.append('file', file);
-            form.append('userId', String(userId));
-            editorImages = editorImages.map((img) => (img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img));
-            renderImageStrip();
-            const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
-            editorImages = editorImages.map((img) => (img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img));
-            renderImageStrip();
-            const json = await res.json().catch(() => ({}));
-            if (!res.ok || !json?.success || !json?.url) {
-                throw new Error(json?.error || `Upload failed (${res.status})`);
-            }
-            return String(json.url);
+            return enqueueEntryImageUpload(async () => {
+                const form = new FormData();
+                form.append('file', file);
+                form.append('userId', String(userId));
+                editorImages = editorImages.map((img) =>
+                    img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img
+                );
+                renderImageStrip();
+
+                let lastErr = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+                        editorImages = editorImages.map((img) =>
+                            img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img
+                        );
+                        renderImageStrip();
+                        const json = await res.json().catch(() => ({}));
+                        if (!res.ok || !json?.success || !json?.url) {
+                            throw new Error(json?.error || `Upload failed (${res.status})`);
+                        }
+                        return String(json.url);
+                    } catch (e) {
+                        lastErr = e;
+                        if (attempt < 2) {
+                            await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+                        }
+                    }
+                }
+                throw lastErr || new Error('Upload failed');
+            });
         }
 
         async function addImagesFromFiles(fileList) {
@@ -994,6 +1019,7 @@
             if (editorImages.length + files.length === MAX_ENTRY_IMAGES && files.length > 0) {
                 window.alert('This entry will have 10 photos (the maximum per entry).');
             }
+            let uploadFailures = 0;
             for (const file of files) {
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
                 const item = makeImageItem({ name: file.name });
@@ -1024,18 +1050,20 @@
                 } catch (e) {
                     console.error(e);
                     editorImages = editorImages.filter((img) => img.id !== item.id);
-                    const msg = e.message || 'Could not add image.';
-                    window.alert(
-                        msg.includes('Upload failed')
-                            ? `${msg}. Check your connection and try a smaller JPEG/PNG.`
-                            : msg
-                    );
+                    uploadFailures += 1;
                 }
                 renderImageStrip();
                 if (!isOnline()) {
                     void persistDraftImages();
                     persistDraft();
                 }
+            }
+            if (uploadFailures) {
+                window.alert(
+                    uploadFailures === 1
+                        ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
+                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+                );
             }
             if (imageFileInput) imageFileInput.value = '';
         }

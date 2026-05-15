@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
     }
 
+    let writeImageUploadChain = Promise.resolve();
+
+    function enqueueWriteImageUpload(task) {
+        const run = writeImageUploadChain.then(() => task());
+        writeImageUploadChain = run.catch(() => {});
+        return run;
+    }
+
     const DEFAULT_TAGS = [
         { name: 'School', icon: 'bi bi-book', iconType: 'bi' },
         { name: 'Home', icon: 'bi bi-house', iconType: 'bi' },
@@ -340,17 +348,31 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!userId) {
             throw new Error('Please log in again to upload photos.');
         }
-        const form = new FormData();
-        form.append('file', file);
-        form.append('userId', String(userId));
-        updateImageProgress(localId, 30);
-        const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
-        updateImageProgress(localId, 85);
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || !json?.success || !json?.url) {
-            throw new Error(json?.error || `Upload failed (${res.status})`);
-        }
-        return String(json.url);
+        return enqueueWriteImageUpload(async () => {
+            const form = new FormData();
+            form.append('file', file);
+            form.append('userId', String(userId));
+            updateImageProgress(localId, 30);
+
+            let lastErr = null;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+                    updateImageProgress(localId, 85);
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json?.success || !json?.url) {
+                        throw new Error(json?.error || `Upload failed (${res.status})`);
+                    }
+                    return String(json.url);
+                } catch (e) {
+                    lastErr = e;
+                    if (attempt < 2) {
+                        await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+                    }
+                }
+            }
+            throw lastErr || new Error('Upload failed');
+        });
     }
 
     function makeImageItem({ url = '', dataUrl = '', name = '' } = {}) {
@@ -525,6 +547,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (attachedImages.length + files.length > MAX_IMAGE_WARN) {
             alert('You added more than 10 images. This is okay, but it may affect upload speed.');
         }
+        let uploadFailures = 0;
         for (const file of files) {
             const item = makeImageItem({ name: file.name });
             attachedImages.push(item);
@@ -554,14 +577,16 @@ document.addEventListener('DOMContentLoaded', async function () {
             } catch (e) {
                 console.error('Image add failed:', e);
                 attachedImages = attachedImages.filter((img) => img.id !== item.id);
-                const msg = e.message || 'Unknown error';
-                alert(
-                    msg.includes('Upload failed')
-                        ? `${msg}. Check your connection and try again, or use a smaller JPEG/PNG.`
-                        : `Could not add image: ${msg}`
-                );
+                uploadFailures += 1;
             }
             renderImageGallery();
+        }
+        if (uploadFailures) {
+            alert(
+                uploadFailures === 1
+                    ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
+                    : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+            );
         }
     }
 

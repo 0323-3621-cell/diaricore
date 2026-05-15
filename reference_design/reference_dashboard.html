@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiariCore – Dashboard Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sage:       #5a7a65;
+    --sage-dark:  #466055;
+    --sage-light: #eaf1ec;
+    --sage-mid:   #c8dace;
+    --cream:      #f5f3ef;
+    --warm-white: #faf9f7;
+    --text-primary: #1e2820;
+    --text-secondary: #6b7c72;
+    --text-muted:  #9bab9f;
+    --card-bg:    #ffffff;
+    --border:     #e4ebe6;
+    --orange:     #e07b3f;
+    --sidebar-w:  196px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text-primary);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--warm-white);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    padding: 0 16px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--sage-dark);
+    letter-spacing: 0.01em;
+  }
+  .brand-sub {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav { flex: 1; padding: 4px 10px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 400;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 1px;
+  }
+  .nav-item svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.75; }
+  .nav-item:hover { background: var(--sage-light); color: var(--sage-dark); }
+  .nav-item.active {
+    background: var(--sage);
+    color: #fff;
+    font-weight: 500;
+  }
+  .nav-item.active svg { opacity: 1; }
+
+  .sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+  }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--sage-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--sage-dark);
+    flex-shrink: 0;
+  }
+  .user-name { font-size: 12px; font-weight: 500; color: var(--text-primary); line-height: 1.2; }
+  .user-handle { font-size: 10px; color: var(--text-muted); }
+  .logout-btn {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.15s;
+  }
+  .logout-btn:hover { background: var(--sage-light); }
+  .logout-btn svg { width: 12px; height: 12px; }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 11px; }
+  .clock-icon {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--sage-mid);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sage);
+  }
+  .clock-icon svg { width: 16px; height: 16px; }
+  .greeting { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 500; color: var(--text-primary); }
+  .greeting-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .book-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--orange);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(224,123,63,0.35);
+  }
+  .book-btn svg { width: 16px; height: 16px; }
+
+  /* Stat Cards */
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .stat-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    background: var(--sage-light);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .stat-desc { font-size: 11px; color: var(--text-secondary); }
+  .stat-insight .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--sage-dark);
+    line-height: 1.4;
+  }
+
+  /* Prompt + Action Buttons */
+  .prompt-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding-left: 4px;
+    border-left: 2px solid var(--sage-mid);
+    padding-left: 8px;
+    font-style: italic;
+  }
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-btn {
+    background: var(--sage);
+    border-radius: 9px;
+    padding: 13px 18px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    border: none;
+  }
+  .action-btn:hover { background: var(--sage-dark); transform: translateY(-1px); }
+  .action-icon {
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+  .action-icon svg { width: 14px; height: 14px; }
+  .action-title { font-size: 13px; font-weight: 600; color: #fff; }
+  .action-sub { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+
+  /* Mood Chart */
+  .chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .chart-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .badge {
+    font-size: 10.5px;
+    background: var(--sage-light);
+    color: var(--sage-dark);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .badge svg { width: 10px; height: 10px; }
+
+  .chart-area { height: 72px; position: relative; margin-bottom: 10px; }
+  .chart-area svg { width: 100%; height: 100%; }
+
+  .chart-stats {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .chart-stat { text-align: center; }
+  .chart-stat-val { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .chart-stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  .view-btn {
+    float: right;
+    font-size: 11px;
+    color: var(--sage);
+    background: none;
+    border: 1px solid var(--sage-mid);
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 4px;
+    margin-top: 8px;
+  }
+  .view-btn:hover { background: var(--sage-light); }
+  .view-btn svg { width: 10px; height: 10px; }
+
+  /* Last Entry */
+  .last-entry-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .entry-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .entry-title { font-size: 13px; font-weight: 600; }
+  .entry-date { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .entry-body { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+  /* scrollbar */
+  .main::-webkit-scrollbar { width: 4px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--sage-mid); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-name">DiariCore</div>
+    <div class="brand-sub">Your mindful journal</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Write Entry
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Insights
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Entries
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Suggestions
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="avatar">LT</div>
+      <div>
+        <div class="user-name">Lawrence T.</div>
+        <div class="user-handle">@lawrencet</div>
+      </div>
+    </div>
+    <button class="logout-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="clock-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div class="greeting">Good Morning, Lawrence</div>
+        <div class="greeting-sub">How are you feeling today?</div>
+      </div>
+    </div>
+    <button class="book-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+    </button>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-icon">😊</div>
+      <div>
+        <div class="stat-label">Today's Mood</div>
+        <div class="stat-value">Happy</div>
+        <div class="stat-desc">Based on your most recent entry.</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: var(--sage-light);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Weekly Average</div>
+        <div class="stat-value">5.1<span style="font-size:12px;color:var(--text-secondary);font-weight:400">/10</span></div>
+        <div class="stat-desc">14 mood entries this week</div>
+      </div>
+    </div>
+    <div class="stat-card stat-insight">
+      <div class="stat-icon" style="background: #fef3eb;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </div>
+      <div>
+        <div class="stat-label">Today's Insight</div>
+        <div class="stat-value">You are showing a positive emotional trend. Keep it up.</div>
+        <div class="stat-desc" style="margin-top:4px;">Based on your recent entries</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prompt -->
+  <div class="prompt-label">What are you looking forward to tomorrow?</div>
+
+  <!-- Action Buttons -->
+  <div class="action-row">
+    <button class="action-btn">
+      <div class="action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <div>
+        <div class="action-title">Write</div>
+        <div class="action-sub">New Entry</div>
+      </div>
+    </button>
+    <button class="action-btn" style="background: var(--sage-dark);">
+      <div class="action-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </div>
+      <div>
+        <div class="action-title">Voice</div>
+        <div class="action-sub">Record Journal</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- Weekly Mood Chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">📅 Weekly Mood</div>
+        <div class="chart-sub">Mon – Sun</div>
+      </div>
+      <div class="badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        Steady
+      </div>
+    </div>
+
+    <div class="chart-area">
+      <svg viewBox="0 0 700 80" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="chartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#5a7a65;stop-opacity:0.15"/>
+            <stop offset="100%" style="stop-color:#5a7a65;stop-opacity:0"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid lines -->
+        <line x1="0" y1="20" x2="700" y2="20" stroke="#e4ebe6" stroke-width="1"/>
+        <line x1="0" y1="40" x2="700" y2="40" stroke="#e4ebe6" stroke-width="1"/>
+        <line x1="0" y1="60" x2="700" y2="60" stroke="#e4ebe6" stroke-width="1"/>
+        <!-- Fill -->
+        <path d="M0,55 C80,50 160,35 240,30 C320,25 400,28 480,22 C560,16 640,12 700,8 L700,80 L0,80 Z" fill="url(#chartGrad)"/>
+        <!-- Line -->
+        <path d="M0,55 C80,50 160,35 240,30 C320,25 400,28 480,22 C560,16 640,12 700,8" fill="none" stroke="#5a7a65" stroke-width="2" stroke-linecap="round"/>
+        <!-- Dot at end -->
+        <circle cx="700" cy="8" r="4" fill="#5a7a65"/>
+      </svg>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="chart-stats" style="flex:1;">
+        <div class="chart-stat">
+          <div class="chart-stat-val">5.1</div>
+          <div class="chart-stat-label">Avg this week</div>
+        </div>
+        <div class="chart-stat">
+          <div class="chart-stat-val">7.2</div>
+          <div class="chart-stat-label">Highest day</div>
+        </div>
+        <div class="chart-stat">
+          <div class="chart-stat-val" style="color:var(--sage);">↑ Up</div>
+          <div class="chart-stat-label">Trend</div>
+        </div>
+      </div>
+      <button class="view-btn">
+        Full view
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Last Entry -->
+  <div class="last-entry-card">
+    <div class="entry-header">
+      <div class="entry-title">Last Entry</div>
+      <div class="entry-date">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        May 9
+      </div>
+    </div>
+    <div class="entry-body">
+      Today felt amazing from the moment I woke up. I had enough sleep, the weather was nice, and everything just felt peaceful. At school, I enjoyed spending time with my friends because we laughed so much…
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>

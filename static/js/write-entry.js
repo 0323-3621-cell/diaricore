@@ -49,9 +49,17 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     function getCustomTagIconsPerPage() {
         try {
-            return window.matchMedia('(max-width: 768px)').matches ? 25 : 100;
+            return window.matchMedia('(max-width: 768px)').matches ? 25 : 48;
         } catch (e) {
-            return 100;
+            return 48;
+        }
+    }
+
+    function isCustomTagPickerCompact() {
+        try {
+            return !window.matchMedia('(max-width: 768px)').matches;
+        } catch (e) {
+            return true;
         }
     }
 
@@ -1193,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const start = customTagPage * perPage;
         const end = Math.min(filtered.length, start + perPage);
         const items = filtered.slice(start, end);
-        const compactIcons = perPage <= 25;
+        const compactIcons = isCustomTagPickerCompact() || perPage <= 25;
         customTagIconsGrid.innerHTML = items
             .map((iconName) => {
                 const label = escapeHtml(iconName);

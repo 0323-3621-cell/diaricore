@@ -1976,6 +1976,22 @@ html.theme-dark .ins-highlight-chip {
     flex-wrap: wrap;
 }
 
+/* Desktop: keep week range caption on one line (e.g. "… May 11 – May 17, 2026") */
+@media (min-width: 769px) {
+    .weekly-trend-card .section-header.ins-card__section-header,
+    .weekly-trend-card .section-header {
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .weekly-trend-card .weekly-trend-caption {
+        white-space: nowrap;
+        max-width: none;
+        flex-shrink: 0;
+        line-height: 1.25;
+    }
+}
+
 .ins-card--trend .weekly-stats-row--under-chart {
     margin-top: 0.35rem;
     padding-top: 1rem;

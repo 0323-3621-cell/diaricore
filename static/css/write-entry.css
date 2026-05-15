@@ -2204,6 +2204,40 @@ html.theme-dark .mood-result-badge--amber {
     font-size: 0.78rem;
 }
 
+/* Desktop: icon-only grid, 6 rows (8×6 = 48/page) — pagination visible without scrolling */
+@media (min-width: 769px) {
+    .custom-tag-modal__body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        max-height: min(58vh, 520px);
+    }
+
+    .custom-tag-icons-grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        flex: 0 0 auto;
+        overflow: hidden;
+        align-content: start;
+    }
+
+    .custom-tag-icon-btn {
+        height: 48px;
+        min-height: 48px;
+        gap: 0;
+        padding: 0.25rem;
+    }
+
+    .custom-tag-icon-btn span {
+        display: none !important;
+    }
+
+    .custom-tag-pagination {
+        flex-shrink: 0;
+        margin-top: 0.65rem;
+        padding-top: 0.15rem;
+    }
+}
+
 .custom-tag-btn {
     border-radius: 10px;
     padding: 0.55rem 0.9rem;

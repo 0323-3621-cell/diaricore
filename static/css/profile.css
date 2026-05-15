@@ -1334,6 +1334,20 @@ html.theme-dark .profile-account-detail-form .custom-error {
     filter: brightness(1.03);
 }
 
+html.theme-dark .profile-account-detail-footer {
+    background: linear-gradient(180deg, #1e2428 0%, #181d21 100%);
+    border-top-color: var(--border-color);
+}
+
+html.theme-dark .profile-account-detail-btn--ghost {
+    color: var(--text-secondary);
+}
+
+html.theme-dark .profile-account-detail-btn--ghost:hover {
+    color: var(--text-dark);
+    background: rgba(255, 255, 255, 0.06);
+}
+
 .profile-security-status {
     display: inline-flex;
     align-items: center;
@@ -1346,6 +1360,20 @@ html.theme-dark .profile-account-detail-form .custom-error {
     color: #2f5a42;
     background: rgba(111, 143, 127, 0.18);
     border: 1px solid rgba(111, 143, 127, 0.35);
+}
+
+html.theme-dark .profile-security-status {
+    color: #c8e8d4;
+    background: rgba(111, 143, 127, 0.32);
+    border-color: rgba(143, 184, 158, 0.5);
+}
+
+html.theme-dark .profile-security-status i {
+    color: #9fd4b0;
+}
+
+html.theme-dark .profile-security-status span {
+    color: #d4f0dc;
 }
 
 .profile-security-section {

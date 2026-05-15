@@ -604,6 +604,11 @@ function renderInsightsConsistencyPanel() {
         }
 
         updateConsistencyMonthBarChart();
+        requestAnimationFrame(() => {
+            if (INSIGHTS_CONSISTENCY_CHART && typeof INSIGHTS_CONSISTENCY_CHART.resize === 'function') {
+                INSIGHTS_CONSISTENCY_CHART.resize();
+            }
+        });
     } finally {
         document.documentElement.classList.remove('insights-consistency-await-data');
     }
@@ -642,6 +647,61 @@ function replaceInsightsUrlForTab(which) {
     if (cur !== want) history.replaceState(null, '', want);
 }
 
+function syncInsightsMobileTabFab(which) {
+    const menu = document.getElementById('insightsMobileTabFabMenu');
+    if (!menu) return;
+    menu.querySelectorAll('[data-insights-mobile-tab]').forEach((btn) => {
+        const on = btn.getAttribute('data-insights-mobile-tab') === which;
+        btn.classList.toggle('is-active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+}
+
+function initializeInsightsMobileTabFab(activate) {
+    const wrap = document.getElementById('insightsMobileTabFab');
+    const trigger = document.getElementById('insightsMobileTabFabTrigger');
+    const menu = document.getElementById('insightsMobileTabFabMenu');
+    if (!wrap || !trigger || !menu || typeof activate !== 'function') return;
+
+    const mq = window.matchMedia('(max-width: 768px)');
+
+    const closeFab = () => {
+        wrap.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+        menu.hidden = true;
+    };
+
+    const setFabVisible = () => {
+        wrap.hidden = !mq.matches;
+        if (!mq.matches) closeFab();
+    };
+
+    mq.addEventListener('change', setFabVisible);
+    setFabVisible();
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (wrap.classList.contains('is-open')) closeFab();
+        else {
+            wrap.classList.add('is-open');
+            trigger.setAttribute('aria-expanded', 'true');
+            menu.hidden = false;
+        }
+    });
+
+    menu.querySelectorAll('[data-insights-mobile-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            activate(btn.getAttribute('data-insights-mobile-tab'));
+            closeFab();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.classList.contains('is-open')) return;
+        if (!wrap.contains(e.target)) closeFab();
+    });
+}
+
 function initializeInsightsHeroTabs() {
     const emotions = document.getElementById('insightsTabEmotions');
     const consistency = document.getElementById('insightsTabConsistency');
@@ -666,6 +726,7 @@ function initializeInsightsHeroTabs() {
 
         document.body.classList.toggle('insights-view-consistency', isCons);
         insightsHeroSetMode(isCons ? 'consistency' : 'emotions');
+        syncInsightsMobileTabFab(which);
 
         if (isCons) {
             renderInsightsConsistencyPanel();
@@ -684,6 +745,7 @@ function initializeInsightsHeroTabs() {
         activate(insightsTabFromHash());
     });
 
+    initializeInsightsMobileTabFab(activate);
     activate(insightsTabFromHash());
 }
 
@@ -913,6 +975,10 @@ function initializeWeeklyMoodChart() {
 
     const chartTheme = getChartTheme();
     const weekly = insightsCalendarWeekSeries();
+    const capEl = document.getElementById('weeklyTrendRangeCaption');
+    if (capEl) {
+        capEl.textContent = `This week (Mon–Sun) · ${weekly.rangeCaption}`;
+    }
     const hasData = weekly.data.some((v) => v !== null && v !== undefined);
     const highlightIdx = weeklyHighlightDayIndex(weekly);
 

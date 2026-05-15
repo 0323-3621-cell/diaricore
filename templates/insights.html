@@ -64,6 +64,15 @@
             </div>
         </div>
     </header>
+    <div class="insights-mobile-tab-fab" id="insightsMobileTabFab" hidden>
+        <button type="button" class="insights-mobile-tab-fab__trigger" id="insightsMobileTabFabTrigger" aria-expanded="false" aria-controls="insightsMobileTabFabMenu" aria-label="Switch Emotions or Consistency">
+            <i class="bi bi-sliders2" aria-hidden="true"></i>
+        </button>
+        <div class="insights-mobile-tab-fab__menu" id="insightsMobileTabFabMenu" role="tablist" aria-label="Insights view" hidden>
+            <button type="button" class="insights-pill insights-mobile-tab-fab__pill" data-insights-mobile-tab="emotions" role="tab" aria-selected="true">Emotions</button>
+            <button type="button" class="insights-pill insights-mobile-tab-fab__pill" data-insights-mobile-tab="consistency" role="tab" aria-selected="false">Consistency</button>
+        </div>
+    </div>
     <div class="insights-container">
         <div class="main-content diari-shell-main">
             <main class="insights-content">

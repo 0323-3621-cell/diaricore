@@ -1722,11 +1722,15 @@ html.insights-consistency-await-data #insightsPanelConsistency .insights-consist
 
 @media (min-width: 769px) {
     .insights-panel--consistency {
-        gap: 2.35rem;
+        gap: 3.25rem;
+    }
+
+    .insights-panel--consistency .insights-consistency-metric-grid {
+        margin-bottom: 0.5rem;
     }
 
     .insights-panel--consistency .ins-card--consistency-week {
-        margin-top: 0.35rem;
+        margin-top: 1.25rem;
     }
 }
 

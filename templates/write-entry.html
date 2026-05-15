@@ -357,7 +357,13 @@
         <div class="custom-tag-modal__backdrop" data-role="close-modal"></div>
         <div class="custom-tag-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="customTagModalTitle">
             <div class="custom-tag-modal__header">
-                <h3 id="customTagModalTitle">Create Custom Tag</h3>
+                <div class="custom-tag-modal__header-brand">
+                    <span class="custom-tag-modal__header-badge" aria-hidden="true"><i class="bi bi-tag-fill"></i></span>
+                    <div class="custom-tag-modal__header-text">
+                        <h3 id="customTagModalTitle">Create Custom Tag</h3>
+                        <p class="custom-tag-modal__header-subtitle">Name it and pick an icon</p>
+                    </div>
+                </div>
                 <button type="button" class="custom-tag-modal__close" data-role="close-modal" aria-label="Close">
                     <i class="bi bi-x-lg"></i>
                 </button>
@@ -374,17 +380,23 @@
                     </div>
                 </div>
                 <label class="custom-tag-modal__label" for="customTagNameInput">Tag name</label>
-                <input id="customTagNameInput" class="custom-tag-modal__input" type="text" maxlength="40" placeholder="e.g. Gym, Career, Reading" />
+                <div class="custom-tag-modal__field">
+                    <i class="bi bi-pencil custom-tag-modal__field-icon" aria-hidden="true"></i>
+                    <input id="customTagNameInput" class="custom-tag-modal__input" type="text" maxlength="40" placeholder="e.g. Gym, Career, Reading" />
+                </div>
 
                 <label class="custom-tag-modal__label" for="customTagIconSearch">Pick an icon</label>
-                <input id="customTagIconSearch" class="custom-tag-modal__input" type="search" placeholder="Search icon names..." />
+                <div class="custom-tag-modal__field">
+                    <i class="bi bi-search custom-tag-modal__field-icon" aria-hidden="true"></i>
+                    <input id="customTagIconSearch" class="custom-tag-modal__input" type="search" placeholder="Search icons... e.g. heart, star, book" />
+                </div>
                 <div class="custom-tag-modal__hint" id="customTagIconMeta">Loading icons...</div>
                 <div class="custom-tag-icons-grid" id="customTagIconsGrid"></div>
                 <div class="custom-tag-pagination" id="customTagPagination"></div>
             </div>
             <div class="custom-tag-modal__footer">
                 <button type="button" class="custom-tag-btn custom-tag-btn--ghost" data-role="close-modal">Cancel</button>
-                <button type="button" class="custom-tag-btn custom-tag-btn--primary" id="customTagSaveBtn" disabled>Save tag</button>
+                <button type="button" class="custom-tag-btn custom-tag-btn--primary" id="customTagSaveBtn" disabled><i class="bi bi-save" aria-hidden="true"></i> Save tag</button>
             </div>
         </div>
     </div>

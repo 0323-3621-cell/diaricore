@@ -1235,7 +1235,7 @@
                 window.alert(
                     uploadFailures === 1
                         ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
-                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.'
+                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
                 );
             }
             if (imageFileInput) imageFileInput.value = '';

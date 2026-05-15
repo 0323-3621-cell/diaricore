@@ -1772,7 +1772,32 @@ html.theme-dark .entry-edited-pill {
     }
 
     html.theme-dark body.page-entries .entries-month-select {
+        /* theme.css sets `background` on select and clears our SVG; re-apply full paint + single chevron */
+        background-color: #121a1e !important;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23c5d4cc' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M4 6l4 4 4-4'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 1rem center !important;
+        background-size: 0.72rem !important;
+    }
+
+    /* Compact filter popover (match desktop: anchored, narrow) — not full-bleed fixed sheet */
+    body.page-entries .search-filter-section .filter-dropdown {
+        position: relative;
+    }
+
+    body.page-entries .search-filter-section .filter-menu.show {
+        position: absolute !important;
+        top: calc(100% + 0.45rem) !important;
+        left: auto !important;
+        right: 0 !important;
+        width: min(320px, calc(100vw - 1.5rem)) !important;
+        min-width: 260px !important;
+        max-width: min(340px, calc(100vw - 1.5rem)) !important;
+        max-height: min(72vh, 520px) !important;
+        overflow-y: auto !important;
+        z-index: 1200 !important;
+        transform: translateY(0) !important;
+        box-shadow: var(--box-shadow-hover) !important;
     }
 
     /* Stored list cards: match desktop hierarchy (date + icon, time, title, excerpt; mood + edited pills in a row). */
@@ -1859,6 +1884,65 @@ html.theme-dark .entry-edited-pill {
         height: auto !important;
         min-width: 0 !important;
         max-width: min(52%, 11.5rem) !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0.25rem 0.62rem !important;
+        border-radius: 999px !important;
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        text-transform: none !important;
+        white-space: nowrap !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label--happy {
+        background: #e8f5ef !important;
+        color: #2f8f63 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label--sad {
+        background: #eef2f7 !important;
+        color: #5e7a99 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label--angry {
+        background: #ffe9ea !important;
+        color: #bf4a53 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label--anxious {
+        background: #fff2e6 !important;
+        color: #c28335 !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .mood-label--neutral {
+        background: #f1f3f5 !important;
+        color: #6c757d !important;
+    }
+
+    body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-edited-pill {
+        display: inline-flex !important;
+        align-items: center !important;
+        padding: 0.22rem 0.55rem !important;
+        border-radius: 999px !important;
+        font-size: 0.68rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.02em !important;
+        color: var(--text-secondary) !important;
+        background: var(--background-soft) !important;
+        border: 1px solid var(--border-color) !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+    }
+
+    html.theme-dark body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-edited-pill {
+        background: #1c262b !important;
+        color: var(--text-muted) !important;
+        border-color: var(--border-color) !important;
     }
 
     body.page-entries .entries-section .entry-card > .entry-content-wrapper .entry-content {

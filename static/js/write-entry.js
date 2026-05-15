@@ -39,7 +39,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     const TAG_EXPANDED_KEY = 'diariCoreTagsExpanded';
     const TAG_SYNC_QUEUE_KEY = 'diariCoreTagSyncQueue';
 
-    const CUSTOM_TAGS_BATCH_SIZE = 100;
+    function getCustomTagIconsPerPage() {
+        try {
+            return window.matchMedia('(max-width: 768px)').matches ? 25 : 100;
+        } catch (e) {
+            return 100;
+        }
+    }
+
     const ICON_SEARCH_ALIASES = {
         money: ['cash', 'coin', 'wallet', 'credit-card', 'bank', 'piggy-bank', 'currency'],
         bills: ['receipt', 'cash', 'credit-card', 'wallet', 'currency'],
@@ -1097,18 +1104,25 @@ document.addEventListener('DOMContentLoaded', async function () {
     function renderCustomTagIconPage() {
         if (!customTagIconsGrid || !customTagPagination || !customTagIconMeta) return;
         const filtered = filteredPickerIcons();
-        const pageCount = Math.max(1, Math.ceil(filtered.length / CUSTOM_TAGS_BATCH_SIZE));
+        const perPage = getCustomTagIconsPerPage();
+        const pageCount = Math.max(1, Math.ceil(filtered.length / perPage));
         customTagPage = Math.max(0, Math.min(customTagPage, pageCount - 1));
-        const start = customTagPage * CUSTOM_TAGS_BATCH_SIZE;
-        const end = Math.min(filtered.length, start + CUSTOM_TAGS_BATCH_SIZE);
+        const start = customTagPage * perPage;
+        const end = Math.min(filtered.length, start + perPage);
         const items = filtered.slice(start, end);
+        const compactIcons = perPage <= 25;
         customTagIconsGrid.innerHTML = items
-            .map((iconName) => `
-                <button type="button" class="custom-tag-icon-btn${selectedPickerIconName === iconName ? ' is-selected' : ''}" data-icon-name="${escapeHtml(iconName)}">
+            .map((iconName) => {
+                const label = escapeHtml(iconName);
+                const labelSpan = compactIcons ? '' : `<span>${label}</span>`;
+                const aria = compactIcons ? ` aria-label="${label}" title="${label}"` : '';
+                return `
+                <button type="button" class="custom-tag-icon-btn${selectedPickerIconName === iconName ? ' is-selected' : ''}" data-icon-name="${escapeHtml(iconName)}"${aria}>
                     <i class="bi bi-${escapeHtml(iconName)}"></i>
-                    <span>${escapeHtml(iconName)}</span>
+                    ${labelSpan}
                 </button>
-            `)
+            `;
+            })
             .join('');
         customTagIconMeta.textContent = `${filtered.length} icons • page ${customTagPage + 1}/${pageCount}`;
 
@@ -1226,6 +1240,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         });
     }
+
+    window.addEventListener('resize', () => {
+        if (customTagModal && !customTagModal.hidden) {
+            renderCustomTagIconPage();
+        }
+    });
 
     async function createNewTag(tagName, iconName = '', iconType = 'bi') {
         const normalizedName = normalizeTag(tagName);

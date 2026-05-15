@@ -1808,6 +1808,11 @@ body {
         gap: 1.25rem;
     }
 
+    /* Match Weekly Mood card → Last Entry spacing to Last Entry → Mood key (stack gap) */
+    .weekly-snapshot-wrap {
+        margin-bottom: 1.25rem !important;
+    }
+
     /* Remove decorative green quote mark on mobile; tighten + lift quote for bottom-nav clearance */
     .wellness-quote-mark {
         display: none !important;

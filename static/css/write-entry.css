@@ -988,6 +988,10 @@ html.theme-dark .entry-img-skeleton {
         gap: 0;
     }
 
+    .journal-container {
+        overflow: visible;
+    }
+
     .entry-main-pane {
         flex: 0 1 auto;
         min-height: 0;
@@ -998,9 +1002,24 @@ html.theme-dark .entry-img-skeleton {
     .entry-gallery-pane {
         max-width: none;
         width: 100%;
-        margin-top: 0.65rem;
-        padding-top: 0.55rem;
-        border-top: 1px solid var(--divider-color);
+        margin-top: 0.75rem;
+        padding-top: 0;
+        border-top: none;
+    }
+
+    .entry-gallery-pane__stack {
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--background-soft);
+    }
+
+    .entry-gallery-scroll {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .entry-gallery-grid--matrix:has(> .entry-gallery-item:only-child) {
+        grid-template-columns: 1fr !important;
     }
 
     .entry-gallery {
@@ -1016,14 +1035,19 @@ html.theme-dark .entry-img-skeleton {
         justify-content: flex-start;
         align-items: center;
         gap: 0.5rem;
+        position: relative;
     }
 
     .mobile-title {
-        flex: 1;
-        text-align: center;
+        position: absolute;
+        left: 50%;
+        transform: translateX(calc(-50% - 11px));
+        width: max-content;
+        max-width: calc(100% - 5.5rem);
         margin: 0;
-        margin-left: 0;
+        text-align: center;
         font-size: 1rem;
+        pointer-events: none;
     }
 
     /* Mood picker hidden on mobile — tags + journal only */
@@ -1073,6 +1097,10 @@ html.theme-dark .entry-img-skeleton {
         font-weight: 500;
     }
 
+    .tags-section .more-btn {
+        margin-top: 0.35rem !important;
+    }
+
     .journal-input-section .section-title {
         text-transform: uppercase;
         margin-left: -0.5rem;
@@ -1086,6 +1114,11 @@ html.theme-dark .entry-img-skeleton {
     }
 
     .tags-container .tag-btn[style*="display: none"] {
+        display: none !important;
+    }
+
+    /* Collapsed “extra” tags must not occupy grid rows (opacity/max-width still reserves space). */
+    .tags-container .tag-btn.is-hidden-row {
         display: none !important;
     }
 
@@ -2016,6 +2049,40 @@ html.theme-dark .mood-result-badge--amber {
 @media (max-width: 900px) {
     .custom-tag-icons-grid {
         grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .custom-tag-icons-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 0.4rem !important;
+    }
+
+    .custom-tag-icon-btn {
+        height: auto;
+        min-height: 48px;
+        aspect-ratio: 1;
+        padding: 0.25rem;
+        gap: 0 !important;
+    }
+
+    .custom-tag-icon-btn span {
+        display: none !important;
+    }
+
+    .custom-tag-icon-btn i,
+    .custom-tag-icon-btn svg {
+        font-size: 1.15rem;
+    }
+
+    html.theme-dark .custom-tag-modal__close {
+        background: #2a3840 !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+        color: #e8f2ee !important;
+    }
+
+    html.theme-dark .custom-tag-modal__close i {
+        color: #e8f2ee !important;
     }
 }
 

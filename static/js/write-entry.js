@@ -445,7 +445,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         const stickyAdd = document.getElementById('entryGalleryStickyAdd');
         if (!gallery) return;
         const count = attachedImages.length;
-        if (toolbar) toolbar.hidden = count !== 1;
+        if (toolbar) {
+            toolbar.hidden = isWriteEntryMobileLayout() ? false : count !== 1;
+        }
         if (stickyAdd) stickyAdd.hidden = !(count > 0 && count < MAX_IMAGE_WARN);
         updatePhotoBadge();
         if (!count) {

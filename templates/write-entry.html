@@ -129,7 +129,8 @@
                 </button>
             </div>
             
-            <!-- Journal Input Section -->
+            <!-- Journal + photos (unified card on desktop; stacked sections on mobile) -->
+            <div class="write-entry-unified" id="writeEntryUnified">
             <div class="journal-input-section">
                 <h2 class="section-title">Your Thoughts</h2>
                 <div class="write-entry-compose" id="writeEntryCompose">
@@ -171,9 +172,12 @@
                     </div>
                 </div>
                 </div>
+                </div>
+            </div>
 
+            <div class="write-entry-photos-section" id="writeEntryPhotosSection">
+                <h2 class="section-title">Photos</h2>
                 <div class="entry-gallery-pane write-entry-photos-panel" id="writeEntryPhotosPanel">
-                    <p class="write-entry-photos-panel__label">Photos</p>
                     <div class="entry-gallery-pane__stack">
                         <div class="entry-gallery-scroll" id="entryGalleryScroll">
                             <div class="entry-gallery diari-scrollbar" id="entryGallery"></div>
@@ -192,8 +196,7 @@
                         </div>
                     </div>
                 </div>
-
-                </div>
+            </div>
             </div>
 
             <!-- Action Buttons -->

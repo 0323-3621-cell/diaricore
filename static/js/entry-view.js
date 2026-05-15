@@ -10,6 +10,38 @@
         return run;
     }
 
+    function isEntryEditMobileLayout() {
+        return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    }
+
+    function captureEntryEditScroll() {
+        const roots = [];
+        const shell = document.getElementById('entriesDetailShell');
+        const main = document.querySelector('.entry-view-main');
+        if (shell && shell.scrollHeight > shell.clientHeight) roots.push(shell);
+        if (main && main.scrollHeight > main.clientHeight) roots.push(main);
+        roots.push(document.documentElement, document.body);
+        const seen = new Set();
+        const snapshots = [];
+        roots.forEach((el) => {
+            if (!el || seen.has(el)) return;
+            seen.add(el);
+            snapshots.push({ el, top: el.scrollTop, left: el.scrollLeft });
+        });
+        return { snapshots, windowY: window.scrollY };
+    }
+
+    function restoreEntryEditScroll(saved) {
+        if (!saved) return;
+        saved.snapshots.forEach(({ el, top, left }) => {
+            if (el && typeof el.scrollTop === 'number') el.scrollTop = top;
+            if (el && typeof el.scrollLeft === 'number') el.scrollLeft = left;
+        });
+        if (typeof saved.windowY === 'number') {
+            window.scrollTo(0, saved.windowY);
+        }
+    }
+
     function draftKey(entryId) {
         return `diariCoreEntryEditDraft_${entryId}`;
     }
@@ -785,8 +817,11 @@
             } catch (_) {}
         }
 
-        function renderImageStrip() {
+        function renderImageStrip(options = {}) {
             if (!imageStripScroll) return;
+            const preserveScroll = Boolean(options.preserveScroll && isEntryEditMobileLayout());
+            const skipBodyResize = Boolean(options.skipBodyResize && isEntryEditMobileLayout());
+            const scrollSnapshot = preserveScroll ? captureEntryEditScroll() : null;
             const items = stripDisplayItems();
             const n = items.length;
             if (imageStripBadge) {
@@ -962,8 +997,12 @@
             requestAnimationFrame(() => {
                 syncEntryStripViewportPx();
                 updateStripFade();
-                autoResizeTextarea(bodyEl);
+                if (!skipBodyResize) autoResizeTextarea(bodyEl);
+                if (preserveScroll) restoreEntryEditScroll(scrollSnapshot);
             });
+            if (preserveScroll) {
+                requestAnimationFrame(() => restoreEntryEditScroll(scrollSnapshot));
+            }
         }
 
         async function uploadImageOnlineLocal(file, localId) {
@@ -977,7 +1016,7 @@
                 editorImages = editorImages.map((img) =>
                     img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img
                 );
-                renderImageStrip();
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
 
                 let lastErr = null;
                 for (let attempt = 0; attempt < 3; attempt++) {
@@ -986,7 +1025,7 @@
                         editorImages = editorImages.map((img) =>
                             img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img
                         );
-                        renderImageStrip();
+                        renderImageStrip({ preserveScroll: true, skipBodyResize: true });
                         const json = await res.json().catch(() => ({}));
                         if (!res.ok || !json?.success || !json?.url) {
                             throw new Error(json?.error || `Upload failed (${res.status})`);
@@ -1030,7 +1069,7 @@
                         img.id === item.id ? { ...img, dataUrl: previewUrl, progress: 8 } : img
                     );
                 } catch (_) { /* preview optional */ }
-                renderImageStrip();
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
                 try {
                     if (isOnline() && userId) {
                         const url = await uploadImageOnlineLocal(file, item.id);
@@ -1041,7 +1080,7 @@
                         editorImages = editorImages.map((img) =>
                             img.id === item.id ? { ...img, progress: 25 } : img
                         );
-                        renderImageStrip();
+                        renderImageStrip({ preserveScroll: true, skipBodyResize: true });
                         const dataUrl = await fileToDataUrl(file);
                         editorImages = editorImages.map((img) =>
                             img.id === item.id ? { ...img, dataUrl, progress: 100 } : img
@@ -1052,7 +1091,7 @@
                     editorImages = editorImages.filter((img) => img.id !== item.id);
                     uploadFailures += 1;
                 }
-                renderImageStrip();
+                renderImageStrip({ preserveScroll: true, skipBodyResize: true });
                 if (!isOnline()) {
                     void persistDraftImages();
                     persistDraft();

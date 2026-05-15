@@ -7,31 +7,75 @@ let MOOD_BY_TAG_CHART = null;
 let consistencyMonthSelectBound = false;
 const CONSISTENCY_MONTH_STORAGE_KEY = 'diariCoreInsightsConsistencyMonth';
 
-/** Mobile: tap same bar again to dismiss Chart.js tooltip. */
+function insightsIsMobileChartUi() {
+    return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+}
+
+function insightsMobileTooltipPluginOpts() {
+    if (!insightsIsMobileChartUi()) return {};
+    return {
+        tooltip: {
+            events: ['click'],
+        },
+    };
+}
+
+/** Mobile: hide Chart.js tooltip (tap same bar again or empty chart area). */
+function insightsDismissChartTooltip(chart) {
+    if (!chart) return;
+    chart._diariTipIdx = -1;
+    if (typeof chart.setActiveElements === 'function') chart.setActiveElements([]);
+    const tt = chart.tooltip;
+    if (tt) {
+        if (typeof tt.setActiveElements === 'function') tt.setActiveElements([], { x: 0, y: 0 });
+        tt.opacity = 0;
+    }
+    chart.update('none');
+}
+
+/** Mobile: tap same bar again to dismiss; tap chart container padding to dismiss. */
 function insightsBarChartOnClick(_evt, elements) {
     const chart = this;
-    if (!chart) return;
+    if (!chart || !insightsIsMobileChartUi()) return;
     if (!elements?.length) {
-        chart._diariTipIdx = -1;
-        if (typeof chart.setActiveElements === 'function') chart.setActiveElements([]);
-        if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
-            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
-        }
-        chart.update();
+        insightsDismissChartTooltip(chart);
         return;
     }
     const idx = elements[0].index;
     if (chart._diariTipIdx === idx) {
-        chart._diariTipIdx = -1;
-        if (typeof chart.setActiveElements === 'function') chart.setActiveElements([]);
-        if (chart.tooltip && typeof chart.tooltip.setActiveElements === 'function') {
-            chart.tooltip.setActiveElements([], { x: 0, y: 0 });
-        }
-    } else {
-        chart._diariTipIdx = idx;
-        if (typeof chart.setActiveElements === 'function') chart.setActiveElements(elements);
+        insightsDismissChartTooltip(chart);
+        return;
     }
-    chart.update();
+    chart._diariTipIdx = idx;
+    if (typeof chart.setActiveElements === 'function') chart.setActiveElements(elements);
+    if (chart.tooltip) {
+        if (typeof chart.tooltip.setActiveElements === 'function') {
+            chart.tooltip.setActiveElements(elements, { x: 0, y: 0 });
+        }
+        chart.tooltip.opacity = 1;
+    }
+    chart.update('none');
+}
+
+function bindInsightsMobileChartTapToggle(chart) {
+    if (!chart?.canvas || !insightsIsMobileChartUi()) return;
+    const wrap = chart.canvas.closest('.chart-container');
+    if (!wrap || wrap.dataset.diariInsightsTap === '1') return;
+    wrap.dataset.diariInsightsTap = '1';
+    wrap.addEventListener(
+        'pointerdown',
+        (e) => {
+            if (!insightsIsMobileChartUi()) return;
+            let elements = [];
+            try {
+                elements = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, true) || [];
+            } catch (_) {
+                elements = [];
+            }
+            insightsBarChartOnClick.call(chart, e, elements);
+        },
+        { passive: true }
+    );
 }
 
 function hexToRgba(hex, alpha) {
@@ -561,6 +605,7 @@ function updateConsistencyMonthBarChart() {
                     bodyColor: '#ffffff',
                     padding: 12,
                     cornerRadius: 8,
+                    ...(insightsMobileTooltipPluginOpts().tooltip || {}),
                     callbacks: {
                         title(items) {
                             const m = getConsistencyChartSegmentMeta();
@@ -599,9 +644,9 @@ function updateConsistencyMonthBarChart() {
                 },
             },
             interaction: { intersect: false, mode: 'index' },
-            onClick: insightsBarChartOnClick,
         },
     });
+    bindInsightsMobileChartTapToggle(INSIGHTS_CONSISTENCY_CHART);
 }
 
 function renderInsightsConsistencyPanel() {
@@ -1598,6 +1643,7 @@ function initializeMoodByTagChart() {
                     padding: 12,
                     cornerRadius: 8,
                     displayColors: true,
+                    ...(insightsMobileTooltipPluginOpts().tooltip || {}),
                     callbacks: {
                         label: function(context) {
                             const mood = String(context.dataset.label || '');
@@ -1660,7 +1706,6 @@ function initializeMoodByTagChart() {
                 intersect: false,
                 mode: 'index'
             },
-            onClick: insightsBarChartOnClick,
         }
     };
     
@@ -1669,6 +1714,7 @@ function initializeMoodByTagChart() {
         MOOD_BY_TAG_CHART = null;
     }
     MOOD_BY_TAG_CHART = new Chart(ctx, config);
+    bindInsightsMobileChartTapToggle(MOOD_BY_TAG_CHART);
 }
 
 // Load Insights Data

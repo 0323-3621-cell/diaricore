@@ -1109,20 +1109,20 @@ html.theme-dark .entry-img-skeleton {
         font-weight: 500;
     }
 
-    .tags-container .tag-btn {
+    body.page-write-entry .tags-container .tag-btn {
         display: flex !important;
     }
 
-    .tags-container .tag-btn[style*="display: none"] {
+    body.page-write-entry .tags-container .tag-btn[style*="display: none"] {
         display: none !important;
     }
 
     /* Collapsed “extra” tags must not occupy grid rows (opacity/max-width still reserves space). */
-    .tags-container .tag-btn.is-hidden-row {
+    body.page-write-entry .tags-container .tag-btn.is-hidden-row {
         display: none !important;
     }
 
-    .tags-container {
+    body.page-write-entry .tags-container {
         display: grid !important;
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         gap: 0.45rem !important;
@@ -1131,7 +1131,7 @@ html.theme-dark .entry-img-skeleton {
         align-items: stretch;
     }
 
-    .tag-btn {
+    body.page-write-entry .tag-btn {
         padding: 0.42rem 0.32rem !important;
         font-size: 0.72rem !important;
         border-radius: 10px !important;
@@ -1142,12 +1142,12 @@ html.theme-dark .entry-img-skeleton {
         width: 100%;
     }
 
-    .tag-btn i {
+    body.page-write-entry .tag-btn i {
         font-size: 0.95rem !important;
         top: 0;
     }
 
-    .tag-btn span {
+    body.page-write-entry .tag-btn span {
         font-size: 0.68rem !important;
         line-height: 1.15;
     }
@@ -1312,9 +1312,24 @@ html.theme-dark .entry-img-skeleton {
     body.page-write-entry .write-entry-photos-panel .entry-gallery-scroll {
         border: none;
         border-radius: 12px 12px 0 0;
-        min-height: 160px;
+        min-height: 180px;
         height: auto !important;
-        max-height: none;
+        max-height: min(52vw, 320px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-grid,
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-grid--matrix {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.36rem !important;
+        align-content: start !important;
+    }
+
+    body.page-write-entry .write-entry-photos-panel .entry-gallery-item {
+        aspect-ratio: 1 / 1 !important;
+        min-height: 0 !important;
     }
 
     body.page-write-entry .write-entry-photos-panel .entry-gallery.is-empty {
@@ -1324,6 +1339,16 @@ html.theme-dark .entry-img-skeleton {
     body.page-write-entry .write-entry-photos-panel .entry-gallery-empty {
         min-height: 160px;
         width: 100%;
+    }
+
+    body.page-write-entry .journal-title-input {
+        padding-left: 0.5rem !important;
+        padding-right: 0.35rem !important;
+    }
+
+    body.page-write-entry .entry-main-pane {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
     }
 
     body.page-write-entry .write-entry-photos-panel .entry-gallery-toolbar {

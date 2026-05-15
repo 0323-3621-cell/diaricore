@@ -1053,40 +1053,56 @@ html.theme-dark .entry-view-strip-imgwrap {
 }
 
 @media (max-width: 768px) {
-    /* View mode: compact inline tag pills (like desktop), not full-width bars */
-    body.page-entries-detail-open .entry-view-read-pane .entry-view-tags-read,
-    .page-entry-view .entry-view-read-pane .entry-view-tags-read {
-        flex: 0 1 auto !important;
-        width: auto !important;
-        min-height: 0 !important;
-        align-items: center !important;
-    }
-
-    body.page-entries-detail-open .entry-view-tag-pill--readonly,
-    .page-entry-view .entry-view-tag-pill--readonly {
-        width: auto !important;
-        max-width: 100% !important;
-        flex: 0 0 auto !important;
-        margin: 0 !important;
-    }
-
     body.page-entries-detail-open .entry-view-tags-block,
     .page-entry-view .entry-view-tags-block {
-        align-items: center !important;
+        align-items: flex-start !important;
+        gap: 0.5rem 0.65rem !important;
     }
 
-    /* Edit tags: 3 per row, remove (×) inside pill */
-    body.page-entries-detail-open .entry-view-tags-inner,
-    .page-entry-view .entry-view-tags-inner {
+    body.page-entries-detail-open .entry-view-tags-label,
+    .page-entry-view .entry-view-tags-label {
+        padding-top: 0.42rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* View mode: 3 tags per row, compact pills (same look as single-tag entries) */
+    body.page-entries-detail-open .entry-view-read-pane .entry-view-tags-read,
+    .page-entry-view .entry-view-read-pane .entry-view-tags-read {
         display: grid !important;
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        align-content: start !important;
+        gap: 0.5rem !important;
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        align-items: start !important;
+    }
+
+    body.page-entries-detail-open .entry-view-read-pane .entry-view-tag-pill--readonly,
+    .page-entry-view .entry-view-read-pane .entry-view-tag-pill--readonly {
+        width: auto !important;
+        max-width: 100% !important;
+        justify-self: start !important;
+        margin: 0 !important;
+        padding: 0.35rem 0.65rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Edit tags: 3 per row, top-to-bottom */
+    body.page-entries-detail-open .entry-view-edit-pane .entry-view-tags-inner,
+    .page-entry-view .entry-view-edit-pane .entry-view-tags-inner {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-auto-flow: row !important;
+        align-content: start !important;
         gap: 0.5rem !important;
         align-items: stretch !important;
         min-height: 0 !important;
     }
 
-    body.page-entries-detail-open .entry-view-tag-pill,
-    .page-entry-view .entry-view-tag-pill {
+    body.page-entries-detail-open .entry-view-edit-pane .entry-view-tag-pill,
+    .page-entry-view .entry-view-edit-pane .entry-view-tag-pill {
         position: relative !important;
         margin: 0 !important;
         width: 100% !important;
@@ -1101,8 +1117,8 @@ html.theme-dark .entry-view-strip-imgwrap {
         min-height: 2.4rem !important;
     }
 
-    body.page-entries-detail-open .entry-view-tag-pill > span:first-child,
-    .page-entry-view .entry-view-tag-pill > span:first-child {
+    body.page-entries-detail-open .entry-view-edit-pane .entry-view-tag-pill > span:first-child,
+    .page-entry-view .entry-view-edit-pane .entry-view-tag-pill > span:first-child {
         min-width: 0 !important;
         max-width: 100% !important;
         overflow: hidden !important;
@@ -1113,8 +1129,8 @@ html.theme-dark .entry-view-strip-imgwrap {
         line-height: 1.15 !important;
     }
 
-    body.page-entries-detail-open .entry-view-tag-pill button,
-    .page-entry-view .entry-view-tag-pill button {
+    body.page-entries-detail-open .entry-view-edit-pane .entry-view-tag-pill button,
+    .page-entry-view .entry-view-edit-pane .entry-view-tag-pill button {
         position: absolute !important;
         top: 2px !important;
         right: 6px !important;
@@ -1133,9 +1149,10 @@ html.theme-dark .entry-view-strip-imgwrap {
         opacity: 1 !important;
     }
 
-    body.page-entries-detail-open .entry-view-add-tag-wrap,
-    .page-entry-view .entry-view-add-tag-wrap {
+    body.page-entries-detail-open .entry-view-edit-pane .entry-view-add-tag-wrap,
+    .page-entry-view .entry-view-edit-pane .entry-view-add-tag-wrap {
         grid-column: 1 / -1 !important;
+        order: 999 !important;
     }
 
     /* Edit mode: photo strip visible below entry text */
@@ -1159,7 +1176,7 @@ html.theme-dark .entry-view-strip-imgwrap {
         z-index: 1200 !important;
         left: auto !important;
         right: 0.9rem !important;
-        bottom: calc(5.3rem + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(6.35rem + env(safe-area-inset-bottom, 0px)) !important;
         width: auto !important;
         justify-content: flex-end !important;
         padding: 0 !important;
@@ -1179,9 +1196,20 @@ html.theme-dark .entry-view-strip-imgwrap {
         min-height: 46px !important;
         padding: 0.65rem 1rem !important;
         border-radius: 999px !important;
-        box-shadow: 0 4px 16px rgba(47, 62, 54, 0.22) !important;
+        box-shadow: 0 6px 20px rgba(47, 62, 54, 0.28) !important;
         font-size: 0.82rem !important;
         white-space: nowrap !important;
+        animation: entry-view-save-fab-float 2.6s ease-in-out infinite;
+    }
+
+    @keyframes entry-view-save-fab-float {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
     }
 
     body.page-entries-detail-open .entries-detail-shell .entry-view-main,

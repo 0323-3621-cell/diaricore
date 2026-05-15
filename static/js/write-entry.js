@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     let writeImageUploadChain = Promise.resolve();
+    let writeImageItemSeq = 0;
 
     function enqueueWriteImageUpload(task) {
         const run = writeImageUploadChain.then(() => task());
@@ -357,15 +358,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             throw new Error('Please log in again to upload photos.');
         }
         return enqueueWriteImageUpload(async () => {
-            const form = new FormData();
-            form.append('file', file);
-            form.append('userId', String(userId));
             updateImageProgress(localId, 30);
 
             let lastErr = null;
             for (let attempt = 0; attempt < 3; attempt++) {
                 try {
-                    const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+                    const attemptForm = new FormData();
+                    attemptForm.append('file', file);
+                    attemptForm.append('userId', String(userId));
+                    const res = await fetch('/api/uploads/image', { method: 'POST', body: attemptForm });
                     updateImageProgress(localId, 85);
                     const json = await res.json().catch(() => ({}));
                     if (!res.ok || !json?.success || !json?.url) {
@@ -384,8 +385,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function makeImageItem({ url = '', dataUrl = '', name = '' } = {}) {
+        writeImageItemSeq += 1;
         return {
-            id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+            id: `${Date.now()}_${writeImageItemSeq}_${Math.random().toString(36).slice(2, 10)}`,
             url,
             dataUrl,
             name,
@@ -553,12 +555,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             );
         }
         if (!files.length) return;
+        const uploadFiles = Array.from(files);
         const userId = getCurrentUserId();
-        if (attachedImages.length + files.length > MAX_IMAGE_WARN) {
+        if (attachedImages.length + uploadFiles.length > MAX_IMAGE_WARN) {
             alert('You added more than 10 images. This is okay, but it may affect upload speed.');
         }
         let uploadFailures = 0;
-        for (const file of files) {
+        for (const file of uploadFiles) {
             const item = makeImageItem({ name: file.name });
             attachedImages.push(item);
             try {

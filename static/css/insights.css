@@ -2304,6 +2304,13 @@ html.theme-dark .ins-highlight-chip {
         width: 100% !important;
         height: 100% !important;
     }
+
+    html.theme-dark .insights-consistency-month-select {
+        color: var(--text-dark);
+        background-color: var(--card-background);
+        border-color: var(--border-color);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c5d4ce' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+    }
 }
 
 @media (min-width: 769px) {

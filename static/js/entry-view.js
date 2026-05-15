@@ -3,6 +3,7 @@
 
     const QUEUE_KEY = 'diariCoreEntryEditQueue';
     let entryImageUploadChain = Promise.resolve();
+    let entryImageItemSeq = 0;
 
     function enqueueEntryImageUpload(task) {
         const run = entryImageUploadChain.then(() => task());
@@ -196,8 +197,9 @@
     }
 
     function makeImageItem({ url = '', dataUrl = '', name = '' } = {}) {
+        entryImageItemSeq += 1;
         return {
-            id: `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+            id: `${Date.now()}_${entryImageItemSeq}_${Math.random().toString(36).slice(2, 10)}`,
             url: String(url || '').trim(),
             dataUrl: String(dataUrl || '').trim(),
             name: String(name || ''),
@@ -1010,9 +1012,6 @@
                 throw new Error('Please log in again to upload photos.');
             }
             return enqueueEntryImageUpload(async () => {
-                const form = new FormData();
-                form.append('file', file);
-                form.append('userId', String(userId));
                 editorImages = editorImages.map((img) =>
                     img.id === localId ? { ...img, progress: Math.max(img.progress, 30) } : img
                 );
@@ -1021,7 +1020,10 @@
                 let lastErr = null;
                 for (let attempt = 0; attempt < 3; attempt++) {
                     try {
-                        const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+                        const attemptForm = new FormData();
+                        attemptForm.append('file', file);
+                        attemptForm.append('userId', String(userId));
+                        const res = await fetch('/api/uploads/image', { method: 'POST', body: attemptForm });
                         editorImages = editorImages.map((img) =>
                             img.id === localId ? { ...img, progress: Math.max(img.progress, 85) } : img
                         );
@@ -1051,15 +1053,16 @@
                 );
             }
             if (!files.length) return;
-            if (editorImages.length + files.length > MAX_ENTRY_IMAGES) {
+            const uploadFiles = Array.from(files);
+            if (editorImages.length + uploadFiles.length > MAX_ENTRY_IMAGES) {
                 window.alert(`Each entry allows at most ${MAX_ENTRY_IMAGES} images.`);
                 return;
             }
-            if (editorImages.length + files.length === MAX_ENTRY_IMAGES && files.length > 0) {
+            if (editorImages.length + uploadFiles.length === MAX_ENTRY_IMAGES && uploadFiles.length > 0) {
                 window.alert('This entry will have 10 photos (the maximum per entry).');
             }
             let uploadFailures = 0;
-            for (const file of files) {
+            for (const file of uploadFiles) {
                 if (editorImages.length >= MAX_ENTRY_IMAGES) break;
                 const item = makeImageItem({ name: file.name });
                 editorImages.push(item);

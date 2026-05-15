@@ -15,7 +15,8 @@ function insightsMobileTooltipPluginOpts() {
     if (!insightsIsMobileChartUi()) return {};
     return {
         tooltip: {
-            events: ['click'],
+            /* Manual show/hide via bindInsightsMobileChartTapToggle (avoids double-toggle with Chart.js). */
+            events: [],
         },
     };
 }
@@ -33,16 +34,24 @@ function insightsDismissChartTooltip(chart) {
     chart.update('none');
 }
 
+function insightsChartActiveTipIndex(chart) {
+    if (!chart?.tooltip || typeof chart.tooltip.getActiveElements !== 'function') {
+        return chart?._diariTipIdx ?? -1;
+    }
+    const active = chart.tooltip.getActiveElements();
+    return active?.[0]?.index ?? -1;
+}
+
 /** Mobile: tap same bar again to dismiss; tap chart container padding to dismiss. */
-function insightsBarChartOnClick(_evt, elements) {
-    const chart = this;
+function insightsBarChartOnClick(chart, elements) {
     if (!chart || !insightsIsMobileChartUi()) return;
     if (!elements?.length) {
         insightsDismissChartTooltip(chart);
         return;
     }
     const idx = elements[0].index;
-    if (chart._diariTipIdx === idx) {
+    const activeIdx = insightsChartActiveTipIndex(chart);
+    if (activeIdx === idx || chart._diariTipIdx === idx) {
         insightsDismissChartTooltip(chart);
         return;
     }
@@ -62,20 +71,21 @@ function bindInsightsMobileChartTapToggle(chart) {
     const wrap = chart.canvas.closest('.chart-container');
     if (!wrap || wrap.dataset.diariInsightsTap === '1') return;
     wrap.dataset.diariInsightsTap = '1';
-    wrap.addEventListener(
-        'pointerdown',
-        (e) => {
-            if (!insightsIsMobileChartUi()) return;
-            let elements = [];
-            try {
-                elements = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, true) || [];
-            } catch (_) {
-                elements = [];
-            }
-            insightsBarChartOnClick.call(chart, e, elements);
-        },
-        { passive: true }
-    );
+
+    const handleTap = (e) => {
+        if (!insightsIsMobileChartUi()) return;
+        e.preventDefault();
+        e.stopPropagation();
+        let elements = [];
+        try {
+            elements = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, true) || [];
+        } catch (_) {
+            elements = [];
+        }
+        insightsBarChartOnClick(chart, elements);
+    };
+
+    wrap.addEventListener('click', handleTap, true);
 }
 
 function hexToRgba(hex, alpha) {

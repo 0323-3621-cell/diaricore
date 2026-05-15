@@ -64,8 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', () => {
         fetch('/api/admin/logout', { method: 'POST' })
             .finally(() => {
-                localStorage.removeItem('diariCoreUser');
-                window.location.href = 'login.html';
+                if (window.DiariTheme && typeof window.DiariTheme.logout === 'function') {
+                    window.DiariTheme.logout('login.html');
+                } else {
+                    try {
+                        localStorage.removeItem('diariCoreUser');
+                    } catch (_) {}
+                    window.location.href = 'login.html';
+                }
             });
     });
 

@@ -18,6 +18,8 @@
     const VALID_PALETTE_IDS = new Set(PALETTES.map(function (p) {
         return p.id;
     }));
+    const DEFAULT_THEME = 'light';
+    const DEFAULT_PALETTE_ID = 'theme-1';
     let prefsSyncTimer = null;
 
     function getSavedTheme() {
@@ -201,6 +203,42 @@
         }
     }
 
+    /** Restore system defaults after sign-out (light mode + Soft Sage Green). */
+    function resetToDefaults() {
+        if (prefsSyncTimer) {
+            clearTimeout(prefsSyncTimer);
+            prefsSyncTimer = null;
+        }
+        localStorage.setItem(STORAGE_KEY, DEFAULT_THEME);
+        localStorage.setItem(PALETTE_KEY, DEFAULT_PALETTE_ID);
+        applyTheme(DEFAULT_THEME);
+        applyPaletteById(DEFAULT_PALETTE_ID);
+        syncFabState(DEFAULT_THEME);
+        syncToggleState();
+        const defaultPalette = getPaletteById(DEFAULT_PALETTE_ID);
+        window.dispatchEvent(
+            new CustomEvent('diari-theme-changed', { detail: { theme: DEFAULT_THEME } })
+        );
+        window.dispatchEvent(
+            new CustomEvent('diari-palette-changed', {
+                detail: {
+                    paletteId: DEFAULT_PALETTE_ID,
+                    paletteName: defaultPalette.name,
+                    primaryColor: defaultPalette.primary,
+                },
+            })
+        );
+    }
+
+    /** Clear session and UI prefs, then redirect to login (desktop + mobile). */
+    function logout(redirectUrl) {
+        resetToDefaults();
+        try {
+            localStorage.removeItem('diariCoreUser');
+        } catch (_) {}
+        window.location.href = redirectUrl || 'login.html';
+    }
+
     function syncToggleState() {
         const toggle = document.getElementById('toggleDarkMode');
         if (!toggle) return;
@@ -342,5 +380,9 @@
         applyPaletteById,
         syncToggleState,
         applyFromUser: applyFromUserObject,
+        resetToDefaults,
+        logout,
+        DEFAULT_THEME,
+        DEFAULT_PALETTE_ID,
     };
 })();

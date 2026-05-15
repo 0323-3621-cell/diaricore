@@ -1205,8 +1205,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (writeDiscardModal) writeDiscardModal.hidden = true;
         releaseBodyScrollIfNoModals();
         if (p?.kind === 'logout') {
-            localStorage.removeItem('diariCoreUser');
-            window.location.href = 'login.html';
+            if (window.DiariTheme && typeof window.DiariTheme.logout === 'function') {
+                window.DiariTheme.logout('login.html');
+            } else {
+                try {
+                    localStorage.removeItem('diariCoreUser');
+                } catch (_) {}
+                window.location.href = 'login.html';
+            }
             return;
         }
         window.location.href = p?.kind === 'href' ? p.href : 'dashboard.html';

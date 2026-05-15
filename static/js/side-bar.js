@@ -445,9 +445,13 @@ class SidebarComponent {
         const logoutBtn = this.sidebarElement.querySelector('.logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                // Clear authentication data
-                localStorage.removeItem('diariCoreUser');
-                // Redirect to login page
+                if (window.DiariTheme && typeof window.DiariTheme.logout === 'function') {
+                    window.DiariTheme.logout('login.html');
+                    return;
+                }
+                try {
+                    localStorage.removeItem('diariCoreUser');
+                } catch (_) {}
                 window.location.href = 'login.html';
             });
         }

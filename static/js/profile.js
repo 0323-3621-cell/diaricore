@@ -1848,6 +1848,10 @@ function setProfilePwdChangeOtpResendLoading(isLoading) {
 }
 
 function performProfileLogout() {
+    if (window.DiariTheme && typeof window.DiariTheme.logout === 'function') {
+        window.DiariTheme.logout('login.html');
+        return;
+    }
     try {
         localStorage.removeItem('diariCoreUser');
     } catch (_) {}
@@ -2316,16 +2320,14 @@ function initializeProfileInteractions() {
     const mobileLogoutBtn = document.getElementById('profileMobileLogoutBtn');
     if (mobileLogoutBtn) {
         mobileLogoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('diariCoreUser');
-            window.location.href = 'login.html';
+            performProfileLogout();
         });
     }
 
     const pageLogoutBtn = document.getElementById('profilePageLogoutBtn');
     if (pageLogoutBtn) {
         pageLogoutBtn.addEventListener('click', function() {
-            localStorage.removeItem('diariCoreUser');
-            window.location.href = 'login.html';
+            performProfileLogout();
         });
     }
 

@@ -107,19 +107,17 @@
                 }
             }
 
-            void fetch('/api/voice/status', { credentials: 'same-origin' })
-                .then(function (r) {
-                    return r.json();
-                })
-                .then(function (j) {
-                    if (!j || !j.success) return;
-                    serverTranscribeConfigured = Boolean(j.configured);
-                    if (!j.configured && statusText && !isRecording) {
-                        statusText.textContent =
-                            'Tap to record. Server transcription needs HF_API_TOKEN on the host (you can still type your entry).';
-                    }
-                })
-                .catch(function () {});
+            if (window.DIARI_VOICE_USE_SERVER === true) {
+                void fetch('/api/voice/status', { credentials: 'same-origin' })
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (j) {
+                        if (!j || !j.success) return;
+                        serverTranscribeConfigured = Boolean(j.configured);
+                    })
+                    .catch(function () {});
+            }
 
             if (isMobile && mobileRetryBtn) {
                 setTimeout(function () {
@@ -202,13 +200,16 @@
 
             function stopSpeechRecognition() {
                 wantRecognitionRunning = false;
-                if (recognition) {
-                    try {
-                        recognition.onend = null;
-                        recognition.stop();
-                    } catch (_) {}
-                    recognition = null;
-                }
+                if (!recognition) return;
+                const rec = recognition;
+                recognition = null;
+                rec.onend = null;
+                rec.onresult = null;
+                rec.onerror = null;
+                try {
+                    if (typeof rec.abort === 'function') rec.abort();
+                    else rec.stop();
+                } catch (_) {}
             }
 
             function primeAudioFromUserGesture() {
@@ -245,7 +246,7 @@
                         if (!res || !res[0]) continue;
                         const piece = res[0].transcript || '';
                         if (res.isFinal) {
-                            speechFinalText += piece;
+                            speechFinalText += (speechFinalText && piece ? ' ' : '') + piece;
                         } else {
                             interim += piece;
                         }
@@ -309,7 +310,7 @@
                     if (err === 'network' || err === 'service-not-allowed') {
                         wantRecognitionRunning = false;
                         setTranscriptHint(
-                            'Browser live captions are blocked (often Brave Shields). Keep talking, then tap stop — we will transcribe the recording on the server if the box is still empty. You can also turn Shields down for this site or type below.'
+                            'Browser live captions are blocked (often Brave Shields). Keep talking, then tap stop — we will transcribe the recording on your device if the box is still empty. You can also type below.'
                         );
                         return;
                     }
@@ -320,13 +321,13 @@
                 };
 
                 recognition.onend = function () {
-                    if (!wantRecognitionRunning) return;
+                    if (!wantRecognitionRunning || !isRecording) return;
                     setTimeout(function () {
-                        if (!wantRecognitionRunning || !recognition) return;
+                        if (!wantRecognitionRunning || !isRecording || !recognition) return;
                         try {
                             recognition.start();
                         } catch (_) {}
-                    }, 160);
+                    }, 220);
                 };
             }
 
@@ -414,56 +415,83 @@
 
             function flushSpeechToTranscript() {
                 if (!finalTranscript) return;
-                const combined = String(speechFinalText || '').replace(/\s+/g, ' ').trim();
+                const fromSpeech = String(speechFinalText || '').replace(/\s+/g, ' ').trim();
+                const current = String(finalTranscript.value || '').replace(/\s+/g, ' ').trim();
+                const combined = current.length >= fromSpeech.length ? current : fromSpeech;
                 if (combined) {
                     finalTranscript.value = combined;
                     updateWordCountFromTranscript();
                 }
             }
 
+            async function transcribeOnDevice(blob) {
+                if (!window.DiariVoiceClient || typeof DiariVoiceClient.transcribeBlob !== 'function') {
+                    return '';
+                }
+                if (DiariVoiceClient.isSupported && !DiariVoiceClient.isSupported()) {
+                    return '';
+                }
+                return DiariVoiceClient.transcribeBlob(blob, setTranscriptHint);
+            }
+
+            async function transcribeOnServer(blob, recorderMime) {
+                if (serverTranscribeConfigured === false) {
+                    return '';
+                }
+                setTranscriptHint('Transcribing on the server (optional fallback)…');
+                const fd = new FormData();
+                const ext = extensionForMime(recorderMime || blob.type);
+                fd.append('audio', blob, 'recording.' + ext);
+                const r = await fetch('/api/voice/transcribe', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                });
+                const j = await r.json().catch(function () {
+                    return {};
+                });
+                if (j.success && j.text) {
+                    return String(j.text).replace(/\s+/g, ' ').trim();
+                }
+                throw new Error((j && j.error) || 'Server transcription failed');
+            }
+
             async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
                 if (!blob || blob.size < 200) return;
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
-                if (serverTranscribeConfigured === false) {
-                    setTranscriptHint(
-                        'Live captions were unavailable and server transcription is not configured (HF_API_TOKEN). Type your entry below.'
-                    );
-                    return;
-                }
-                setTranscriptHint('Transcribing your recording on the server (a few seconds)…');
+
                 try {
-                    const fd = new FormData();
-                    const ext = extensionForMime(recorderMime || blob.type);
-                    fd.append('audio', blob, 'recording.' + ext);
-                    const r = await fetch('/api/voice/transcribe', {
-                        method: 'POST',
-                        body: fd,
-                        credentials: 'same-origin',
-                    });
-                    const j = await r.json().catch(function () {
-                        return {};
-                    });
-                    if (j.success && j.text && finalTranscript) {
-                        finalTranscript.value = String(j.text).replace(/\s+/g, ' ').trim();
+                    const deviceText = await transcribeOnDevice(blob);
+                    if (deviceText && finalTranscript) {
+                        finalTranscript.value = deviceText;
                         updateWordCountFromTranscript();
                         setTranscriptHint(
-                            j.source === 'hf'
-                                ? 'Transcript from the server (used because browser live captions were unavailable).'
-                                : ''
+                            'Transcript created on your device (no server used). First time may download a small model.'
                         );
-                    } else {
-                        setTranscriptHint(
-                            (j && j.error) ||
-                                'Server transcription did not return text. Check HF_API_TOKEN on the host, or type your entry below.'
-                        );
+                        return;
                     }
                 } catch (e) {
-                    console.error(e);
-                    setTranscriptHint(
-                        'Could not reach the server to transcribe. Check your connection, or type your entry below.'
-                    );
+                    console.error('On-device transcription failed:', e);
                 }
+
+                if (window.DIARI_VOICE_USE_SERVER === true) {
+                    try {
+                        const serverText = await transcribeOnServer(blob, recorderMime);
+                        if (serverText && finalTranscript) {
+                            finalTranscript.value = serverText;
+                            updateWordCountFromTranscript();
+                            setTranscriptHint('Transcript from the server (live captions were unavailable).');
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Server transcription failed:', e);
+                    }
+                }
+
+                setTranscriptHint(
+                    'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
+                );
             }
 
             if (voiceCircle) {
@@ -480,6 +508,10 @@
             async function startRecording() {
                 teardownAudioGraph();
                 stopSpeechRecognition();
+                stopMediaStream();
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 220);
+                });
 
                 try {
                     speechFinalText = '';
@@ -536,7 +568,7 @@
                         freqData = new Uint8Array(analyserNode.frequencyBinCount);
                     }
 
-                    /* Always capture a file so we can transcribe on the server when Web Speech is blocked (e.g. Brave). */
+                    /* Always capture audio so we can transcribe on-device when live captions fail. */
                     startBackupMediaRecorder();
 
                     isRecording = true;

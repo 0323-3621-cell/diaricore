@@ -158,7 +158,8 @@
             <div class="tips-container">
                 <h3>Tips for voice journaling</h3>
                 <ul>
-                    <li>Live captions use the <strong>browser</strong> (Brave Shields often block them). After you stop, we can <strong>transcribe on the server</strong> if the box is still empty — needs <code>HF_API_TOKEN</code> on Railway.</li>
+                    <li>While you speak, <strong>live captions</strong> use your browser (Chrome or Edge work best; Brave Shields may block them).</li>
+                    <li>If the box is still empty after you stop, we <strong>transcribe on your device</strong> from the recording (first time downloads a small model; no DiariCore server needed).</li>
                     <li>Find a quiet place for clearer dictation.</li>
                     <li>You can edit the transcript, then use <strong>Save Entry</strong> to continue on Write Entry with tags and mood analysis.</li>
                 </ul>
@@ -170,6 +171,7 @@
     <script src="side-bar.js"></script>
     <script src="diari-security.js"></script>
     <script src="diari-shell.js"></script>
+    <script src="voice-transcribe-client.js"></script>
     <script src="voice-entry.js"></script>
 </body>
 </html>

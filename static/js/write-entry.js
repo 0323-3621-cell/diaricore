@@ -1607,68 +1607,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
     journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
 
-    async function saveEntryAndRedirect(targetHref) {
-        const entryText = journalText.value.trim();
-        const entryTitle = normalizeTag(journalTitleInput?.value || '');
-        if (journalDateTimeInput && journalDateTimeInput.value.trim().length >= 16) {
-            clampFutureJournalDateTimeLocal();
-        }
-        const entryDateTimeLocal =
-            manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
-        if (!entryText) {
-            showWriteEntryNotification('Please write something before saving.', 'warning');
-            return;
-        }
-        const userId = getCurrentUserId();
-        setSavingState(true);
-        try {
-            let imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
-            if (isOnlineNow() && userId) {
-                const pendingUploads = attachedImages.filter((img) => !img.url && img.dataUrl);
-                for (const item of pendingUploads) {
-                    const blob = dataUrlToBlob(item.dataUrl);
-                    const ext = (blob.type || 'image/png').split('/')[1] || 'png';
-                    const file = new File([blob], `queued-${Date.now()}.${ext}`, {
-                        type: blob.type || 'image/png',
-                    });
-                    const url = await uploadImageOnline(file, userId, item.id);
-                    attachedImages = attachedImages.map((img) =>
-                        img.id === item.id ? { ...img, url, progress: 100 } : img
-                    );
-                }
-                imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
-            }
-            const response = await fetch('/api/entries', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId,
-                    title: entryTitle,
-                    entryDateTimeLocal,
-                    text: entryText,
-                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
-                    imageUrls,
-                }),
-            });
-            const result = await response.json();
-            if (!response.ok || !result.success || !result.entry) {
-                throw new Error(result.error || 'Failed to save entry.');
-            }
-            const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
-            entries.push(result.entry);
-            localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
-            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
-                window.DiariSessionManager.endSession('saved');
-            }
-            window.location.href = targetHref || 'entries.html';
-        } catch (err) {
-            console.error('Session save failed:', err);
-            showWriteEntryNotification(err.message || 'Could not save entry.', 'error');
-        } finally {
-            setSavingState(false);
-        }
-    }
-
     function applySessionDraft(draft) {
         if (!draft || typeof draft !== 'object') return;
         if (journalTitleInput && draft.title) journalTitleInput.value = String(draft.title);
@@ -1719,7 +1657,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 };
             },
             applyDraft: applySessionDraft,
-            saveEntryAndRedirect: saveEntryAndRedirect,
         });
         await window.DiariSessionManager.start();
     }

@@ -1,5 +1,5 @@
 /**
- * DiariCore Write Entry — unified session management (timer, drafts, idle timeout, single-tab lock).
+ * DiariCore Write Entry — unified session management (timer, drafts, single-tab lock).
  * Loaded only on write-entry.html. Vanilla JS; localStorage keys prefixed diaricore_session_.
  */
 (function (global) {
@@ -17,8 +17,6 @@
     var AUTOSAVE_MS = 30000;
     var TIMER_TICK_MS = 60000;
     var TYPING_IDLE_MS = 2 * 60000;
-    var USER_IDLE_MS = 30 * 60000;
-    var TIMEOUT_MODAL_MS = 10 * 60000;
     var CONCURRENT_WAIT_MS = 500;
     var DRAFT_TOAST_MS = 2000;
 
@@ -41,13 +39,10 @@
         autosave: null,
         heartbeat: null,
         typingIdle: null,
-        userIdle: null,
-        timeoutAuto: null,
     };
 
     var state = {
         typingPaused: false,
-        timeoutModalOpen: false,
     };
 
     var els = {};
@@ -188,8 +183,7 @@
     function releaseBodyScroll() {
         var anyOpen =
             (els.concurrentModal && !els.concurrentModal.hidden) ||
-            (els.draftModal && !els.draftModal.hidden) ||
-            (els.timeoutModal && !els.timeoutModal.hidden);
+            (els.draftModal && !els.draftModal.hidden);
         if (!anyOpen) document.body.style.overflow = '';
     }
 
@@ -205,12 +199,6 @@
         releaseBodyScroll();
     }
 
-    function resetUserIdleTimer() {
-        clearTimeout(timers.userIdle);
-        if (!active || destroyed) return;
-        timers.userIdle = setTimeout(onUserIdle, USER_IDLE_MS);
-    }
-
     function resetTypingIdleTimer() {
         clearTimeout(timers.typingIdle);
         if (!active || destroyed) return;
@@ -220,58 +208,11 @@
         }, TYPING_IDLE_MS);
     }
 
-    function onUserActivity() {
-        if (!active || destroyed) return;
-        resetUserIdleTimer();
-    }
-
     function onTyping() {
         if (!active || destroyed) return;
         state.typingPaused = false;
         updateTimerDisplay();
         resetTypingIdleTimer();
-        resetUserIdleTimer();
-    }
-
-    function onUserIdle() {
-        if (!active || destroyed || state.timeoutModalOpen) return;
-        state.timeoutModalOpen = true;
-        if (els.timeoutSessionMeta) {
-            var mins = elapsedMinutes();
-            els.timeoutSessionMeta.textContent =
-                'Session started ' +
-                (mins < 1 ? 'less than a minute' : formatMinutes(mins)) +
-                ' ago';
-        }
-        openModal(els.timeoutModal);
-        clearTimeout(timers.timeoutAuto);
-        timers.timeoutAuto = setTimeout(onTimeoutModalExpired, TIMEOUT_MODAL_MS);
-    }
-
-    function onTimeoutModalExpired() {
-        if (!state.timeoutModalOpen) return;
-        persistDraft();
-        state.timeoutModalOpen = false;
-        closeModal(els.timeoutModal);
-        endSession('timeout_auto');
-        var banner = document.createElement('div');
-        banner.setAttribute('role', 'status');
-        banner.className = 'diari-session-farewell';
-        banner.textContent = 'We saved your draft. See you next time.';
-        document.body.appendChild(banner);
-        requestAnimationFrame(function () {
-            banner.classList.add('is-visible');
-        });
-        setTimeout(function () {
-            global.location.href = 'dashboard.html';
-        }, 1800);
-    }
-
-    function dismissTimeoutModal() {
-        state.timeoutModalOpen = false;
-        clearTimeout(timers.timeoutAuto);
-        closeModal(els.timeoutModal);
-        resetUserIdleTimer();
     }
 
     function runConcurrentCheck() {
@@ -376,11 +317,6 @@
     function bindActivityListeners() {
         if (activityBound) return;
         activityBound = true;
-        var passive = { passive: true };
-        document.addEventListener('mousemove', onUserActivity, passive);
-        document.addEventListener('keydown', onUserActivity);
-        document.addEventListener('scroll', onUserActivity, passive);
-        document.addEventListener('touchstart', onUserActivity, passive);
 
         document.addEventListener('input', function (e) {
             var t = e.target;
@@ -394,26 +330,6 @@
         window.addEventListener('beforeunload', function () {
             persistDraft();
         });
-
-        if (els.timeoutContinueBtn) {
-            els.timeoutContinueBtn.addEventListener('click', dismissTimeoutModal);
-        }
-        if (els.timeoutSaveBtn) {
-            els.timeoutSaveBtn.addEventListener('click', function () {
-                dismissTimeoutModal();
-                if (hooks && typeof hooks.saveEntryAndRedirect === 'function') {
-                    hooks.saveEntryAndRedirect('entries.html');
-                }
-            });
-        }
-        if (els.timeoutDiscardBtn) {
-            els.timeoutDiscardBtn.addEventListener('click', function () {
-                dismissTimeoutModal();
-                clearDraft();
-                endSession('timeout_discard');
-                global.location.href = 'dashboard.html';
-            });
-        }
     }
 
     function startBackground() {
@@ -429,7 +345,6 @@
             broadcast({ type: 'session_active', tab_id: tabId });
         }, HEARTBEAT_MS);
 
-        resetUserIdleTimer();
         resetTypingIdleTimer();
         bindActivityListeners();
         broadcast({ type: 'session_active', tab_id: tabId });
@@ -440,7 +355,6 @@
         els.draftToast = document.getElementById('diariSessionDraftToast');
         els.draftModal = document.getElementById('diariSessionDraftModal');
         els.concurrentModal = document.getElementById('diariSessionConcurrentModal');
-        els.timeoutModal = document.getElementById('diariSessionTimeoutModal');
         els.draftPreviewTitle = document.getElementById('diariSessionDraftPreviewTitle');
         els.draftPreviewMeta = document.getElementById('diariSessionDraftPreviewMeta');
         els.draftPreviewSnippet = document.getElementById('diariSessionDraftPreviewSnippet');
@@ -448,10 +362,6 @@
         els.draftFreshBtn = document.getElementById('diariSessionDraftFreshBtn');
         els.concurrentUseBtn = document.getElementById('diariSessionConcurrentUseBtn');
         els.concurrentBackBtn = document.getElementById('diariSessionConcurrentBackBtn');
-        els.timeoutContinueBtn = document.getElementById('diariSessionTimeoutContinueBtn');
-        els.timeoutSaveBtn = document.getElementById('diariSessionTimeoutSaveBtn');
-        els.timeoutDiscardBtn = document.getElementById('diariSessionTimeoutDiscardBtn');
-        els.timeoutSessionMeta = document.getElementById('diariSessionTimeoutMeta');
     }
 
     async function runConcurrentPhase() {
@@ -519,10 +429,8 @@
         clearInterval(timers.autosave);
         clearInterval(timers.heartbeat);
         clearTimeout(timers.typingIdle);
-        clearTimeout(timers.userIdle);
-        clearTimeout(timers.timeoutAuto);
 
-        if (reason === 'saved' || reason === 'discarded' || reason === 'timeout_discard') {
+        if (reason === 'saved' || reason === 'discarded') {
             clearDraft();
         }
 
@@ -543,7 +451,6 @@
         }
 
         if (reason !== 'takeover') {
-            state.timeoutModalOpen = false;
             releaseBodyScroll();
         }
     }

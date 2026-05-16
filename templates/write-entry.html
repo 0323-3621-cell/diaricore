@@ -280,33 +280,6 @@
         </div>
     </div>
 
-    <!-- Session: idle timeout -->
-    <div class="write-flow-modal diari-session-modal" id="diariSessionTimeoutModal" hidden role="dialog" aria-modal="true" aria-labelledby="diariSessionTimeoutTitle">
-        <div class="write-flow-modal__backdrop"></div>
-        <div class="write-flow-modal__panel">
-            <div class="write-flow-modal__section write-flow-modal__section--header">
-                <div class="write-flow-modal__header-row">
-                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--amber" aria-hidden="true">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                    <div class="write-flow-modal__header-text">
-                        <h2 id="diariSessionTimeoutTitle" class="write-flow-modal__title">Still there?</h2>
-                        <p class="write-flow-modal__desc">Your journaling session is still open. You've been away for 30 minutes.</p>
-                        <p class="diari-session-modal__meta" id="diariSessionTimeoutMeta"></p>
-                    </div>
-                </div>
-            </div>
-            <div class="write-flow-modal__divider" aria-hidden="true"></div>
-            <div class="write-flow-modal__section write-flow-modal__section--actions">
-                <div class="write-flow-modal__actions diari-session-modal__actions--stack">
-                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="diariSessionTimeoutContinueBtn">Continue writing</button>
-                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="diariSessionTimeoutSaveBtn">Save &amp; Exit</button>
-                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="diariSessionTimeoutDiscardBtn">Discard</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Discard unsaved entry (replaces native cancel confirm) -->
     <div class="write-flow-modal write-discard-modal" id="writeDiscardModal" hidden role="dialog" aria-modal="true" aria-labelledby="writeDiscardTitle">
         <div class="write-flow-modal__backdrop" data-write-discard-dismiss="1"></div>

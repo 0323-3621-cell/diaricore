@@ -18,6 +18,11 @@ ICON_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,62}$")
 TAG_RE = re.compile(r"^[\w\s\-'.+#&]{1,40}$", re.UNICODE)
 MAX_TAGS_PER_ENTRY = 20
 MAX_ENTRY_IMAGES = 10
+NICKNAME_MIN_LEN = 4
+NICKNAME_MAX_LEN = 64
+PERSON_NAME_MAX_LEN = 64
+EMAIL_MAX_LEN = 254
+ALLOWED_GENDERS = frozenset({"Male", "Female", "Prefer not to say"})
 
 
 def strip_null_bytes(value: str) -> str:
@@ -29,6 +34,73 @@ def strip_null_bytes(value: str) -> str:
 def normalize_entry_text(text: str) -> str:
     """Prepare diary text for storage and mood analysis — do not strip HTML/tags."""
     return strip_null_bytes((text or "").strip())
+
+
+def _reject_angle_brackets(value: str, field_label: str) -> Optional[str]:
+    if "<" in value or ">" in value:
+        return f"{field_label} cannot contain < or >."
+    return None
+
+
+def validate_person_name(
+    value: str,
+    field_label: str,
+    *,
+    required: bool = True,
+    max_len: int = PERSON_NAME_MAX_LEN,
+) -> Tuple[bool, str, Optional[str]]:
+    t = strip_null_bytes((value or "").strip())
+    if required and not t:
+        return False, "", f"{field_label} is required."
+    if len(t) > max_len:
+        return False, "", f"{field_label} must be {max_len} characters or fewer."
+    err = _reject_angle_brackets(t, field_label)
+    if err:
+        return False, "", err
+    return True, t, None
+
+
+def validate_nickname(value: str) -> Tuple[bool, str, Optional[str]]:
+    t = strip_null_bytes((value or "").strip())
+    if not t:
+        return False, "", "Username is required."
+    if len(t) < NICKNAME_MIN_LEN or len(t) > NICKNAME_MAX_LEN:
+        return False, "", f"Field must be between {NICKNAME_MIN_LEN} and {NICKNAME_MAX_LEN} characters long."
+    err = _reject_angle_brackets(t, "Username")
+    if err:
+        return False, "", err
+    return True, t, None
+
+
+def validate_email(value: str) -> Tuple[bool, str, Optional[str]]:
+    t = strip_null_bytes((value or "").strip())
+    if not t:
+        return False, "", "Email is required."
+    if len(t) > EMAIL_MAX_LEN:
+        return False, "", "Email is too long."
+    if "<" in t or ">" in t or " " in t:
+        return False, "", "Please enter a valid email."
+    if "@" not in t or "." not in t.split("@")[-1]:
+        return False, "", "Please enter a valid email."
+    return True, t, None
+
+
+def validate_gender(value: str) -> Tuple[bool, str, Optional[str]]:
+    t = strip_null_bytes((value or "").strip())
+    if not t:
+        return False, "", "Gender is required."
+    if t not in ALLOWED_GENDERS:
+        return False, "", "Invalid gender selection."
+    return True, t, None
+
+
+def validate_birthday(value: str) -> Tuple[bool, str, Optional[str]]:
+    t = strip_null_bytes((value or "").strip())
+    if not t:
+        return False, "", "Date of birth is required."
+    if len(t) > 32 or not re.match(r"^\d{4}-\d{2}-\d{2}$", t):
+        return False, "", "Invalid date of birth."
+    return True, t, None
 
 
 def validate_title(title: str) -> Tuple[bool, str, Optional[str]]:

@@ -1756,8 +1756,14 @@ function showNotification(message, type = 'info') {
     
     notification.innerHTML = `
         <i class="bi bi-${icon}"></i>
-        <span>${message}</span>
+        <span></span>
     `;
+    if (window.DiariSecurity && window.DiariSecurity.setToastMessage) {
+        window.DiariSecurity.setToastMessage(notification, message);
+    } else {
+        const span = notification.querySelector('span');
+        if (span) span.textContent = String(message ?? '');
+    }
     
     const toastBg =
         window.DiariToastColors && window.DiariToastColors.bg

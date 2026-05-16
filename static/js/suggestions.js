@@ -454,8 +454,14 @@ function showNotification(message, type = 'info') {
     notification.className = 'suggestions-notification';
     notification.innerHTML = `
         <i class="bi bi-${getNotificationIcon(type)}"></i>
-        <span>${message}</span>
+        <span></span>
     `;
+    if (window.DiariSecurity && window.DiariSecurity.setToastMessage) {
+        window.DiariSecurity.setToastMessage(notification, message);
+    } else {
+        const span = notification.querySelector('span');
+        if (span) span.textContent = String(message ?? '');
+    }
 
     // Style the notification
     notification.style.cssText = `

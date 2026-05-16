@@ -556,25 +556,26 @@ def health():
 @app.route("/api/register", methods=["POST"])
 def api_register():
     data = request.get_json(silent=True) or {}
-    nickname = (data.get("nickname") or "").strip()
-    email = (data.get("email") or "").strip()
     password = data.get("password") or ""
-    first_name = (data.get("firstName") or "").strip()
-    last_name = (data.get("lastName") or "").strip()
-    gender = (data.get("gender") or "").strip()
-    birthday = (data.get("birthday") or "").strip()
 
-    if not nickname:
-        return jsonify({"success": False, "field": "nickname", "error": "Username is required."}), 400
-    if len(nickname) < 4 or len(nickname) > 64:
-        return jsonify(
-            {"success": False, "field": "nickname", "error": "Field must be between 4 and 64 characters long."}
-        ), 400
-    if not email:
-        return jsonify({"success": False, "field": "signUpEmail", "error": "Email is required."}), 400
-    # Keep backend email validation simple but consistent with frontend.
-    if "@" not in email or "." not in email:
-        return jsonify({"success": False, "field": "signUpEmail", "error": "Please enter a valid email."}), 400
+    ok_nick, nickname, err_nick = insec.validate_nickname(data.get("nickname") or "")
+    if not ok_nick:
+        return jsonify({"success": False, "field": "nickname", "error": err_nick or "Invalid username."}), 400
+    ok_email, email, err_email = insec.validate_email(data.get("email") or "")
+    if not ok_email:
+        return jsonify({"success": False, "field": "signUpEmail", "error": err_email or "Invalid email."}), 400
+    ok_fn, first_name, err_fn = insec.validate_person_name(data.get("firstName") or "", "First name")
+    if not ok_fn:
+        return jsonify({"success": False, "field": "firstName", "error": err_fn or "Invalid first name."}), 400
+    ok_ln, last_name, err_ln = insec.validate_person_name(data.get("lastName") or "", "Last name")
+    if not ok_ln:
+        return jsonify({"success": False, "field": "lastName", "error": err_ln or "Invalid last name."}), 400
+    ok_gender, gender, err_gender = insec.validate_gender(data.get("gender") or "")
+    if not ok_gender:
+        return jsonify({"success": False, "field": "gender", "error": err_gender or "Invalid gender."}), 400
+    ok_bd, birthday, err_bd = insec.validate_birthday(data.get("birthday") or "")
+    if not ok_bd:
+        return jsonify({"success": False, "field": "birthday", "error": err_bd or "Invalid date of birth."}), 400
     if not password:
         return jsonify({"success": False, "field": "signUpPassword", "error": "Password is required."}), 400
     ok_pw, field_pw, msg_pw = password_policy.validate_new_password(
@@ -586,14 +587,6 @@ def api_register():
     )
     if not ok_pw:
         return jsonify({"success": False, "field": field_pw or "signUpPassword", "error": msg_pw}), 400
-    if not first_name:
-        return jsonify({"success": False, "field": "firstName", "error": "First name is required."}), 400
-    if not last_name:
-        return jsonify({"success": False, "field": "lastName", "error": "Last name is required."}), 400
-    if not gender:
-        return jsonify({"success": False, "field": "gender", "error": "Gender is required."}), 400
-    if not birthday:
-        return jsonify({"success": False, "field": "birthday", "error": "Date of birth is required."}), 400
 
     otp_code = _generate_otp()
     otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
@@ -682,7 +675,7 @@ def api_register_resend():
 @app.route("/api/login", methods=["POST"])
 def api_login():
     data = request.get_json(silent=True) or {}
-    username = (data.get("username") or data.get("email") or "").strip()
+    username = insec.strip_null_bytes((data.get("username") or data.get("email") or "").strip())
     password = data.get("password") or ""
     if not username or not password:
         return jsonify({"success": False, "error": "Username and password are required."}), 400
@@ -1037,15 +1030,32 @@ def api_user_profile_update():
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
 
-    first_name = insec.strip_null_bytes((data.get("firstName") or "").strip())
-    last_name = insec.strip_null_bytes((data.get("lastName") or "").strip())
-    nickname = insec.strip_null_bytes((data.get("nickname") or "").strip())
-    email = (data.get("email") or "").strip()
-    gender = (data.get("gender") or "").strip() or None
-    birthday = (data.get("birthday") or "").strip() or None
-    for label, val in (("firstName", first_name), ("lastName", last_name), ("nickname", nickname)):
-        if "<" in val or ">" in val:
-            return jsonify({"success": False, "field": label, "error": "Name fields cannot contain < or >."}), 400
+    ok_fn, first_name, err_fn = insec.validate_person_name(data.get("firstName") or "", "First name", required=False)
+    if not ok_fn:
+        return jsonify({"success": False, "field": "firstName", "error": err_fn or "Invalid first name."}), 400
+    ok_ln, last_name, err_ln = insec.validate_person_name(data.get("lastName") or "", "Last name", required=False)
+    if not ok_ln:
+        return jsonify({"success": False, "field": "lastName", "error": err_ln or "Invalid last name."}), 400
+    ok_nick, nickname, err_nick = insec.validate_nickname(data.get("nickname") or "")
+    if not ok_nick:
+        return jsonify({"success": False, "field": "nickname", "error": err_nick or "Invalid username."}), 400
+    ok_email, email, err_email = insec.validate_email(data.get("email") or "")
+    if not ok_email:
+        return jsonify({"success": False, "field": "email", "error": err_email or "Invalid email."}), 400
+    gender_raw = (data.get("gender") or "").strip()
+    if gender_raw:
+        ok_gender, gender, err_gender = insec.validate_gender(gender_raw)
+        if not ok_gender:
+            return jsonify({"success": False, "field": "gender", "error": err_gender or "Invalid gender."}), 400
+    else:
+        gender = None
+    birthday_raw = (data.get("birthday") or "").strip()
+    if birthday_raw:
+        ok_bd, birthday, err_bd = insec.validate_birthday(birthday_raw)
+        if not ok_bd:
+            return jsonify({"success": False, "field": "birthday", "error": err_bd or "Invalid date of birth."}), 400
+    else:
+        birthday = None
 
     ok, field_key, err_msg = db.update_user_profile(
         user_id,
@@ -1488,11 +1498,10 @@ def api_user_password_change_confirm():
 @app.route("/api/password/forgot", methods=["POST"])
 def api_password_forgot():
     data = request.get_json(silent=True) or {}
-    email = (data.get("identifier") or data.get("email") or "").strip().lower()
-    if not email:
-        return jsonify({"success": False, "error": "Email address is required."}), 400
-    if "@" not in email or "." not in email:
-        return jsonify({"success": False, "error": "Please enter a valid email."}), 400
+    ok_email, email, err_email = insec.validate_email((data.get("identifier") or data.get("email") or ""))
+    if not ok_email:
+        return jsonify({"success": False, "error": err_email or "Please enter a valid email."}), 400
+    email = email.lower()
 
     user = db.get_user_by_email(email)
     if not user:

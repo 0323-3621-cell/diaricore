@@ -2128,8 +2128,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         notification.innerHTML = `
             <i class="bi bi-${icon}"></i>
-            <span>${message}</span>
+            <span></span>
         `;
+        if (window.DiariSecurity && window.DiariSecurity.setToastMessage) {
+            window.DiariSecurity.setToastMessage(notification, message);
+        } else {
+            const span = notification.querySelector('span');
+            if (span) span.textContent = String(message ?? '');
+        }
         
         notification.style.cssText = `
             position: fixed;

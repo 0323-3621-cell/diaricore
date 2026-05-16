@@ -58,7 +58,13 @@ document.addEventListener('DOMContentLoaded', function () {
         let icon = 'info-circle';
         if (type === 'success') icon = 'check-circle';
         if (type === 'error') icon = 'exclamation-circle';
-        notification.innerHTML = `<i class="bi bi-${icon}"></i><span>${message}</span>`;
+        notification.innerHTML = `<i class="bi bi-${icon}"></i><span></span>`;
+        if (window.DiariSecurity && window.DiariSecurity.setToastMessage) {
+            window.DiariSecurity.setToastMessage(notification, message);
+        } else {
+            const span = notification.querySelector('span');
+            if (span) span.textContent = String(message ?? '');
+        }
         notification.style.cssText = 'position:fixed;top:20px;right:20px;padding:1rem 1.5rem;border-radius:10px;display:flex;align-items:center;gap:.75rem;font-weight:500;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .3s ease;max-width:420px;';
         if (window.DiariToastColors && window.DiariToastColors.bg && window.DiariToastColors.fg) {
             notification.style.backgroundColor = window.DiariToastColors.bg(type);

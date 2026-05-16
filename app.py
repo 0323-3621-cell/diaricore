@@ -2070,7 +2070,7 @@ def api_upload_image():
                     "error": "Unsupported file type. Use JPEG, PNG, WebP, GIF, HEIC, BMP, TIFF, or AVIF.",
                 }
             ), 400
-        upload_err = sec.validate_uploaded_image_stream(file)
+        upload_err = sec.validate_uploaded_image_stream(file, file.filename or "")
         if upload_err:
             return jsonify({"success": False, "error": upload_err}), 400
 

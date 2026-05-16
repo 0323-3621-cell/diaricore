@@ -7,7 +7,6 @@ so mood analysis receives the same content the user typed.
 
 from __future__ import annotations
 
-import imghdr
 import logging
 import os
 import re
@@ -249,7 +248,33 @@ def validate_entry_image_urls(
     return clean, None
 
 
-def validate_uploaded_image_stream(file) -> Optional[str]:
+def _detect_image_kind(header: bytes) -> Optional[str]:
+    """Magic-byte sniffing (stdlib only; imghdr was removed in Python 3.13)."""
+    if len(header) < 12:
+        return None
+    if header[:3] == b"\xff\xd8\xff":
+        return "jpeg"
+    if header[:8] == b"\x89PNG\r\n\x1a\n":
+        return "png"
+    if header[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "webp"
+    if header[:2] == b"BM":
+        return "bmp"
+    if header[:4] in (b"II*\x00", b"MM\x00*"):
+        return "tiff"
+    if header[4:8] == b"ftyp":
+        brand = header[8:12]
+        if brand in (b"avif", b"avis", b"heic", b"heix", b"hevc", b"hevx", b"mif1", b"msf1"):
+            return "iso"
+    return None
+
+
+_EXT_FALLBACK_KINDS = frozenset({".heic", ".heif", ".avif", ".jfif"})
+
+
+def validate_uploaded_image_stream(file, filename: str = "") -> Optional[str]:
     try:
         file.seek(0, os.SEEK_END)
         size = file.tell()
@@ -263,9 +288,12 @@ def validate_uploaded_image_stream(file) -> Optional[str]:
         return f"Image is too large (max {mb} MB)."
     header = file.read(512)
     file.seek(0)
-    if imghdr.what(None, header):
+    if _detect_image_kind(header):
         return None
-    return None
+    ext = os.path.splitext(str(filename or ""))[1].lower()
+    if ext in _EXT_FALLBACK_KINDS:
+        return None
+    return "File does not look like a supported image."
 
 
 def log_security_event(event: str, user_id: Optional[int] = None, detail: str = "") -> None:

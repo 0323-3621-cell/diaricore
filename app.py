@@ -18,6 +18,7 @@ import segno
 from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
+import auth_security as authsec
 import db
 import input_security as insec
 import password_policy
@@ -131,10 +132,12 @@ def _to_title_case(text: str) -> str:
 
 
 def _trigger_query_user_id():
-    raw = (request.args.get("userId") or request.args.get("user_id") or "").strip()
-    if not raw.isdigit():
+    uid = session.get("user_id")
+    try:
+        uid = int(uid)
+    except (TypeError, ValueError):
         return None
-    return int(raw)
+    return uid if uid > 0 else None
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -172,6 +175,56 @@ def _cleanup_removed_entry_uploads(old_urls: list[str], new_urls: list[str]) -> 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.secret_key = os.environ.get("SECRET_KEY", "diaricore-dev-secret")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=14)
+if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("FLASK_ENV") == "production":
+    app.config["SESSION_COOKIE_SECURE"] = True
+
+_RATE_LOGIN = (12, 900.0)
+_RATE_REGISTER = (8, 3600.0)
+_RATE_OTP = (10, 900.0)
+_RATE_FORGOT = (6, 3600.0)
+_RATE_ANALYZE = (40, 60.0)
+_RATE_UPLOAD = (25, 60.0)
+
+
+def _json_auth_error(message: str, status: int = 401):
+    return jsonify({"success": False, "error": message}), status
+
+
+def _establish_user_session(user_id: int) -> str:
+    session.pop("is_admin", None)
+    session["user_id"] = int(user_id)
+    token = secrets.token_urlsafe(32)
+    session["csrf_token"] = token
+    session.permanent = True
+    return token
+
+
+def _require_authenticated_user(*, check_csrf: bool = True):
+    uid = session.get("user_id")
+    if uid is None:
+        return None, _json_auth_error("Please sign in again.", 401)
+    try:
+        uid = int(uid)
+    except (TypeError, ValueError):
+        return None, _json_auth_error("Please sign in again.", 401)
+    if uid <= 0:
+        return None, _json_auth_error("Please sign in again.", 401)
+    if check_csrf and request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        csrf_err = authsec.validate_csrf(request, session)
+        if csrf_err:
+            return None, _json_auth_error(csrf_err, 403)
+    return uid, None
+
+
+def _login_success_payload(user_row: dict, **extra):
+    csrf = _establish_user_session(int(user_row["id"]))
+    out = {k: v for k, v in user_row.items() if k != "password_hash"}
+    payload = {"success": True, "user": serialize_user(out), "csrfToken": csrf}
+    payload.update(extra)
+    return jsonify(payload), 200
 
 
 @app.after_request
@@ -555,6 +608,9 @@ def health():
 
 @app.route("/api/register", methods=["POST"])
 def api_register():
+    rl = authsec.rate_limit_check(request, "register", _RATE_REGISTER[0], _RATE_REGISTER[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     password = data.get("password") or ""
 
@@ -612,6 +668,9 @@ def api_register():
 
 @app.route("/api/register/verify", methods=["POST"])
 def api_register_verify():
+    rl = authsec.rate_limit_check(request, "register_verify", _RATE_OTP[0], _RATE_OTP[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     otp_code = (data.get("otpCode") or "").strip()
@@ -652,6 +711,9 @@ def api_register_verify():
 
 @app.route("/api/register/resend", methods=["POST"])
 def api_register_resend():
+    rl = authsec.rate_limit_check(request, "register_resend", _RATE_OTP[0], _RATE_OTP[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     if not email:
@@ -674,6 +736,9 @@ def api_register_resend():
 
 @app.route("/api/login", methods=["POST"])
 def api_login():
+    rl = authsec.rate_limit_check(request, "login", _RATE_LOGIN[0], _RATE_LOGIN[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     username = insec.strip_null_bytes((data.get("username") or data.get("email") or "").strip())
     password = data.get("password") or ""
@@ -681,6 +746,7 @@ def api_login():
         return jsonify({"success": False, "error": "Username and password are required."}), 400
 
     if username.lower() == "admin" and password == "admin123":
+        session.clear()
         session["is_admin"] = True
         admin_user = {
             "id": 0,
@@ -708,11 +774,14 @@ def api_login():
             return jsonify({"success": False, "error": "Could not start two-factor sign-in. Please try again."}), 500
         return jsonify({"success": True, "requiresTwoFactor": True, "challengeToken": token}), 200
 
-    return jsonify({"success": True, "user": serialize_user(result)}), 200
+    return _login_success_payload(result)
 
 
 @app.route("/api/login/totp", methods=["POST"])
 def api_login_totp():
+    rl = authsec.rate_limit_check(request, "login_totp", _RATE_LOGIN[0], _RATE_LOGIN[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     challenge_token = (data.get("challengeToken") or "").strip()
     code = data.get("code") or ""
@@ -734,12 +803,14 @@ def api_login_totp():
 
     db.delete_login_totp_recovery_otp_for_challenge(challenge_token)
     db.delete_login_totp_challenge(challenge_token)
-    out = {k: v for k, v in user.items() if k != "password_hash"}
-    return jsonify({"success": True, "user": serialize_user(out)}), 200
+    return _login_success_payload(user)
 
 
 @app.route("/api/login/totp/recovery/request", methods=["POST"])
 def api_login_totp_recovery_request():
+    rl = authsec.rate_limit_check(request, "login_recovery", _RATE_OTP[0], _RATE_OTP[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     """Email a 6-digit recovery code for the pending TOTP login challenge (lost authenticator)."""
     data = request.get_json(silent=True) or {}
     challenge_token = (data.get("challengeToken") or "").strip()
@@ -829,21 +900,26 @@ def api_login_totp_recovery_verify():
     user_after = db.get_user_by_id(user_id)
     if not user_after:
         return jsonify({"success": False, "error": "Recovery failed."}), 500
-    out = {k: v for k, v in user_after.items() if k != "password_hash"}
-    return jsonify({"success": True, "user": serialize_user(out), "totpWasReset": True}), 200
+    return _login_success_payload(user_after, totpWasReset=True)
+
+
+@app.route("/api/logout", methods=["POST"])
+def api_logout():
+    session.pop("user_id", None)
+    session.pop("csrf_token", None)
+    session.pop("is_admin", None)
+    return jsonify({"success": True}), 200
 
 
 @app.route("/api/user/totp/setup", methods=["POST"])
 def api_user_totp_setup():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        user_id = 0
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     password = data.get("password") or ""
-    if user_id <= 0 or not password:
-        return jsonify({"success": False, "error": "User ID and password are required."}), 400
+    if not password:
+        return jsonify({"success": False, "error": "Password is required."}), 400
 
     if not db.verify_user_password_by_id(user_id, password):
         return jsonify({"success": False, "error": "Incorrect password."}), 401
@@ -873,14 +949,10 @@ def api_user_totp_setup():
 @app.route("/api/user/totp/confirm", methods=["POST"])
 def api_user_totp_confirm():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        user_id = 0
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     code = data.get("code") or ""
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
 
     pending = db.get_totp_setup_pending_secret(user_id)
     if not pending:
@@ -899,14 +971,12 @@ def api_user_totp_confirm():
 @app.route("/api/user/totp/disable", methods=["POST"])
 def api_user_totp_disable():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        user_id = 0
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     password = data.get("password") or ""
     code = data.get("code") or ""
-    if user_id <= 0 or not password or not code:
+    if not password or not code:
         return jsonify({"success": False, "error": "Password and authenticator code are required."}), 400
 
     if not db.verify_user_password_by_id(user_id, password):
@@ -931,14 +1001,9 @@ def api_user_totp_disable():
 def api_user_avatar():
     """Save or clear the signed-in user's profile photo (data URL stored server-side)."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
 
     raw = data.get("avatarDataUrl")
     if raw is None:
@@ -973,14 +1038,9 @@ _ALLOWED_UI_PALETTES = frozenset(f"theme-{i}" for i in range(1, 11))
 def api_user_ui_preferences():
     """Persist light/dark theme and accent palette for cross-device sync."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
 
@@ -1018,14 +1078,9 @@ def api_user_ui_preferences():
 def api_user_profile_update():
     """Persist personal information (name, username, email, gender, birthday) for the given user."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
 
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
@@ -1147,14 +1202,9 @@ def _profile_personal_field_error_response(field_key: str | None, err_msg: str):
 def api_user_profile_email_change_request():
     """When email changes: validate, store pending profile JSON + OTP, email code to the new address."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
 
     user = db.get_user_by_id(user_id)
     if not user:
@@ -1221,14 +1271,9 @@ def api_user_profile_email_change_request():
 def api_user_profile_email_change_resend():
     """Resend OTP for a pending profile email change (same pending fields)."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
 
     user = db.get_user_by_id(user_id)
     if not user:
@@ -1265,14 +1310,9 @@ def api_user_profile_email_change_resend():
 def api_user_profile_email_change_confirm():
     """Verify email OTP and apply the stored profile update (including new email)."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int):
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            user_id = 0
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
 
     code = (data.get("code") or "").strip()
     if not code or len(code) != 6 or not code.isdigit():
@@ -1386,17 +1426,12 @@ def _profile_pw_field(api_field: str | None) -> str:
 def api_user_password_change_request():
     """Verify current password and policy, then email a 6-digit OTP (logged-in profile flow)."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        user_id = 0
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     current_password = data.get("currentPassword") or ""
     new_password = data.get("newPassword") or ""
     confirm_password = data.get("confirmPassword") or ""
-
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not current_password or not new_password or not confirm_password:
         return jsonify({"success": False, "error": "Current password, new password, and confirmation are required."}), 400
     if new_password != confirm_password:
@@ -1437,18 +1472,13 @@ def api_user_password_change_request():
 def api_user_password_change_confirm():
     """Confirm email OTP and apply the new password."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    try:
-        user_id = int(user_id)
-    except (TypeError, ValueError):
-        user_id = 0
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     current_password = data.get("currentPassword") or ""
     new_password = data.get("newPassword") or ""
     confirm_password = data.get("confirmPassword") or ""
     code = (data.get("code") or "").strip()
-
-    if user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not current_password or not new_password or not confirm_password:
         return jsonify({"success": False, "error": "Current password, new password, and confirmation are required."}), 400
     if new_password != confirm_password:
@@ -1497,6 +1527,9 @@ def api_user_password_change_confirm():
 
 @app.route("/api/password/forgot", methods=["POST"])
 def api_password_forgot():
+    rl = authsec.rate_limit_check(request, "forgot", _RATE_FORGOT[0], _RATE_FORGOT[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     data = request.get_json(silent=True) or {}
     ok_email, email, err_email = insec.validate_email((data.get("identifier") or data.get("email") or ""))
     if not ok_email:
@@ -1708,10 +1741,9 @@ def api_check_availability():
 
 @app.route("/api/entries", methods=["GET"])
 def api_entries_get():
-    user_id_raw = (request.args.get("userId") or "").strip()
-    if not user_id_raw.isdigit():
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
-    user_id = int(user_id_raw)
+    user_id, auth_err = _require_authenticated_user(check_csrf=False)
+    if auth_err:
+        return auth_err
     user = db.get_user_by_id(user_id) if hasattr(db, "get_user_by_id") else None
     if not user:
         return jsonify({"success": False, "error": "User not found."}), 404
@@ -1721,9 +1753,9 @@ def api_entries_get():
 
 @app.route("/api/tags", methods=["GET"])
 def api_tags_get():
-    uid = _trigger_query_user_id()
-    if uid is None or uid <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    uid, auth_err = _require_authenticated_user(check_csrf=False)
+    if auth_err:
+        return auth_err
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
     rows = db.list_user_tags(uid)
@@ -1745,11 +1777,11 @@ def api_tags_get():
 @app.route("/api/tags", methods=["POST"])
 def api_tags_post():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     tag_raw = data.get("tag") or ""
     icon_raw = data.get("iconName") or ""
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     ok_tag, tag, err_tag = insec.validate_tag(tag_raw)
     if not ok_tag:
         return jsonify({"success": False, "error": err_tag or "Invalid tag."}), 400
@@ -1767,10 +1799,10 @@ def api_tags_post():
 @app.route("/api/tags", methods=["DELETE"])
 def api_tags_delete():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     tag_raw = data.get("tag") or ""
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     ok_tag, tag, err_tag = insec.validate_tag(tag_raw)
     if not ok_tag:
         return jsonify({"success": False, "error": err_tag or "Invalid tag."}), 400
@@ -1784,9 +1816,9 @@ def api_tags_delete():
 
 @app.route("/api/triggers/summary", methods=["GET"])
 def api_triggers_summary():
-    uid = _trigger_query_user_id()
-    if uid is None or uid <= 0:
-        return jsonify({"success": False, "error": "Valid user_id or userId is required."}), 400
+    uid, auth_err = _require_authenticated_user(check_csrf=False)
+    if auth_err:
+        return auth_err
     if not db.get_user_by_id(uid):
         return jsonify({"success": False, "error": "User not found."}), 404
 
@@ -1851,15 +1883,15 @@ def api_triggers_summary():
 @app.route("/api/entries", methods=["POST"])
 def api_entries_post():
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     title_raw = data.get("title") or ""
     entry_date_time_local = (data.get("entryDateTimeLocal") or "").strip()
     text = insec.normalize_entry_text(data.get("text") or "")
     tags = data.get("tags") or []
     image_urls = data.get("imageUrls") or []
 
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
     ok_title, title, err_title = insec.validate_title(title_raw)
@@ -1920,10 +1952,13 @@ def api_entries_post():
 def api_entries_analyze_text():
     """Run mood/NLP on text only (no DB write). Used by entry view / modal re-run."""
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
+    rl = authsec.rate_limit_check(request, f"analyze:{user_id}", _RATE_ANALYZE[0], _RATE_ANALYZE[1])
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     text = insec.normalize_entry_text(data.get("text") or "")
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
     word_count = _entry_word_count(text)
@@ -1961,10 +1996,9 @@ def api_entries_analyze_text():
 
 @app.route("/api/entries/<int:entry_id>", methods=["GET"])
 def api_entries_one(entry_id: int):
-    user_id_raw = (request.args.get("userId") or "").strip()
-    if not user_id_raw.isdigit():
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
-    user_id = int(user_id_raw)
+    user_id, auth_err = _require_authenticated_user(check_csrf=False)
+    if auth_err:
+        return auth_err
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
     row = db.get_journal_entry_by_id(entry_id, user_id)
@@ -1976,14 +2010,14 @@ def api_entries_one(entry_id: int):
 @app.route("/api/entries/<int:entry_id>", methods=["PATCH"])
 def api_entries_patch(entry_id: int):
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     title_raw = data.get("title") or ""
     text = insec.normalize_entry_text(data.get("text") or "")
     tags = data.get("tags") or []
     reanalyze = bool(data.get("reanalyze"))
 
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
     ok_title, title, err_title = insec.validate_title(title_raw)
@@ -2072,9 +2106,9 @@ def api_entries_patch(entry_id: int):
 @app.route("/api/entries/<int:entry_id>", methods=["DELETE"])
 def api_entries_delete(entry_id: int):
     data = request.get_json(silent=True) or {}
-    user_id = data.get("userId")
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({"success": False, "error": "Valid userId is required."}), 400
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
     existing = db.get_journal_entry_by_id(entry_id, user_id)
@@ -2088,9 +2122,12 @@ def api_entries_delete(entry_id: int):
 @app.route("/api/uploads/image", methods=["POST"])
 def api_upload_image():
     try:
-        user_id = request.form.get("userId", type=int)
-        if not user_id or user_id <= 0:
-            return jsonify({"success": False, "error": "Valid userId is required."}), 400
+        user_id, auth_err = _require_authenticated_user()
+        if auth_err:
+            return auth_err
+        rl = authsec.rate_limit_check(request, f"upload:{user_id}", _RATE_UPLOAD[0], _RATE_UPLOAD[1])
+        if rl:
+            return jsonify({"success": False, "error": rl}), 429
         if not db.get_user_by_id(user_id):
             return jsonify({"success": False, "error": "User not found."}), 404
         file = request.files.get("file")

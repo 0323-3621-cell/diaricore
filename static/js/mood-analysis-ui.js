@@ -34,6 +34,9 @@
     }
 
     function escapeHtml(text) {
+        if (window.DiariSecurity && typeof window.DiariSecurity.escapeHtml === 'function') {
+            return window.DiariSecurity.escapeHtml(text);
+        }
         return String(text)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')

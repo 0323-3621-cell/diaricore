@@ -287,6 +287,12 @@
     function logout(redirectUrl) {
         persistDefaultPreferences();
         try {
+            if (window.DiariSecurity && typeof window.DiariSecurity.clearCsrfToken === 'function') {
+                window.DiariSecurity.clearCsrfToken();
+            }
+            if (typeof fetch === 'function') {
+                fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+            }
             localStorage.removeItem('diariCoreUser');
         } catch (_) {}
         window.location.href = redirectUrl || 'login.html';

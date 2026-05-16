@@ -287,6 +287,11 @@
     function logout(redirectUrl) {
         persistDefaultPreferences();
         try {
+            if (window.DiariApi && typeof window.DiariApi.logoutApi === 'function') {
+                window.DiariApi.logoutApi();
+            }
+        } catch (_) {}
+        try {
             localStorage.removeItem('diariCoreUser');
         } catch (_) {}
         window.location.href = redirectUrl || 'login.html';

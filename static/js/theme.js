@@ -295,7 +295,12 @@
     function syncToggleState() {
         const toggle = document.getElementById('toggleDarkMode');
         if (!toggle) return;
-        toggle.checked = document.documentElement.classList.contains(DARK_CLASS);
+        const isDark = document.documentElement.classList.contains(DARK_CLASS);
+        toggle.checked = isDark;
+        const hint = document.getElementById('darkModeStatusHint');
+        if (hint) {
+            hint.textContent = isDark ? 'Currently on' : 'Currently off';
+        }
     }
 
     function syncFabState(theme) {
@@ -380,20 +385,11 @@
     // Apply immediately to reduce theme flicker.
     bootstrapAppearance();
 
-    function initMobilePalettePanel() {
-        if (!isMobileViewport()) return;
-        const panel = document.getElementById('themePalettePanel');
-        const toggleBtn = document.getElementById('themePaletteToggle');
-        if (panel) panel.hidden = false;
-        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
-    }
-
     document.addEventListener('DOMContentLoaded', function () {
         bootstrapAppearance();
         createThemeToggleFab();
         bindPaletteButtons();
         bindPalettePanelToggle();
-        initMobilePalettePanel();
         syncToggleState();
     });
 

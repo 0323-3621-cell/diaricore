@@ -82,8 +82,9 @@
         if (span) span.textContent = String(message || '');
 
         var mobile = isMobileToastViewport();
+        var offscreenX = mobile ? 'translateX(calc(100% + 24px))' : 'translateX(calc(100% + 28px))';
         toast.style.cssText =
-            'position:fixed;top:20px;z-index:13000;padding:0.72rem 1rem;border-radius:12px;display:flex;align-items:center;gap:0.65rem;font-weight:500;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.15);transition:transform 0.3s ease,opacity 0.3s ease;word-wrap:break-word;background:' +
+            'position:fixed;top:20px;z-index:13000;padding:0.72rem 1rem;border-radius:12px;display:flex;align-items:center;gap:0.65rem;font-weight:500;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.15);transition:transform 0.3s ease,opacity 0.3s ease;word-wrap:break-word;opacity:0;background:' +
             toastBg(kind) +
             ';color:' +
             toastFg(kind) +
@@ -94,20 +95,24 @@
             toast.style.left = 'auto';
             toast.style.width = 'max-content';
             toast.style.maxWidth = 'min(20rem, calc(100vw - 2rem))';
-            toast.style.transform = 'translateX(110%)';
         } else {
             toast.style.right = '20px';
             toast.style.left = 'auto';
             toast.style.maxWidth = '400px';
-            toast.style.transform = 'translateX(100%)';
         }
+        toast.style.transform = offscreenX;
 
         document.body.appendChild(toast);
+        void toast.offsetWidth;
         requestAnimationFrame(function () {
-            toast.style.transform = 'translateX(0)';
+            requestAnimationFrame(function () {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            });
         });
         setTimeout(function () {
-            toast.style.transform = 'translateX(110%)';
+            toast.style.opacity = '0';
+            toast.style.transform = offscreenX;
             setTimeout(function () {
                 if (toast.parentNode) toast.remove();
             }, 300);

@@ -870,6 +870,10 @@ input:checked + .toggle-slider:before {
     margin: 0 0 0.5rem 0.15rem;
 }
 
+.profile-prefs-card {
+    display: contents;
+}
+
 .profile-section-panel .appearance-header,
 .profile-section-panel .notifications-header,
 .profile-section-panel .privacy-header {
@@ -2127,10 +2131,31 @@ html.theme-dark .profile-security-status span {
 }
 
 @media (max-width: 768px) {
+    body.page-profile .profile-prefs-card {
+        display: block;
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(47, 62, 54, 0.06);
+    }
+
+    body.page-profile .profile-preferences-stack {
+        gap: 0.85rem;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        overflow: visible;
+    }
+
+    body.page-profile .profile-preferences-stack .notifications-item:first-of-type {
+        border-bottom: none;
+    }
+
     body.page-profile .appearance-item--theme-palette {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.75rem;
+        gap: 0;
         margin-top: 0;
         padding: 1rem;
         border-top: 1px solid #eef2f0;
@@ -2138,25 +2163,59 @@ html.theme-dark .profile-security-status span {
 
     body.page-profile .appearance-item--theme-palette .appearance-item__row {
         width: 100%;
+        align-items: flex-start;
     }
 
     body.page-profile .appearance-item--theme-palette .appearance-description {
-        display: none;
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #8aa0b2;
+        margin: 0.2rem 0 0;
+        line-height: 1.35;
+    }
+
+    body.page-profile .appearance-description,
+    body.page-profile .notifications-description {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #8aa0b2;
+        margin: 0.2rem 0 0;
+        line-height: 1.35;
     }
 
     body.page-profile .theme-palette-picker {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0;
+        margin-top: 0.55rem;
+    }
+
+    body.page-profile .theme-palette-current {
         display: none;
     }
 
-    body.page-profile #themePalettePanel,
-    body.page-profile #themePalettePanel[hidden] {
-        display: block !important;
-        visibility: visible !important;
+    body.page-profile .theme-palette-picker__toggle {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        font-size: 0.8rem;
+    }
+
+    body.page-profile #themePalettePanel {
         border: none;
         padding: 0;
-        margin: 0;
+        margin: 0.65rem 0 0;
         background: transparent;
         box-shadow: none;
+    }
+
+    body.page-profile #themePalettePanel[hidden] {
+        display: none !important;
     }
 
     body.page-profile .theme-palette-grid {
@@ -2208,8 +2267,19 @@ html.theme-dark .profile-security-status span {
         padding-bottom: 0.55rem;
     }
 
+    html.theme-dark body.page-profile .profile-prefs-card {
+        background: var(--card-background) !important;
+        border-color: var(--border-color) !important;
+    }
+
     html.theme-dark body.page-profile .appearance-item--theme-palette {
         border-top-color: var(--divider-color);
+    }
+
+    html.theme-dark body.page-profile .appearance-item--theme-palette .appearance-description,
+    html.theme-dark body.page-profile .appearance-description,
+    html.theme-dark body.page-profile .notifications-description {
+        color: var(--text-secondary) !important;
     }
 
     html.theme-dark body.page-profile .theme-palette-btn {
@@ -2516,13 +2586,13 @@ html.theme-dark .profile-security-status span {
     body.page-profile .profile-preferences-stack {
         display: flex;
         flex-direction: column;
-        gap: 0;
-        background: #fff;
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        overflow: hidden;
+        gap: 0.85rem;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        overflow: visible;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 12px rgba(47, 62, 54, 0.06);
+        box-shadow: none;
     }
     
     body.page-profile .profile-preferences-stack .appearance-section,
@@ -2565,7 +2635,7 @@ html.theme-dark .profile-security-status span {
     }
     
     body.page-profile .profile-preferences-stack .notifications-item:first-of-type {
-        border-bottom: 1px solid #eef2f0;
+        border-bottom: none;
     }
     
     body.page-profile .notifications-item--reminder-time {
@@ -2599,10 +2669,21 @@ html.theme-dark .profile-security-status span {
         justify-content: space-between;
         gap: 0.75rem;
     }
+
+    body.page-profile .profile-preferences-stack .appearance-item--theme-palette {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
     
     body.page-profile .appearance-description,
     body.page-profile .notifications-description {
-        display: none;
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #8aa0b2;
+        margin: 0.2rem 0 0;
+        line-height: 1.35;
     }
     
     body.page-profile .appearance-info .appearance-subtitle,
@@ -2616,7 +2697,7 @@ html.theme-dark .profile-security-status span {
     body.page-profile .profile-prefs-eyebrow {
         padding: 0.65rem 1rem 0.35rem;
         margin: 0;
-        background: #fff;
+        background: transparent;
     }
     
     /* Privacy — compact card, account-style rows (mobile only) */
@@ -2819,7 +2900,13 @@ html.theme-dark .profile-security-status span {
         color: var(--text-muted) !important;
     }
 
-    html.theme-dark body.page-profile .profile-preferences-stack,
+    html.theme-dark body.page-profile .profile-preferences-stack {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    html.theme-dark body.page-profile .profile-prefs-card,
     html.theme-dark body.page-profile .privacy-options {
         background: var(--card-background) !important;
         border-color: var(--border-color) !important;
@@ -2827,11 +2914,10 @@ html.theme-dark .profile-security-status span {
     }
 
     html.theme-dark body.page-profile .profile-prefs-eyebrow {
-        background: var(--background-soft) !important;
+        background: transparent !important;
         color: var(--text-secondary) !important;
     }
 
-    html.theme-dark body.page-profile .profile-preferences-stack .notifications-item:first-of-type,
     html.theme-dark body.page-profile .privacy-item:first-of-type {
         border-bottom-color: var(--divider-color) !important;
     }

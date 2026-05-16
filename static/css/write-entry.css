@@ -2485,7 +2485,8 @@ html.theme-dark .mood-result-badge--amber {
         overflow: hidden;
         gap: var(--ct-icon-gap);
         align-content: start;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.15rem;
     }
 
     .custom-tag-icon-btn {
@@ -2509,7 +2510,7 @@ html.theme-dark .mood-result-badge--amber {
         z-index: 2;
         min-height: 2.75rem;
         margin: 0;
-        padding: 0.65rem 1.1rem 0.5rem;
+        padding: 0.85rem 1.1rem 0.65rem;
         border-top: 1px solid var(--border-color);
         background: var(--card-background);
     }

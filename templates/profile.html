@@ -185,6 +185,7 @@
 
                     <div id="profileSectionPreferences" class="profile-section-panel" hidden>
                         <div class="profile-preferences-stack">
+                            <div class="profile-prefs-card profile-prefs-card--appearance">
                             <p class="profile-prefs-eyebrow">Appearance</p>
                             <section class="appearance-section">
                                 <div class="appearance-options">
@@ -199,7 +200,7 @@
                                             <i class="bi bi-moon appearance-item__leading-icon" aria-hidden="true"></i>
                                             <div class="appearance-info">
                                                 <h3 class="appearance-subtitle">Dark Mode</h3>
-                                                <p class="appearance-description">Adjust the app's visual theme.</p>
+                                                <p class="appearance-description" id="darkModeStatusHint">Adjust the app's visual theme.</p>
                                             </div>
                                         </div>
                                         <div class="appearance-control">
@@ -274,7 +275,9 @@
                                     </div>
                                 </div>
                             </section>
+                            </div>
 
+                            <div class="profile-prefs-card profile-prefs-card--notifications">
                             <p class="profile-prefs-eyebrow">Notifications</p>
                             <section class="notifications-section">
                                 <div class="notifications-options">
@@ -289,7 +292,7 @@
                                             <i class="bi bi-bell notifications-item__leading-icon" aria-hidden="true"></i>
                                             <div class="notifications-info">
                                                 <h3 class="notifications-subtitle">Daily Reminders</h3>
-                                                <p class="notifications-description">Gentle nudges to write an entry.</p>
+                                                <p class="notifications-description">Nudge to write every day.</p>
                                             </div>
                                         </div>
                                         <div class="notifications-control">
@@ -310,6 +313,7 @@
                                     </div>
                                 </div>
                             </section>
+                            </div>
                         </div>
                     </div>
 

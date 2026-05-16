@@ -502,7 +502,7 @@
                         setTranscriptHint(
                             'Transcript created on your device (no server used)' +
                                 langNote +
-                                '. First time may download a speech model.'
+                                '. Some words may be misspelled — edit the text above if needed. For better spelling, use Chrome/Edge and watch words appear while you speak.'
                         );
                         return;
                     }

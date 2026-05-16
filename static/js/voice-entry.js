@@ -95,6 +95,7 @@
 
             const speechSupported = Boolean(getSpeechRecognitionCtor());
             const isMobile = window.innerWidth <= 768;
+            let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
 
@@ -109,38 +110,11 @@
                 }
             }
 
-            function scheduleVoiceModelWarmUp() {
-                if (!window.DiariVoiceClient || typeof DiariVoiceClient.warmUp !== 'function') return;
-                const run = function () {
-                    const voiceLang =
-                        window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
-                            ? DiariVoiceLocale.getVoiceLang()
-                            : 'en';
-                    void DiariVoiceClient.warmUp({ voiceLang: voiceLang });
-                };
-                if (typeof requestIdleCallback === 'function') {
-                    requestIdleCallback(run, { timeout: 4000 });
-                } else {
-                    setTimeout(run, 800);
-                }
-            }
-
             if (voiceLangSelect && window.DiariVoiceLocale) {
-                let stored = DiariVoiceLocale.getStoredChoice();
-                try {
-                    if (
-                        stored === 'auto' &&
-                        !localStorage.getItem(DiariVoiceLocale.STORAGE_KEY) &&
-                        DiariVoiceLocale.isPhilippinesTimezone()
-                    ) {
-                        DiariVoiceLocale.setVoiceLang('tl');
-                        stored = 'tl';
-                    }
-                } catch (_) {}
+                const stored = DiariVoiceLocale.getStoredChoice();
                 voiceLangSelect.value = stored === 'en' || stored === 'tl' ? stored : 'auto';
                 voiceLangSelect.addEventListener('change', function () {
                     DiariVoiceLocale.setVoiceLang(voiceLangSelect.value);
-                    scheduleVoiceModelWarmUp();
                     if (statusText && !isRecording) {
                         const vl = DiariVoiceLocale.getVoiceLang();
                         const base = isMobile ? 'Tap to record' : 'Tap to start recording';
@@ -154,7 +128,17 @@
                 }
             }
 
-            scheduleVoiceModelWarmUp();
+            if (window.DIARI_VOICE_USE_SERVER === true) {
+                void fetch('/api/voice/status', { credentials: 'same-origin' })
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (j) {
+                        if (!j || !j.success) return;
+                        serverTranscribeConfigured = Boolean(j.configured);
+                    })
+                    .catch(function () {});
+            }
 
             if (isMobile && mobileRetryBtn) {
                 setTimeout(function () {
@@ -478,6 +462,28 @@
                 });
             }
 
+            async function transcribeOnServer(blob, recorderMime) {
+                if (serverTranscribeConfigured === false) {
+                    return '';
+                }
+                setTranscriptHint('Transcribing on the server (optional fallback)…');
+                const fd = new FormData();
+                const ext = extensionForMime(recorderMime || blob.type);
+                fd.append('audio', blob, 'recording.' + ext);
+                const r = await fetch('/api/voice/transcribe', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                });
+                const j = await r.json().catch(function () {
+                    return {};
+                });
+                if (j.success && j.text) {
+                    return String(j.text).replace(/\s+/g, ' ').trim();
+                }
+                throw new Error((j && j.error) || 'Server transcription failed');
+            }
+
             async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
                 if (!blob || blob.size < 200) return;
                 if (!finalTranscript) return;
@@ -502,21 +508,24 @@
                     }
                 } catch (e) {
                     console.error('On-device transcription failed:', e);
-                    if (window.DiariVoiceClient && typeof DiariVoiceClient.resetPipeline === 'function') {
-                        const mid =
-                            window.DiariVoiceLocale && typeof DiariVoiceLocale.whisperModelId === 'function'
-                                ? DiariVoiceLocale.whisperModelId(DiariVoiceLocale.getVoiceLang())
-                                : null;
-                        DiariVoiceClient.resetPipeline(mid);
+                }
+
+                if (window.DIARI_VOICE_USE_SERVER === true) {
+                    try {
+                        const serverText = await transcribeOnServer(blob, recorderMime);
+                        if (serverText && finalTranscript) {
+                            finalTranscript.value = serverText;
+                            updateWordCountFromTranscript();
+                            setTranscriptHint('Transcript from the server (live captions were unavailable).');
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Server transcription failed:', e);
                     }
                 }
 
-                const spokeFilipino =
-                    window.DiariVoiceLocale && DiariVoiceLocale.getVoiceLang() === 'en';
                 setTranscriptHint(
-                    spokeFilipino
-                        ? 'Could not transcribe. If you spoke Tagalog or Taglish, set Speaking in to Filipino / Taglish and try again. Otherwise use Chrome or Edge for live captions.'
-                        : 'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
+                    'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
                 );
             }
 

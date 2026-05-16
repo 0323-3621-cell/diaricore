@@ -2522,29 +2522,35 @@ html.theme-dark .mood-result-badge--amber {
     }
 
     .custom-tag-icons-grid {
+        --ct-icon-cols: 8;
+        --ct-icon-rows: 6;
         --ct-icon-size: 46px;
         --ct-icon-gap: 0.4rem;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-        grid-template-rows: repeat(6, var(--ct-icon-size));
+        --ct-grid-height: calc(
+            var(--ct-icon-rows) * var(--ct-icon-size) + (var(--ct-icon-rows) - 1) * var(--ct-icon-gap)
+        );
+        grid-template-columns: repeat(var(--ct-icon-cols), minmax(0, 1fr));
+        grid-template-rows: repeat(var(--ct-icon-rows), minmax(0, var(--ct-icon-size)));
         flex: 0 0 auto;
         box-sizing: border-box;
-        height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
-        min-height: 0;
-        max-height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
+        height: var(--ct-grid-height);
+        min-height: var(--ct-grid-height);
+        max-height: var(--ct-grid-height);
         overflow: hidden;
         gap: var(--ct-icon-gap);
         align-content: start;
-        margin-bottom: 0;
+        margin-bottom: 1rem;
         padding-bottom: 0;
     }
 
     .custom-tag-icon-btn {
         box-sizing: border-box;
-        height: var(--ct-icon-size);
-        min-height: var(--ct-icon-size);
-        max-height: var(--ct-icon-size);
+        height: var(--ct-icon-size) !important;
+        min-height: var(--ct-icon-size) !important;
+        max-height: var(--ct-icon-size) !important;
         gap: 0;
         padding: 0.25rem;
+        overflow: hidden;
     }
 
     .custom-tag-icon-btn span {
@@ -2558,8 +2564,8 @@ html.theme-dark .mood-result-badge--amber {
         position: relative;
         z-index: 2;
         min-height: 2.75rem;
-        margin: 0.6rem 0 0;
-        padding: 0.65rem 1.1rem 0.65rem;
+        margin: 0;
+        padding: 0.85rem 1.1rem 0.75rem;
         border-top: 1px solid var(--border-color);
         background: var(--card-background);
     }
@@ -2591,9 +2597,11 @@ html.theme-dark .mood-result-badge--amber {
     }
 }
 
-@media (max-width: 900px) {
+/* Narrow desktop only: 6 columns still needs 8 rows for 48 icons/page */
+@media (min-width: 769px) and (max-width: 900px) {
     .custom-tag-icons-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        --ct-icon-cols: 6;
+        --ct-icon-rows: 8;
     }
 }
 

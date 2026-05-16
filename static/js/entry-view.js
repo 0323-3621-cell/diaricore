@@ -128,38 +128,24 @@
     const ENTRY_EDIT_MEDIA_DB = 'diariCoreOfflineEntryEditMedia';
     const ENTRY_EDIT_MEDIA_STORE = 'records';
     const MAX_ENTRY_IMAGES = 10;
-    const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-    const IMAGE_EXT_TO_MIME = {
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        png: 'image/png',
-        webp: 'image/webp',
-        gif: 'image/gif',
-    };
 
-    function coerceImageUploadFile(file) {
-        if (!file) return null;
-        const type = String(file.type || '').toLowerCase();
-        if (ACCEPTED_IMAGE_TYPES.has(type)) return file;
-        const name = String(file.name || '');
-        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-        const mime = IMAGE_EXT_TO_MIME[ext];
-        if (!mime || !ACCEPTED_IMAGE_TYPES.has(mime)) return null;
-        try {
-            return new File([file], name, { type: mime });
-        } catch (_) {
-            return file;
-        }
-    }
-
-    function filterImageUploadFiles(fileList) {
+    async function filterImageUploadFiles(fileList) {
         const files = [];
         const skipped = [];
-        Array.from(fileList || []).forEach((raw) => {
-            const coerced = coerceImageUploadFile(raw);
+        const coerce =
+            window.DiariImageUpload && typeof window.DiariImageUpload.coerceImageUploadFile === 'function'
+                ? window.DiariImageUpload.coerceImageUploadFile.bind(window.DiariImageUpload)
+                : null;
+        for (const raw of Array.from(fileList || [])) {
+            let coerced = null;
+            if (coerce) {
+                coerced = await coerce(raw);
+            } else if (raw && String(raw.type || '').toLowerCase().startsWith('image/')) {
+                coerced = raw;
+            }
             if (coerced) files.push(coerced);
             else if (raw) skipped.push(String(raw.name || 'image'));
-        });
+        }
         return { files, skipped };
     }
 
@@ -1111,11 +1097,10 @@
         }
 
         async function addImagesFromFiles(fileList) {
-            const { files, skipped } = filterImageUploadFiles(fileList);
+            const { files, skipped } = await filterImageUploadFiles(fileList);
             if (skipped.length) {
                 window.alert(
-                    'Some files were skipped. Use JPEG, PNG, WebP, or GIF. '
-                    + '(iPhone HEIC: Settings → Camera → Formats → Most Compatible.)'
+                    'Some files were skipped. Use a common photo format (JPEG, PNG, WebP, GIF, HEIC, BMP, TIFF, or AVIF).'
                 );
             }
             if (!files.length) return;
@@ -1182,8 +1167,8 @@
             if (uploadFailures) {
                 window.alert(
                     uploadFailures === 1
-                        ? 'One photo could not be uploaded. Try again one at a time, or use a smaller JPEG/PNG.'
-                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller JPEG/PNG files.`
+                        ? 'One photo could not be uploaded. Try again one at a time, or use a smaller image file.'
+                        : `${uploadFailures} photos could not be uploaded. Try adding them one at a time, or use smaller image files.`
                 );
             }
             if (imageFileInput) imageFileInput.value = '';

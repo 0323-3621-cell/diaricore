@@ -2436,16 +2436,20 @@ html.theme-dark .mood-result-badge--amber {
         grid-template-columns: repeat(8, minmax(0, 1fr));
         grid-template-rows: repeat(6, var(--ct-icon-size));
         flex: 0 0 auto;
-        height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
+        box-sizing: border-box;
+        min-height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
+        height: auto;
         max-height: none;
-        overflow: hidden;
+        overflow: visible;
         gap: var(--ct-icon-gap);
         align-content: start;
     }
 
     .custom-tag-icon-btn {
+        box-sizing: border-box;
         height: var(--ct-icon-size);
         min-height: var(--ct-icon-size);
+        max-height: var(--ct-icon-size);
         gap: 0;
         padding: 0.25rem;
     }

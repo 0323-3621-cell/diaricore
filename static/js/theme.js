@@ -59,6 +59,34 @@
         return `#${rr}${gg}${bb}`;
     }
 
+    function isAuthPage() {
+        const path = String(window.location.pathname || '').replace(/\\/g, '/').toLowerCase();
+        const base = path.split('/').pop() || '';
+        return (
+            !path ||
+            path === '/' ||
+            base === '' ||
+            base === 'index.html' ||
+            base === 'login.html' ||
+            base === 'register.html' ||
+            base === 'verify-registration.html'
+        );
+    }
+
+    function applySuccessColorsFromPrimary(primary) {
+        const root = document.documentElement;
+        const isDark = root.classList.contains(DARK_CLASS);
+        root.style.setProperty('--diari-success-sage-solid', primary);
+        root.style.setProperty('--diari-success-sage-text', primary);
+        root.style.setProperty('--success-color', primary);
+        root.style.setProperty(
+            '--diari-success-tint-bg',
+            isDark
+                ? `color-mix(in srgb, ${primary} 20%, #182126)`
+                : `color-mix(in srgb, ${primary} 14%, #ffffff)`
+        );
+    }
+
     function applyPaletteById(paletteId) {
         const palette = getPaletteById(paletteId);
         const root = document.documentElement;
@@ -79,6 +107,7 @@
         root.style.setProperty('--theme-dark-primary', darkPrimary);
         root.style.setProperty('--theme-dark-primary-hover', darkPrimaryHover);
         root.style.setProperty('--theme-dark-primary-light', darkPrimaryLight);
+        applySuccessColorsFromPrimary(primary);
 
         const currentName = document.querySelector('[data-theme-palette-name]');
         if (currentName) currentName.textContent = palette.name;
@@ -109,6 +138,26 @@
         if (document.body) {
             document.body.classList.toggle(DARK_CLASS, isDark);
         }
+        applySuccessColorsFromPrimary(getPaletteById(getSavedPaletteId()).primary);
+    }
+
+    function bootstrapAppearance() {
+        if (isAuthPage()) {
+            applyTheme(DEFAULT_THEME);
+            applyPaletteById(DEFAULT_PALETTE_ID);
+            return;
+        }
+        applyTheme(getSavedTheme());
+        applyPaletteById(getSavedPaletteId());
+        try {
+            const ru = localStorage.getItem('diariCoreUser');
+            if (ru) {
+                const parsed = JSON.parse(ru);
+                if (parsed && parsed.isLoggedIn && (parsed.uiTheme || parsed.uiPaletteId)) {
+                    applyFromUserObject(parsed);
+                }
+            }
+        } catch (_) {}
     }
 
     function queueSyncUserUiPreferences() {
@@ -329,30 +378,10 @@
     }
 
     // Apply immediately to reduce theme flicker.
-    applyTheme(getSavedTheme());
-    applyPaletteById(getSavedPaletteId());
-    try {
-        const ru = localStorage.getItem('diariCoreUser');
-        if (ru) {
-            const parsed = JSON.parse(ru);
-            if (parsed && parsed.isLoggedIn && (parsed.uiTheme || parsed.uiPaletteId)) {
-                applyFromUserObject(parsed);
-            }
-        }
-    } catch (_) {}
+    bootstrapAppearance();
 
     document.addEventListener('DOMContentLoaded', function () {
-        applyTheme(getSavedTheme());
-        applyPaletteById(getSavedPaletteId());
-        try {
-            const ru2 = localStorage.getItem('diariCoreUser');
-            if (ru2) {
-                const p2 = JSON.parse(ru2);
-                if (p2 && p2.isLoggedIn && (p2.uiTheme || p2.uiPaletteId)) {
-                    applyFromUserObject(p2);
-                }
-            }
-        } catch (_) {}
+        bootstrapAppearance();
         createThemeToggleFab();
         bindPaletteButtons();
         bindPalettePanelToggle();
@@ -387,6 +416,7 @@
         persistDefaultPreferences,
         resetToDefaults,
         logout,
+        isAuthPage,
         DEFAULT_THEME,
         DEFAULT_PALETTE_ID,
     };

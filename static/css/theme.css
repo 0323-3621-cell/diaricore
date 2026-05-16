@@ -3,14 +3,14 @@
 :root {
     --primary-rgb: 111, 143, 127;
     /* Soft sage success system (toasts, success text, tints). Errors stay red via --diari-error-*. */
-    --diari-success-sage-text: #5d7268;
-    --diari-success-sage-solid: #8da399;
+    --diari-success-sage-text: var(--primary-color, #5d7268);
+    --diari-success-sage-solid: var(--primary-color, #8da399);
     --diari-success-on-solid: #ffffff;
     --diari-success-tint-bg: #e9f1eb;
     --diari-error-toast-bg: #e74c3c;
     --diari-warning-toast-bg: #d9822b;
     --diari-info-toast-bg: #7fa7bf;
-    --success-color: var(--diari-success-sage-text);
+    --success-color: var(--diari-success-sage-text, var(--primary-color));
     --success-bg: var(--diari-success-tint-bg);
 }
 
@@ -29,11 +29,11 @@
     --text-secondary: #b7c7cd;
     --text-muted: #91a6ae;
 
-    --diari-success-sage-text: #b4cdc2;
-    --diari-success-sage-solid: #7a9485;
+    --diari-success-sage-text: var(--primary-color, #b4cdc2);
+    --diari-success-sage-solid: var(--primary-color, #7a9485);
     --diari-success-on-solid: #f6faf8;
     --diari-success-tint-bg: #1a2822;
-    --success-color: var(--diari-success-sage-text);
+    --success-color: var(--diari-success-sage-text, var(--primary-color));
     --success-bg: var(--diari-success-tint-bg);
     --warning-color: #f4be72;
     --warning-bg: #3a2b16;

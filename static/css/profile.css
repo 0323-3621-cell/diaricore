@@ -3408,6 +3408,17 @@ html.theme-dark .profile-totp-setup-panel__info-icon {
     color: var(--primary-light);
 }
 
+html.theme-dark .profile-totp-setup-panel__qr-wrap {
+    background: #ffffff;
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+html.theme-dark .profile-totp-modal__qr-img {
+    background: #ffffff;
+    border-radius: 8px;
+}
+
 html.theme-dark .profile-totp-setup-panel__qr-card {
     background: var(--card-background);
     border-color: var(--border-color);

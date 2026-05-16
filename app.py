@@ -504,7 +504,20 @@ def _parse_ph_local_to_utc_iso(local_dt: str) -> str | None:
 
 def _allowed_image_extension(filename: str) -> bool:
     ext = os.path.splitext(str(filename or ""))[1].lower()
-    return ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+    return ext in {
+        ".jpg",
+        ".jpeg",
+        ".jfif",
+        ".png",
+        ".webp",
+        ".gif",
+        ".bmp",
+        ".tif",
+        ".tiff",
+        ".avif",
+        ".heic",
+        ".heif",
+    }
 
 
 @app.before_request
@@ -2001,7 +2014,12 @@ def api_upload_image():
         if not file or not file.filename:
             return jsonify({"success": False, "error": "Image file is required."}), 400
         if not _allowed_image_extension(file.filename):
-            return jsonify({"success": False, "error": "Unsupported file type. Use JPEG, PNG, WebP, or GIF."}), 400
+            return jsonify(
+                {
+                    "success": False,
+                    "error": "Unsupported file type. Use JPEG, PNG, WebP, GIF, HEIC, BMP, TIFF, or AVIF.",
+                }
+            ), 400
 
         ext = os.path.splitext(file.filename)[1].lower()
         safe_name = f"entry_{user_id}_{uuid.uuid4().hex}{ext}"

@@ -9,6 +9,40 @@
     const COMPRESS_MAX_PX = 1920;
     const JPEG_QUALITY = 0.82;
 
+    const ACCEPTED_IMAGE_MIMES = new Set([
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'image/bmp',
+        'image/x-ms-bmp',
+        'image/tiff',
+        'image/avif',
+        'image/heic',
+        'image/heif',
+        'image/jfif',
+        'image/pjpeg',
+    ]);
+
+    const IMAGE_EXT_TO_MIME = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        jfif: 'image/jpeg',
+        pjpeg: 'image/jpeg',
+        png: 'image/png',
+        webp: 'image/webp',
+        gif: 'image/gif',
+        bmp: 'image/bmp',
+        tif: 'image/tiff',
+        tiff: 'image/tiff',
+        avif: 'image/avif',
+        heic: 'image/heic',
+        heif: 'image/heif',
+    };
+
+    const IMAGE_ACCEPT_ATTR =
+        'image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff,image/avif,image/heic,image/heif,.jpg,.jpeg,.jfif,.png,.webp,.gif,.bmp,.tif,.tiff,.avif,.heic,.heif';
+
     function formatUploadBytes(n) {
         const b = Math.max(0, Math.floor(Number(n) || 0));
         if (b < 1024) return `${b} B`;
@@ -104,8 +138,77 @@
         throw lastErr || new Error('Upload failed');
     }
 
+    function mimeFromFileName(name) {
+        const ext = String(name || '').includes('.') ? String(name).split('.').pop().toLowerCase() : '';
+        return IMAGE_EXT_TO_MIME[ext] || '';
+    }
+
+    function isAcceptedImageMime(type) {
+        const t = String(type || '').toLowerCase().split(';')[0].trim();
+        if (!t) return false;
+        if (ACCEPTED_IMAGE_MIMES.has(t)) return true;
+        return t.startsWith('image/');
+    }
+
+    async function rasterizeToJpegFile(file) {
+        if (!file || typeof createImageBitmap !== 'function') return null;
+        let bitmap;
+        try {
+            bitmap = await createImageBitmap(file);
+            const canvas = document.createElement('canvas');
+            canvas.width = bitmap.width;
+            canvas.height = bitmap.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                bitmap.close();
+                return null;
+            }
+            ctx.drawImage(bitmap, 0, 0);
+            bitmap.close();
+            bitmap = null;
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(
+                    (b) => (b ? resolve(b) : reject(new Error('decode failed'))),
+                    'image/jpeg',
+                    JPEG_QUALITY
+                );
+            });
+            const base = String(file.name || 'photo').replace(/\.[^.]+$/i, '') || 'photo';
+            return new File([blob], `${base}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+        } catch (_) {
+            if (bitmap && typeof bitmap.close === 'function') bitmap.close();
+            return null;
+        }
+    }
+
+    async function coerceImageUploadFile(file) {
+        if (!file) return null;
+        const type = String(file.type || '').toLowerCase().split(';')[0].trim();
+        if (isAcceptedImageMime(type)) {
+            try {
+                return new File([file], file.name, { type: type || file.type, lastModified: file.lastModified });
+            } catch (_) {
+                return file;
+            }
+        }
+        const mime = mimeFromFileName(file.name);
+        if (mime && isAcceptedImageMime(mime)) {
+            try {
+                return new File([file], file.name, { type: mime, lastModified: file.lastModified });
+            } catch (_) {
+                return file;
+            }
+        }
+        if (type.startsWith('image/') || mimeFromFileName(file.name)) {
+            return rasterizeToJpegFile(file);
+        }
+        return null;
+    }
+
     async function prepareUploadFile(file) {
         if (!file || typeof file.size !== 'number') return file;
+        const normalized = await coerceImageUploadFile(file);
+        file = normalized || file;
         if (file.type === 'image/gif') return file;
         if (file.size < COMPRESS_MIN_BYTES) return file;
         if (typeof createImageBitmap !== 'function') return file;
@@ -192,10 +295,14 @@
 
     global.DiariImageUpload = {
         PARALLEL_UPLOADS,
+        ACCEPTED_IMAGE_MIMES,
+        IMAGE_EXT_TO_MIME,
+        IMAGE_ACCEPT_ATTR,
         formatUploadBytes,
         formatProgress,
         progressFromBytes,
         createUploadPool,
+        coerceImageUploadFile,
         prepareUploadFile,
         uploadWithRetries,
         spinnerHtml,

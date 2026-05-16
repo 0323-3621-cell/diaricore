@@ -105,6 +105,38 @@
     box-shadow: var(--box-shadow);
 }
 
+.voice-lang-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.voice-lang-row__label {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+}
+
+.voice-lang-row__select {
+    min-width: 11rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-background, var(--card-background));
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.voice-lang-row__select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .voice-recording-container {
     display: flex;
     justify-content: center;

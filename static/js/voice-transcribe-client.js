@@ -1,29 +1,51 @@
 /**
  * On-device speech-to-text (no DiariCore /api call).
- * Uses Whisper Tiny via @xenova/transformers from CDN — model downloads once, then cached in browser.
+ * English: Whisper Tiny. Filipino/Taglish: Whisper Small + tagalog language hint.
  */
 (function (global) {
     'use strict';
 
-    const MODEL_ID = 'Xenova/whisper-tiny';
-    let pipelinePromise = null;
+    const pipelineByModel = Object.create(null);
 
     function isSupported() {
         return Boolean(global.AudioContext || global.webkitAudioContext);
     }
 
-    async function loadTranscriber() {
-        if (!pipelinePromise) {
-            pipelinePromise = (async function () {
+    function resolveVoiceLang(options) {
+        if (options && (options.voiceLang === 'en' || options.voiceLang === 'tl')) {
+            return options.voiceLang;
+        }
+        if (global.DiariVoiceLocale && typeof global.DiariVoiceLocale.getVoiceLang === 'function') {
+            return global.DiariVoiceLocale.getVoiceLang();
+        }
+        return 'en';
+    }
+
+    function modelAndLanguage(voiceLang) {
+        if (global.DiariVoiceLocale) {
+            return {
+                modelId: global.DiariVoiceLocale.whisperModelId(voiceLang),
+                language: global.DiariVoiceLocale.whisperLanguage(voiceLang),
+            };
+        }
+        return {
+            modelId: voiceLang === 'tl' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny',
+            language: voiceLang === 'tl' ? 'tagalog' : 'english',
+        };
+    }
+
+    async function loadTranscriber(modelId) {
+        if (!pipelineByModel[modelId]) {
+            pipelineByModel[modelId] = (async function () {
                 const { pipeline, env } = await import(
                     'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2'
                 );
                 env.allowLocalModels = false;
                 env.useBrowserCache = true;
-                return pipeline('automatic-speech-recognition', MODEL_ID);
+                return pipeline('automatic-speech-recognition', modelId);
             })();
         }
-        return pipelinePromise;
+        return pipelineByModel[modelId];
     }
 
     async function blobToMono16k(blob) {
@@ -49,19 +71,43 @@
 
     /**
      * @param {Blob} blob
-     * @param {(msg: string) => void} [onStatus]
+     * @param {{ onStatus?: (msg: string) => void, voiceLang?: 'en'|'tl' }} [options]
      * @returns {Promise<string>}
      */
-    async function transcribeBlob(blob, onStatus) {
+    async function transcribeBlob(blob, options) {
         if (!blob || blob.size < 200) {
             throw new Error('Recording too short.');
         }
-        if (onStatus) onStatus('Loading on-device speech model (first use may take a minute)…');
-        const transcriber = await loadTranscriber();
+        const opts = options || {};
+        const onStatus = typeof opts.onStatus === 'function' ? opts.onStatus : null;
+        const voiceLang = resolveVoiceLang(opts);
+        const { modelId, language } = modelAndLanguage(voiceLang);
+        const isFilipino = voiceLang === 'tl';
+
+        if (onStatus) {
+            onStatus(
+                isFilipino
+                    ? 'Loading Filipino speech model (first use may take 1–2 minutes)…'
+                    : 'Loading on-device speech model (first use may take a minute)…'
+            );
+        }
+        const transcriber = await loadTranscriber(modelId);
         if (onStatus) onStatus('Preparing audio…');
         const audio = await blobToMono16k(blob);
-        if (onStatus) onStatus('Transcribing on your device…');
-        const out = await transcriber(audio, { sampling_rate: 16000 });
+        if (onStatus) {
+            onStatus(
+                isFilipino
+                    ? 'Transcribing in Filipino / Taglish on your device…'
+                    : 'Transcribing on your device…'
+            );
+        }
+        const out = await transcriber(audio, {
+            sampling_rate: 16000,
+            language: language,
+            task: 'transcribe',
+            chunk_length_s: 25,
+            stride_length_s: 5,
+        });
         const text =
             out && typeof out.text === 'string'
                 ? out.text.trim()

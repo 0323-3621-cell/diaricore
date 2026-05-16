@@ -80,6 +80,14 @@
             
             <!-- Voice Entry Container -->
             <div class="voice-entry-container">
+                <div class="voice-lang-row">
+                    <label class="voice-lang-row__label" for="voiceLangSelect">Speaking in</label>
+                    <select id="voiceLangSelect" class="voice-lang-row__select" aria-label="Voice language">
+                        <option value="auto">Auto</option>
+                        <option value="en">English</option>
+                        <option value="tl">Filipino / Taglish</option>
+                    </select>
+                </div>
                 <!-- Voice Recording Container -->
                 <div class="voice-recording-container">
                     <div class="voice-circle" id="voiceCircle">
@@ -158,8 +166,9 @@
             <div class="tips-container">
                 <h3>Tips for voice journaling</h3>
                 <ul>
+                    <li>Choose <strong>Filipino / Taglish</strong> above for Tagalog journaling — live captions use <code>fil-PH</code>, and on-device mode uses a larger model tuned for Filipino.</li>
                     <li>While you speak, <strong>live captions</strong> use your browser (Chrome or Edge work best; Brave Shields may block them).</li>
-                    <li>If the box is still empty after you stop, we <strong>transcribe on your device</strong> from the recording (first time downloads a small model; no DiariCore server needed).</li>
+                    <li>If the box is still empty after you stop, we <strong>transcribe on your device</strong> from the recording (no DiariCore server needed).</li>
                     <li>Find a quiet place for clearer dictation.</li>
                     <li>You can edit the transcript, then use <strong>Save Entry</strong> to continue on Write Entry with tags and mood analysis.</li>
                 </ul>
@@ -171,6 +180,7 @@
     <script src="side-bar.js"></script>
     <script src="diari-security.js"></script>
     <script src="diari-shell.js"></script>
+    <script src="voice-locale.js"></script>
     <script src="voice-transcribe-client.js"></script>
     <script src="voice-entry.js"></script>
 </body>

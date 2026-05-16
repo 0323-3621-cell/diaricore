@@ -19,8 +19,10 @@
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    /** Full BCP-47 tag — never truncate (e.g. `en-GB` → `en-G` breaks Web Speech). */
     function pickRecognitionLang() {
+        if (window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function') {
+            return DiariVoiceLocale.speechRecognitionLang(DiariVoiceLocale.getVoiceLang());
+        }
         try {
             const raw = (navigator.language || navigator.userLanguage || 'en-US').trim().replace(/_/g, '-');
             if (!raw) return 'en-US';
@@ -86,6 +88,7 @@
             const mobileSaveBtn = document.getElementById('saveEntryBtn');
             const mobileRetryBtn = document.getElementById('mobileRetryBtn');
             const transcriptHint = document.getElementById('voiceTranscriptHint');
+            const voiceLangSelect = document.getElementById('voiceLangSelect');
             const waveBarEls = voiceRoot
                 ? Array.from(voiceRoot.querySelectorAll('.voice-wave-bar'))
                 : Array.from(document.querySelectorAll('.voice-wave-bar'));
@@ -104,6 +107,24 @@
             if (isMobile && statusText) {
                 if (!(speechSupported && window.isSecureContext === false)) {
                     statusText.textContent = 'Tap to record';
+                }
+            }
+
+            if (voiceLangSelect && window.DiariVoiceLocale) {
+                const stored = DiariVoiceLocale.getStoredChoice();
+                voiceLangSelect.value = stored === 'en' || stored === 'tl' ? stored : 'auto';
+                voiceLangSelect.addEventListener('change', function () {
+                    DiariVoiceLocale.setVoiceLang(voiceLangSelect.value);
+                    if (statusText && !isRecording) {
+                        const vl = DiariVoiceLocale.getVoiceLang();
+                        const base = isMobile ? 'Tap to record' : 'Tap to start recording';
+                        statusText.textContent = base + ' · ' + DiariVoiceLocale.labelFor(vl);
+                    }
+                });
+                if (statusText && !isRecording && !(speechSupported && window.isSecureContext === false)) {
+                    const vl = DiariVoiceLocale.getVoiceLang();
+                    const base = isMobile ? 'Tap to record' : 'Tap to start recording';
+                    statusText.textContent = base + ' · ' + DiariVoiceLocale.labelFor(vl);
                 }
             }
 
@@ -431,7 +452,14 @@
                 if (DiariVoiceClient.isSupported && !DiariVoiceClient.isSupported()) {
                     return '';
                 }
-                return DiariVoiceClient.transcribeBlob(blob, setTranscriptHint);
+                const voiceLang =
+                    window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
+                        ? DiariVoiceLocale.getVoiceLang()
+                        : 'en';
+                return DiariVoiceClient.transcribeBlob(blob, {
+                    onStatus: setTranscriptHint,
+                    voiceLang: voiceLang,
+                });
             }
 
             async function transcribeOnServer(blob, recorderMime) {
@@ -466,8 +494,15 @@
                     if (deviceText && finalTranscript) {
                         finalTranscript.value = deviceText;
                         updateWordCountFromTranscript();
+                        const langNote =
+                            window.DiariVoiceLocale &&
+                            DiariVoiceLocale.getVoiceLang() === 'tl'
+                                ? ' (Filipino / Taglish model)'
+                                : '';
                         setTranscriptHint(
-                            'Transcript created on your device (no server used). First time may download a small model.'
+                            'Transcript created on your device (no server used)' +
+                                langNote +
+                                '. First time may download a speech model.'
                         );
                         return;
                     }

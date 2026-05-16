@@ -83,8 +83,8 @@
         return voiceLang === 'tl' ? 'tagalog' : 'english';
     }
 
-    function whisperModelId(voiceLang) {
-        return voiceLang === 'tl' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny';
+    function whisperModelId() {
+        return 'Xenova/whisper-tiny';
     }
 
     function labelFor(voiceLang) {

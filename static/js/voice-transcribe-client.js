@@ -1,11 +1,12 @@
 /**
  * On-device speech-to-text (no DiariCore /api call).
- * English: Whisper Tiny. Filipino/Taglish: Whisper Small + tagalog language hint.
+ * Uses Whisper Tiny for speed; language hint (english / tagalog) keeps Filipino accurate.
  */
 (function (global) {
     'use strict';
 
-    const pipelineByModel = Object.create(null);
+    const MODEL_ID = 'Xenova/whisper-tiny';
+    let pipelinePromise = null;
 
     function isSupported() {
         return Boolean(global.AudioContext || global.webkitAudioContext);
@@ -21,31 +22,67 @@
         return 'en';
     }
 
-    function modelAndLanguage(voiceLang) {
-        if (global.DiariVoiceLocale) {
-            return {
-                modelId: global.DiariVoiceLocale.whisperModelId(voiceLang),
-                language: global.DiariVoiceLocale.whisperLanguage(voiceLang),
-            };
+    function whisperLanguage(voiceLang) {
+        if (global.DiariVoiceLocale && typeof global.DiariVoiceLocale.whisperLanguage === 'function') {
+            return global.DiariVoiceLocale.whisperLanguage(voiceLang);
         }
-        return {
-            modelId: voiceLang === 'tl' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny',
-            language: voiceLang === 'tl' ? 'tagalog' : 'english',
-        };
+        return voiceLang === 'tl' ? 'tagalog' : 'english';
     }
 
-    async function loadTranscriber(modelId) {
-        if (!pipelineByModel[modelId]) {
-            pipelineByModel[modelId] = (async function () {
-                const { pipeline, env } = await import(
-                    'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2'
-                );
+    function configureRuntime(env) {
+        if (!env || !env.backends || !env.backends.onnx || !env.backends.onnx.wasm) return;
+        const cores = global.navigator && global.navigator.hardwareConcurrency;
+        env.backends.onnx.wasm.numThreads = Math.min(8, Math.max(2, cores || 4));
+        if ('simd' in env.backends.onnx.wasm) {
+            env.backends.onnx.wasm.simd = true;
+        }
+    }
+
+    async function getTransformers() {
+        return import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+    }
+
+    async function loadTranscriber(onStatus) {
+        if (!pipelinePromise) {
+            pipelinePromise = (async function () {
+                const { pipeline, env } = await getTransformers();
+                transformersEnv = env;
                 env.allowLocalModels = false;
                 env.useBrowserCache = true;
-                return pipeline('automatic-speech-recognition', modelId);
+                configureRuntime(env);
+                if (onStatus) onStatus('Downloading speech model (one time, ~40 MB)…');
+                return pipeline('automatic-speech-recognition', MODEL_ID);
             })();
         }
-        return pipelineByModel[modelId];
+        return pipelinePromise;
+    }
+
+    /** Preload model in the background so post-recording transcribe starts immediately. */
+    function warmUp(options) {
+        if (!isSupported()) return Promise.resolve();
+        const onStatus =
+            options && typeof options.onStatus === 'function' ? options.onStatus : null;
+        return loadTranscriber(onStatus).then(
+            function () {
+                return true;
+            },
+            function (err) {
+                console.warn('Voice model warm-up failed:', err);
+                pipelinePromise = null;
+                return false;
+            }
+        );
+    }
+
+    function chunkParamsForDuration(durationSec) {
+        const d = Math.max(0.5, durationSec);
+        if (d <= 14) {
+            return { chunk_length_s: Math.min(30, Math.ceil(d) + 2), stride_length_s: 2 };
+        }
+        if (d <= 45) {
+            return { chunk_length_s: 15, stride_length_s: 3 };
+        }
+        return { chunk_length_s: 25, stride_length_s: 5 };
     }
 
     async function blobToMono16k(blob) {
@@ -81,32 +118,26 @@
         const opts = options || {};
         const onStatus = typeof opts.onStatus === 'function' ? opts.onStatus : null;
         const voiceLang = resolveVoiceLang(opts);
-        const { modelId, language } = modelAndLanguage(voiceLang);
-        const isFilipino = voiceLang === 'tl';
+        const language = whisperLanguage(voiceLang);
 
-        if (onStatus) {
-            onStatus(
-                isFilipino
-                    ? 'Loading Filipino speech model (first use may take 1–2 minutes)…'
-                    : 'Loading on-device speech model (first use may take a minute)…'
-            );
-        }
-        const transcriber = await loadTranscriber(modelId);
+        const transcriber = await loadTranscriber(
+            onStatus
+                ? function (msg) {
+                      onStatus(msg);
+                  }
+                : null
+        );
         if (onStatus) onStatus('Preparing audio…');
         const audio = await blobToMono16k(blob);
-        if (onStatus) {
-            onStatus(
-                isFilipino
-                    ? 'Transcribing in Filipino / Taglish on your device…'
-                    : 'Transcribing on your device…'
-            );
-        }
+        const durationSec = audio.length / 16000;
+        const chunks = chunkParamsForDuration(durationSec);
+        if (onStatus) onStatus('Transcribing on your device…');
         const out = await transcriber(audio, {
             sampling_rate: 16000,
             language: language,
             task: 'transcribe',
-            chunk_length_s: 25,
-            stride_length_s: 5,
+            chunk_length_s: chunks.chunk_length_s,
+            stride_length_s: chunks.stride_length_s,
         });
         const text =
             out && typeof out.text === 'string'
@@ -119,6 +150,7 @@
 
     global.DiariVoiceClient = {
         isSupported,
+        warmUp,
         transcribeBlob,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

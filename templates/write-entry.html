@@ -137,12 +137,15 @@
                 <div class="write-entry-stack" id="writeEntryStack">
                 <div class="journal-container">
                     <div class="journal-header">
-                        <div class="journal-datetime-wrap">
+                        <div class="journal-header__meta">
+                            <div class="journal-datetime-wrap">
                             <button type="button" class="journal-datetime-btn" id="journalDateTimeBtn" title="Edit date and time">
                                 <span class="journal-datetime" id="journalDateTime">Sunday, April 26, 2026 | 03:53 AM</span>
                                 <i class="bi bi-pencil-square" aria-hidden="true"></i>
                             </button>
                             <input type="datetime-local" id="journalDateTimeInput" class="journal-datetime-input" />
+                            </div>
+                            <p class="diari-session-timer" id="diariSessionTimer" hidden aria-live="polite"></p>
                         </div>
                         <button class="voice-input-btn" id="voiceInputBtn" aria-label="Open voice entry" title="Voice entry">
                             <i class="bi bi-mic"></i>
@@ -209,6 +212,97 @@
                     <i class="bi bi-x-circle"></i>
                     Cancel
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="diari-session-draft-toast" id="diariSessionDraftToast" role="status" aria-live="polite">Draft saved</div>
+
+    <!-- Session: draft recovery -->
+    <div class="write-flow-modal diari-session-modal" id="diariSessionDraftModal" hidden role="dialog" aria-modal="true" aria-labelledby="diariSessionDraftTitle">
+        <div class="write-flow-modal__backdrop" data-diari-session-dismiss="draft"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--sage" aria-hidden="true">
+                        <i class="bi bi-journal-text"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="diariSessionDraftTitle" class="write-flow-modal__title">You have an unfinished entry</h2>
+                        <p class="write-flow-modal__desc">Pick up where you left off or start with a blank page.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section">
+                <div class="write-flow-modal__entry-preview">
+                    <div class="write-flow-modal__entry-preview-accent" aria-hidden="true"></div>
+                    <div class="write-flow-modal__entry-preview-inner">
+                        <p class="write-flow-modal__entry-preview-label">Saved draft</p>
+                        <p class="write-flow-modal__entry-preview-title" id="diariSessionDraftPreviewTitle">Untitled entry</p>
+                        <p class="write-flow-modal__entry-preview-meta" id="diariSessionDraftPreviewMeta"></p>
+                        <p class="diari-session-modal__snippet" id="diariSessionDraftPreviewSnippet"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="diariSessionDraftFreshBtn">Start fresh</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="diariSessionDraftContinueBtn">Continue writing</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session: concurrent tab -->
+    <div class="write-flow-modal diari-session-modal" id="diariSessionConcurrentModal" hidden role="dialog" aria-modal="true" aria-labelledby="diariSessionConcurrentTitle">
+        <div class="write-flow-modal__backdrop"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--warn" aria-hidden="true">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="diariSessionConcurrentTitle" class="write-flow-modal__title">You already have an active session</h2>
+                        <p class="write-flow-modal__desc">You opened DiariCore in another tab. Only one journaling session can be active at a time.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions write-flow-modal__actions--split">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="diariSessionConcurrentBackBtn">Go back</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="diariSessionConcurrentUseBtn">Use this tab</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session: idle timeout -->
+    <div class="write-flow-modal diari-session-modal" id="diariSessionTimeoutModal" hidden role="dialog" aria-modal="true" aria-labelledby="diariSessionTimeoutTitle">
+        <div class="write-flow-modal__backdrop"></div>
+        <div class="write-flow-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge write-flow-modal__icon-badge--amber" aria-hidden="true">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="diariSessionTimeoutTitle" class="write-flow-modal__title">Still there?</h2>
+                        <p class="write-flow-modal__desc">Your journaling session is still open. You've been away for 30 minutes.</p>
+                        <p class="diari-session-modal__meta" id="diariSessionTimeoutMeta"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions diari-session-modal__actions--stack">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="diariSessionTimeoutContinueBtn">Continue writing</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--secondary" id="diariSessionTimeoutSaveBtn">Save &amp; Exit</button>
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--danger-outline" id="diariSessionTimeoutDiscardBtn">Discard</button>
+                </div>
             </div>
         </div>
     </div>
@@ -406,6 +500,7 @@
     <script src="diari-shell.js"></script>
     <script src="mood-analysis-ui.js"></script>
     <script src="image-upload-utils.js"></script>
+    <script src="session-manager.js"></script>
     <script src="write-entry.js"></script>
 </body>
 </html>

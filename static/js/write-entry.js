@@ -1204,6 +1204,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
             return;
         }
+        if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
+            window.DiariSessionManager.endSession('discarded');
+        }
+        try {
+            localStorage.removeItem('diariCoreDraft');
+        } catch (_) {}
         window.location.href = p?.kind === 'href' ? p.href : 'dashboard.html';
     });
     writeDiscardModal?.addEventListener('click', (e) => {
@@ -1601,6 +1607,123 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
     journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
 
+    async function saveEntryAndRedirect(targetHref) {
+        const entryText = journalText.value.trim();
+        const entryTitle = normalizeTag(journalTitleInput?.value || '');
+        if (journalDateTimeInput && journalDateTimeInput.value.trim().length >= 16) {
+            clampFutureJournalDateTimeLocal();
+        }
+        const entryDateTimeLocal =
+            manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
+        if (!entryText) {
+            showWriteEntryNotification('Please write something before saving.', 'warning');
+            return;
+        }
+        const userId = getCurrentUserId();
+        setSavingState(true);
+        try {
+            let imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
+            if (isOnlineNow() && userId) {
+                const pendingUploads = attachedImages.filter((img) => !img.url && img.dataUrl);
+                for (const item of pendingUploads) {
+                    const blob = dataUrlToBlob(item.dataUrl);
+                    const ext = (blob.type || 'image/png').split('/')[1] || 'png';
+                    const file = new File([blob], `queued-${Date.now()}.${ext}`, {
+                        type: blob.type || 'image/png',
+                    });
+                    const url = await uploadImageOnline(file, userId, item.id);
+                    attachedImages = attachedImages.map((img) =>
+                        img.id === item.id ? { ...img, url, progress: 100 } : img
+                    );
+                }
+                imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
+            }
+            const response = await fetch('/api/entries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    title: entryTitle,
+                    entryDateTimeLocal,
+                    text: entryText,
+                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
+                    imageUrls,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success || !result.entry) {
+                throw new Error(result.error || 'Failed to save entry.');
+            }
+            const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+            entries.push(result.entry);
+            localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
+            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
+                window.DiariSessionManager.endSession('saved');
+            }
+            window.location.href = targetHref || 'entries.html';
+        } catch (err) {
+            console.error('Session save failed:', err);
+            showWriteEntryNotification(err.message || 'Could not save entry.', 'error');
+        } finally {
+            setSavingState(false);
+        }
+    }
+
+    function applySessionDraft(draft) {
+        if (!draft || typeof draft !== 'object') return;
+        if (journalTitleInput && draft.title) journalTitleInput.value = String(draft.title);
+        if (journalText && draft.body) {
+            journalText.value = String(draft.body);
+            journalText.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (Array.isArray(draft.tags)) {
+            draft.tags.forEach((tag) => {
+                const key = normalizeTag(tag);
+                if (!key) return;
+                selectedTags.add(key);
+                document.querySelectorAll('.tag-btn[data-tag]').forEach((btn) => {
+                    if (normalizeTag(btn.getAttribute('data-tag')) === key) btn.classList.add('active');
+                });
+            });
+            renderTagButtons();
+        }
+        if (Array.isArray(draft.photos_pending) && draft.photos_pending.length) {
+            attachedImages = draft.photos_pending.map((p, i) => ({
+                id: p.id || `draft_img_${i}_${Date.now()}`,
+                dataUrl: p.dataUrl || '',
+                url: p.url || '',
+                name: p.name || 'photo',
+                progress: p.url ? 100 : 0,
+            }));
+            renderImageGallery();
+        }
+        autoAdjustJournalTextarea();
+    }
+
+    if (window.DiariSessionManager) {
+        window.DiariSessionManager.registerHooks({
+            getDraftState: function () {
+                return {
+                    title: journalTitleInput?.value || '',
+                    body: journalText?.value || '',
+                    tags: Array.from(selectedTags),
+                    photos_pending: attachedImages.map((img) => ({
+                        id: img.id,
+                        dataUrl: img.dataUrl || '',
+                        url: img.url || '',
+                        name: img.name || '',
+                    })),
+                    date:
+                        document.getElementById('journalDateTime')?.textContent ||
+                        new Date().toISOString(),
+                };
+            },
+            applyDraft: applySessionDraft,
+            saveEntryAndRedirect: saveEntryAndRedirect,
+        });
+        await window.DiariSessionManager.start();
+    }
+
     const toLocalInputValue = (dateObj) => {
         const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
         return d.toISOString().slice(0, 16);
@@ -1880,7 +2003,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback', moodOpts);
-            localStorage.removeItem('diariCoreDraft');
+            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
+                window.DiariSessionManager.endSession('saved');
+            }
+            try {
+                localStorage.removeItem('diariCoreDraft');
+            } catch (_) {}
             attachedImages = [];
             renderImageGallery();
         } catch (error) {
@@ -1943,7 +2071,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             };
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, fallbackEntry, true, moodOpts);
-            localStorage.removeItem('diariCoreDraft');
+            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
+                window.DiariSessionManager.endSession('saved');
+            }
+            try {
+                localStorage.removeItem('diariCoreDraft');
+            } catch (_) {}
         } finally {
             setSavingState(false);
         }
@@ -1975,62 +2108,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
     
-    // Auto-save functionality (optional)
-    let autoSaveTimer;
-    journalText.addEventListener('input', function() {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-            // Save draft to localStorage
-            const draft = {
-                feeling: selectedFeeling,
-                tags: Array.from(selectedTags),
-                text: this.value,
-                date: new Date().toISOString()
-            };
-            localStorage.setItem('diariCoreDraft', JSON.stringify(draft));
-            console.log('Draft saved');
-        }, 2000);
-    });
-    
-    // Load draft on page load - DISABLED to prevent default selections
-    function loadDraft() {
-        // Disabled - do not load drafts to prevent automatic selections
-        console.log('Draft loading disabled - no default selections');
-        return;
-        
-        // Original code commented out:
-        /*
-        const draft = JSON.parse(localStorage.getItem('diariCoreDraft') || 'null');
-        if (draft) {
-            // Restore feeling
-            if (draft.feeling) {
-                const feelingCard = document.querySelector(`[data-feeling="${draft.feeling}"]`);
-                if (feelingCard) {
-                    feelingCard.click();
-                }
-            }
-            
-            // Restore tags
-            if (draft.tags && draft.tags.length > 0) {
-                draft.tags.forEach(tag => {
-                    const tagButton = document.querySelector(`[data-tag="${tag}"]`);
-                    if (tagButton) {
-                        tagButton.click();
-                    }
-                });
-            }
-            
-            // Restore text
-            if (draft.text) {
-                journalText.value = draft.text;
-                journalText.dispatchEvent(new Event('input'));
-            }
-        }
-        */
-    }
-    
-    // Load draft on page load
-    loadDraft();
     flushOfflineEntryQueue();
     autoAdjustJournalTextarea();
     requestAnimationFrame(() => autoAdjustJournalTextarea());

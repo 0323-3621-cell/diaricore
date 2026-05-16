@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         'info'
                     );
                 }
-                finishSuccessfulLogin(dataR.user, dataR.csrfToken);
+                finishSuccessfulLogin(dataR.user);
             })
             .catch(function () {
                 loginRecoveryVerifyInProgress = false;
@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loginTotpVerifyInProgress = false;
                 setLoginTotpSubmitIdle();
                 showLoginCredentialsStep();
-                finishSuccessfulLogin(data.user, data.csrfToken);
+                finishSuccessfulLogin(data.user);
             })
             .catch(function () {
                 loginTotpVerifyInProgress = false;
@@ -1039,15 +1039,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginTotpDigits[0]) loginTotpDigits[0].focus();
     }
 
-    function finishSuccessfulLogin(u, csrfToken) {
+    function finishSuccessfulLogin(u) {
         const sessionUser = Object.assign({}, u, {
             isLoggedIn: true,
             loginTime: new Date().toISOString(),
         });
         localStorage.setItem('diariCoreUser', JSON.stringify(sessionUser));
-        if (csrfToken && window.DiariApi && typeof window.DiariApi.setCsrfToken === 'function') {
-            window.DiariApi.setCsrfToken(csrfToken);
-        }
         if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
             window.DiariTheme.applyFromUser(sessionUser);
         }
@@ -1132,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                         const u = data.user;
-                        finishSuccessfulLogin(u, data.csrfToken);
+                        finishSuccessfulLogin(u);
                     })
                     .catch(() => {
                         showNotification('Could not reach the server. Run the DiariCore app (Flask) or check your connection.', 'error');

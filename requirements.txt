@@ -1,5 +1,4 @@
 flask>=3.0.0
-Flask-Limiter>=3.8.0
 gunicorn>=21.0.0
 psycopg2-binary>=2.9.9
 httpx>=0.28.0

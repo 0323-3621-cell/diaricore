@@ -407,15 +407,6 @@ function entryCardTimeIso(ent) {
     return ent.date || ent.createdAt || '';
 }
 
-function escapeHtml(text) {
-    return String(text ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
 function createStoredEntryCard(entry) {
     const article = document.createElement('article');
     article.className = 'entry-card';
@@ -433,32 +424,30 @@ function createStoredEntryCard(entry) {
         : timeDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const showEditedPill = isEntryEditedForList(entry);
 
-    const titleRaw = (entry.title && String(entry.title).trim())
+    const title = (entry.title && String(entry.title).trim())
         ? String(entry.title).trim().slice(0, 80)
         : (entry.text ? entry.text.trim().split('\n')[0].slice(0, 80) : 'Journal Entry');
-    const title = escapeHtml(titleRaw);
-    const excerpt = escapeHtml(entry.text || '');
+    const excerpt = entry.text || '';
     const tags = Array.isArray(entry.tags) ? entry.tags : [];
 
     const resolvedFeeling = resolveEntryFeeling(entry);
-    const moodLabel = escapeHtml(moodDisplayLabel(resolvedFeeling));
-    const moodClass = escapeHtml(resolvedFeeling);
+    const moodLabel = moodDisplayLabel(resolvedFeeling);
     article.innerHTML = `
         <div class="entry-content-wrapper">
             <div class="entry-header">
                 <div class="entry-meta">
-                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${escapeHtml(dateText)}</span></span>
-                    <span class="entry-time">${escapeHtml(timeText)}</span>
+                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${dateText}</span></span>
+                    <span class="entry-time">${timeText}</span>
                     <h3 class="entry-title">${title || 'Journal Entry'}</h3>
                 </div>
                 <div class="entry-mood">
-                    <span class="mood-label mood-label--${moodClass}">${moodLabel}</span>
+                    <span class="mood-label mood-label--${resolvedFeeling}">${moodLabel}</span>
                     ${showEditedPill ? '<span class="entry-edited-pill" aria-label="Edited after save">Edited</span>' : ''}
                 </div>
             </div>
             <div class="entry-content">
                 <p class="entry-excerpt">${excerpt || 'No details provided.'}</p>
-                ${tags.length ? `<div class="entry-tags">${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+                ${tags.length ? `<div class="entry-tags">${tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}</div>` : ''}
             </div>
         </div>
     `;

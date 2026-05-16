@@ -200,9 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     isLoggedIn: true,
                     loginTime: new Date().toISOString()
                 }));
-                if (data.csrfToken && window.DiariApi && typeof window.DiariApi.setCsrfToken === 'function') {
-                    window.DiariApi.setCsrfToken(data.csrfToken);
-                }
                 sessionStorage.removeItem('pendingRegistrationEmail');
                 window.location.href = 'dashboard.html';
             })

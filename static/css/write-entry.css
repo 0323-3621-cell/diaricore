@@ -2454,13 +2454,41 @@ html.theme-dark .mood-result-badge--amber {
         display: none !important;
     }
 
-    .custom-tag-pagination {
+    .custom-tag-modal__dialog > .custom-tag-pagination {
         display: flex !important;
+        visibility: visible !important;
         flex-shrink: 0;
-        margin-top: 0.75rem;
-        padding-top: 0.65rem;
+        min-height: 2.75rem;
+        margin: 0;
+        padding: 0.65rem 1.1rem 0.5rem;
         border-top: 1px solid var(--border-color);
         background: var(--card-background);
+    }
+
+    .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-btn {
+        min-width: 5.5rem;
+        flex-shrink: 0;
+    }
+
+    .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-meta {
+        flex: 1 1 auto;
+        text-align: center;
+        min-width: 0;
+    }
+
+    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination {
+        background: var(--card-background);
+        border-top-color: var(--border-color);
+    }
+
+    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-btn {
+        background: var(--background-soft) !important;
+        color: var(--text-dark) !important;
+        border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color)) !important;
+    }
+
+    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-meta {
+        color: var(--text-secondary) !important;
     }
 }
 
@@ -2471,6 +2499,13 @@ html.theme-dark .mood-result-badge--amber {
 }
 
 @media (max-width: 768px) {
+    .custom-tag-modal__dialog > .custom-tag-pagination {
+        padding-left: 0.95rem;
+        padding-right: 0.95rem;
+        margin-top: 0;
+        border-top: 1px solid var(--border-color);
+    }
+
     .custom-tag-modal__dialog {
         width: calc(100vw - 1rem);
         margin: 2.5vh auto;

@@ -1704,6 +1704,17 @@ html.insights-consistency-await-data #insightsPanelConsistency .insights-consist
     outline-offset: 2px;
 }
 
+/* theme.css sets `background` on all dark selects and clears the chevron — restore it here */
+html.theme-dark .insights-consistency-month-select {
+    color: var(--text-dark) !important;
+    background-color: var(--card-background) !important;
+    border-color: var(--border-color) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c5d4ce' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.65rem center !important;
+    background-size: 12px 12px !important;
+}
+
 .ins-card--consistency-week .section-title {
     margin-bottom: 0;
 }
@@ -2319,12 +2330,6 @@ html.theme-dark .ins-highlight-chip {
         height: 100% !important;
     }
 
-    html.theme-dark .insights-consistency-month-select {
-        color: var(--text-dark);
-        background-color: var(--card-background);
-        border-color: var(--border-color);
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23c5d4ce' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
-    }
 }
 
 @media (min-width: 769px) {

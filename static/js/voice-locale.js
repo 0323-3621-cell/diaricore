@@ -101,5 +101,6 @@
         whisperLanguage,
         whisperModelId,
         labelFor,
+        isPhilippinesTimezone,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

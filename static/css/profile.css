@@ -1538,6 +1538,30 @@ html.theme-dark .profile-security-status span {
     margin-top: 0.25rem;
 }
 
+@media (max-width: 768px) {
+    body.page-profile .profile-account-detail-form--grid {
+        gap: 0.55rem;
+    }
+
+    body.page-profile .profile-account-field {
+        gap: 0.28rem;
+    }
+
+    body.page-profile .profile-account-detail-form .custom-error:not(.show) {
+        padding: 0;
+        border-width: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        min-height: 0;
+    }
+
+    body.page-profile .profile-account-detail-form .custom-error.show {
+        padding: 8px 10px;
+        margin-top: 4px;
+        margin-bottom: 2px;
+    }
+}
+
 @media (max-width: 720px) {
     .profile-account-detail-form--grid,
     .profile-security-row2 {

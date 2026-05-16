@@ -47,6 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showNotification(message, type = 'info') {
+        if (window.DiariToast && typeof window.DiariToast.show === 'function') {
+            window.DiariToast.show(message, type, 3000);
+            return;
+        }
         const existing = document.querySelector('.notification');
         if (existing) existing.remove();
         const notification = document.createElement('div');

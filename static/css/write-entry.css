@@ -2091,6 +2091,48 @@ html.theme-dark .mood-result-badge--amber {
     color: var(--text-muted);
 }
 
+/* Mobile: emotion name left, confidence badge right on the same row */
+@media (max-width: 768px) {
+    .mood-result-emotion--primary-block,
+    .mood-result-emotion--secondary:not(.mood-result-emotion--empty) {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            'emotion-label emotion-label'
+            'emotion-value emotion-badge';
+        align-items: center;
+        column-gap: 0.5rem;
+    }
+
+    .mood-result-emotion__label {
+        grid-area: emotion-label;
+        margin-bottom: 0.25rem;
+    }
+
+    .mood-result-emotion--primary-block .mood-result-emotion__value,
+    .mood-result-emotion--secondary:not(.mood-result-emotion--empty) .mood-result-emotion__value {
+        grid-area: emotion-value;
+        margin: 0;
+        justify-self: start;
+    }
+
+    .mood-result-emotion--primary-block .mood-result-badge,
+    .mood-result-emotion--secondary:not(.mood-result-emotion--empty) .mood-result-badge {
+        grid-area: emotion-badge;
+        margin: 0;
+        justify-self: end;
+        align-self: center;
+    }
+
+    .mood-result-emotion--empty {
+        display: block;
+    }
+
+    .mood-result-emotion--empty .mood-result-emotion__value {
+        margin-bottom: 0.35rem;
+    }
+}
+
 .mood-result-fallback-note {
     margin: 1rem 0 0;
     padding: 0.65rem 0.75rem;

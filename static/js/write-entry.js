@@ -153,6 +153,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     /** Top-right toast — soft sage success (theme.css / DiariToastColors). */
     function showWriteEntryNotification(message, type = 'success') {
+        if (window.DiariToast && typeof window.DiariToast.show === 'function') {
+            window.DiariToast.show(message, type, 3000);
+            return;
+        }
         const existing = document.querySelector('.write-entry-notification');
         if (existing) existing.remove();
 

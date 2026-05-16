@@ -42,7 +42,81 @@
         if (type === 'warning') return c.warningFg;
         return c.infoFg;
     }
+    function toastIcon(type) {
+        if (type === 'success') return 'check-circle';
+        if (type === 'error') return 'x-circle';
+        if (type === 'warning') return 'exclamation-triangle';
+        return 'info-circle';
+    }
+
+    function isMobileToastViewport() {
+        try {
+            return Boolean(w.matchMedia && w.matchMedia('(max-width: 768px)').matches);
+        } catch (e) {
+            return false;
+        }
+    }
+
+  function removeExistingToasts() {
+        var sel =
+            '.diari-toast, .notification, .profile-notification, .write-entry-notification, .entries-notification, .sidebar-notification, .suggestions-notification';
+        document.querySelectorAll(sel).forEach(function (el) {
+            el.remove();
+        });
+    }
+
+    function showToast(message, type, durationMs) {
+        if (!document.body) return;
+        var kind = type || 'info';
+        var duration = typeof durationMs === 'number' ? durationMs : 3000;
+        removeExistingToasts();
+
+        var toast = document.createElement('div');
+        toast.className = 'diari-toast diari-toast--' + kind;
+        toast.setAttribute('role', 'status');
+        toast.innerHTML =
+            '<i class="bi bi-' +
+            toastIcon(kind) +
+            '" aria-hidden="true"></i><span></span>';
+        var span = toast.querySelector('span');
+        if (span) span.textContent = String(message || '');
+
+        var mobile = isMobileToastViewport();
+        toast.style.cssText =
+            'position:fixed;top:20px;z-index:13000;padding:0.72rem 1rem;border-radius:12px;display:flex;align-items:center;gap:0.65rem;font-weight:500;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.15);transition:transform 0.3s ease,opacity 0.3s ease;word-wrap:break-word;background:' +
+            toastBg(kind) +
+            ';color:' +
+            toastFg(kind) +
+            ';';
+
+        if (mobile) {
+            toast.style.left = '50%';
+            toast.style.right = 'auto';
+            toast.style.width = 'max-content';
+            toast.style.maxWidth = 'min(20rem, calc(100vw - 2rem))';
+            toast.style.transform = 'translate(-50%, -140%)';
+        } else {
+            toast.style.right = '20px';
+            toast.style.left = 'auto';
+            toast.style.maxWidth = '400px';
+            toast.style.transform = 'translateX(100%)';
+        }
+
+        document.body.appendChild(toast);
+        requestAnimationFrame(function () {
+            toast.style.transform = mobile ? 'translate(-50%, 0)' : 'translateX(0)';
+        });
+        setTimeout(function () {
+            toast.style.transform = mobile ? 'translate(-50%, -140%)' : 'translateX(100%)';
+            setTimeout(function () {
+                if (toast.parentNode) toast.remove();
+            }, 300);
+        }, duration);
+    }
+
     w.DiariToastColors = { get: readToastColors, bg: toastBg, fg: toastFg };
+    w.DiariToast = w.DiariToast || {};
+    w.DiariToast.show = showToast;
 })(typeof window !== 'undefined' ? window : this);
 
 /**

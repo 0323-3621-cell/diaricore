@@ -2107,6 +2107,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Notification function
     function showNotification(message, type = 'info', durationMs = 3000) {
+        if (window.DiariToast && typeof window.DiariToast.show === 'function') {
+            window.DiariToast.show(message, type, durationMs);
+            return;
+        }
         const existingNotification = document.querySelector('.notification');
         if (existingNotification) {
             existingNotification.remove();

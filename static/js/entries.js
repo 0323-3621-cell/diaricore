@@ -1031,6 +1031,10 @@ function createEntryCard(data) {
 
 // Show Notification
 function showNotification(message, type = 'info') {
+    if (window.DiariToast && typeof window.DiariToast.show === 'function') {
+        window.DiariToast.show(message, type, 3000);
+        return;
+    }
     // Remove existing notification
     const existingNotification = document.querySelector('.entries-notification');
     if (existingNotification) {

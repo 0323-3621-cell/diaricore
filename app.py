@@ -19,6 +19,7 @@ from flask import Flask, jsonify, request, send_from_directory, abort, session
 from werkzeug.security import check_password_hash
 
 import db
+import input_security as insec
 import password_policy
 import space_nlp
 
@@ -171,6 +172,15 @@ def _cleanup_removed_entry_uploads(old_urls: list[str], new_urls: list[str]) -> 
 app = Flask(__name__)
 app.config["JSON_SORT_KEYS"] = False
 app.secret_key = os.environ.get("SECRET_KEY", "diaricore-dev-secret")
+
+
+@app.after_request
+def _apply_security_headers(response):
+    """Lightweight headers; no per-request DB or session work."""
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
 
 
 def _generate_otp() -> str:
@@ -1027,12 +1037,15 @@ def api_user_profile_update():
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
 
-    first_name = (data.get("firstName") or "").strip()
-    last_name = (data.get("lastName") or "").strip()
-    nickname = (data.get("nickname") or "").strip()
+    first_name = insec.strip_null_bytes((data.get("firstName") or "").strip())
+    last_name = insec.strip_null_bytes((data.get("lastName") or "").strip())
+    nickname = insec.strip_null_bytes((data.get("nickname") or "").strip())
     email = (data.get("email") or "").strip()
     gender = (data.get("gender") or "").strip() or None
     birthday = (data.get("birthday") or "").strip() or None
+    for label, val in (("firstName", first_name), ("lastName", last_name), ("nickname", nickname)):
+        if "<" in val or ">" in val:
+            return jsonify({"success": False, "field": label, "error": "Name fields cannot contain < or >."}), 400
 
     ok, field_key, err_msg = db.update_user_profile(
         user_id,
@@ -1724,15 +1737,19 @@ def api_tags_get():
 def api_tags_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
-    tag = (data.get("tag") or "").strip()
-    icon_name = (data.get("iconName") or "").strip().lower()
+    tag_raw = data.get("tag") or ""
+    icon_raw = data.get("iconName") or ""
     if not isinstance(user_id, int) or user_id <= 0:
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
-    if not tag:
-        return jsonify({"success": False, "error": "Tag is required."}), 400
+    ok_tag, tag, err_tag = insec.validate_tag(tag_raw)
+    if not ok_tag:
+        return jsonify({"success": False, "error": err_tag or "Invalid tag."}), 400
+    ok_icon, icon_name, err_icon = insec.validate_icon_name(icon_raw)
+    if not ok_icon:
+        return jsonify({"success": False, "error": err_icon or "Invalid icon."}), 400
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
-    ok = db.add_user_tag(user_id=user_id, tag=tag, icon_name=icon_name or None)
+    ok = db.add_user_tag(user_id=user_id, tag=tag, icon_name=icon_name)
     if not ok:
         return jsonify({"success": False, "error": "Could not save tag."}), 500
     return jsonify({"success": True}), 201
@@ -1742,11 +1759,12 @@ def api_tags_post():
 def api_tags_delete():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
-    tag = (data.get("tag") or "").strip()
+    tag_raw = data.get("tag") or ""
     if not isinstance(user_id, int) or user_id <= 0:
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
-    if not tag:
-        return jsonify({"success": False, "error": "Tag is required."}), 400
+    ok_tag, tag, err_tag = insec.validate_tag(tag_raw)
+    if not ok_tag:
+        return jsonify({"success": False, "error": err_tag or "Invalid tag."}), 400
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
     ok = db.delete_user_tag(user_id=user_id, tag=tag)
@@ -1825,9 +1843,9 @@ def api_triggers_summary():
 def api_entries_post():
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
-    title = (data.get("title") or "").strip()
+    title_raw = data.get("title") or ""
     entry_date_time_local = (data.get("entryDateTimeLocal") or "").strip()
-    text = (data.get("text") or "").strip()
+    text = insec.normalize_entry_text(data.get("text") or "")
     tags = data.get("tags") or []
     image_urls = data.get("imageUrls") or []
 
@@ -1835,6 +1853,15 @@ def api_entries_post():
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
+    ok_title, title, err_title = insec.validate_title(title_raw)
+    if not ok_title:
+        return jsonify({"success": False, "error": err_title or "Invalid title."}), 400
+    ok_tags, tags, err_tags = insec.sanitize_tags_list(tags)
+    if not ok_tags:
+        return jsonify({"success": False, "error": err_tags or "Invalid tags."}), 400
+    ok_imgs, clean_images, err_imgs = insec.sanitize_image_urls(image_urls)
+    if not ok_imgs:
+        return jsonify({"success": False, "error": err_imgs or "Invalid image URLs."}), 400
     word_count = _entry_word_count(text)
     if word_count > ENTRY_WORD_MAX:
         return (
@@ -1849,12 +1876,6 @@ def api_entries_post():
             ),
             400,
         )
-    if not isinstance(tags, list):
-        tags = []
-    if not isinstance(image_urls, list):
-        image_urls = []
-    clean_images = [str(x).strip() for x in image_urls if isinstance(x, str) and str(x).strip()]
-
     user = db.get_user_by_id(user_id) if hasattr(db, "get_user_by_id") else None
     if not user:
         return jsonify({"success": False, "error": "User not found."}), 404
@@ -1891,7 +1912,7 @@ def api_entries_analyze_text():
     """Run mood/NLP on text only (no DB write). Used by entry view / modal re-run."""
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
-    text = (data.get("text") or "").strip()
+    text = insec.normalize_entry_text(data.get("text") or "")
     if not isinstance(user_id, int) or user_id <= 0:
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
@@ -1947,8 +1968,8 @@ def api_entries_one(entry_id: int):
 def api_entries_patch(entry_id: int):
     data = request.get_json(silent=True) or {}
     user_id = data.get("userId")
-    title = (data.get("title") or "").strip()
-    text = (data.get("text") or "").strip()
+    title_raw = data.get("title") or ""
+    text = insec.normalize_entry_text(data.get("text") or "")
     tags = data.get("tags") or []
     reanalyze = bool(data.get("reanalyze"))
 
@@ -1956,6 +1977,12 @@ def api_entries_patch(entry_id: int):
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
+    ok_title, title, err_title = insec.validate_title(title_raw)
+    if not ok_title:
+        return jsonify({"success": False, "error": err_title or "Invalid title."}), 400
+    ok_tags, clean_tags, err_tags = insec.sanitize_tags_list(tags)
+    if not ok_tags:
+        return jsonify({"success": False, "error": err_tags or "Invalid tags."}), 400
     word_count = _entry_word_count(text)
     if word_count > ENTRY_WORD_MAX:
         return (
@@ -1970,9 +1997,6 @@ def api_entries_patch(entry_id: int):
             ),
             400,
         )
-    if not isinstance(tags, list):
-        tags = []
-    clean_tags = [str(t).strip() for t in tags if str(t or "").strip()]
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
 
@@ -1990,11 +2014,9 @@ def api_entries_patch(entry_id: int):
 
     if "imageUrls" in data:
         raw_images = data.get("imageUrls") or []
-        if not isinstance(raw_images, list):
-            raw_images = []
-        clean_images = [str(x).strip() for x in raw_images if isinstance(x, str) and str(x).strip()]
-        if len(clean_images) > 10:
-            return jsonify({"success": False, "error": "At most 10 images per entry."}), 400
+        ok_imgs, clean_images, err_imgs = insec.sanitize_image_urls(raw_images)
+        if not ok_imgs:
+            return jsonify({"success": False, "error": err_imgs or "Invalid image URLs."}), 400
         _cleanup_removed_entry_uploads(old_image_list, clean_images)
         images_json = json.dumps(clean_images)
     else:

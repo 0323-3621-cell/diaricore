@@ -2,6 +2,18 @@
 
 const ENTRIES_PAGE_SIZE = 6;
 
+function escapeHtml(text) {
+    if (window.DiariSecurity && typeof window.DiariSecurity.escapeHtml === 'function') {
+        return window.DiariSecurity.escapeHtml(text);
+    }
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /** Mood filter chips — matches `resolveEntryFeeling` / card labels (lowercase values). */
 const MOOD_FILTER_VALUES = new Set(['happy', 'sad', 'angry', 'anxious', 'neutral']);
 
@@ -432,22 +444,27 @@ function createStoredEntryCard(entry) {
 
     const resolvedFeeling = resolveEntryFeeling(entry);
     const moodLabel = moodDisplayLabel(resolvedFeeling);
+    const safeTitle = escapeHtml(title || 'Journal Entry');
+    const safeExcerpt = escapeHtml(excerpt || 'No details provided.');
+    const safeTagsHtml = tags.length
+        ? tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+        : '';
     article.innerHTML = `
         <div class="entry-content-wrapper">
             <div class="entry-header">
                 <div class="entry-meta">
-                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${dateText}</span></span>
-                    <span class="entry-time">${timeText}</span>
-                    <h3 class="entry-title">${title || 'Journal Entry'}</h3>
+                    <span class="entry-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${escapeHtml(dateText)}</span></span>
+                    <span class="entry-time">${escapeHtml(timeText)}</span>
+                    <h3 class="entry-title">${safeTitle}</h3>
                 </div>
                 <div class="entry-mood">
-                    <span class="mood-label mood-label--${resolvedFeeling}">${moodLabel}</span>
+                    <span class="mood-label mood-label--${escapeHtml(resolvedFeeling)}">${escapeHtml(moodLabel)}</span>
                     ${showEditedPill ? '<span class="entry-edited-pill" aria-label="Edited after save">Edited</span>' : ''}
                 </div>
             </div>
             <div class="entry-content">
-                <p class="entry-excerpt">${excerpt || 'No details provided.'}</p>
-                ${tags.length ? `<div class="entry-tags">${tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}</div>` : ''}
+                <p class="entry-excerpt">${safeExcerpt}</p>
+                ${safeTagsHtml ? `<div class="entry-tags">${safeTagsHtml}</div>` : ''}
             </div>
         </div>
     `;
@@ -1046,7 +1063,7 @@ function showNotification(message, type = 'info') {
     notification.className = 'entries-notification';
     notification.innerHTML = `
         <i class="bi bi-info-circle"></i>
-        <span>${message}</span>
+        <span>${escapeHtml(message)}</span>
     `;
 
     // Style the notification

@@ -99,6 +99,20 @@
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
 
+            function isLikelyBrave() {
+                return Boolean(globalThis.navigator && navigator.brave);
+            }
+
+            void fetch('/api/voice/status', { credentials: 'same-origin' })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (j) {
+                    if (!j || !j.success) return;
+                    serverTranscribeConfigured = Boolean(j.configured);
+                })
+                .catch(function () {});
+
             if (speechSupported && window.isSecureContext === false && statusText) {
                 statusText.textContent =
                     'Live voice captions need HTTPS (or localhost). This page is not a secure context, so dictation may not run.';
@@ -143,19 +157,7 @@
 
             scheduleVoiceModelWarmUp();
 
-            if (window.DIARI_VOICE_USE_SERVER === true) {
-                void fetch('/api/voice/status', { credentials: 'same-origin' })
-                    .then(function (r) {
-                        return r.json();
-                    })
-                    .then(function (j) {
-                        if (!j || !j.success) return;
-                        serverTranscribeConfigured = Boolean(j.configured);
-                    })
-                    .catch(function () {});
-            }
-
-    if (isMobile && mobileRetryBtn) {
+            if (isMobile && mobileRetryBtn) {
                 setTimeout(function () {
             mobileRetryBtn.style.setProperty('display', 'flex', 'important');
         }, 100);
@@ -481,10 +483,14 @@
                 if (serverTranscribeConfigured === false) {
                     return '';
                 }
-                setTranscriptHint('Transcribing on the server (optional fallback)…');
+                setTranscriptHint('Transcribing on the server…');
                 const fd = new FormData();
                 const ext = extensionForMime(recorderMime || blob.type);
                 fd.append('audio', blob, 'recording.' + ext);
+                if (window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function') {
+                    const vl = DiariVoiceLocale.getVoiceLang();
+                    if (vl === 'tl') fd.append('language', 'tagalog');
+                }
                 const r = await fetch('/api/voice/transcribe', {
                     method: 'POST',
                     body: fd,
@@ -499,11 +505,50 @@
                 throw new Error((j && j.error) || 'Server transcription failed');
             }
 
+            function buildTranscribeFailureHint(deviceErr, serverErr) {
+                const parts = [];
+                if (isLikelyBrave()) {
+                    parts.push(
+                        'Brave often blocks live captions and the on-device model. Try Chrome or Edge, or lower Shields for this site.'
+                    );
+                }
+                if (deviceErr) {
+                    const dm = deviceErr.message || String(deviceErr);
+                    if (/cdn|load|import|fetch/i.test(dm)) {
+                        parts.push('On-device model could not load (CDN may be blocked).');
+                    }
+                }
+                if (serverTranscribeConfigured === false) {
+                    parts.push('Server transcription is not set up on this host.');
+                } else if (serverErr) {
+                    parts.push(
+                        (serverErr.message || String(serverErr)).slice(0, 120) ||
+                            'Server transcription failed.'
+                    );
+                } else if (serverTranscribeConfigured === null) {
+                    parts.push('Server transcription was still starting — try Retry in a moment.');
+                }
+                if (!parts.length) {
+                    parts.push(
+                        'Use Chrome or Edge for live captions while you speak, or type your entry below.'
+                    );
+                } else {
+                    parts.push('You can also type your entry below.');
+                }
+                return parts.join(' ');
+            }
+
             async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
-                if (!blob || blob.size < 200) return;
+                if (!blob || blob.size < 200) {
+                    setTranscriptHint(
+                        'Recording was too short. Hold the mic longer, then try again or type below.'
+                    );
+                    return;
+                }
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
 
+                let deviceErr = null;
                 try {
                     const deviceText = await transcribeOnDevice(blob);
                     if (deviceText && finalTranscript) {
@@ -513,26 +558,32 @@
                         return;
                     }
                 } catch (e) {
+                    deviceErr = e;
                     console.error('On-device transcription failed:', e);
+                    if (window.DiariVoiceClient && typeof DiariVoiceClient.resetPipeline === 'function') {
+                        DiariVoiceClient.resetPipeline();
+                    }
                 }
 
-                if (window.DIARI_VOICE_USE_SERVER === true) {
+                let serverErr = null;
+                if (serverTranscribeConfigured !== false) {
                     try {
                         const serverText = await transcribeOnServer(blob, recorderMime);
                         if (serverText && finalTranscript) {
                             finalTranscript.value = serverText;
                             updateWordCountFromTranscript();
-                            setTranscriptHint('Transcript from the server (live captions were unavailable).');
+                            setTranscriptHint(
+                                'Transcript from the server (used because browser or on-device transcription was unavailable).'
+                            );
                             return;
                         }
                     } catch (e) {
+                        serverErr = e;
                         console.error('Server transcription failed:', e);
                     }
                 }
 
-                setTranscriptHint(
-                    'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
-                );
+                setTranscriptHint(buildTranscribeFailureHint(deviceErr, serverErr));
             }
 
             if (voiceCircle) {

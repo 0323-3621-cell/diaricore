@@ -1,12 +1,19 @@
 /**
  * On-device speech-to-text (no DiariCore /api call).
- * Uses Whisper Tiny for speed; language hint (english / tagalog) keeps Filipino accurate.
+ * Uses Whisper Tiny; falls back to server from voice-entry.js when this fails (e.g. Brave blocks CDN).
  */
 (function (global) {
     'use strict';
 
     const MODEL_ID = 'Xenova/whisper-tiny';
+    const TRANSFORMERS_URLS = [
+        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2',
+        'https://esm.sh/@xenova/transformers@2.17.2',
+        'https://unpkg.com/@xenova/transformers@2.17.2?module',
+    ];
+
     let pipelinePromise = null;
+    let lastLoadError = null;
 
     function isSupported() {
         return Boolean(global.AudioContext || global.webkitAudioContext);
@@ -31,22 +38,36 @@
 
     function configureRuntime(env) {
         if (!env || !env.backends || !env.backends.onnx || !env.backends.onnx.wasm) return;
-        const cores = global.navigator && global.navigator.hardwareConcurrency;
-        env.backends.onnx.wasm.numThreads = Math.min(8, Math.max(2, cores || 4));
-        if ('simd' in env.backends.onnx.wasm) {
-            env.backends.onnx.wasm.simd = true;
+        const wasm = env.backends.onnx.wasm;
+        /* Multi-thread WASM needs COOP/COEP; without it ONNX throws and transcription fails. */
+        if (global.crossOriginIsolated && global.navigator && global.navigator.hardwareConcurrency > 1) {
+            wasm.numThreads = Math.min(4, global.navigator.hardwareConcurrency);
+        } else {
+            wasm.numThreads = 1;
         }
     }
 
     async function getTransformers() {
-        return import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+        let lastErr = null;
+        for (let i = 0; i < TRANSFORMERS_URLS.length; i += 1) {
+            try {
+                return await import(/* webpackIgnore: true */ TRANSFORMERS_URLS[i]);
+            } catch (err) {
+                lastErr = err;
+                console.warn('Transformers CDN failed:', TRANSFORMERS_URLS[i], err);
+            }
+        }
+        throw lastErr || new Error('Could not load the on-device speech library (CDN blocked).');
+    }
+
+    function resetPipeline() {
+        pipelinePromise = null;
     }
 
     async function loadTranscriber(onStatus) {
         if (!pipelinePromise) {
             pipelinePromise = (async function () {
                 const { pipeline, env } = await getTransformers();
-                transformersEnv = env;
                 env.allowLocalModels = false;
                 env.useBrowserCache = true;
                 configureRuntime(env);
@@ -54,24 +75,34 @@
                 return pipeline('automatic-speech-recognition', MODEL_ID);
             })();
         }
-        return pipelinePromise;
+        try {
+            return await pipelinePromise;
+        } catch (err) {
+            lastLoadError = err;
+            resetPipeline();
+            throw err;
+        }
     }
 
-    /** Preload model in the background so post-recording transcribe starts immediately. */
     function warmUp(options) {
-        if (!isSupported()) return Promise.resolve();
+        if (!isSupported()) return Promise.resolve(false);
         const onStatus =
             options && typeof options.onStatus === 'function' ? options.onStatus : null;
         return loadTranscriber(onStatus).then(
             function () {
+                lastLoadError = null;
                 return true;
             },
             function (err) {
+                lastLoadError = err;
                 console.warn('Voice model warm-up failed:', err);
-                pipelinePromise = null;
                 return false;
             }
         );
+    }
+
+    function getLastLoadError() {
+        return lastLoadError;
     }
 
     function chunkParamsForDuration(durationSec) {
@@ -99,6 +130,10 @@
             source.start(0);
             const rendered = await offline.startRendering();
             return rendered.getChannelData(0);
+        } catch (decodeErr) {
+            throw new Error(
+                'Could not decode the recording audio. Try Chrome or Edge, or record a little longer.'
+            );
         } finally {
             try {
                 await ctx.close();
@@ -152,5 +187,7 @@
         isSupported,
         warmUp,
         transcribeBlob,
+        getLastLoadError,
+        resetPipeline,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

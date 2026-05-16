@@ -1040,11 +1040,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function finishSuccessfulLogin(u) {
-        localStorage.setItem('diariCoreUser', JSON.stringify({
-            ...u,
+        const sessionUser = Object.assign({}, u, {
             isLoggedIn: true,
-            loginTime: new Date().toISOString()
-        }));
+            loginTime: new Date().toISOString(),
+        });
+        localStorage.setItem('diariCoreUser', JSON.stringify(sessionUser));
+        if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
+            window.DiariTheme.applyFromUser(sessionUser);
+        }
         if (u.isAdmin) {
             showNotification('Admin login successful! Redirecting...', 'success');
             setTimeout(function () {

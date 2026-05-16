@@ -2473,18 +2473,19 @@ html.theme-dark .mood-result-badge--amber {
     }
 
     .custom-tag-icons-grid {
-        --ct-icon-size: 48px;
-        --ct-icon-gap: 0.45rem;
+        --ct-icon-size: 46px;
+        --ct-icon-gap: 0.4rem;
         grid-template-columns: repeat(8, minmax(0, 1fr));
         grid-template-rows: repeat(6, var(--ct-icon-size));
         flex: 0 0 auto;
         box-sizing: border-box;
-        min-height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
-        height: auto;
-        max-height: none;
-        overflow: visible;
+        height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
+        min-height: 0;
+        max-height: calc(6 * var(--ct-icon-size) + 5 * var(--ct-icon-gap));
+        overflow: hidden;
         gap: var(--ct-icon-gap);
         align-content: start;
+        margin-bottom: 0.15rem;
     }
 
     .custom-tag-icon-btn {
@@ -2504,6 +2505,8 @@ html.theme-dark .mood-result-badge--amber {
         display: flex !important;
         visibility: visible !important;
         flex-shrink: 0;
+        position: relative;
+        z-index: 2;
         min-height: 2.75rem;
         margin: 0;
         padding: 0.65rem 1.1rem 0.5rem;

@@ -380,11 +380,20 @@
     // Apply immediately to reduce theme flicker.
     bootstrapAppearance();
 
+    function initMobilePalettePanel() {
+        if (!isMobileViewport()) return;
+        const panel = document.getElementById('themePalettePanel');
+        const toggleBtn = document.getElementById('themePaletteToggle');
+        if (panel) panel.hidden = false;
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         bootstrapAppearance();
         createThemeToggleFab();
         bindPaletteButtons();
         bindPalettePanelToggle();
+        initMobilePalettePanel();
         syncToggleState();
     });
 

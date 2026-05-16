@@ -90,11 +90,11 @@
             ';';
 
         if (mobile) {
-            toast.style.left = '50%';
-            toast.style.right = 'auto';
+            toast.style.right = '12px';
+            toast.style.left = 'auto';
             toast.style.width = 'max-content';
             toast.style.maxWidth = 'min(20rem, calc(100vw - 2rem))';
-            toast.style.transform = 'translate(-50%, -140%)';
+            toast.style.transform = 'translateX(110%)';
         } else {
             toast.style.right = '20px';
             toast.style.left = 'auto';
@@ -104,10 +104,10 @@
 
         document.body.appendChild(toast);
         requestAnimationFrame(function () {
-            toast.style.transform = mobile ? 'translate(-50%, 0)' : 'translateX(0)';
+            toast.style.transform = 'translateX(0)';
         });
         setTimeout(function () {
-            toast.style.transform = mobile ? 'translate(-50%, -140%)' : 'translateX(100%)';
+            toast.style.transform = 'translateX(110%)';
             setTimeout(function () {
                 if (toast.parentNode) toast.remove();
             }, 300);

@@ -1204,9 +1204,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
             return;
         }
-        if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
-            window.DiariSessionManager.endSession('discarded');
-        }
         try {
             localStorage.removeItem('diariCoreDraft');
         } catch (_) {}
@@ -1625,60 +1622,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
     journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
 
-    function applySessionDraft(draft) {
-        if (!draft || typeof draft !== 'object') return;
-        if (journalTitleInput && draft.title) journalTitleInput.value = String(draft.title);
-        if (journalText && draft.body) {
-            journalText.value = String(draft.body);
-            journalText.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        if (Array.isArray(draft.tags)) {
-            draft.tags.forEach((tag) => {
-                const key = normalizeTag(tag);
-                if (!key) return;
-                selectedTags.add(key);
-                document.querySelectorAll('.tag-btn[data-tag]').forEach((btn) => {
-                    if (normalizeTag(btn.getAttribute('data-tag')) === key) btn.classList.add('active');
-                });
-            });
-            renderTagButtons();
-        }
-        if (Array.isArray(draft.photos_pending) && draft.photos_pending.length) {
-            attachedImages = draft.photos_pending.map((p, i) => ({
-                id: p.id || `draft_img_${i}_${Date.now()}`,
-                dataUrl: p.dataUrl || '',
-                url: p.url || '',
-                name: p.name || 'photo',
-                progress: p.url ? 100 : 0,
-            }));
-            renderImageGallery();
-        }
-        autoAdjustJournalTextarea();
-    }
-
-    if (window.DiariSessionManager) {
-        window.DiariSessionManager.registerHooks({
-            getDraftState: function () {
-                return {
-                    title: journalTitleInput?.value || '',
-                    body: journalText?.value || '',
-                    tags: Array.from(selectedTags),
-                    photos_pending: attachedImages.map((img) => ({
-                        id: img.id,
-                        dataUrl: img.dataUrl || '',
-                        url: img.url || '',
-                        name: img.name || '',
-                    })),
-                    date:
-                        document.getElementById('journalDateTime')?.textContent ||
-                        new Date().toISOString(),
-                };
-            },
-            applyDraft: applySessionDraft,
-        });
-        await window.DiariSessionManager.start();
-    }
-
     const toLocalInputValue = (dateObj) => {
         const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
         return d.toISOString().slice(0, 16);
@@ -1960,9 +1903,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback', moodOpts);
-            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
-                window.DiariSessionManager.endSession('saved');
-            }
             try {
                 localStorage.removeItem('diariCoreDraft');
             } catch (_) {}
@@ -2028,9 +1968,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             };
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, fallbackEntry, true, moodOpts);
-            if (window.DiariSessionManager && typeof window.DiariSessionManager.endSession === 'function') {
-                window.DiariSessionManager.endSession('saved');
-            }
             try {
                 localStorage.removeItem('diariCoreDraft');
             } catch (_) {}

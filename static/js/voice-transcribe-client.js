@@ -1,6 +1,6 @@
 /**
  * On-device speech-to-text (no DiariCore /api call).
- * Uses Whisper Tiny; falls back to server from voice-entry.js when this fails (e.g. Brave blocks CDN).
+ * Uses Whisper Tiny in the browser only — no DiariCore API calls.
  */
 (function (global) {
     'use strict';

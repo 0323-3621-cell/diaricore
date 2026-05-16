@@ -95,23 +95,12 @@
     
             const speechSupported = Boolean(getSpeechRecognitionCtor());
     const isMobile = window.innerWidth <= 768;
-            let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
 
             function isLikelyBrave() {
                 return Boolean(globalThis.navigator && navigator.brave);
             }
-
-            void fetch('/api/voice/status', { credentials: 'same-origin' })
-                .then(function (r) {
-                    return r.json();
-                })
-                .then(function (j) {
-                    if (!j || !j.success) return;
-                    serverTranscribeConfigured = Boolean(j.configured);
-                })
-                .catch(function () {});
 
             if (speechSupported && window.isSecureContext === false && statusText) {
                 statusText.textContent =
@@ -479,33 +468,7 @@
                 });
             }
 
-            async function transcribeOnServer(blob, recorderMime) {
-                if (serverTranscribeConfigured === false) {
-                    return '';
-                }
-                setTranscriptHint('Transcribing on the server…');
-                const fd = new FormData();
-                const ext = extensionForMime(recorderMime || blob.type);
-                fd.append('audio', blob, 'recording.' + ext);
-                if (window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function') {
-                    const vl = DiariVoiceLocale.getVoiceLang();
-                    if (vl === 'tl') fd.append('language', 'tagalog');
-                }
-                const r = await fetch('/api/voice/transcribe', {
-                    method: 'POST',
-                    body: fd,
-                    credentials: 'same-origin',
-                });
-                const j = await r.json().catch(function () {
-                    return {};
-                });
-                if (j.success && j.text) {
-                    return String(j.text).replace(/\s+/g, ' ').trim();
-                }
-                throw new Error((j && j.error) || 'Server transcription failed');
-            }
-
-            function buildTranscribeFailureHint(deviceErr, serverErr) {
+            function buildTranscribeFailureHint(deviceErr) {
                 const parts = [];
                 if (isLikelyBrave()) {
                     parts.push(
@@ -516,17 +479,9 @@
                     const dm = deviceErr.message || String(deviceErr);
                     if (/cdn|load|import|fetch/i.test(dm)) {
                         parts.push('On-device model could not load (CDN may be blocked).');
+                    } else if (dm) {
+                        parts.push(dm.slice(0, 140));
                     }
-                }
-                if (serverTranscribeConfigured === false) {
-                    parts.push('Server transcription is not set up on this host.');
-                } else if (serverErr) {
-                    parts.push(
-                        (serverErr.message || String(serverErr)).slice(0, 120) ||
-                            'Server transcription failed.'
-                    );
-                } else if (serverTranscribeConfigured === null) {
-                    parts.push('Server transcription was still starting — try Retry in a moment.');
                 }
                 if (!parts.length) {
                     parts.push(
@@ -554,7 +509,7 @@
                     if (deviceText && finalTranscript) {
                         finalTranscript.value = deviceText;
                         updateWordCountFromTranscript();
-                        setTranscriptHint('Transcript created on your device (no server used).');
+                        setTranscriptHint('Transcript created on your device.');
                         return;
                     }
                 } catch (e) {
@@ -565,25 +520,7 @@
                     }
                 }
 
-                let serverErr = null;
-                if (serverTranscribeConfigured !== false) {
-                    try {
-                        const serverText = await transcribeOnServer(blob, recorderMime);
-                        if (serverText && finalTranscript) {
-                            finalTranscript.value = serverText;
-                            updateWordCountFromTranscript();
-                            setTranscriptHint(
-                                'Transcript from the server (used because browser or on-device transcription was unavailable).'
-                            );
-                            return;
-                        }
-                    } catch (e) {
-                        serverErr = e;
-                        console.error('Server transcription failed:', e);
-                    }
-                }
-
-                setTranscriptHint(buildTranscribeFailureHint(deviceErr, serverErr));
+                setTranscriptHint(buildTranscribeFailureHint(deviceErr));
             }
 
             if (voiceCircle) {

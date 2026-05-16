@@ -64,17 +64,23 @@
     }
 
     function speechRecognitionLang(voiceLang) {
+        const list = speechRecognitionLangCandidates(voiceLang);
+        return list[0] || 'en-US';
+    }
+
+    /** Ordered fallbacks when the browser rejects a locale (e.g. fil-PH). */
+    function speechRecognitionLangCandidates(voiceLang) {
         if (voiceLang === 'tl') {
-            return 'fil-PH';
+            return ['fil-PH', 'en-PH', 'en-US'];
         }
         try {
             const raw = (global.navigator.language || global.navigator.userLanguage || 'en-US')
                 .trim()
                 .replace(/_/g, '-');
-            if (!raw) return 'en-US';
-            return raw.length > 40 ? raw.slice(0, 40) : raw;
+            const primary = raw && raw.length <= 40 ? raw : 'en-US';
+            return primary === 'en-US' ? ['en-US'] : [primary, 'en-US'];
         } catch (_) {
-            return 'en-US';
+            return ['en-US'];
         }
     }
 
@@ -98,6 +104,7 @@
         getVoiceLang,
         setVoiceLang,
         speechRecognitionLang,
+        speechRecognitionLangCandidates,
         whisperLanguage,
         whisperModelId,
         labelFor,

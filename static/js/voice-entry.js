@@ -58,9 +58,9 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         try {
-    let isRecording = false;
+            let isRecording = false;
             let mediaRecorder = null;
-    let audioChunks = [];
+            let audioChunks = [];
             let mediaStream = null;
             let startTime = null;
             let recognition = null;
@@ -74,77 +74,47 @@
             let recordingRafId = null;
 
             const voiceRoot = document.querySelector('.voice-entry-container');
-    const voiceCircle = document.getElementById('voiceCircle');
-    const micIcon = document.getElementById('micIcon');
-    const statusText = document.getElementById('statusText');
-    const finalTranscript = document.getElementById('finalTranscript');
-    const recordingState = document.getElementById('recordingState');
+            const voiceCircle = document.getElementById('voiceCircle');
+            const micIcon = document.getElementById('micIcon');
+            const statusText = document.getElementById('statusText');
+            const finalTranscript = document.getElementById('finalTranscript');
+            const recordingState = document.getElementById('recordingState');
             const recordingTimeEl = document.getElementById('voiceEntryRecordingTime');
-    const postRecordingContainer = document.getElementById('postRecordingContainer');
-    const recordingDuration = document.getElementById('recordingDuration');
-    const wordCount = document.getElementById('wordCount');
-    const retryBtn = document.getElementById('retryBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const mobileSaveBtn = document.getElementById('saveEntryBtn');
-    const mobileRetryBtn = document.getElementById('mobileRetryBtn');
+            const postRecordingContainer = document.getElementById('postRecordingContainer');
+            const recordingDuration = document.getElementById('recordingDuration');
+            const wordCount = document.getElementById('wordCount');
+            const retryBtn = document.getElementById('retryBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const mobileSaveBtn = document.getElementById('saveEntryBtn');
+            const mobileRetryBtn = document.getElementById('mobileRetryBtn');
             const transcriptHint = document.getElementById('voiceTranscriptHint');
             const voiceLangSelect = document.getElementById('voiceLangSelect');
             const waveBarEls = voiceRoot
                 ? Array.from(voiceRoot.querySelectorAll('.voice-wave-bar'))
                 : Array.from(document.querySelectorAll('.voice-wave-bar'));
-    
+
             const speechSupported = Boolean(getSpeechRecognitionCtor());
-    const isMobile = window.innerWidth <= 768;
+            const isMobile = window.innerWidth <= 768;
+            let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
-
-            function isLikelyBrave() {
-                return Boolean(globalThis.navigator && navigator.brave);
-            }
 
             if (speechSupported && window.isSecureContext === false && statusText) {
                 statusText.textContent =
                     'Live voice captions need HTTPS (or localhost). This page is not a secure context, so dictation may not run.';
             }
 
-    if (isMobile && statusText) {
+            if (isMobile && statusText) {
                 if (!(speechSupported && window.isSecureContext === false)) {
-        statusText.textContent = 'Tap to record';
-                }
-            }
-
-            function scheduleVoiceModelWarmUp() {
-                if (!window.DiariVoiceClient || typeof DiariVoiceClient.warmUp !== 'function') return;
-                const run = function () {
-                    const voiceLang =
-                        window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
-                            ? DiariVoiceLocale.getVoiceLang()
-                            : 'en';
-                    void DiariVoiceClient.warmUp({ voiceLang: voiceLang });
-                };
-                if (typeof requestIdleCallback === 'function') {
-                    requestIdleCallback(run, { timeout: 4000 });
-                } else {
-                    setTimeout(run, 800);
+                    statusText.textContent = 'Tap to record';
                 }
             }
 
             if (voiceLangSelect && window.DiariVoiceLocale) {
-                let stored = DiariVoiceLocale.getStoredChoice();
-                try {
-                    if (
-                        stored === 'auto' &&
-                        !localStorage.getItem(DiariVoiceLocale.STORAGE_KEY) &&
-                        DiariVoiceLocale.isPhilippinesTimezone()
-                    ) {
-                        DiariVoiceLocale.setVoiceLang('tl');
-                        stored = 'tl';
-                    }
-                } catch (_) {}
+                const stored = DiariVoiceLocale.getStoredChoice();
                 voiceLangSelect.value = stored === 'en' || stored === 'tl' ? stored : 'auto';
                 voiceLangSelect.addEventListener('change', function () {
                     DiariVoiceLocale.setVoiceLang(voiceLangSelect.value);
-                    scheduleVoiceModelWarmUp();
                     if (statusText && !isRecording) {
                         const vl = DiariVoiceLocale.getVoiceLang();
                         const base = isMobile ? 'Tap to record' : 'Tap to start recording';
@@ -158,29 +128,39 @@
                 }
             }
 
-            scheduleVoiceModelWarmUp();
+            if (window.DIARI_VOICE_USE_SERVER === true) {
+                void fetch('/api/voice/status', { credentials: 'same-origin' })
+                    .then(function (r) {
+                        return r.json();
+                    })
+                    .then(function (j) {
+                        if (!j || !j.success) return;
+                        serverTranscribeConfigured = Boolean(j.configured);
+                    })
+                    .catch(function () {});
+            }
 
             if (isMobile && mobileRetryBtn) {
                 setTimeout(function () {
-            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-        }, 100);
+                    mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                }, 100);
                 window.addEventListener('load', function () {
                     setTimeout(function () {
-                mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-                mobileRetryBtn.style.color = 'white';
-                mobileRetryBtn.style.backgroundColor = 'var(--primary-bg)';
-            }, 50);
-        });
-    }
-    
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
+                        mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                        mobileRetryBtn.style.color = 'white';
+                        mobileRetryBtn.style.backgroundColor = 'var(--primary-bg)';
+                    }, 50);
+                });
+            }
+
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
             if (sidebarToggle && sidebar) {
                 sidebarToggle.addEventListener('click', function () {
-            sidebar.classList.toggle('collapsed');
-        });
-    }
-    
+                    sidebar.classList.toggle('collapsed');
+                });
+            }
+
             function setPostPanelVisible(visible) {
                 if (!postRecordingContainer) return;
                 postRecordingContainer.hidden = !visible;
@@ -482,95 +462,85 @@
                 });
             }
 
-            function buildTranscribeFailureHint(deviceErr) {
-                const parts = [];
-                if (isLikelyBrave()) {
-                    parts.push(
-                        'Brave often blocks live captions and the on-device model. Try Chrome or Edge, or lower Shields for this site.'
-                    );
+            async function transcribeOnServer(blob, recorderMime) {
+                if (serverTranscribeConfigured === false) {
+                    return '';
                 }
-                if (deviceErr) {
-                    const dm = deviceErr.message || String(deviceErr);
-                    if (/cdn|load|import|fetch/i.test(dm)) {
-                        parts.push('On-device model could not load (CDN may be blocked).');
-                    } else if (dm) {
-                        parts.push(dm.slice(0, 140));
-                    }
+                setTranscriptHint('Transcribing on the server (optional fallback)…');
+                const fd = new FormData();
+                const ext = extensionForMime(recorderMime || blob.type);
+                fd.append('audio', blob, 'recording.' + ext);
+                const r = await fetch('/api/voice/transcribe', {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                });
+                const j = await r.json().catch(function () {
+                    return {};
+                });
+                if (j.success && j.text) {
+                    return String(j.text).replace(/\s+/g, ' ').trim();
                 }
-                if (!parts.length) {
-                    parts.push(
-                        'Use Chrome or Edge for live captions while you speak, or type your entry below.'
-                    );
-                } else {
-                    parts.push('You can also type your entry below.');
-                }
-                return parts.join(' ');
+                throw new Error((j && j.error) || 'Server transcription failed');
             }
 
             async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
-                if (!blob || blob.size < 200) {
-                    setTranscriptHint(
-                        'Recording was too short. Hold the mic longer, then try again or type below.'
-                    );
-                    return;
-                }
+                if (!blob || blob.size < 200) return;
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
 
-                let deviceErr = null;
                 try {
                     const deviceText = await transcribeOnDevice(blob);
                     if (deviceText && finalTranscript) {
                         finalTranscript.value = deviceText;
                         updateWordCountFromTranscript();
-                        const vl =
-                            window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
-                                ? DiariVoiceLocale.getVoiceLang()
-                                : 'en';
+                        const langNote =
+                            window.DiariVoiceLocale &&
+                            DiariVoiceLocale.getVoiceLang() === 'tl'
+                                ? ' (Filipino / Taglish model)'
+                                : '';
                         setTranscriptHint(
-                            vl === 'tl'
-                                ? 'Transcript created on your device (Filipino model).'
-                                : 'Transcript created on your device.'
-                        );
-                        return;
-                    }
-                    if (
-                        window.DiariVoiceLocale &&
-                        DiariVoiceLocale.getVoiceLang() === 'en' &&
-                        voiceLangSelect
-                    ) {
-                        setTranscriptHint(
-                            'No text detected. If you spoke Tagalog or Taglish, set Speaking in to Filipino / Taglish and try again.'
+                            'Transcript created on your device (no server used)' +
+                                langNote +
+                                '. First time may download a speech model.'
                         );
                         return;
                     }
                 } catch (e) {
-                    deviceErr = e;
                     console.error('On-device transcription failed:', e);
-                    if (window.DiariVoiceClient && typeof DiariVoiceClient.resetPipeline === 'function') {
-                        const mid =
-                            window.DiariVoiceLocale && typeof DiariVoiceLocale.whisperModelId === 'function'
-                                ? DiariVoiceLocale.whisperModelId(DiariVoiceLocale.getVoiceLang())
-                                : null;
-                        DiariVoiceClient.resetPipeline(mid);
+                }
+
+                if (window.DIARI_VOICE_USE_SERVER === true) {
+                    try {
+                        const serverText = await transcribeOnServer(blob, recorderMime);
+                        if (serverText && finalTranscript) {
+                            finalTranscript.value = serverText;
+                            updateWordCountFromTranscript();
+                            setTranscriptHint('Transcript from the server (live captions were unavailable).');
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Server transcription failed:', e);
                     }
                 }
 
-                setTranscriptHint(buildTranscribeFailureHint(deviceErr));
+                setTranscriptHint(
+                    'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
+                );
             }
 
             if (voiceCircle) {
                 voiceCircle.addEventListener('click', function () {
-        if (!isRecording) {
+                    if (!isRecording) {
                         primeAudioFromUserGesture();
                         void startRecording();
-        } else {
-            stopRecording();
-        }
-    });
+                    } else {
+                        stopRecording();
+                    }
+                });
             }
-    
-    async function startRecording() {
+
+            async function startRecording() {
                 teardownAudioGraph();
                 stopSpeechRecognition();
                 stopMediaStream();
@@ -636,18 +606,18 @@
                     /* Always capture audio so we can transcribe on-device when live captions fail. */
                     startBackupMediaRecorder();
 
-            isRecording = true;
-            startTime = Date.now();
+                    isRecording = true;
+                    startTime = Date.now();
                     updateTranscriptReadonly();
 
                     if (micIcon) micIcon.className = 'bi bi-stop-fill';
                     if (voiceCircle) voiceCircle.classList.add('recording');
                     if (recordingState) recordingState.style.display = 'block';
                     if (statusText) statusText.style.display = 'none';
-            if (isMobile && mobileRetryBtn) {
-                mobileRetryBtn.style.display = 'none';
-            }
-            
+                    if (isMobile && mobileRetryBtn) {
+                        mobileRetryBtn.style.display = 'none';
+                    }
+
                     if (!speechSupported && statusText) {
                         statusText.style.display = 'block';
                         statusText.textContent =
@@ -655,8 +625,8 @@
                     }
 
                     startRecordingUiLoop();
-        } catch (error) {
-            console.error('Error accessing microphone:', error);
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
                     teardownAudioGraph();
                     stopSpeechRecognition();
                     stopMediaStream();
@@ -669,10 +639,10 @@
                     if (recordingState) recordingState.style.display = 'none';
                     if (voiceCircle) voiceCircle.classList.remove('recording');
                     if (micIcon) micIcon.className = 'bi bi-mic';
-        }
-    }
-    
-    function stopRecording() {
+                }
+            }
+
+            function stopRecording() {
                 if (recordingRafId != null) {
                     cancelAnimationFrame(recordingRafId);
                     recordingRafId = null;
@@ -685,19 +655,19 @@
                     stopSpeechRecognition();
                     teardownAudioGraph();
                     stopMediaStream();
-        
-        isRecording = false;
+
+                    isRecording = false;
                     if (micIcon) micIcon.className = 'bi bi-mic';
                     if (voiceCircle) voiceCircle.classList.remove('recording');
                     if (recordingState) recordingState.style.display = 'none';
                     if (statusText) {
-        statusText.style.display = 'block';
-        statusText.textContent = 'Recording complete';
+                        statusText.style.display = 'block';
+                        statusText.textContent = 'Recording complete';
                     }
-        if (isMobile && mobileRetryBtn) {
-            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-        }
-        
+                    if (isMobile && mobileRetryBtn) {
+                        mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                    }
+
                     startTime = null;
                     if (recordingDuration) {
                         recordingDuration.textContent = formatElapsed(elapsed);
@@ -748,9 +718,9 @@
                     }
                     applyStoppedUi(null, '');
                 }
-    }
-    
-    function resetRecording() {
+            }
+
+            function resetRecording() {
                 if (recordingRafId != null) {
                     cancelAnimationFrame(recordingRafId);
                     recordingRafId = null;
@@ -780,21 +750,21 @@
                 if (recordingTimeEl) recordingTimeEl.textContent = '0:00';
                 if (wordCount) wordCount.textContent = '0';
                 if (statusText) {
-        statusText.style.display = 'block';
-        statusText.textContent = isMobile ? 'Tap to record' : 'Tap to start recording';
+                    statusText.style.display = 'block';
+                    statusText.textContent = isMobile ? 'Tap to record' : 'Tap to start recording';
                 }
                 if (micIcon) micIcon.className = 'bi bi-mic';
                 if (voiceCircle) voiceCircle.classList.remove('recording');
                 if (recordingState) recordingState.style.display = 'none';
-        if (isMobile && mobileRetryBtn) {
-            mobileRetryBtn.style.setProperty('display', 'flex', 'important');
-        }
+                if (isMobile && mobileRetryBtn) {
+                    mobileRetryBtn.style.setProperty('display', 'flex', 'important');
+                }
                 waveBarEls.forEach(function (bar) {
                     bar.style.transform = 'scaleY(0.15)';
                 });
-        audioChunks = [];
-    }
-    
+                audioChunks = [];
+            }
+
             if (finalTranscript) {
                 finalTranscript.addEventListener('input', updateWordCountFromTranscript);
             }
@@ -813,10 +783,10 @@
                     setTimeout(function () {
                         mobileRetryBtn.style.animation = '';
                     }, 500);
-        });
-    }
-    
-    function saveEntry() {
+                });
+            }
+
+            function saveEntry() {
                 const transcript = finalTranscript && finalTranscript.value ? finalTranscript.value.trim() : '';
                 if (!transcript) {
                     window.alert('Add some text in the transcript (by speaking or typing) before saving.');

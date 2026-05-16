@@ -30,6 +30,30 @@
         }
     }
 
+    function pickRecorderMime() {
+        if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+            return '';
+        }
+        const candidates = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'audio/mp4',
+            'audio/aac',
+            'audio/ogg;codecs=opus',
+        ];
+        for (let i = 0; i < candidates.length; i += 1) {
+            if (MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+        }
+        return '';
+    }
+
+    function extensionForMime(mime) {
+        const m = String(mime || '').toLowerCase();
+        if (m.includes('mp4') || m.includes('aac')) return 'm4a';
+        if (m.includes('ogg')) return 'ogg';
+        return 'webm';
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         try {
             let isRecording = false;
@@ -68,6 +92,7 @@
 
             const speechSupported = Boolean(getSpeechRecognitionCtor());
             const isMobile = window.innerWidth <= 768;
+            let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
 
@@ -81,6 +106,20 @@
                     statusText.textContent = 'Tap to record';
                 }
             }
+
+            void fetch('/api/voice/status', { credentials: 'same-origin' })
+                .then(function (r) {
+                    return r.json();
+                })
+                .then(function (j) {
+                    if (!j || !j.success) return;
+                    serverTranscribeConfigured = Boolean(j.configured);
+                    if (!j.configured && statusText && !isRecording) {
+                        statusText.textContent =
+                            'Tap to record. Server transcription needs HF_API_TOKEN on the host (you can still type your entry).';
+                    }
+                })
+                .catch(function () {});
 
             if (isMobile && mobileRetryBtn) {
                 setTimeout(function () {
@@ -346,14 +385,7 @@
             function startBackupMediaRecorder() {
                 mediaRecorder = null;
                 if (typeof MediaRecorder === 'undefined' || !mediaStream) return;
-                let mime = '';
-                if (typeof MediaRecorder.isTypeSupported === 'function') {
-                    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-                        mime = 'audio/webm;codecs=opus';
-                    } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-                        mime = 'audio/webm';
-                    }
-                }
+                const mime = pickRecorderMime();
                 try {
                     mediaRecorder = mime
                         ? new MediaRecorder(mediaStream, { mimeType: mime })
@@ -373,21 +405,37 @@
                 };
                 mediaRecorder.onstop = function () {};
                 try {
-                    mediaRecorder.start();
+                    mediaRecorder.start(500);
                 } catch (e3) {
                     console.warn('MediaRecorder.start failed:', e3);
                     mediaRecorder = null;
                 }
             }
 
-            async function transcribeRecordingBlobIfNeeded(blob) {
-                if (!blob || blob.size < 400) return;
+            function flushSpeechToTranscript() {
+                if (!finalTranscript) return;
+                const combined = String(speechFinalText || '').replace(/\s+/g, ' ').trim();
+                if (combined) {
+                    finalTranscript.value = combined;
+                    updateWordCountFromTranscript();
+                }
+            }
+
+            async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
+                if (!blob || blob.size < 200) return;
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
+                if (serverTranscribeConfigured === false) {
+                    setTranscriptHint(
+                        'Live captions were unavailable and server transcription is not configured (HF_API_TOKEN). Type your entry below.'
+                    );
+                    return;
+                }
                 setTranscriptHint('Transcribing your recording on the server (a few seconds)…');
                 try {
                     const fd = new FormData();
-                    fd.append('audio', blob, 'recording.webm');
+                    const ext = extensionForMime(recorderMime || blob.type);
+                    fd.append('audio', blob, 'recording.' + ext);
                     const r = await fetch('/api/voice/transcribe', {
                         method: 'POST',
                         body: fd,
@@ -534,8 +582,9 @@
                 }
 
                 const elapsed = startTime ? Date.now() - startTime : 0;
+                flushSpeechToTranscript();
 
-                function applyStoppedUi(blob) {
+                function applyStoppedUi(blob, recorderMime) {
                     stopSpeechRecognition();
                     teardownAudioGraph();
                     stopMediaStream();
@@ -570,29 +619,37 @@
 
                     setPostPanelVisible(true);
 
-                    if (blob && blob.size > 400) {
-                        void transcribeRecordingBlobIfNeeded(blob);
+                    if (blob && blob.size > 200) {
+                        void transcribeRecordingBlobIfNeeded(blob, recorderMime);
+                    } else if (!finalTranscript.value.trim()) {
+                        setTranscriptHint(
+                            'No audio was captured. Hold the mic a little longer, allow microphone access, or type your entry below.'
+                        );
                     }
                 }
 
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     try {
+                        const recorderMime = mediaRecorder.mimeType || pickRecorderMime() || 'audio/webm';
                         mediaRecorder.onstop = function () {
-                            var t = mediaRecorder.mimeType || 'audio/webm';
-                            var blob = new Blob(audioChunks, { type: t });
+                            const t = recorderMime || 'audio/webm';
+                            const blob = new Blob(audioChunks, { type: t });
                             mediaRecorder = null;
-                            applyStoppedUi(blob);
+                            applyStoppedUi(blob, t);
                         };
+                        try {
+                            mediaRecorder.requestData();
+                        } catch (_) {}
                         mediaRecorder.stop();
                     } catch (_) {
                         mediaRecorder = null;
-                        applyStoppedUi(null);
+                        applyStoppedUi(null, '');
                     }
                 } else {
                     if (mediaRecorder) {
                         mediaRecorder = null;
                     }
-                    applyStoppedUi(null);
+                    applyStoppedUi(null, '');
                 }
             }
 

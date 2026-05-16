@@ -2121,6 +2121,20 @@ def api_upload_image():
 MAX_VOICE_TRANSCRIBE_BYTES = 8 * 1024 * 1024
 
 
+@app.route("/api/voice/status", methods=["GET"])
+def api_voice_status():
+    """Lightweight check so the voice page can explain missing server transcription."""
+    import hf_speech
+
+    return jsonify(
+        {
+            "success": True,
+            "configured": hf_speech.is_configured(),
+            "model": os.environ.get("HF_SPEECH_MODEL", "openai/whisper-large-v3"),
+        }
+    ), 200
+
+
 @app.route("/api/voice/transcribe", methods=["POST"])
 def api_voice_transcribe():
     """Transcribe a short voice clip via Hugging Face (Whisper) when browser Web Speech is blocked."""

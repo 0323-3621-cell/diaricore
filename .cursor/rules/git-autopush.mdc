@@ -1,14 +1,16 @@
 ---
-description: After code changes, commit and push to origin automatically
+description: Always commit and push repo changes to origin when finishing work
 alwaysApply: true
 ---
 
-# Git: commit and push
+# Git: always commit and push
 
-When you finish a task that modifies files in this repo:
+**Default:** After every task that changes tracked files in this repo, commit and push before ending the turn. The user wants changes on `origin` immediately — do not wait to be asked.
+
+When you modify files:
 
 1. Run `git status` and stage only the files you changed (or the user asked to include).
 2. Commit with a short, clear message (e.g. conventional: `fix:`, `feat:`, `chore:`).
 3. Run `git push` to `origin` on the current branch.
 
-Do this before ending the turn unless the user explicitly asks not to commit/push or there is nothing to commit. If push fails (auth, network), report the error and what was committed locally.
+Skip only when the user explicitly says not to commit/push, or when there is nothing to commit. If push fails (auth, network), report the error and what was committed locally.

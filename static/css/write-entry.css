@@ -2509,7 +2509,8 @@ html.theme-dark .mood-result-badge--amber {
     .custom-tag-modal__body > .custom-tag-inline-alert,
     .custom-tag-modal__body > .custom-tag-modal__label,
     .custom-tag-modal__body > .custom-tag-modal__field,
-    .custom-tag-modal__body > .custom-tag-modal__hint {
+    .custom-tag-modal__body > .custom-tag-modal__hint,
+    .custom-tag-modal__body > .custom-tag-icon-picker {
         flex-shrink: 0;
     }
 
@@ -2519,6 +2520,21 @@ html.theme-dark .mood-result-badge--amber {
 
     .custom-tag-modal__body > .custom-tag-modal__hint {
         margin: 0.05rem 0 0.6rem;
+    }
+
+    .custom-tag-modal__body > .custom-tag-icon-picker {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .custom-tag-icon-grid-spacer {
+        flex: 0 0 1.35rem;
+        height: 1.35rem;
+        min-height: 1.35rem;
+        width: 100%;
+        pointer-events: none;
     }
 
     .custom-tag-icons-grid {
@@ -2532,15 +2548,15 @@ html.theme-dark .mood-result-badge--amber {
         grid-template-columns: repeat(var(--ct-icon-cols), minmax(0, 1fr));
         grid-template-rows: repeat(var(--ct-icon-rows), minmax(0, var(--ct-icon-size)));
         flex: 0 0 auto;
-        box-sizing: border-box;
+        box-sizing: content-box;
         height: var(--ct-grid-height);
         min-height: var(--ct-grid-height);
         max-height: var(--ct-grid-height);
         overflow: hidden;
         gap: var(--ct-icon-gap);
         align-content: start;
-        margin-bottom: 1rem;
-        padding-bottom: 0;
+        margin: 0;
+        padding: 0;
     }
 
     .custom-tag-icon-btn {
@@ -2562,7 +2578,7 @@ html.theme-dark .mood-result-badge--amber {
         visibility: visible !important;
         flex-shrink: 0;
         position: relative;
-        z-index: 2;
+        z-index: 1;
         min-height: 2.75rem;
         margin: 0;
         padding: 0.85rem 1.1rem 0.75rem;
@@ -2606,6 +2622,16 @@ html.theme-dark .mood-result-badge--amber {
 }
 
 @media (max-width: 768px) {
+    .custom-tag-icon-picker {
+        display: contents;
+    }
+
+    .custom-tag-icon-grid-spacer {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+
     .custom-tag-modal__dialog > .custom-tag-pagination {
         padding-left: 0.95rem;
         padding-right: 0.95rem;

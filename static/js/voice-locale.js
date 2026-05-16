@@ -83,8 +83,8 @@
         return voiceLang === 'tl' ? 'tagalog' : 'english';
     }
 
-    function whisperModelId() {
-        return 'Xenova/whisper-tiny';
+    function whisperModelId(voiceLang) {
+        return voiceLang === 'tl' ? 'Xenova/whisper-small' : 'Xenova/whisper-tiny';
     }
 
     function labelFor(voiceLang) {
@@ -101,5 +101,6 @@
         whisperLanguage,
         whisperModelId,
         labelFor,
+        isPhilippinesTimezone,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

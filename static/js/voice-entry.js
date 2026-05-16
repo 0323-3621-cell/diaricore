@@ -116,7 +116,11 @@
             function scheduleVoiceModelWarmUp() {
                 if (!window.DiariVoiceClient || typeof DiariVoiceClient.warmUp !== 'function') return;
                 const run = function () {
-                    void DiariVoiceClient.warmUp();
+                    const voiceLang =
+                        window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
+                            ? DiariVoiceLocale.getVoiceLang()
+                            : 'en';
+                    void DiariVoiceClient.warmUp({ voiceLang: voiceLang });
                 };
                 if (typeof requestIdleCallback === 'function') {
                     requestIdleCallback(run, { timeout: 4000 });
@@ -126,7 +130,17 @@
             }
 
             if (voiceLangSelect && window.DiariVoiceLocale) {
-                const stored = DiariVoiceLocale.getStoredChoice();
+                let stored = DiariVoiceLocale.getStoredChoice();
+                try {
+                    if (
+                        stored === 'auto' &&
+                        !localStorage.getItem(DiariVoiceLocale.STORAGE_KEY) &&
+                        DiariVoiceLocale.isPhilippinesTimezone()
+                    ) {
+                        DiariVoiceLocale.setVoiceLang('tl');
+                        stored = 'tl';
+                    }
+                } catch (_) {}
                 voiceLangSelect.value = stored === 'en' || stored === 'tl' ? stored : 'auto';
                 voiceLangSelect.addEventListener('change', function () {
                     DiariVoiceLocale.setVoiceLang(voiceLangSelect.value);
@@ -509,14 +523,36 @@
                     if (deviceText && finalTranscript) {
                         finalTranscript.value = deviceText;
                         updateWordCountFromTranscript();
-                        setTranscriptHint('Transcript created on your device.');
+                        const vl =
+                            window.DiariVoiceLocale && typeof DiariVoiceLocale.getVoiceLang === 'function'
+                                ? DiariVoiceLocale.getVoiceLang()
+                                : 'en';
+                        setTranscriptHint(
+                            vl === 'tl'
+                                ? 'Transcript created on your device (Filipino model).'
+                                : 'Transcript created on your device.'
+                        );
+                        return;
+                    }
+                    if (
+                        window.DiariVoiceLocale &&
+                        DiariVoiceLocale.getVoiceLang() === 'en' &&
+                        voiceLangSelect
+                    ) {
+                        setTranscriptHint(
+                            'No text detected. If you spoke Tagalog or Taglish, set Speaking in to Filipino / Taglish and try again.'
+                        );
                         return;
                     }
                 } catch (e) {
                     deviceErr = e;
                     console.error('On-device transcription failed:', e);
                     if (window.DiariVoiceClient && typeof DiariVoiceClient.resetPipeline === 'function') {
-                        DiariVoiceClient.resetPipeline();
+                        const mid =
+                            window.DiariVoiceLocale && typeof DiariVoiceLocale.whisperModelId === 'function'
+                                ? DiariVoiceLocale.whisperModelId(DiariVoiceLocale.getVoiceLang())
+                                : null;
+                        DiariVoiceClient.resetPipeline(mid);
                     }
                 }
 

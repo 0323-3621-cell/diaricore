@@ -2501,7 +2501,8 @@ html.theme-dark .mood-result-badge--amber {
     .custom-tag-modal__body {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
         flex: 1 1 auto;
         min-height: 0;
     }
@@ -2526,15 +2527,8 @@ html.theme-dark .mood-result-badge--amber {
         flex: 0 0 auto;
         display: flex;
         flex-direction: column;
+        gap: 1.75rem;
         min-height: 0;
-    }
-
-    .custom-tag-icon-grid-spacer {
-        flex: 0 0 1.35rem;
-        height: 1.35rem;
-        min-height: 1.35rem;
-        width: 100%;
-        pointer-events: none;
     }
 
     .custom-tag-icons-grid {
@@ -2573,42 +2567,42 @@ html.theme-dark .mood-result-badge--amber {
         display: none !important;
     }
 
-    .custom-tag-modal__dialog > .custom-tag-pagination {
+    .custom-tag-icon-picker > .custom-tag-pagination {
         display: flex !important;
         visibility: visible !important;
         flex-shrink: 0;
         position: relative;
         z-index: 1;
         min-height: 2.75rem;
-        margin: 0;
+        margin: 0 -1.1rem 0;
         padding: 0.85rem 1.1rem 0.75rem;
         border-top: 1px solid var(--border-color);
         background: var(--card-background);
     }
 
-    .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-btn {
+    .custom-tag-icon-picker > .custom-tag-pagination .custom-tag-page-btn {
         min-width: 5.5rem;
         flex-shrink: 0;
     }
 
-    .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-meta {
+    .custom-tag-icon-picker > .custom-tag-pagination .custom-tag-page-meta {
         flex: 1 1 auto;
         text-align: center;
         min-width: 0;
     }
 
-    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination {
+    html.theme-dark .custom-tag-icon-picker > .custom-tag-pagination {
         background: var(--card-background);
         border-top-color: var(--border-color);
     }
 
-    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-btn {
+    html.theme-dark .custom-tag-icon-picker > .custom-tag-pagination .custom-tag-page-btn {
         background: var(--background-soft) !important;
         color: var(--text-dark) !important;
         border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color)) !important;
     }
 
-    html.theme-dark .custom-tag-modal__dialog > .custom-tag-pagination .custom-tag-page-meta {
+    html.theme-dark .custom-tag-icon-picker > .custom-tag-pagination .custom-tag-page-meta {
         color: var(--text-secondary) !important;
     }
 }
@@ -2626,13 +2620,9 @@ html.theme-dark .mood-result-badge--amber {
         display: contents;
     }
 
-    .custom-tag-icon-grid-spacer {
-        display: none !important;
-        height: 0 !important;
-        min-height: 0 !important;
-    }
-
-    .custom-tag-modal__dialog > .custom-tag-pagination {
+    .custom-tag-icon-picker > .custom-tag-pagination {
+        margin-left: -0.95rem;
+        margin-right: -0.95rem;
         padding-left: 0.95rem;
         padding-right: 0.95rem;
         margin-top: 0;

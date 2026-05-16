@@ -22,6 +22,16 @@ import db
 import password_policy
 import space_nlp
 
+ENTRY_WORD_MAX = int(os.environ.get("ENTRY_WORD_MAX", "300"))
+
+
+def _entry_word_count(text: str) -> int:
+    t = (text or "").strip()
+    if not t:
+        return 0
+    return len(t.split())
+
+
 INSIGHT_TEMPLATES = {
     "anxious": [
         "Your anxiety spikes when {k} shows up in what you write.",
@@ -1825,6 +1835,20 @@ def api_entries_post():
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
+    word_count = _entry_word_count(text)
+    if word_count > ENTRY_WORD_MAX:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": (
+                        f"Please keep your entry to {ENTRY_WORD_MAX} words or fewer "
+                        f"(you have {word_count})."
+                    ),
+                }
+            ),
+            400,
+        )
     if not isinstance(tags, list):
         tags = []
     if not isinstance(image_urls, list):
@@ -1872,6 +1896,20 @@ def api_entries_analyze_text():
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
+    word_count = _entry_word_count(text)
+    if word_count > ENTRY_WORD_MAX:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": (
+                        f"Please keep your entry to {ENTRY_WORD_MAX} words or fewer "
+                        f"(you have {word_count})."
+                    ),
+                }
+            ),
+            400,
+        )
     if not db.get_user_by_id(user_id):
         return jsonify({"success": False, "error": "User not found."}), 404
     analysis = space_nlp.analyze(text)
@@ -1918,6 +1956,20 @@ def api_entries_patch(entry_id: int):
         return jsonify({"success": False, "error": "Valid userId is required."}), 400
     if not text:
         return jsonify({"success": False, "error": "Entry text is required."}), 400
+    word_count = _entry_word_count(text)
+    if word_count > ENTRY_WORD_MAX:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": (
+                        f"Please keep your entry to {ENTRY_WORD_MAX} words or fewer "
+                        f"(you have {word_count})."
+                    ),
+                }
+            ),
+            400,
+        )
     if not isinstance(tags, list):
         tags = []
     clean_tags = [str(t).strip() for t in tags if str(t or "").strip()]

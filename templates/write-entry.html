@@ -158,7 +158,6 @@
                                 id="journalText"
                                 class="journal-textarea"
                                 placeholder="Start writing..."
-                                maxlength="5000"
                             ></textarea>
                             <div class="entry-drop-overlay" id="entryDropOverlay" hidden>
                                 <div class="entry-drop-overlay__box">
@@ -168,8 +167,13 @@
                             </div>
                         </div>
                     <div class="journal-footer">
-                        <div class="character-counter">
-                            <span id="charCount">0</span> characters
+                        <div class="journal-word-counter" id="journalWordCounter" aria-live="polite">
+                            <p class="journal-word-counter__line">
+                                <span id="wordCount">0</span> words
+                            </p>
+                            <p class="journal-word-counter__hint">
+                                Please write up to 300 words per entry — that's our current maximum. Thank you for understanding.
+                            </p>
                         </div>
                         <div class="photo-count-badge" id="photoCountBadge" hidden>0 photos attached</div>
                     </div>

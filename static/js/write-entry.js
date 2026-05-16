@@ -1591,7 +1591,25 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     const journalText = document.getElementById('journalText');
     const journalTitleInput = document.getElementById('journalTitleInput');
-    const charCount = document.getElementById('charCount');
+    const wordCountEl = document.getElementById('wordCount');
+    const journalWordCounter = document.getElementById('journalWordCounter');
+    const ENTRY_WORD_MAX = 300;
+    const ENTRY_WORD_NEAR = 270;
+
+    function countEntryWords(text) {
+        const t = String(text || '').trim();
+        if (!t) return 0;
+        return t.split(/\s+/).length;
+    }
+
+    function updateJournalWordCounter() {
+        if (!journalText || !wordCountEl) return;
+        const count = countEntryWords(journalText.value);
+        wordCountEl.textContent = String(count);
+        if (!journalWordCounter) return;
+        journalWordCounter.classList.toggle('is-over-limit', count > ENTRY_WORD_MAX);
+        journalWordCounter.classList.toggle('is-near-limit', count > ENTRY_WORD_NEAR && count <= ENTRY_WORD_MAX);
+    }
     const journalDateTimeBtn = document.getElementById('journalDateTimeBtn');
     const journalDateTimeInput = document.getElementById('journalDateTimeInput');
 
@@ -1779,19 +1797,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     journalText.addEventListener('input', function() {
-        const count = this.value.length;
-        if (charCount) {
-            charCount.textContent = count;
-            if (count > 4500) {
-                charCount.style.color = 'var(--warning-color)';
-            } else if (count > 4000) {
-                charCount.style.color = 'var(--info-color)';
-            } else {
-                charCount.style.color = 'var(--text-muted)';
-            }
-        }
+        updateJournalWordCounter();
         autoAdjustJournalTextarea();
     });
+    updateJournalWordCounter();
 
     const VOICE_TO_WRITE_STORAGE_KEY = 'diariCoreVoiceDraftForWrite';
 
@@ -1849,6 +1858,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         const entryDateTimeLocal = manualDateTime && journalDateTimeInput?.value ? String(journalDateTimeInput.value) : '';
         if (!entryText) {
             alert('Please write something in your journal entry.');
+            return;
+        }
+        const entryWordCount = countEntryWords(entryText);
+        if (entryWordCount > ENTRY_WORD_MAX) {
+            const wordLimitMsg = `Your entry has ${entryWordCount} words. Please shorten it to ${ENTRY_WORD_MAX} words or fewer — that's our current maximum.`;
+            if (typeof window.DiariToast !== 'undefined' && window.DiariToast.show) {
+                window.DiariToast.show(wordLimitMsg, 'warning');
+            } else {
+                alert(wordLimitMsg);
+            }
+            updateJournalWordCounter();
             return;
         }
         Array.from(selectedTags).forEach((tag) => setTagUsage(tag));

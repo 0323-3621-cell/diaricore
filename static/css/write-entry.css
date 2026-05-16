@@ -965,10 +965,41 @@ html.theme-dark .entry-img-spinner__bytes {
     letter-spacing: 0.02em;
 }
 
-.character-counter {
+.journal-word-counter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+    min-width: 0;
+    flex: 1 1 auto;
+    max-width: min(100%, 22rem);
+}
+
+.journal-word-counter__line {
+    margin: 0;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-muted);
+}
+
+.journal-word-counter__line #wordCount {
+    font-weight: 600;
+}
+
+.journal-word-counter__hint {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.journal-word-counter.is-near-limit .journal-word-counter__line {
+    color: var(--info-color);
+}
+
+.journal-word-counter.is-over-limit .journal-word-counter__line {
+    color: var(--warning-color);
 }
 
 .journal-datetime-input {
@@ -1572,6 +1603,16 @@ html.theme-dark .entry-img-spinner__bytes {
 
     .journal-footer {
         padding: 0.65rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.45rem 0.75rem;
+    }
+
+    .journal-word-counter {
+        max-width: 100%;
+    }
+
+    .journal-word-counter__hint {
+        font-size: 0.68rem;
     }
 }
 

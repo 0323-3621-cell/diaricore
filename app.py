@@ -180,6 +180,10 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=14)
 if os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("FLASK_ENV") == "production":
     app.config["SESSION_COOKIE_SECURE"] = True
+    if app.secret_key == "diaricore-dev-secret":
+        app.logger.warning(
+            "SECRET_KEY is not set in the environment. Set a long random SECRET_KEY in Railway Variables."
+        )
 
 _RATE_LOGIN = (12, 900.0)
 _RATE_REGISTER = (8, 3600.0)
@@ -193,8 +197,19 @@ def _json_auth_error(message: str, status: int = 401):
     return jsonify({"success": False, "error": message}), status
 
 
+def _configured_admin_email() -> str:
+    return (os.environ.get("DIARI_ADMIN_EMAIL") or "").strip().lower()
+
+
+def _user_is_configured_admin(user_row: dict) -> bool:
+    admin_email = _configured_admin_email()
+    if not admin_email or not user_row:
+        return False
+    user_email = (user_row.get("email") or "").strip().lower()
+    return bool(user_email) and user_email == admin_email
+
+
 def _establish_user_session(user_id: int) -> str:
-    session.pop("is_admin", None)
     session["user_id"] = int(user_id)
     token = secrets.token_urlsafe(32)
     session["csrf_token"] = token
@@ -221,10 +236,31 @@ def _require_authenticated_user(*, check_csrf: bool = True):
 
 def _login_success_payload(user_row: dict, **extra):
     csrf = _establish_user_session(int(user_row["id"]))
+    if _user_is_configured_admin(user_row):
+        session["is_admin"] = True
+    else:
+        session.pop("is_admin", None)
     out = {k: v for k, v in user_row.items() if k != "password_hash"}
     payload = {"success": True, "user": serialize_user(out), "csrfToken": csrf}
     payload.update(extra)
     return jsonify(payload), 200
+
+
+def _content_security_policy() -> str:
+    """Allow self-hosted app + CDNs used by templates and on-device voice (Transformers)."""
+    return (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co; "
+        "worker-src 'self' blob:; "
+        "media-src 'self' blob:; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'self'"
+    )
 
 
 @app.after_request
@@ -233,6 +269,8 @@ def _apply_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    if os.environ.get("DIARI_DISABLE_CSP", "").lower() not in ("1", "true", "yes"):
+        response.headers.setdefault("Content-Security-Policy", _content_security_policy())
     return response
 
 
@@ -504,6 +542,8 @@ def serialize_user(row):
     pid = prefs.get("paletteId")
     if isinstance(pid, str) and pid in _ALLOWED_UI_PALETTES:
         mapped["uiPaletteId"] = pid
+    if _user_is_configured_admin(row):
+        mapped["isAdmin"] = True
     return mapped
 
 
@@ -744,23 +784,6 @@ def api_login():
     password = data.get("password") or ""
     if not username or not password:
         return jsonify({"success": False, "error": "Username and password are required."}), 400
-
-    if username.lower() == "admin" and password == "admin123":
-        session.clear()
-        session["is_admin"] = True
-        admin_user = {
-            "id": 0,
-            "nickname": "admin",
-            "email": "admin",
-            "firstName": "System",
-            "lastName": "Admin",
-            "fullName": "System Admin",
-            "gender": None,
-            "birthday": None,
-            "createdAt": None,
-            "isAdmin": True,
-        }
-        return jsonify({"success": True, "user": admin_user}), 200
 
     ok, result = db.verify_login(username, password)
     if not ok:
@@ -1668,6 +1691,9 @@ def api_admin_settings_get():
 def api_admin_settings_save():
     if not session.get("is_admin"):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
+    csrf_err = authsec.validate_csrf(request, session)
+    if csrf_err:
+        return jsonify({"success": False, "error": csrf_err}), 403
 
     data = request.get_json(silent=True) or {}
     api_key = (data.get("apiKey") or "").strip()
@@ -1690,7 +1716,7 @@ def api_admin_settings_save():
 
 @app.route("/api/admin/logout", methods=["POST"])
 def api_admin_logout():
-    session.pop("is_admin", None)
+    session.clear()
     return jsonify({"success": True})
 
 
@@ -2160,7 +2186,10 @@ MAX_VOICE_TRANSCRIBE_BYTES = 8 * 1024 * 1024
 
 @app.route("/api/voice/status", methods=["GET"])
 def api_voice_status():
-    """Lightweight check so the voice page can explain missing server transcription."""
+    """Optional server transcription status (default voice path is on-device in the browser)."""
+    user_id, auth_err = _require_authenticated_user(check_csrf=False)
+    if auth_err:
+        return auth_err
     import hf_speech
 
     return jsonify(
@@ -2168,13 +2197,20 @@ def api_voice_status():
             "success": True,
             "configured": hf_speech.is_configured(),
             "model": os.environ.get("HF_SPEECH_MODEL", "openai/whisper-large-v3"),
+            "onDeviceDefault": True,
         }
     ), 200
 
 
 @app.route("/api/voice/transcribe", methods=["POST"])
 def api_voice_transcribe():
-    """Transcribe a short voice clip via Hugging Face (Whisper) when browser Web Speech is blocked."""
+    """Optional server transcription (opt-in client flag). Default is on-device Whisper in the browser."""
+    user_id, auth_err = _require_authenticated_user()
+    if auth_err:
+        return auth_err
+    rl = authsec.rate_limit_check(request, f"voice:{user_id}", 8, 60.0)
+    if rl:
+        return jsonify({"success": False, "error": rl}), 429
     import hf_speech
 
     f = request.files.get("audio")

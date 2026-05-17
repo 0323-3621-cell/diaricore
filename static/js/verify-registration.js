@@ -195,11 +195,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const u = data.user;
+                if (window.DiariSecurity && typeof window.DiariSecurity.clearUserScopedLocalData === 'function') {
+                    window.DiariSecurity.clearUserScopedLocalData();
+                }
                 localStorage.setItem('diariCoreUser', JSON.stringify({
                     ...u,
                     isLoggedIn: true,
                     loginTime: new Date().toISOString()
                 }));
+                if (window.DiariSecurity && data.csrfToken) {
+                    window.DiariSecurity.setCsrfToken(data.csrfToken);
+                }
                 sessionStorage.removeItem('pendingRegistrationEmail');
                 window.location.href = 'dashboard.html';
             })

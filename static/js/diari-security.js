@@ -41,6 +41,20 @@
         setCsrfToken('');
     }
 
+    /** Drop journal cache so a new login/signup never shows another account's data. */
+    function clearUserScopedLocalData() {
+        try {
+            [
+                'diariCoreEntries',
+                'diariCoreEntriesOwnerId',
+                'diariCoreDraft',
+                'diariCoreFocusEntryId',
+            ].forEach((key) => localStorage.removeItem(key));
+        } catch (_) {
+            /* ignore */
+        }
+    }
+
     function isApiMutation(url, method) {
         const m = String(method || 'GET').toUpperCase();
         if (m === 'GET' || m === 'HEAD') return false;
@@ -87,6 +101,7 @@
         getCsrfToken,
         setCsrfToken,
         clearCsrfToken,
+        clearUserScopedLocalData,
         apiFetch,
         apiGet,
     };

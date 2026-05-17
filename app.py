@@ -746,7 +746,10 @@ def api_register_verify():
         return jsonify({"success": False, "error": message}), 400
 
     db.delete_pending_registration(email)
-    return jsonify({"success": True, "user": serialize_user(payload)}), 201
+    csrf = _establish_user_session(int(payload["id"]))
+    return jsonify(
+        {"success": True, "user": serialize_user(payload), "csrfToken": csrf}
+    ), 201
 
 
 @app.route("/api/register/resend", methods=["POST"])

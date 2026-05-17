@@ -557,14 +557,40 @@ function initializeGreetingClock() {
     setInterval(tick, 1000);
 }
 
+function getLoggedInUserId() {
+    try {
+        const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+        if (!user?.isLoggedIn) return 0;
+        return Number(user.id || 0);
+    } catch (_) {
+        return 0;
+    }
+}
+
 async function syncEntriesFromApi() {
-    const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
-    if (!user?.isLoggedIn) return;
+    const userId = getLoggedInUserId();
+    if (!userId) {
+        localStorage.setItem('diariCoreEntries', '[]');
+        localStorage.removeItem('diariCoreEntriesOwnerId');
+        return;
+    }
+
+    const cacheOwner = localStorage.getItem('diariCoreEntriesOwnerId');
+    if (cacheOwner && cacheOwner !== String(userId)) {
+        localStorage.setItem('diariCoreEntries', '[]');
+    }
+
     try {
         const response = await fetch('/api/entries', { credentials: 'same-origin' });
         const result = await response.json();
+        if (response.status === 401) {
+            localStorage.setItem('diariCoreEntries', '[]');
+            localStorage.removeItem('diariCoreEntriesOwnerId');
+            return;
+        }
         if (!response.ok || !result.success || !Array.isArray(result.entries)) return;
         localStorage.setItem('diariCoreEntries', JSON.stringify(result.entries));
+        localStorage.setItem('diariCoreEntriesOwnerId', String(userId));
     } catch (error) {
         console.error('Failed to sync dashboard entries:', error);
     }

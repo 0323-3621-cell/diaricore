@@ -238,12 +238,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function syncInsightsEntriesFromApi() {
     const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
     const userId = Number(user?.id || 0);
-    if (!userId) return;
+    if (!userId || !user?.isLoggedIn) {
+        localStorage.setItem('diariCoreEntries', '[]');
+        localStorage.removeItem('diariCoreEntriesOwnerId');
+        return;
+    }
+    const cacheOwner = localStorage.getItem('diariCoreEntriesOwnerId');
+    if (cacheOwner && cacheOwner !== String(userId)) {
+        localStorage.setItem('diariCoreEntries', '[]');
+    }
     try {
-        const response = await fetch(`/api/entries?userId=${encodeURIComponent(String(userId))}`);
+        const response = await fetch('/api/entries', { credentials: 'same-origin' });
         const result = await response.json();
+        if (response.status === 401) {
+            localStorage.setItem('diariCoreEntries', '[]');
+            localStorage.removeItem('diariCoreEntriesOwnerId');
+            return;
+        }
         if (!response.ok || !result.success || !Array.isArray(result.entries)) return;
         localStorage.setItem('diariCoreEntries', JSON.stringify(result.entries));
+        localStorage.setItem('diariCoreEntriesOwnerId', String(userId));
     } catch (error) {
         console.error('Failed to sync insights entries:', error);
     }

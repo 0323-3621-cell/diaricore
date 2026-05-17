@@ -1040,6 +1040,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function finishSuccessfulLogin(u, loginPayload) {
+        if (window.DiariSecurity && typeof window.DiariSecurity.clearUserScopedLocalData === 'function') {
+            window.DiariSecurity.clearUserScopedLocalData();
+        }
         const sessionUser = Object.assign({}, u, {
             isLoggedIn: true,
             loginTime: new Date().toISOString(),
@@ -1556,11 +1559,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     const u = data.user;
+                    if (window.DiariSecurity && typeof window.DiariSecurity.clearUserScopedLocalData === 'function') {
+                        window.DiariSecurity.clearUserScopedLocalData();
+                    }
                     localStorage.setItem('diariCoreUser', JSON.stringify({
                         ...u,
                         isLoggedIn: true,
                         loginTime: new Date().toISOString()
                     }));
+                    if (window.DiariSecurity && data.csrfToken) {
+                        window.DiariSecurity.setCsrfToken(data.csrfToken);
+                    }
                     showNotification('Account verified successfully! Redirecting...', 'success');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';

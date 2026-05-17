@@ -295,6 +295,9 @@
                 fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
             }
             localStorage.removeItem('diariCoreUser');
+            if (window.DiariSecurity && typeof window.DiariSecurity.clearUserScopedLocalData === 'function') {
+                window.DiariSecurity.clearUserScopedLocalData();
+            }
         } catch (_) {}
         window.location.href = redirectUrl || 'login.html';
     }

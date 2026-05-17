@@ -7,12 +7,12 @@
 
     const HF_MODEL_ID = 'sseia/diari-core-mood';
     const MODEL_URL =
-        'https://huggingface.co/' + HF_MODEL_ID + '/resolve/main/model_quantized.onnx';
-    const ML_CACHE = 'diaricore-ml-v1';
+        'https://huggingface.co/' + HF_MODEL_ID + '/resolve/main/model.onnx';
+    const ML_CACHE = 'diaricore-ml-v2';
     const WORKER_URL = '/diari-emotion-onnx-worker.js';
     const MAX_LEN = 256;
-    /** Hub file size hint when Content-Length is missing (~279 MB). */
-    const MODEL_BYTES_HINT = 279 * 1024 * 1024;
+    /** Hub file size hint when Content-Length is missing (~1.11 GB, same as HF Space). */
+    const MODEL_BYTES_HINT = Math.round(1.11 * 1024 * 1024 * 1024);
 
     let ready = false;
     let preparing = null;

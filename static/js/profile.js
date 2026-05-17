@@ -77,10 +77,7 @@ function initializeProfileFromStorage() {
     if (statEls[1]) statEls[1].textContent = String(streak);
         if (statEls[2]) statEls[2].textContent = String(thisWeekCount);
 
-        const avatarEl = document.querySelector('.profile-overview-section .avatar-image');
-        if (avatarEl && user && typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
-            avatarEl.src = user.avatarDataUrl;
-        }
+        applyProfileOverviewAvatar(user);
     } finally {
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
@@ -187,6 +184,35 @@ function normalizeGenderForSelect(g) {
     return '';
 }
 
+function profileDisplayNameFromUser(user) {
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    return fullName || user?.nickname || 'New User';
+}
+
+function profileInitialsFromUser(user) {
+    const displayName = profileDisplayNameFromUser(user);
+    const parts = displayName.split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase();
+}
+
+function applyProfileOverviewAvatar(user) {
+    const avatarEl = document.querySelector('.profile-overview-section .avatar-image');
+    const initialsEl = document.getElementById('profileOverviewAvatarInitials');
+    if (!avatarEl || !initialsEl) return;
+    const dataUrl = user && typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
+    if (dataUrl) {
+        avatarEl.src = dataUrl;
+        avatarEl.hidden = false;
+        initialsEl.style.display = 'none';
+        initialsEl.textContent = '';
+    } else {
+        avatarEl.removeAttribute('src');
+        avatarEl.hidden = true;
+        initialsEl.style.display = 'flex';
+        initialsEl.textContent = profileInitialsFromUser(user);
+    }
+}
+
 function hydratePersonalInfoPanel() {
     let user = null;
     try {
@@ -205,8 +231,7 @@ function hydratePersonalInfoPanel() {
     const genderEl = document.getElementById('profileFieldGender');
     const bdayEl = document.getElementById('profileFieldBirthday');
 
-    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-    const displayName = fullName || user?.nickname || 'New User';
+    const displayName = profileDisplayNameFromUser(user);
     if (nameEl) nameEl.textContent = displayName;
     if (memberEl) {
         const parsed = user?.createdAt ? new Date(user.createdAt) : null;
@@ -225,9 +250,7 @@ function hydratePersonalInfoPanel() {
             img.removeAttribute('src');
             img.hidden = true;
             initialsEl.style.display = 'flex';
-            const parts = displayName.split(/\s+/).filter(Boolean);
-            const ini = (parts[0]?.[0] || '?') + (parts[1]?.[0] || '');
-            initialsEl.textContent = ini.toUpperCase();
+            initialsEl.textContent = profileInitialsFromUser(user);
         }
     }
 
@@ -2331,18 +2354,32 @@ function initializeProfileInteractions() {
         });
     }
 
+    document.addEventListener('diari-user-updated', function () {
+        try {
+            const user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+            applyProfileOverviewAvatar(user);
+        } catch (_) {
+            applyProfileOverviewAvatar(null);
+        }
+    });
+
     // Avatar: open file picker, resize, save to diariCoreUser.avatarDataUrl, sync sidebar
     const avatarEditBtn = document.querySelector('.avatar-edit-btn');
+    const personalChangePhotoBtn = document.getElementById('profilePersonalChangePhotoBtn');
     const avatarMainImg = document.querySelector('.profile-overview-section .avatar-image');
-    if (avatarEditBtn && avatarMainImg) {
-        const input = ensureProfileAvatarFileInput();
-        if (input.dataset.avatarBound !== '1') {
-            input.dataset.avatarBound = '1';
-            avatarEditBtn.addEventListener('click', function (e) {
+    const input = ensureProfileAvatarFileInput();
+    if (input.dataset.avatarBound !== '1') {
+        input.dataset.avatarBound = '1';
+        function openAvatarPicker(e) {
+            if (e) {
                 e.preventDefault();
-                input.click();
-            });
-            input.addEventListener('change', function () {
+                e.stopPropagation();
+            }
+            input.click();
+        }
+        if (avatarEditBtn) avatarEditBtn.addEventListener('click', openAvatarPicker);
+        if (personalChangePhotoBtn) personalChangePhotoBtn.addEventListener('click', openAvatarPicker);
+        input.addEventListener('change', function () {
                 const file = input.files && input.files[0];
                 input.value = '';
                 if (!file) return;
@@ -2375,7 +2412,7 @@ function initializeProfileInteractions() {
                     }
                     user.avatarDataUrl = dataUrl;
                     localStorage.setItem('diariCoreUser', JSON.stringify(user));
-                    avatarMainImg.src = dataUrl;
+                    applyProfileOverviewAvatar(user);
                     document.dispatchEvent(new CustomEvent('diari-user-updated', { bubbles: true }));
 
                     const uid = Number(user.id ?? user.userId ?? 0);
@@ -2412,7 +2449,6 @@ function initializeProfileInteractions() {
                     }
                 });
             });
-        }
     }
 }
 

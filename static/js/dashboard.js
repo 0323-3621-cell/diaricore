@@ -480,6 +480,17 @@ function initializeStreakBook() {
         endOpenSequence();
     });
 
+    /* Mobile / touch: same open-book animation as desktop hover */
+    root.addEventListener(
+        'touchstart',
+        () => {
+            if (root.dataset.inside === '1') return;
+            root.dataset.clickOpen = '1';
+            beginOpenSequence();
+        },
+        { passive: true }
+    );
+
     toggleBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         if (!panel.hidden) {

@@ -251,6 +251,10 @@
 
 .user-avatar {
     margin-bottom: 0;
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
 }
 
 .avatar-img {
@@ -260,6 +264,23 @@
     object-fit: cover;
     border: 3px solid var(--primary-color);
     box-shadow: 0 4px 12px rgba(111, 143, 127, 0.15);
+    display: block;
+}
+
+.avatar-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(111, 143, 127, 0.15);
+    box-sizing: border-box;
 }
 
 .user-info {

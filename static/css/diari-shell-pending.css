@@ -10,10 +10,3 @@ html.diari-shell-pending .diari-shell-main {
     visibility: hidden !important;
     pointer-events: none !important;
 }
-
-/* Streak book lives inside .diari-shell-main but must stay visible while the rest hydrates. */
-html.diari-shell-pending .floating-streak {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-}

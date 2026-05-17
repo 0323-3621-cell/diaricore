@@ -497,16 +497,37 @@ class SidebarComponent {
             }
         }
 
-        const avatarImg = this.sidebarElement && this.sidebarElement.querySelector('.avatar-img');
-        if (avatarImg) {
-            if (typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
-                avatarImg.src = user.avatarDataUrl;
-            } else {
-                avatarImg.src = 'https://picsum.photos/seed/diari-user/40/40.jpg';
-            }
-        }
+        this.applySidebarAvatar(user, displayName);
 
         this.syncMobileTopbarProfile(user);
+    }
+
+    profileInitialsFromDisplayName(displayName) {
+        const parts = String(displayName || '')
+            .split(/\s+/)
+            .filter(Boolean);
+        return ((parts[0]?.[0] || '?') + (parts[1]?.[0] || '')).toUpperCase();
+    }
+
+    applySidebarAvatar(user, displayName) {
+        const avatarImg = this.sidebarElement && this.sidebarElement.querySelector('.avatar-img');
+        const initialsEl = this.sidebarElement && this.sidebarElement.querySelector('.avatar-initials');
+        if (!avatarImg || !initialsEl) return;
+
+        const dataUrl =
+            user && typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
+        if (dataUrl) {
+            avatarImg.src = dataUrl;
+            avatarImg.hidden = false;
+            initialsEl.style.display = 'none';
+            initialsEl.textContent = '';
+            return;
+        }
+
+        avatarImg.removeAttribute('src');
+        avatarImg.hidden = true;
+        initialsEl.style.display = 'flex';
+        initialsEl.textContent = this.profileInitialsFromDisplayName(displayName);
     }
 
     /**
@@ -527,13 +548,16 @@ class SidebarComponent {
             return;
         }
 
-        let src = '';
-        if (typeof user.avatarDataUrl === 'string' && user.avatarDataUrl.length > 0) {
-            src = user.avatarDataUrl;
-        } else {
-            src = 'https://picsum.photos/seed/diari-user/40/40.jpg';
+        const dataUrl =
+            typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
+        if (!dataUrl) {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            link.classList.remove('mobile-app-topbar__profile--photo');
+            return;
         }
-        img.src = src;
+        img.src = dataUrl;
         img.hidden = false;
         fallback.hidden = true;
         link.classList.add('mobile-app-topbar__profile--photo');

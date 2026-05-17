@@ -136,6 +136,10 @@ body {
     position: relative;
 }
 
+.main-content > .diari-shell-main {
+    position: relative;
+}
+
 /* Floating Streak Counter */
 .floating-streak {
     position: absolute;

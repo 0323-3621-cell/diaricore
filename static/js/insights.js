@@ -2,6 +2,7 @@
 let INSIGHTS_ENTRIES = [];
 let HAS_INSIGHTS_DATA = false;
 let WEEKLY_DESKTOP_CHART = null;
+let WEEKLY_MOBILE_CHART = null;
 let INSIGHTS_CONSISTENCY_CHART = null;
 let MOOD_BY_TAG_CHART = null;
 let consistencyMonthSelectBound = false;
@@ -95,6 +96,56 @@ function hexToRgba(hex, alpha) {
     const g = Number.parseInt(safe.slice(2, 4), 16);
     const b = Number.parseInt(safe.slice(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getMoodColorsFromCss() {
+    const moodColorFromCss = (name, fallback) => {
+        const v = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    };
+    return {
+        happy: moodColorFromCss('--mood-happy', '#E3A263'),
+        sad: moodColorFromCss('--mood-sad', '#6FA6C9'),
+        angry: moodColorFromCss('--mood-angry', '#D97B7B'),
+        anxious: moodColorFromCss('--mood-anxious', '#B59AD9'),
+        neutral: moodColorFromCss('--mood-neutral', '#9AA9A1'),
+    };
+}
+
+function moodColorForKey(moodKey, moodColors) {
+    const key = String(moodKey || '').toLowerCase();
+    return moodColors[key] || moodColors.neutral;
+}
+
+function buildWeeklyMoodLineDataset(weekly, chartTheme, moodColors, pointSize) {
+    const hasData = weekly.data.some((v) => v !== null && v !== undefined);
+    const radius = pointSize.radius ?? 6;
+    const hoverRadius = pointSize.hoverRadius ?? 8;
+    return {
+        label: 'Mood Score',
+        data: weekly.data,
+        borderColor: chartTheme.primary,
+        backgroundColor: chartTheme.primarySoft,
+        borderWidth: 3,
+        fill: true,
+        tension: 0.35,
+        spanGaps: false,
+        pointBackgroundColor: (context) => {
+            const i = context.dataIndex;
+            if (weekly.data[i] == null) return 'transparent';
+            const mood = weekly.dominantMoods[i];
+            return mood ? moodColorForKey(mood, moodColors) : chartTheme.border;
+        },
+        pointBorderColor: (context) => {
+            const i = context.dataIndex;
+            if (weekly.data[i] == null) return 'transparent';
+            const mood = weekly.dominantMoods[i];
+            return mood ? moodColorForKey(mood, moodColors) : chartTheme.primary;
+        },
+        pointBorderWidth: 2,
+        pointRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? radius : 0),
+        pointHoverRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? hoverRadius : 0),
+    };
 }
 
 function getChartTheme() {
@@ -228,6 +279,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadEmotionTriggersDashboard();
 
     initializeInsightsHeroTabs();
+
+    window.addEventListener('diari-palette-changed', function () {
+        initializeWeeklyMoodChart();
+        initializeWeeklyMoodChartDesktop();
+    });
     } finally {
         if (window.DiariShell && typeof window.DiariShell.release === 'function') {
             window.DiariShell.release();
@@ -324,9 +380,11 @@ function insightsCalendarWeekSeries() {
     }
 
     const emotionTags = [];
+    const dominantMoods = [];
     const data = dayBuckets.map((dayEntries) => {
         if (!dayEntries.length) {
             emotionTags.push('No entries');
+            dominantMoods.push(null);
             return null;
         }
         const scores = dayEntries.map((e) => entryMoodScore10(e));
@@ -340,6 +398,7 @@ function insightsCalendarWeekSeries() {
             Object.keys(emotionCount).sort((a, b) => emotionCount[b] - emotionCount[a] || a.localeCompare(b))[0] ||
             'neutral';
         emotionTags.push(titleCaseWord(topMood));
+        dominantMoods.push(topMood);
         return avg;
     });
     const entryCounts = dayBuckets.map((b) => b.length);
@@ -348,6 +407,7 @@ function insightsCalendarWeekSeries() {
         labels,
         data,
         emotionTags,
+        dominantMoods,
         entryCounts,
         dayLabelForTooltip,
         rangeCaption,
@@ -1072,36 +1132,18 @@ function initializeWeeklyMoodChart() {
     if (!ctx) return;
     
     const chartTheme = getChartTheme();
+    const moodColors = getMoodColorsFromCss();
     const weekly = insightsCalendarWeekSeries();
     const capEl = document.getElementById('weeklyTrendRangeCaption');
     if (capEl) {
         capEl.textContent = `This week (Mon–Sun) · ${weekly.rangeCaption}`;
     }
     const hasData = weekly.data.some((v) => v !== null && v !== undefined);
-    const highlightIdx = weeklyHighlightDayIndex(weekly);
 
     const weeklyData = {
         labels: weekly.labels,
         datasets: [
-            {
-            label: 'Mood Score',
-            data: weekly.data,
-            borderColor: chartTheme.primary,
-            backgroundColor: chartTheme.primarySoft,
-            borderWidth: 3,
-            fill: true,
-                tension: 0.35,
-                spanGaps: false,
-                pointBorderColor: chartTheme.primary,
-            pointBorderWidth: 2,
-                pointBackgroundColor: (context) => {
-                    const i = context.dataIndex;
-                    if (weekly.data[i] == null) return 'transparent';
-                    return i === highlightIdx ? chartTheme.primary : chartTheme.border;
-                },
-                pointRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? 6 : 0),
-                pointHoverRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? 8 : 0),
-            },
+            buildWeeklyMoodLineDataset(weekly, chartTheme, moodColors, { radius: 6, hoverRadius: 8 }),
         ],
     };
     
@@ -1183,7 +1225,8 @@ function initializeWeeklyMoodChart() {
         },
     };
     
-    new Chart(ctx, config);
+    if (WEEKLY_MOBILE_CHART) WEEKLY_MOBILE_CHART.destroy();
+    WEEKLY_MOBILE_CHART = new Chart(ctx, config);
 }
 
 // Initialize Desktop Weekly Mood Chart (Mon–Sun calendar week; richer than dashboard glance)
@@ -1193,13 +1236,13 @@ function initializeWeeklyMoodChartDesktop() {
     
     const capEl = document.getElementById('weeklyTrendRangeCaption');
     const chartTheme = getChartTheme();
+    const moodColors = getMoodColorsFromCss();
     const weekly = insightsCalendarWeekSeries();
     if (capEl) {
         capEl.textContent = `This week (Mon–Sun) · ${weekly.rangeCaption}`;
     }
 
     const hasData = weekly.data.some((v) => v !== null && v !== undefined);
-    const highlightIdx = weeklyHighlightDayIndex(weekly);
     const bestIdx = weekly.data.reduce(
         (best, v, i, arr) => (v != null && !Number.isNaN(Number(v)) && (best < 0 || Number(v) > Number(arr[best])) ? i : best),
         -1
@@ -1208,25 +1251,7 @@ function initializeWeeklyMoodChartDesktop() {
     const weeklyData = {
         labels: weekly.labels,
         datasets: [
-            {
-            label: 'Mood Score',
-            data: weekly.data,
-                borderColor: '#1D9E75',
-            backgroundColor: chartTheme.primarySoft,
-            borderWidth: 3,
-                tension: 0.35,
-            fill: true,
-                spanGaps: false,
-                pointBorderColor: '#1D9E75',
-            pointBorderWidth: 2,
-                pointBackgroundColor: (context) => {
-                    const i = context.dataIndex;
-                    if (weekly.data[i] == null) return 'transparent';
-                    return i === highlightIdx ? '#1D9E75' : '#ffffff';
-                },
-                pointRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? 5 : 0),
-                pointHoverRadius: (context) => (weekly.data[context.dataIndex] != null && hasData ? 7 : 0),
-            },
+            buildWeeklyMoodLineDataset(weekly, chartTheme, moodColors, { radius: 5, hoverRadius: 7 }),
         ],
     };
 

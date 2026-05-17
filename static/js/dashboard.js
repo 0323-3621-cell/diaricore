@@ -158,6 +158,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             this.style.transform = 'translateY(0)';
         });
     });
+
+    window.addEventListener('diari-palette-changed', function () {
+        const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+        renderWeeklyChart(entries);
+    });
     } finally {
         if (window.DiariShell && typeof window.DiariShell.release === 'function') {
             window.DiariShell.release();
@@ -957,7 +962,6 @@ function renderWeeklyChart(entries) {
         }).join('');
     }
 
-    // Pick a chart color based on the most recent in-week mood
     const moodColorFromCss = (name, fallback) => {
         const v = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         return v || fallback;
@@ -969,15 +973,13 @@ function renderWeeklyChart(entries) {
         anxious: moodColorFromCss('--mood-anxious', '#B59AD9'),
         neutral: moodColorFromCss('--mood-neutral', '#9AA9A1'),
     };
-    const latestIdxWithData = (() => {
-        for (let i = 6; i >= 0; i -= 1) {
-            if ((dayFeelings[i] || []).length) return i;
-        }
-        return -1;
-    })();
-    const latestMood = latestIdxWithData >= 0 ? String((dayFeelings[latestIdxWithData] || []).slice(-1)[0] || '').toLowerCase() : '';
-    const chartColor = MOOD_COLORS[latestMood] || '#1D9E75';
+    const moodDotColor = (dayIdx) => {
+        const feelings = dayFeelings[dayIdx] || [];
+        const mood = feelings.length ? String(feelings[feelings.length - 1]).toLowerCase() : '';
+        return MOOD_COLORS[mood] || MOOD_COLORS.neutral;
+    };
     const chartTheme = buildChartThemeFromCss();
+    const lineColor = chartTheme.line;
 
     const w = 640;
     const h = 196;
@@ -1006,7 +1008,7 @@ function renderWeeklyChart(entries) {
     const points = [];
     chartData.forEach((v, i) => {
         if (v == null) return;
-        points.push({ x: padX + i * step, y: toYSafe(v), i });
+        points.push({ x: padX + i * step, y: toYSafe(v), i, fill: moodDotColor(i) });
     });
 
     let lineD = '';
@@ -1027,22 +1029,24 @@ function renderWeeklyChart(entries) {
         areaD = `M ${(p.x - wdg).toFixed(2)} ${baseY} L ${(p.x + wdg).toFixed(2)} ${baseY} L ${p.x.toFixed(2)} ${p.y.toFixed(2)} Z`;
     }
 
-    const lastPt = points[points.length - 1];
-    const endDot = lastPt
-        ? `<circle cx="${lastPt.x.toFixed(2)}" cy="${lastPt.y.toFixed(2)}" r="5" fill="${chartColor}" stroke="${chartTheme.pointBorder}" stroke-width="1.4"></circle>`
-        : '';
+    const dots = points
+        .map(
+            (p) =>
+                `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="5" fill="${p.fill}" stroke="${chartTheme.pointBorder}" stroke-width="1.4"></circle>`
+        )
+        .join('');
 
     sparklineEl.innerHTML = `
         <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
             <defs>
                 <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="${chartColor}" stop-opacity="0.15"></stop>
-                    <stop offset="100%" stop-color="${chartColor}" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.15"></stop>
+                    <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"></stop>
                 </linearGradient>
             </defs>
             ${areaD ? `<path d="${areaD}" fill="url(#dashMoodFill)"></path>` : ''}
-            ${lineD ? `<path d="${lineD}" fill="none" stroke="${chartColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
-            ${endDot}
+            ${lineD ? `<path d="${lineD}" fill="none" stroke="${lineColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
+            ${dots}
         </svg>`;
 }
 

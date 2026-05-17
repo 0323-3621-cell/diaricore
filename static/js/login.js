@@ -1063,6 +1063,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 900);
     }
     
+    function clearSignInValidation() {
+        const usernameField = document.getElementById('email');
+        const passwordField = document.getElementById('password');
+        if (usernameField) clearValidation(usernameField);
+        if (passwordField) clearValidation(passwordField);
+    }
+
     // Login form submission
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
@@ -1071,29 +1078,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const username = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             
-            let isValid = true;
-            
-            // Validate username
-            if (!username) {
-                showError(document.getElementById('email'), 'Username is required.');
-                isValid = false;
-            } else if (username.length < 4 || username.length > 64) {
-                showError(document.getElementById('email'), 'Field must be between 4 and 64 characters long.');
-                isValid = false;
-            } else {
-                showSuccess(document.getElementById('email'));
+            clearSignInValidation();
+
+            if (!username || !password) {
+                return;
             }
-            
-            // Validate password
-            if (!password) {
-                showError(document.getElementById('password'), 'Password is required.');
-                isValid = false;
-            } else {
-                showSuccess(document.getElementById('password'));
-            }
-            
-            if (isValid) {
-                const submitBtn = loginForm.querySelector('.btn-signin');
+
+            const submitBtn = loginForm.querySelector('.btn-signin');
                 submitBtn.textContent = 'Signing In...';
                 submitBtn.disabled = true;
                 
@@ -1111,6 +1102,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (usernameField) {
                                     usernameField.classList.add('error');
                                     usernameField.classList.remove('success');
+                                    const usernameError = document.getElementById('email-error');
+                                    if (usernameError) usernameError.classList.remove('show');
                                 }
                                 if (passwordField) {
                                     passwordField.value = '';
@@ -1138,7 +1131,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         submitBtn.textContent = 'SIGN IN';
                         submitBtn.disabled = false;
                     });
-            }
         });
     }
 
@@ -1302,49 +1294,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const signInPasswordField = document.getElementById('password');
 
     if (signInUsernameField) {
-        signInUsernameField.addEventListener('input', function () {
-            const value = this.value.trim();
-            if (!value) {
-                showError(this, 'Username is required.');
-                return;
-            }
-            if (value.length < 4 || value.length > 64) {
-                showError(this, 'Field must be between 4 and 64 characters long.');
-                return;
-            }
-            showSuccess(this);
-        });
-        signInUsernameField.addEventListener('blur', function () {
-            const value = this.value.trim();
-            if (!value) {
-                showError(this, 'Username is required.');
-                return;
-            }
-            if (value.length < 4 || value.length > 64) {
-                showError(this, 'Field must be between 4 and 64 characters long.');
-                return;
-            }
-            showSuccess(this);
-        });
+        signInUsernameField.addEventListener('input', clearSignInValidation);
     }
-
     if (signInPasswordField) {
-        signInPasswordField.addEventListener('input', function () {
-            const value = this.value;
-            if (!value) {
-                showError(this, 'Password is required.');
-                return;
-            }
-            showSuccess(this);
-        });
-        signInPasswordField.addEventListener('blur', function () {
-            const value = this.value;
-            if (!value) {
-                showError(this, 'Password is required.');
-                return;
-            }
-            showSuccess(this);
-        });
+        signInPasswordField.addEventListener('input', clearSignInValidation);
     }
     
     // Sign up form submission

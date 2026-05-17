@@ -242,11 +242,7 @@ body {
     height: 52px;
     display: block;
     pointer-events: none;
-    filter: drop-shadow(0 2px 5px rgba(34, 52, 44, 0.28)) contrast(1.28) saturate(1.15);
-}
-
-.floating-streak-book__lottie svg * {
-    vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 2px 4px rgba(34, 52, 44, 0.22));
 }
 
 .floating-streak-book__lottie svg {

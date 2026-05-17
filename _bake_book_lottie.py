@@ -98,22 +98,47 @@ def bake_root_layers(d):
             set_layer_opacity(layer, 0)
 
 
+def bake_stroke_widths(obj, stroke_slider=70):
+    """Keep static width when removing AE width expressions (w = value/70 * slider)."""
+    if isinstance(obj, dict):
+        if obj.get("ty") == "st" and "w" in obj:
+            w = obj["w"]
+            if isinstance(w, dict) and "x" in w:
+                k = w.get("k", 0)
+                try:
+                    baked = float(k)
+                except (TypeError, ValueError):
+                    baked = 12.6
+                if stroke_slider:
+                    baked = baked / float(stroke_slider) * float(stroke_slider)
+                obj["w"] = {"a": 0, "k": baked, "ix": w.get("ix", 5)}
+        for v in obj.values():
+            bake_stroke_widths(v, stroke_slider)
+    elif isinstance(obj, list):
+        for item in obj:
+            bake_stroke_widths(item, stroke_slider)
+
+
 def add_open_opacity_keyframes(d):
-    """morph + hover visible for full timeline; loop hidden (lottie-web cannot run AE sliders)."""
+    """
+    Match source AE sliders at rest: State-Morph=1, State-Hover=0, State-Loop=0.
+    The opening animation lives entirely in morph-1; hover/loop are alternate states.
+    """
     for layer in d.get("layers", []):
         nm = (layer.get("nm") or "").lower()
         if layer.get("ty") != 0:
             continue
-        if "loop" in nm:
-            set_layer_opacity(layer, 0)
-        elif "morph" in nm or "hover" in nm:
+        if "morph" in nm:
             set_layer_opacity(layer, 100)
+        elif "hover" in nm or "loop" in nm:
+            set_layer_opacity(layer, 0)
 
 
 def main():
     data = json.loads(SRC.read_text(encoding="utf-8"))
     if not BACKUP.exists():
         BACKUP.write_text(json.dumps(data), encoding="utf-8")
+    bake_stroke_widths(data)
     strip_expressions(data)
     bake_paint_colors(data)
     bake_layer_opacity(data)

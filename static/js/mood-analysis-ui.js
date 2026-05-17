@@ -7,7 +7,7 @@
 
     const MOOD_ANALYSIS_TOTAL_MS = 8000;
     const MOOD_ANALYSIS_MIN_AFTER_BOOK_MS = 1200;
-    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json';
+    const MOOD_ANALYSIS_BOOK_LOTTIE_SRC = '/noto-emoji/book.json?v=20260517';
     const ENTRY_UPDATE_EDITING_LOTTIE_SRC = '/noto-emoji/pencil_write.json?v=20260513d';
     const ENTRY_UPDATE_TOTAL_MS = 4200;
     const ENTRY_UPDATE_MIN_AFTER_EDITING_MS = 700;
@@ -90,8 +90,16 @@
                     animationData: data,
                 });
                 moodAnalysisBookAnim = anim;
+                try {
+                    if (typeof anim.goToAndPlay === 'function') anim.goToAndPlay(0, true);
+                    else if (typeof anim.play === 'function') anim.play();
+                } catch (_) {}
                 anim.addEventListener('DOMLoaded', () => {
                     if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
+                    try {
+                        if (typeof anim.goToAndPlay === 'function') anim.goToAndPlay(0, true);
+                        else if (typeof anim.play === 'function') anim.play();
+                    } catch (_) {}
                 });
                 requestAnimationFrame(() => {
                     if (!moodAnalysisBookReadyAt) moodAnalysisBookReadyAt = Date.now();
@@ -215,8 +223,14 @@
             mount.setAttribute('aria-label', 'Loading animation');
             wrap.appendChild(mount);
             try {
-                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.play === 'function') moodAnalysisBookAnim.play();
-                if (moodAnalysisBookAnim && typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+                if (moodAnalysisBookAnim) {
+                    if (typeof moodAnalysisBookAnim.goToAndPlay === 'function') {
+                        moodAnalysisBookAnim.goToAndPlay(0, true);
+                    } else if (typeof moodAnalysisBookAnim.play === 'function') {
+                        moodAnalysisBookAnim.play();
+                    }
+                    if (typeof moodAnalysisBookAnim.resize === 'function') moodAnalysisBookAnim.resize();
+                }
             } catch (_) {}
         }
 

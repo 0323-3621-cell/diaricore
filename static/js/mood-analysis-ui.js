@@ -1,5 +1,5 @@
 /**
- * Shared mood analysis overlay: book Lottie, progress bar, result modal.
+ * Shared emotion analysis overlay: book Lottie, progress bar, result modal.
  * Used by write-entry and entry-view. Depends on lottie-web (window.lottie).
  */
 (function (global) {
@@ -190,7 +190,7 @@
         overlay.innerHTML = `
             <div class="mood-analysis-card">
                 <div class="mood-analysis-card__header">
-                    <h3 class="mood-analysis-card__title">Mood Analysis</h3>
+                    <h3 class="mood-analysis-card__title">Emotion Analysis</h3>
                 </div>
                 <div class="mood-analysis-card__body" id="moodAnalysisBody"></div>
                 <div class="mood-analysis-card__footer" id="moodAnalysisFooter">
@@ -240,7 +240,7 @@
 
         const subEl = document.createElement('p');
         subEl.className = 'mood-analysis-loading__subtitle';
-        subEl.textContent = 'Detecting mood patterns and insights...';
+        subEl.textContent = 'Detecting emotion patterns and insights...';
 
         const progressWrap = document.createElement('div');
         progressWrap.className = 'mood-analysis-progress';
@@ -459,7 +459,7 @@
     }
 
     function computeInterpretation(score) {
-        if (score >= 0.65) return 'Clear dominant mood';
+        if (score >= 0.65) return 'Clear dominant emotion';
         if (score >= 0.45) return 'Mixed emotional signals';
         return 'Highly mixed / ambiguous';
     }

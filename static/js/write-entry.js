@@ -1787,7 +1787,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         journalText.value = text;
         journalText.dispatchEvent(new Event('input', { bubbles: true }));
         showWriteEntryNotification(
-            'Voice transcript added — add tags or photos if you like, then save to analyze your mood.',
+            'Voice transcript added — add tags or photos if you like, then save to analyze your emotions.',
             'info'
         );
     }

@@ -38,7 +38,7 @@ INSIGHT_TEMPLATES = {
     "anxious": [
         "Your anxiety spikes when {k} shows up in what you write.",
         "You often feel anxious on days when your entries mention {k}.",
-        "Themes like {k} keep appearing alongside anxious moods in your journal.",
+        "Themes like {k} keep appearing alongside anxious emotions in your journal.",
     ],
     "happy": [
         "{k} seems to be a recurring bright spot when you're feeling happy.",
@@ -48,7 +48,7 @@ INSIGHT_TEMPLATES = {
     "sad": [
         "Sad days in your journal often cluster around {k}.",
         "When you're low, {k} tends to show up in your writing.",
-        "Heavy moods and mentions of {k} often appear together for you.",
+        "Heavy emotions and mentions of {k} often appear together for you.",
     ],
     "angry": [
         "Frustration in your entries often centers on {k}.",
@@ -57,7 +57,7 @@ INSIGHT_TEMPLATES = {
     ],
     "neutral": [
         "Even balanced days still note {k} fairly often.",
-        "Neutral moods in your diary still reference {k} regularly.",
+        "Neutral emotions in your diary still reference {k} regularly.",
         "When you're steady, {k} still appears as a quiet theme.",
     ],
 }
@@ -65,36 +65,36 @@ INSIGHT_TEMPLATES = {
 STRESS_TRIGGER_TEMPLATES = [
     "You tend to feel more stressed when {tag} comes up.",
     "Stress often shows up alongside mentions of {tag}.",
-    "When {tag} is on your mind, your mood leans more tense.",
+    "When {tag} is on your mind, your emotional tone leans more tense.",
     "Mentions of {tag} frequently appear in your tougher days.",
     "{tag} seems to be a common theme when you're feeling overwhelmed.",
     "Your stress-related entries often include {tag}.",
     "You often sound more pressured when you write about {tag}.",
     "{tag} is a recurring topic on days that feel heavy.",
-    "When {tag} appears, your mood is more likely to dip into stress.",
+    "When {tag} appears, your emotional tone is more likely to dip into stress.",
     "Your stress trigger pattern points to {tag} as a frequent factor.",
     "Your journal suggests {tag} is linked to your stressful moments.",
     "Hard days often include {tag} in what you write.",
 ]
 
 HAPPINESS_TRIGGER_TEMPLATES = [
-    "Your mood improves when you mention {tag}.",
+    "Your emotional tone improves when you mention {tag}.",
     "{tag} often shows up in your happiest entries.",
     "You seem to feel lighter when {tag} is part of your day.",
     "Positive entries frequently include {tag}.",
     "{tag} looks like a consistent source of joy for you.",
     "You often sound more hopeful when you write about {tag}.",
-    "When {tag} appears, your mood trends more positive.",
+    "When {tag} appears, your emotional tone trends more positive.",
     "{tag} seems to be a bright spot in your recent entries.",
     "Your happiest moments often connect to {tag}.",
     "You tend to feel better on days that include {tag}.",
     "{tag} shows up a lot when you're in a good place.",
-    "Your journal points to {tag} as a recurring mood booster.",
+    "Your journal points to {tag} as a recurring emotion booster.",
 ]
 
 STRESS_COUNT_JUSTIFICATION_TEMPLATES = [
     "{count} of your stress-related entries include {tag}.",
-    "{tag} appears in {count} entries that were detected as stress moods.",
+    "{tag} appears in {count} entries that were detected as stress emotions.",
     "Across your stressed days, {tag} showed up {count} times.",
     "{count} stressed entries mention {tag}, which is why it ranks at the top.",
 ]

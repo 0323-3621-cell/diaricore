@@ -136,7 +136,7 @@ function buildWeeklyMoodLineDataset(weekly, chartTheme, moodColors, pointSize) {
     const radius = pointSize.radius ?? 6;
     const hoverRadius = pointSize.hoverRadius ?? 8;
     return {
-        label: 'Mood Score',
+        label: 'Emotion Score',
         data: weekly.data,
         borderColor: chartTheme.primary,
         backgroundColor: chartTheme.primarySoft,
@@ -365,7 +365,7 @@ function mondayStartOfLocalWeek(ref = new Date()) {
 const MS_PER_DAY = 86400000;
 
 /**
- * Mon–Sun calendar week: per-day average mood, dominant emotion, entry counts.
+ * Mon–Sun calendar week: per-day average emotion, dominant emotion, entry counts.
  * Richer than the dashboard sparkline; same week boundaries as the dashboard strip.
  */
 function insightsCalendarWeekSeries() {
@@ -944,29 +944,29 @@ function snapshotLedeTemplateIndex(len, weekly) {
  */
 const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
     (c) =>
-        `This week, your average mood is ${c.avg} / 10 with a ${c.trWord} trend between the first and second half of your logged days.`,
+        `This week, your average emotion is ${c.avg} / 10 with a ${c.trWord} trend between the first and second half of your logged days.`,
     (c) =>
-        `From the days you journaled this week, mood averaged ${c.avg} / 10 — a ${c.trWord} arc from earlier entries toward later ones.`,
+        `From the days you journaled this week, emotion averaged ${c.avg} / 10 — a ${c.trWord} arc from earlier entries toward later ones.`,
     (c) =>
         `Your check-ins this week center around ${c.avg} / 10 overall, with a ${c.trWord} shift between the first half of logged days and the second.`,
     (c) =>
-        `Across ${c.n} days with entries, daily mood averages ${c.avg} / 10, reading ${c.trWord} through the span you captured.`,
+        `Across ${c.n} days with entries, daily emotion averages ${c.avg} / 10, reading ${c.trWord} through the span you captured.`,
     (c) =>
-        `The moods you logged this week sit near ${c.avg} / 10 on average, showing a ${c.trWord} tilt from earlier journal days to the ones that followed.`,
+        `The emotions you logged this week sit near ${c.avg} / 10 on average, showing a ${c.trWord} tilt from earlier journal days to the ones that followed.`,
     (c) =>
         `So far this week, when you wrote, scores averaged ${c.avg} / 10 with a ${c.trWord} pattern between the first and second halves of what you recorded.`,
     (c) =>
-        `Weekly mood from your entries lands around ${c.avg} / 10, with a ${c.trWord} run across the days you journaled.`,
+        `Weekly emotion from your entries lands around ${c.avg} / 10, with a ${c.trWord} run across the days you journaled.`,
     (c) =>
         `Plotting the days you saved, the week averages ${c.avg} / 10 and carries a ${c.trWord} feel from earlier check-ins to later ones.`,
     (c) =>
         c.totalEntries > c.n
-            ? `You left ${c.totalEntries} entries across ${c.n} calendar days; daily mood averages ${c.avg} / 10 with a ${c.trWord} swing from the first batch of notes to the next.`
-            : `Glancing at ${c.n} days with mood data, the week settles near ${c.avg} / 10 and moves in a ${c.trWord} direction from earlier to later logs.`,
+            ? `You left ${c.totalEntries} entries across ${c.n} calendar days; daily emotion averages ${c.avg} / 10 with a ${c.trWord} swing from the first batch of notes to the next.`
+            : `Glancing at ${c.n} days with emotion data, the week settles near ${c.avg} / 10 and moves in a ${c.trWord} direction from earlier to later logs.`,
     (c) =>
         c.rangeCaption
-            ? `Between ${c.rangeCaption}, your logged moods average ${c.avg} / 10 — a ${c.trWord} story from the first half of those days to the second.`
-            : `Your logged moods average ${c.avg} / 10 this week — a ${c.trWord} story from the first half of those days to the second.`,
+            ? `Between ${c.rangeCaption}, your logged emotions average ${c.avg} / 10 — a ${c.trWord} story from the first half of those days to the second.`
+            : `Your logged emotions average ${c.avg} / 10 this week — a ${c.trWord} story from the first half of those days to the second.`,
     (c) =>
         c.hasContrast
             ? `The week still centers near ${c.avg} / 10, with a ${c.trWord} pull across your notes — ${c.bestDay} peaked at ${c.bestScore}/10 while ${c.toughDay} landed softer at ${c.toughScore}/10.`
@@ -974,7 +974,7 @@ const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
     (c) =>
         c.hasContrast && parseFloat(c.spread) >= 1.5
             ? `There is about a ${c.spread}-point swing between your highest and lowest logged days, yet the week averages ${c.avg} / 10 overall, trending ${c.trWord} from earlier entries to later ones.`
-            : `Mood traces stay clustered enough to average ${c.avg} / 10, while the week still reads ${c.trWord} from first notes toward the last.`,
+            : `Emotion traces stay clustered enough to average ${c.avg} / 10, while the week still reads ${c.trWord} from first notes toward the last.`,
     (c) =>
         `Your line this week hovers near ${c.avg} / 10; the half-and-half read is ${c.trWord} — a different tone at the start of what you logged than by the time you closed the week.`,
     (c) =>
@@ -984,24 +984,24 @@ const WEEKLY_SNAPSHOT_LEDE_TEMPLATES = [
     (c) =>
         `Picture the week as ${c.n} stepping stones: together they average ${c.avg} / 10, and the stride between the first stones and the last feels ${c.trWord}.`,
     (c) =>
-        `If we smooth every mood you captured, we land on ${c.avg} / 10 — not flat, but ${c.trWord} as you move from the opening days you logged toward the finale.`,
+        `If we smooth every emotion you captured, we land on ${c.avg} / 10 — not flat, but ${c.trWord} as you move from the opening days you logged toward the finale.`,
 ];
 
 const WEEKLY_SNAPSHOT_LEDE_SINGLE_DAY_TEMPLATES = [
     (c) =>
-        `You logged mood on one day this week (${c.avg} / 10). Add a few more dated entries to see how the rest of the week shapes up.`,
+        `You logged emotion on one day this week (${c.avg} / 10). Add a few more dated entries to see how the rest of the week shapes up.`,
     (c) =>
-        `Only one mood check-in so far this week — ${c.avg} / 10. A fuller week of notes will make this summary richer.`,
+        `Only one emotion check-in so far this week — ${c.avg} / 10. A fuller week of notes will make this summary richer.`,
     (c) =>
-        `This week's journal shows a single mood snapshot at ${c.avg} / 10; keep logging to trace the arc across more days.`,
+        `This week's journal shows a single emotion snapshot at ${c.avg} / 10; keep logging to trace the arc across more days.`,
     (c) =>
         c.totalEntries > 1
-            ? `Several entries landed on the same day, averaging ${c.avg} / 10 — sprinkle moods across more days so this card can stretch its legs.`
+            ? `Several entries landed on the same day, averaging ${c.avg} / 10 — sprinkle emotions across more days so this card can stretch its legs.`
             : `One quiet dot on the calendar (${c.avg} / 10) — give the rest of the week a voice when you can.`,
     (c) =>
         c.rangeCaption
-            ? `Across ${c.rangeCaption}, only one day carries a mood score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`
-            : `Only one day carries a mood score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`,
+            ? `Across ${c.rangeCaption}, only one day carries an emotion score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`
+            : `Only one day carries an emotion score so far (${c.avg} / 10); the rest of the ribbon is still waiting for you.`,
 ];
 
 function updateInsightsSnapshotFromWeekly(weekly) {
@@ -1038,7 +1038,7 @@ function updateInsightsSnapshotFromWeekly(weekly) {
     const n = vals.length;
     if (lede) {
         if (!n) {
-            lede.textContent = 'Save a few dated entries to see your weekly mood snapshot here.';
+            lede.textContent = 'Save a few dated entries to see your weekly emotion snapshot here.';
         } else {
             const avgStr = (vals.reduce((a, b) => a + b, 0) / n).toFixed(1);
             const half = Math.max(1, Math.floor(n / 2));
@@ -1145,7 +1145,7 @@ function applyInsightsEmptyState() {
     if (moodHeader) moodHeader.textContent = 'Insights will appear once you start journaling.';
 }
 
-// Initialize Weekly Mood Chart (mobile — same Mon–Sun week + detail as desktop)
+// Initialize Weekly Emotion Chart (mobile — same Mon–Sun week + detail as desktop)
 function initializeWeeklyMoodChart() {
     const ctx = document.getElementById('weeklyChart');
     if (!ctx) return;
@@ -1197,7 +1197,7 @@ function initializeWeeklyMoodChart() {
                                 return 'No entries this day';
                             }
                             const lines = [
-                                `Average mood: ${Number(y).toFixed(1)}/10`,
+                                `Average emotion: ${Number(y).toFixed(1)}/10`,
                                 `Top emotion: ${weekly.emotionTags[idx] || '—'}`,
                             ];
                             const n = weekly.entryCounts[idx] || 0;
@@ -1253,7 +1253,7 @@ function initializeWeeklyMoodChart() {
     bindInsightsChartFlow(WEEKLY_MOBILE_CHART, weekly, moodColors);
 }
 
-// Initialize Desktop Weekly Mood Chart (Mon–Sun calendar week; richer than dashboard glance)
+// Initialize Desktop Weekly Emotion Chart (Mon–Sun calendar week; richer than dashboard glance)
 function initializeWeeklyMoodChartDesktop() {
     const ctx = document.getElementById('weeklyChartDesktop');
     if (!ctx) return;
@@ -1345,7 +1345,7 @@ function initializeWeeklyMoodChartDesktop() {
                                 return 'No entries this day';
                             }
                             const lines = [
-                                `Average mood: ${Number(y).toFixed(1)}/10`,
+                                `Average emotion: ${Number(y).toFixed(1)}/10`,
                                 `Top emotion: ${weekly.emotionTags[idx] || '—'}`,
                             ];
                             const n = weekly.entryCounts[idx] || 0;

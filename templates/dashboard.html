@@ -126,7 +126,7 @@
                         </span>
                     </div>
                     <div class="stat-content">
-                        <h3 class="stat-title">Today's Mood</h3>
+                        <h3 class="stat-title">Today's Emotion</h3>
                         <p class="stat-value">Peaceful</p>
                         <p class="stat-description">You're feeling calm today</p>
                     </div>
@@ -181,14 +181,14 @@
                 </div>
             </div>
 
-            <!-- Weekly mood + side cards (desktop layout like reference; mobile stacks naturally) -->
+            <!-- Weekly emotion + side cards (desktop layout like reference; mobile stacks naturally) -->
             <div class="dashboard-lower-grid">
-                <!-- Weekly Mood Snapshot -->
+                <!-- Weekly Emotion Snapshot -->
                 <div class="weekly-snapshot-wrap">
                     <div class="weekly-snapshot-card">
                         <div class="weekly-snapshot-head">
                             <div>
-                                <h2 class="weekly-snapshot-title"><i class="bi bi-calendar"></i> Weekly Mood</h2>
+                                <h2 class="weekly-snapshot-title"><i class="bi bi-calendar"></i> Weekly Emotion</h2>
                                 <p class="weekly-snapshot-range">Mon – Sun</p>
                             </div>
                             <span class="weekly-trend-badge" id="dashboardTrendBadge">
@@ -234,9 +234,9 @@
                         </div>
                     </section>
 
-                    <!-- Mood key: Noto static PNGs + anchors from mood-scoring.js (hydrateMoodKeyAnchors) -->
-                    <section class="mood-key-card" aria-label="Mood key">
-                        <h2 class="mood-key-title">Mood key</h2>
+                    <!-- Emotion key: Noto static PNGs + anchors from mood-scoring.js (hydrateMoodKeyAnchors) -->
+                    <section class="mood-key-card" aria-label="Emotion key">
+                        <h2 class="mood-key-title">Emotion key</h2>
                         <div class="mood-key-grid" role="list">
                             <div class="mood-key-tile mood-key-tile--happy" role="listitem">
                                 <img class="mood-key-tile__img" src="/noto-emoji-static/3591-laughter.png" alt="" width="40" height="40" decoding="async" />
@@ -279,8 +279,8 @@
                                 <h3 class="mood-key-scoring__title">How the line is scored</h3>
                                 <ul class="mood-key-scoring__list">
                                     <li><strong>Blended (online, saved)</strong> — Each emotion’s probability × its anchor, merged into one 0–10 for the day (e.g. mostly sad ≈ 3.6 vs 3.5 alone).</li>
-                                    <li><strong>Label-only</strong> — Offline or no server analysis: main mood’s anchor only.</li>
-                                    <li><strong>Not class confidence</strong> — Top-label confidence is not this mood line.</li>
+                                    <li><strong>Label-only</strong> — Offline or no server analysis: main emotion’s anchor only.</li>
+                                    <li><strong>Not class confidence</strong> — Top-label confidence is not this emotion line.</li>
                                 </ul>
                             </div>
                         </div>

@@ -58,23 +58,23 @@ const WELLNESS_QUOTES = [
 const DASHBOARD_INSIGHT_POSITIVE = [
     "Your recent entries show a positive emotional trend. Keep the momentum going.",
     "You're carrying more steady energy lately. Keep doing what supports you.",
-    "Your mood has been leaning brighter this week. Great consistency.",
+    "Your emotions have been leaning brighter this week. Great consistency.",
     "You seem to be in a healthier rhythm recently. Keep nurturing it.",
     "Your journal reflects stronger emotional balance right now. Nice progress.",
     "You are showing stronger emotional recovery lately. Keep building on it.",
     "Your latest pattern looks lighter and more hopeful. Nice direction.",
-    "Your mood signals have improved this week. Keep your supportive routines going.",
+    "Your emotional signals have improved this week. Keep your supportive routines going.",
     "You are handling recent days with more balance. That's meaningful progress.",
     "Recent entries point to healthier emotional momentum. Stay consistent.",
 ];
 
 const DASHBOARD_INSIGHT_MID = [
-    "Your recent mood looks fairly steady. A short reflection can keep you grounded.",
+    "Your recent emotion looks fairly steady. A short reflection can keep you grounded.",
     "You're in a balanced range lately. Small positive habits can lift it further.",
     "Your entries show a mixed but stable pattern. Try one intentional check-in today.",
     "Your emotional trend is moderate right now. A quick mindful pause may help.",
     "You seem steady overall, with room to improve. One small win can shift the day.",
-    "Your mood is holding in the middle range. A brief reset could help raise it.",
+    "Your emotional tone is holding in the middle range. A brief reset could help raise it.",
     "You're fairly stable right now. One intentional action can improve today's tone.",
     "Recent logs suggest a neutral trend. A short gratitude note may help nudge upward.",
     "Your pattern is balanced but variable. A quick emotional check-in could help.",
@@ -82,15 +82,15 @@ const DASHBOARD_INSIGHT_MID = [
 ];
 
 const DASHBOARD_INSIGHT_LOW = [
-    "Your recent mood looks lower than usual. Try a short reflective entry.",
+    "Your recent emotion looks lower than usual. Try a short reflective entry.",
     "You've had heavier emotional days lately. A gentle check-in might help.",
     "Your recent entries suggest added strain. Writing briefly may ease the load.",
-    "Your mood trend has dipped a bit. Try naming one feeling and one need today.",
+    "Your emotional trend has dipped a bit. Try naming one feeling and one need today.",
     "Recent logs show tougher moments. A small grounding step could help right now.",
     "Your recent pattern looks emotionally heavy. Try one small self-support step today.",
     "You may be carrying extra stress this week. A brief pause and journal check-in can help.",
     "Recent entries reflect lower energy. Keep today light and focus on one manageable step.",
-    "Your mood trend is under pressure right now. Try a short breath-and-write reset.",
+    "Your emotional trend is under pressure right now. Try a short breath-and-write reset.",
     "You're going through a tougher stretch. One gentle routine can help you stabilize.",
 ];
 
@@ -233,8 +233,8 @@ function weekDayIndexSinceMonday(entryDateRaw, mondayMs) {
 }
 
 /**
- * Mon–Sun calendar week (local): per-day mean mood score, feelings list, and entry count.
- * Used by the Weekly Average stat card and the Weekly Mood chart so numbers match.
+ * Mon–Sun calendar week (local): per-day mean emotion score, feelings list, and entry count.
+ * Used by the Weekly Average stat card and the Weekly Emotion chart so numbers match.
  */
 function aggregateCalendarWeekMood(entries) {
     const monday = mondayOfWeekContaining();
@@ -731,10 +731,10 @@ function updateDashboardCards(entries) {
     if (!latest) {
         if (moodImg) {
             moodImg.src = STAT_NOTO_MOOD_SRC.neutral;
-            moodImg.alt = 'No mood data yet';
+            moodImg.alt = 'No emotion data yet';
         }
-        if (moodValue) moodValue.textContent = 'No mood data yet';
-        if (moodDescription) moodDescription.textContent = 'Write your first entry to track your mood.';
+        if (moodValue) moodValue.textContent = 'No emotion data yet';
+        if (moodDescription) moodDescription.textContent = 'Write your first entry to track your emotions.';
         if (avgNum) avgNum.textContent = '--';
         if (avgDenom) avgDenom.textContent = '/10';
         if (avgDescription) avgDescription.textContent = 'No weekly entries yet.';
@@ -747,7 +747,7 @@ function updateDashboardCards(entries) {
     const moodLabel = titleCase(latestFeeling) || 'Recorded';
     if (moodImg) {
         moodImg.src = statNotoSrcForFeeling(latestFeeling);
-        moodImg.alt = `${moodLabel} mood`;
+        moodImg.alt = `${moodLabel} emotion`;
     }
     if (moodValue) moodValue.textContent = moodLabel;
     if (moodDescription) moodDescription.textContent = 'Based on your most recent entry.';
@@ -763,8 +763,8 @@ function updateDashboardCards(entries) {
         const n = weekAgg.entriesInWeek;
         if (avgDescription) {
             avgDescription.textContent = n === 1
-                ? '1 mood entry this week (Mon–Sun)'
-                : `${n} mood entries this week (Mon–Sun)`;
+                ? '1 emotion entry this week (Mon–Sun)'
+                : `${n} emotion entries this week (Mon–Sun)`;
         }
     }
 
@@ -937,7 +937,7 @@ function renderWeeklyChart(entries) {
         }
     }
 
-    // Week strip: animated Noto Lottie (Today's Mood stat card stays static PNG).
+    // Week strip: animated Noto Lottie (Today's Emotion stat card stays static PNG).
     if (weekStripEl) {
         const now = new Date();
         const todayIdx = (() => {
@@ -991,8 +991,8 @@ function renderWeeklyChart(entries) {
 
     if (!hasData) {
         sparklineEl.innerHTML = `
-            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
-                <text class="weekly-sparkline-empty" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-family="inherit">No mood data for this week yet</text>
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly emotion sparkline">
+                <text class="weekly-sparkline-empty" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="14" font-family="inherit">No emotion data for this week yet</text>
             </svg>`;
         return;
     }
@@ -1039,7 +1039,7 @@ function renderWeeklyChart(entries) {
         .join('');
 
     let sparklineSvg = `
-        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
+        <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly emotion sparkline">
             <defs>
                 <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.15"></stop>

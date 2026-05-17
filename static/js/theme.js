@@ -22,6 +22,34 @@
     const DEFAULT_PALETTE_ID = 'theme-1';
     let prefsSyncTimer = null;
 
+    function isMobileViewport() {
+        try {
+            return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    /** Mobile only: hide topbar person icon until uploaded photo is applied (avoids refresh flash). */
+    function syncMobileAvatarEarlyClass() {
+        if (!isMobileViewport()) {
+            document.documentElement.classList.remove('diari-mobile-has-avatar');
+            return;
+        }
+        try {
+            const u = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+            const hasPhoto = Boolean(
+                u &&
+                    u.isLoggedIn &&
+                    typeof u.avatarDataUrl === 'string' &&
+                    u.avatarDataUrl.trim()
+            );
+            document.documentElement.classList.toggle('diari-mobile-has-avatar', hasPhoto);
+        } catch (_) {
+            document.documentElement.classList.remove('diari-mobile-has-avatar');
+        }
+    }
+
     function getSavedTheme() {
         const raw = (localStorage.getItem(STORAGE_KEY) || '').toLowerCase();
         return raw === 'dark' ? 'dark' : 'light';
@@ -158,6 +186,7 @@
                 }
             }
         } catch (_) {}
+        syncMobileAvatarEarlyClass();
     }
 
     function queueSyncUserUiPreferences() {
@@ -403,7 +432,13 @@
         syncToggleState();
     });
 
+    document.addEventListener('diari-user-updated', syncMobileAvatarEarlyClass);
+
     window.addEventListener('storage', function (event) {
+        if (event.key === 'diariCoreUser') {
+            syncMobileAvatarEarlyClass();
+            return;
+        }
         if (event.key === STORAGE_KEY) {
             const nextTheme = getSavedTheme();
             applyTheme(nextTheme);
@@ -415,6 +450,8 @@
             applyPaletteById(getSavedPaletteId());
         }
     });
+
+    window.syncMobileAvatarEarlyClass = syncMobileAvatarEarlyClass;
 
     window.DiariTheme = {
         getTheme: getSavedTheme,

@@ -529,6 +529,11 @@
         font-size: 1.15rem !important;
     }
 
+    /* Mobile: if user has an uploaded photo, do not flash the default person icon before JS hydrates */
+    html.diari-mobile-has-avatar .mobile-app-topbar__profile:not(.mobile-app-topbar__profile--photo) .mobile-app-topbar__profile-fallback {
+        display: none !important;
+    }
+
     .mobile-app-topbar__profile--photo {
         background: transparent !important;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28) !important;

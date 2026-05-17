@@ -2,6 +2,97 @@
 // Temporary seed mode: keep UI empty while features are being built.
 const DIARICORE_FORCE_EMPTY_STATE = false;
 
+function isMobileViewportForAvatar() {
+    try {
+        return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
+ * Mobile topbar only: apply cached profile photo before paint when possible (desktop unchanged).
+ */
+function hydrateMobileTopbarProfileFromStorage() {
+    if (!isMobileViewportForAvatar()) return;
+
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('diariCoreUser') || 'null');
+    } catch (_) {
+        user = null;
+    }
+
+    document.querySelectorAll('.mobile-app-topbar__profile').forEach((link) => {
+        const img = link.querySelector('.mobile-app-topbar__profile-img');
+        const fallback = link.querySelector('.mobile-app-topbar__profile-fallback');
+        if (!img || !fallback) return;
+
+        if (!user || !user.isLoggedIn) {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            link.classList.remove('mobile-app-topbar__profile--photo');
+            link.classList.add('mobile-app-topbar__profile--hydrated');
+            return;
+        }
+
+        const dataUrl =
+            typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
+        if (!dataUrl) {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            link.classList.remove('mobile-app-topbar__profile--photo');
+            link.classList.add('mobile-app-topbar__profile--hydrated');
+            return;
+        }
+
+        const applyPhoto = () => {
+            link.classList.add('mobile-app-topbar__profile--photo');
+            fallback.hidden = true;
+            img.hidden = false;
+            link.classList.add('mobile-app-topbar__profile--hydrated');
+        };
+
+        if (img.src === dataUrl && !img.hidden) {
+            applyPhoto();
+            return;
+        }
+
+        img.hidden = true;
+        fallback.hidden = true;
+        link.classList.remove('mobile-app-topbar__profile--photo');
+
+        const onReady = () => {
+            applyPhoto();
+        };
+        img.onload = onReady;
+        img.onerror = () => {
+            img.removeAttribute('src');
+            img.hidden = true;
+            fallback.hidden = false;
+            link.classList.remove('mobile-app-topbar__profile--photo');
+            link.classList.add('mobile-app-topbar__profile--hydrated');
+        };
+        img.src = dataUrl;
+        if (img.complete) {
+            onReady();
+        }
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.hydrateMobileTopbarProfileFromStorage = hydrateMobileTopbarProfileFromStorage;
+    if (document.body) {
+        hydrateMobileTopbarProfileFromStorage();
+    } else {
+        document.addEventListener('DOMContentLoaded', hydrateMobileTopbarProfileFromStorage, {
+            once: true,
+        });
+    }
+}
+
 class SidebarComponent {
     constructor() {
         this.currentPage = this.getCurrentPage();
@@ -14,6 +105,7 @@ class SidebarComponent {
     }
 
     init() {
+        hydrateMobileTopbarProfileFromStorage();
         this.initSyncStatusBadge();
         this.loadSidebar();
         this.setupMobileToggle();
@@ -21,6 +113,7 @@ class SidebarComponent {
         document.addEventListener('diari-user-updated', () => {
             this.applyCurrentUserIdentity();
         });
+        document.addEventListener('diari-mobile-shell-ready', hydrateMobileTopbarProfileFromStorage);
     }
 
     getCurrentPage() {
@@ -536,33 +629,11 @@ class SidebarComponent {
      * Mobile header: show same avatar as desktop sidebar (uploaded photo or placeholder image).
      */
     syncMobileTopbarProfile(user) {
-        const link = document.querySelector('.mobile-app-topbar__profile');
-        if (!link) return;
-        const img = link.querySelector('.mobile-app-topbar__profile-img');
-        const fallback = link.querySelector('.mobile-app-topbar__profile-fallback');
-        if (!img || !fallback) return;
-
-        if (!user) {
-            img.removeAttribute('src');
-            img.hidden = true;
-            fallback.hidden = false;
-            link.classList.remove('mobile-app-topbar__profile--photo');
-            return;
+        if (!isMobileViewportForAvatar()) return;
+        if (typeof window.syncMobileAvatarEarlyClass === 'function') {
+            window.syncMobileAvatarEarlyClass();
         }
-
-        const dataUrl =
-            typeof user.avatarDataUrl === 'string' ? user.avatarDataUrl.trim() : '';
-        if (!dataUrl) {
-            img.removeAttribute('src');
-            img.hidden = true;
-            fallback.hidden = false;
-            link.classList.remove('mobile-app-topbar__profile--photo');
-            return;
-        }
-        img.src = dataUrl;
-        img.hidden = false;
-        fallback.hidden = true;
-        link.classList.add('mobile-app-topbar__profile--photo');
+        hydrateMobileTopbarProfileFromStorage();
     }
 
     upsertGuestNotice(target, message) {

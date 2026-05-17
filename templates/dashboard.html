@@ -14,6 +14,7 @@
     <link href="mobile-global.css" rel="stylesheet">
     <script src="theme.js"></script>
     <script src="lottie-player.js"></script>
+    <script src="lottie-web.min.js"></script>
 </head>
 <body class="has-mobile-app-topbar">
     <!-- Mobile top bar: inlined for first paint; keep in sync with side-bar.html -->
@@ -69,14 +70,12 @@
                     title="Open streak book"
                 >
                     <span class="floating-streak-book__motion" aria-hidden="true">
-                        <lottie-player
-                            id="floatingStreakBookLottie"
+                        <div
+                            id="floatingStreakBookMount"
                             class="floating-streak-book__lottie"
-                            src="BOOK.json"
-                            background="transparent"
-                            speed="1"
-                            autoplay="false"
-                        ></lottie-player>
+                            role="img"
+                            aria-hidden="true"
+                        ></div>
                     </span>
                 </button>
                 <div class="floating-streak-panel" id="floatingStreakPanel" hidden>

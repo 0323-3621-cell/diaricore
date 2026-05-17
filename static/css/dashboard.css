@@ -244,6 +244,24 @@ body {
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.16)) contrast(1.1);
 }
 
+.floating-streak-book__lottie svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+.floating-streak-book__lottie--error::after {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 28px;
+    margin: 11px auto;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--primary-color) 35%, transparent);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M2 2h5v1H4v9h8V7h1v6H2z'/%3E%3Cpath fill='black' d='M9 2h5v5h-1V3.4L6.7 9.7l-.7-.7L12.6 2.7H9z'/%3E%3C/svg%3E") center / contain no-repeat;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M2 2h5v1H4v9h8V7h1v6H2z'/%3E%3Cpath fill='black' d='M9 2h5v5h-1V3.4L6.7 9.7l-.7-.7L12.6 2.7H9z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 .floating-streak-panel {
     width: max-content;
     min-width: 0;

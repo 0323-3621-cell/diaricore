@@ -347,24 +347,30 @@ function updateStreakPanelUI(entries) {
     }).join('');
 }
 
+const STREAK_BOOK_LOTTIE_SRC = '/BOOK.json';
+
 function initializeStreakBook() {
     const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
     const panel = document.getElementById('floatingStreakPanel');
-    const player = document.getElementById('floatingStreakBookLottie');
-    if (!toggleBtn || !panel || !root || !player || toggleBtn.dataset.bound === '1') return;
+    const mount = document.getElementById('floatingStreakBookMount');
+    if (!toggleBtn || !panel || !root || !mount || toggleBtn.dataset.bound === '1') return;
     toggleBtn.dataset.bound = '1';
 
+    let streakBookAnim = null;
     let revealTimer = null;
     let completeHandler = null;
+
+    const getAnim = () => streakBookAnim;
 
     const clearRevealSchedule = () => {
         if (revealTimer) {
             clearTimeout(revealTimer);
             revealTimer = null;
         }
-        if (completeHandler) {
-            player.removeEventListener('complete', completeHandler);
+        const anim = getAnim();
+        if (completeHandler && anim) {
+            anim.removeEventListener('complete', completeHandler);
             completeHandler = null;
         }
     };
@@ -382,41 +388,34 @@ function initializeStreakBook() {
     };
 
     const freezeClosed = () => {
+        const anim = getAnim();
+        if (!anim) return;
         try {
-            player.loop = false;
-            player.pause();
-            if (typeof player.seek === 'function') player.seek(0);
-            else if (typeof player.stop === 'function') player.stop();
-            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
-            if (anim && typeof anim.goToAndStop === 'function') anim.goToAndStop(0, true);
+            anim.loop = false;
+            anim.goToAndStop(0, true);
+            anim.pause();
         } catch (e) {
             /* ignore */
         }
     };
 
-    /** Hold last frame (open book) — no loop while hovering. */
     const freezeOpenHold = () => {
+        const anim = getAnim();
+        if (!anim) return;
         try {
-            player.loop = false;
-            player.pause();
-            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
-            if (anim && typeof anim.goToAndStop === 'function') {
-                const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
-                anim.goToAndStop(end, true);
-            }
+            anim.loop = false;
+            const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
+            anim.goToAndStop(end, true);
+            anim.pause();
         } catch (e) {
             /* ignore */
         }
     };
 
     const bookDurationMs = () => {
-        try {
-            const anim = typeof player.getLottie === 'function' ? player.getLottie() : null;
-            if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
-                return (anim.totalFrames / anim.frameRate) * 1000;
-            }
-        } catch (e) {
-            /* ignore */
+        const anim = getAnim();
+        if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
+            return (anim.totalFrames / anim.frameRate) * 1000;
         }
         return (46 / 60) * 1000;
     };
@@ -430,12 +429,14 @@ function initializeStreakBook() {
     };
 
     const beginOpenSequence = () => {
+        const anim = getAnim();
+        if (!anim) return;
         clearRevealSchedule();
         hidePanel();
         freezeClosed();
         try {
-            player.loop = false;
-            player.play();
+            anim.loop = false;
+            anim.play();
         } catch (e) {
             /* ignore */
         }
@@ -449,7 +450,7 @@ function initializeStreakBook() {
             if (!streakRevealOk()) return;
             freezeOpenHold();
         };
-        player.addEventListener('complete', completeHandler);
+        anim.addEventListener('complete', completeHandler);
     };
 
     const endOpenSequence = () => {
@@ -459,62 +460,83 @@ function initializeStreakBook() {
         freezeClosed();
     };
 
-    let streakLottieFramed = false;
-    const onPlayerReady = () => {
-        if (streakLottieFramed) return;
-        streakLottieFramed = true;
-        freezeClosed();
-    };
-    player.addEventListener('ready', onPlayerReady, { once: true });
-    player.addEventListener('load', onPlayerReady, { once: true });
-    setTimeout(() => {
-        if (!streakLottieFramed) onPlayerReady();
-    }, 600);
+    const bindStreakInteractions = () => {
+        root.addEventListener('mouseenter', () => {
+            root.dataset.inside = '1';
+            beginOpenSequence();
+        });
+        root.addEventListener('mouseleave', () => {
+            root.dataset.inside = '0';
+            endOpenSequence();
+        });
 
-    root.addEventListener('mouseenter', () => {
-        root.dataset.inside = '1';
-        beginOpenSequence();
-    });
-    root.addEventListener('mouseleave', () => {
-        root.dataset.inside = '0';
-        endOpenSequence();
-    });
+        root.addEventListener(
+            'touchstart',
+            () => {
+                if (root.dataset.inside === '1') return;
+                root.dataset.clickOpen = '1';
+                beginOpenSequence();
+            },
+            { passive: true }
+        );
 
-    /* Mobile / touch: same open-book animation as desktop hover */
-    root.addEventListener(
-        'touchstart',
-        () => {
+        toggleBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (!panel.hidden) {
+                root.dataset.inside = '0';
+                endOpenSequence();
+                return;
+            }
             if (root.dataset.inside === '1') return;
             root.dataset.clickOpen = '1';
             beginOpenSequence();
-        },
-        { passive: true }
-    );
+        });
 
-    toggleBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        if (!panel.hidden) {
+        document.addEventListener('click', (event) => {
+            if (panel.hidden) return;
+            if (root.contains(event.target)) return;
             root.dataset.inside = '0';
             endOpenSequence();
-            return;
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || panel.hidden) return;
+            root.dataset.inside = '0';
+            endOpenSequence();
+        });
+    };
+
+    const loadStreakBookLottie = async () => {
+        if (streakBookAnim) return streakBookAnim;
+        if (typeof window.lottie === 'undefined' || typeof window.lottie.loadAnimation !== 'function') {
+            console.warn('Streak book: lottie-web not loaded');
+            return null;
         }
-        if (root.dataset.inside === '1') return;
-        root.dataset.clickOpen = '1';
-        beginOpenSequence();
-    });
+        try {
+            const res = await fetch(STREAK_BOOK_LOTTIE_SRC, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            streakBookAnim = window.lottie.loadAnimation({
+                container: mount,
+                renderer: 'svg',
+                loop: false,
+                autoplay: false,
+                animationData: data,
+            });
+            streakBookAnim.addEventListener('DOMLoaded', () => {
+                freezeClosed();
+            });
+            freezeClosed();
+            return streakBookAnim;
+        } catch (e) {
+            console.warn('Streak book Lottie failed:', e);
+            mount.classList.add('floating-streak-book__lottie--error');
+            return null;
+        }
+    };
 
-    document.addEventListener('click', (event) => {
-        if (panel.hidden) return;
-        if (root.contains(event.target)) return;
-        root.dataset.inside = '0';
-        endOpenSequence();
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || panel.hidden) return;
-        root.dataset.inside = '0';
-        endOpenSequence();
-    });
+    bindStreakInteractions();
+    loadStreakBookLottie();
 }
 
 function initializeGreetingClock() {

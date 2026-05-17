@@ -156,9 +156,13 @@ body {
     width: 64px;
     height: 64px;
     padding: 0;
-    border: 1px solid rgba(70, 96, 85, 0.24);
+    border: 1px solid rgba(var(--primary-rgb), 0.28);
     border-radius: 12px;
-    background: linear-gradient(160deg, #eaf3ec 0%, #dceee3 100%);
+    background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--primary-light) 58%, #ffffff) 0%,
+        color-mix(in srgb, var(--primary-color) 24%, var(--card-background, #ffffff)) 100%
+    );
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -166,16 +170,21 @@ body {
     cursor: pointer;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        0 4px 16px rgba(34, 52, 44, 0.14);
-    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        0 4px 16px rgba(var(--primary-rgb), 0.22);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
     overflow: visible;
 }
 
 .floating-streak-book:hover {
-    background: linear-gradient(160deg, #f0f6f2 0%, #e4efe8 100%);
+    background: linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--primary-light) 65%, #ffffff) 0%,
+        color-mix(in srgb, var(--primary-color) 32%, var(--card-background, #ffffff)) 100%
+    );
+    border-color: rgba(var(--primary-rgb), 0.38);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.6),
-        0 6px 20px rgba(34, 52, 44, 0.18);
+        0 6px 20px rgba(var(--primary-rgb), 0.28);
     transform: translateY(-1px);
 }
 
@@ -806,11 +815,35 @@ body {
     line-height: 1.25;
 }
 
-.mood-key-tile--happy { border-left: 3px solid var(--mood-happy); }
-.mood-key-tile--sad { border-left: 3px solid var(--mood-sad); }
-.mood-key-tile--angry { border-left: 3px solid var(--mood-angry); }
-.mood-key-tile--anxious { border-left: 3px solid var(--mood-anxious); }
-.mood-key-tile--neutral { border-left: 3px solid var(--mood-neutral); }
+.mood-key-tile--happy {
+    border-left: 3px solid var(--mood-happy);
+    border-color: color-mix(in srgb, var(--mood-happy) 38%, var(--border-color));
+    background: color-mix(in srgb, var(--mood-happy) 16%, var(--background-soft));
+}
+
+.mood-key-tile--sad {
+    border-left: 3px solid var(--mood-sad);
+    border-color: color-mix(in srgb, var(--mood-sad) 38%, var(--border-color));
+    background: color-mix(in srgb, var(--mood-sad) 16%, var(--background-soft));
+}
+
+.mood-key-tile--angry {
+    border-left: 3px solid var(--mood-angry);
+    border-color: color-mix(in srgb, var(--mood-angry) 38%, var(--border-color));
+    background: color-mix(in srgb, var(--mood-angry) 16%, var(--background-soft));
+}
+
+.mood-key-tile--anxious {
+    border-left: 3px solid var(--mood-anxious);
+    border-color: color-mix(in srgb, var(--mood-anxious) 38%, var(--border-color));
+    background: color-mix(in srgb, var(--mood-anxious) 16%, var(--background-soft));
+}
+
+.mood-key-tile--neutral {
+    border-left: 3px solid var(--mood-neutral);
+    border-color: color-mix(in srgb, var(--mood-neutral) 38%, var(--border-color));
+    background: color-mix(in srgb, var(--mood-neutral) 16%, var(--background-soft));
+}
 
 .mood-key-foot {
     margin-top: auto;

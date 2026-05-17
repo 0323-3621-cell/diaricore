@@ -250,7 +250,7 @@ def _content_security_policy() -> str:
     """Allow self-hosted app + CDNs used by templates and on-device voice (Transformers)."""
     return (
         "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'wasm-unsafe-eval'; "
         "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
         "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; "
         "img-src 'self' data: blob:; "

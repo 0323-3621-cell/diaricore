@@ -72,7 +72,16 @@
     font-weight: 600;
     color: var(--text-dark);
     margin: 0;
-    margin-left: 2rem;
+}
+
+/* Mobile-only: title + Save on one row (Save at right edge). Desktop uses .header-section instead. */
+.mobile-header__title-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-width: 0;
 }
 
 .save-btn {
@@ -1011,6 +1020,21 @@ html.theme-dark .voice-entry-notice-modal__ok:focus-visible {
 @media (max-width: 768px) {
     .mobile-header {
         display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .mobile-header .mobile-title {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mobile-header .save-btn {
+        flex-shrink: 0;
+        margin-left: auto;
     }
     
     .header-section {

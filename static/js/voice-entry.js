@@ -137,7 +137,6 @@
 
             const speechSupported = Boolean(getSpeechRecognitionCtor());
             const isMobile = window.innerWidth <= 768;
-            let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
 
@@ -168,18 +167,6 @@
                     const base = isMobile ? 'Tap to record' : 'Tap to start recording';
                     statusText.textContent = base + ' · ' + DiariVoiceLocale.labelFor(vl);
                 }
-            }
-
-            if (window.DIARI_VOICE_USE_SERVER === true) {
-                void fetch('/api/voice/status', { credentials: 'same-origin' })
-                    .then(function (r) {
-                        return r.json();
-                    })
-                    .then(function (j) {
-                        if (!j || !j.success) return;
-                        serverTranscribeConfigured = Boolean(j.configured);
-                    })
-                    .catch(function () {});
             }
 
             if (isMobile && mobileRetryBtn) {
@@ -266,13 +253,44 @@
                 if (!recognition) return;
                 const rec = recognition;
                 recognition = null;
-                rec.onend = null;
-                rec.onresult = null;
-                rec.onerror = null;
                 try {
-                    if (typeof rec.abort === 'function') rec.abort();
-                    else rec.stop();
+                    if (typeof rec.stop === 'function') rec.stop();
+                    else if (typeof rec.abort === 'function') rec.abort();
                 } catch (_) {}
+            }
+
+            /** Stop dictation and wait for final `onresult` chunks (do not clear handlers before stop). */
+            function stopSpeechRecognitionAsync() {
+                return new Promise(function (resolve) {
+                    wantRecognitionRunning = false;
+                    const rec = recognition;
+                    if (!rec) {
+                        resolve();
+                        return;
+                    }
+                    let settled = false;
+                    const finish = function () {
+                        if (settled) return;
+                        settled = true;
+                        recognition = null;
+                        resolve();
+                    };
+                    const prevOnEnd = rec.onend;
+                    rec.onend = function () {
+                        if (typeof prevOnEnd === 'function') {
+                            try {
+                                prevOnEnd();
+                            } catch (_) {}
+                        }
+                        finish();
+                    };
+                    try {
+                        rec.stop();
+                    } catch (_) {
+                        finish();
+                    }
+                    setTimeout(finish, 900);
+                });
             }
 
             function primeAudioFromUserGesture() {
@@ -504,34 +522,41 @@
                 });
             }
 
-            async function transcribeOnServer(blob, recorderMime) {
-                if (serverTranscribeConfigured === false) {
-                    return '';
+            function clientTranscribeFailureHint(err) {
+                if (!window.DiariVoiceClient) {
+                    return 'On-device transcription could not load. Check your connection for the first visit, then refresh.';
                 }
-                setTranscriptHint('Transcribing on the server (optional fallback)…');
-                const fd = new FormData();
-                const ext = extensionForMime(recorderMime || blob.type);
-                fd.append('audio', blob, 'recording.' + ext);
-                const r = await fetch('/api/voice/transcribe', {
-                    method: 'POST',
-                    body: fd,
-                    credentials: 'same-origin',
-                });
-                const j = await r.json().catch(function () {
-                    return {};
-                });
-                if (j.success && j.text) {
-                    return String(j.text).replace(/\s+/g, ' ').trim();
+                if (
+                    DiariVoiceClient.isSupported &&
+                    !DiariVoiceClient.isSupported()
+                ) {
+                    return 'This browser cannot decode the recording. Try Chrome or Edge, or type your entry below.';
                 }
-                throw new Error((j && j.error) || 'Server transcription failed');
+                const msg = err && err.message ? String(err.message) : '';
+                if (/network|fetch|failed to fetch|load/i.test(msg)) {
+                    return 'Could not download the speech model (needs internet once). Try Wi‑Fi, refresh, and record again — or type below.';
+                }
+                if (/short|empty/i.test(msg)) {
+                    return 'Recording was too short. Hold the mic longer and speak clearly, or type below.';
+                }
+                if (speechSupported) {
+                    return 'Live captions did not capture speech. Use Chrome or Edge, allow the microphone, speak while recording, or type below.';
+                }
+                return 'Automatic transcription is not available in this browser. Use Chrome or Edge on desktop, or type your entry below.';
             }
 
-            async function transcribeRecordingBlobIfNeeded(blob, recorderMime) {
+            async function transcribeRecordingBlobIfNeeded(blob) {
                 if (!blob || blob.size < 200) return;
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
 
+                if (!window.DiariVoiceClient || typeof DiariVoiceClient.transcribeBlob !== 'function') {
+                    setTranscriptHint(clientTranscribeFailureHint(null));
+                    return;
+                }
+
                 try {
+                    setTranscriptHint('Creating transcript on your device (first time may take a minute)…');
                     const deviceText = await transcribeOnDevice(blob);
                     if (deviceText && finalTranscript) {
                         finalTranscript.value = deviceText;
@@ -542,33 +567,21 @@
                                 ? ' (Filipino / Taglish model)'
                                 : '';
                         setTranscriptHint(
-                            'Transcript created on your device (no server used)' +
+                            'Transcript created on your device' +
                                 langNote +
-                                '. Some words may be misspelled — edit the text above if needed. For better spelling, use Chrome/Edge and watch words appear while you speak.'
+                                '. Edit any mistakes above. For live text while you speak, use Chrome or Edge.'
                         );
                         return;
                     }
+                    setTranscriptHint(
+                        deviceText === ''
+                            ? 'No speech detected in the recording. Try again closer to the mic, or type below.'
+                            : clientTranscribeFailureHint(null)
+                    );
                 } catch (e) {
                     console.error('On-device transcription failed:', e);
+                    setTranscriptHint(clientTranscribeFailureHint(e));
                 }
-
-                if (window.DIARI_VOICE_USE_SERVER === true) {
-                    try {
-                        const serverText = await transcribeOnServer(blob, recorderMime);
-                        if (serverText && finalTranscript) {
-                            finalTranscript.value = serverText;
-                            updateWordCountFromTranscript();
-                            setTranscriptHint('Transcript from the server (live captions were unavailable).');
-                            return;
-                        }
-                    } catch (e) {
-                        console.error('Server transcription failed:', e);
-                    }
-                }
-
-                setTranscriptHint(
-                    'Could not transcribe automatically. Use Chrome or Edge for live captions while you speak, or type your entry below.'
-                );
             }
 
             if (voiceCircle) {
@@ -577,14 +590,14 @@
                         primeAudioFromUserGesture();
                         void startRecording();
                     } else {
-                        stopRecording();
+                        void stopRecording();
                     }
                 });
             }
 
             async function startRecording() {
                 teardownAudioGraph();
-                stopSpeechRecognition();
+                await stopSpeechRecognitionAsync();
                 stopMediaStream();
                 await new Promise(function (resolve) {
                     setTimeout(resolve, 220);
@@ -684,17 +697,17 @@
                 }
             }
 
-            function stopRecording() {
+            async function stopRecording() {
                 if (recordingRafId != null) {
                     cancelAnimationFrame(recordingRafId);
                     recordingRafId = null;
                 }
 
                 const elapsed = startTime ? Date.now() - startTime : 0;
+                await stopSpeechRecognitionAsync();
                 flushSpeechToTranscript();
 
-                function applyStoppedUi(blob, recorderMime) {
-                    stopSpeechRecognition();
+                function applyStoppedUi(blob) {
                     teardownAudioGraph();
                     stopMediaStream();
 
@@ -729,7 +742,7 @@
                     setPostPanelVisible(true);
 
                     if (blob && blob.size > 200) {
-                        void transcribeRecordingBlobIfNeeded(blob, recorderMime);
+                        void transcribeRecordingBlobIfNeeded(blob);
                     } else if (!finalTranscript.value.trim()) {
                         setTranscriptHint(
                             'No audio was captured. Hold the mic a little longer, allow microphone access, or type your entry below.'
@@ -744,7 +757,7 @@
                             const t = recorderMime || 'audio/webm';
                             const blob = new Blob(audioChunks, { type: t });
                             mediaRecorder = null;
-                            applyStoppedUi(blob, t);
+                            applyStoppedUi(blob);
                         };
                         try {
                             mediaRecorder.requestData();
@@ -752,13 +765,13 @@
                         mediaRecorder.stop();
                     } catch (_) {
                         mediaRecorder = null;
-                        applyStoppedUi(null, '');
+                        applyStoppedUi(null);
                     }
                 } else {
                     if (mediaRecorder) {
                         mediaRecorder = null;
                     }
-                    applyStoppedUi(null, '');
+                    applyStoppedUi(null);
                 }
             }
 
@@ -767,7 +780,7 @@
                     cancelAnimationFrame(recordingRafId);
                     recordingRafId = null;
                 }
-                stopSpeechRecognition();
+                void stopSpeechRecognitionAsync();
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                     try {
                         mediaRecorder.stop();

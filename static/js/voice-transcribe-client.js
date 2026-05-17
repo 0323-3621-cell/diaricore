@@ -37,9 +37,19 @@
     async function loadTranscriber(modelId) {
         if (!pipelineByModel[modelId]) {
             pipelineByModel[modelId] = (async function () {
-                const { pipeline, env } = await import(
-                    'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2'
-                );
+                let pipeline;
+                let env;
+                try {
+                    const mod = await import(
+                        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2'
+                    );
+                    pipeline = mod.pipeline;
+                    env = mod.env;
+                } catch (e) {
+                    throw new Error(
+                        'Could not load the on-device speech library. Check your internet connection and try again.'
+                    );
+                }
                 env.allowLocalModels = false;
                 env.useBrowserCache = true;
                 return pipeline('automatic-speech-recognition', modelId);

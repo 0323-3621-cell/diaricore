@@ -1,0 +1,50 @@
+{
+  "id": "/",
+  "name": "DiariCore",
+  "short_name": "DiariCore",
+  "description": "Your mindful journal — track emotions, write entries, and explore insights.",
+  "start_url": "/login.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait-primary",
+  "background_color": "#1a2228",
+  "theme_color": "#6F8F7F",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["lifestyle", "health"],
+  "icons": [
+    {
+      "src": "/diariclogo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/diariclogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/diariclogo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Write entry",
+      "short_name": "Write",
+      "url": "/write-entry.html",
+      "icons": [{ "src": "/diariclogo.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "url": "/dashboard.html",
+      "icons": [{ "src": "/diariclogo.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

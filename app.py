@@ -2274,6 +2274,25 @@ def legacy_index_page():
     return send_from_directory(TEMPLATES_DIR, "login.html")
 
 
+@app.route("/manifest.webmanifest")
+def pwa_manifest():
+    """Web app manifest for installable PWA."""
+    return send_from_directory(
+        STATIC_DIR,
+        "manifest.webmanifest",
+        mimetype="application/manifest+json",
+    )
+
+
+@app.route("/service-worker.js")
+def pwa_service_worker():
+    """Service worker at site root for full-scope PWA control."""
+    resp = send_from_directory(STATIC_DIR, "service-worker.js", mimetype="application/javascript")
+    resp.headers["Service-Worker-Allowed"] = "/"
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
 @app.route("/<path:filename>")
 def static_files(filename):
     if filename.startswith("api/"):

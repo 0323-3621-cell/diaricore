@@ -1,0 +1,118 @@
+/* PWA install banner — mobile & desktop */
+
+.pwa-install-banner {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 10050;
+    width: min(420px, calc(100vw - 1.5rem));
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    pointer-events: none;
+}
+
+.pwa-install-banner:not([hidden]) {
+    pointer-events: auto;
+}
+
+.pwa-install-banner__inner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    background: var(--background-elevated, #fff);
+    border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+html.theme-dark .pwa-install-banner__inner {
+    background: var(--background-soft, #1e2a30);
+    border-color: var(--border-color, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.pwa-install-banner__icon {
+    flex-shrink: 0;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.pwa-install-banner__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.pwa-install-banner__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary, #1a2228);
+    line-height: 1.25;
+}
+
+.pwa-install-banner__sub {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #5c6b73);
+    line-height: 1.35;
+}
+
+.pwa-install-banner__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.pwa-install-banner__btn {
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+    border: none;
+}
+
+.pwa-install-banner__btn--primary {
+    background: var(--primary-color, #6f8f7f);
+    color: #fff;
+}
+
+.pwa-install-banner__btn--primary:hover {
+    filter: brightness(1.06);
+}
+
+.pwa-install-banner__btn--ghost {
+    background: transparent;
+    color: var(--text-secondary, #5c6b73);
+}
+
+.pwa-install-banner__btn--ghost:hover {
+    color: var(--text-primary, #1a2228);
+}
+
+@media (max-width: 520px) {
+    .pwa-install-banner__inner {
+        flex-wrap: wrap;
+    }
+
+    .pwa-install-banner__actions {
+        flex-direction: row;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Standalone PWA: respect safe areas (notch / home indicator) */
+@media (display-mode: standalone) {
+    body.has-mobile-app-topbar {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}

@@ -39,8 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmPasswordInput = document.getElementById('confirmPassword');
     
     // Google buttons
-    const googleSignInBtn = document.getElementById('googleSignInBtn');
-    const googleSignUpBtn = document.getElementById('googleSignUpBtn');
     const loginPasswordResetStep = document.getElementById('loginPasswordResetStep');
     const resetCloseBtn = document.getElementById('resetCloseBtn');
     const signinMainFormHeader = document.getElementById('signinMainFormHeader');
@@ -1620,19 +1618,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (otpSection) otpSection.classList.add('hidden');
             signupSection.classList.remove('hidden');
             hideOtpError();
-        });
-    }
-    
-    // Google buttons
-    if (googleSignInBtn) {
-        googleSignInBtn.addEventListener('click', function() {
-            showNotification('Google Sign In coming soon!', 'info');
-        });
-    }
-    
-    if (googleSignUpBtn) {
-        googleSignUpBtn.addEventListener('click', function() {
-            showNotification('Google Sign Up coming soon!', 'info');
         });
     }
     

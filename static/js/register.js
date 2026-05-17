@@ -286,8 +286,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    const googleSignUpBtn = document.getElementById('googleSignUpBtn');
-    if (googleSignUpBtn) googleSignUpBtn.addEventListener('click', () => showNotification('Google Sign Up coming soon!', 'info'));
 
     if (signUpForm) {
         signUpForm.addEventListener('submit', async function (e) {

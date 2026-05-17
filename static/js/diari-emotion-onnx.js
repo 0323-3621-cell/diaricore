@@ -7,7 +7,7 @@
 
     const HF_MODEL_ID = 'sseia/diari-core-mood';
     const MODEL_URL =
-        'https://huggingface.co/' + HF_MODEL_ID + '/resolve/main/model.onnx';
+        'https://huggingface.co/' + HF_MODEL_ID + '/resolve/main/model_quantized.onnx';
     const ML_CACHE = 'diaricore-ml-v1';
     const WORKER_URL = '/diari-emotion-onnx-worker.js';
     const MAX_LEN = 256;
@@ -32,6 +32,16 @@
         }
         if (Array.isArray(tensor)) return tensor.map((v) => Number(v));
         return [];
+    }
+
+    async function isModelCached() {
+        try {
+            const cache = await caches.open(ML_CACHE);
+            const hit = await cache.match(MODEL_URL);
+            return Boolean(hit);
+        } catch {
+            return false;
+        }
     }
 
     async function fetchModelBuffer() {
@@ -184,6 +194,7 @@
         analyze,
         isReady: () => ready,
         isPreparing: () => Boolean(preparing),
+        isModelCached,
         prepareInBackground,
         MODEL_URL,
     };

@@ -166,11 +166,51 @@
     /**
      * Lightweight local emotion estimate when the API is unreachable.
      */
-    const OFFLINE_ONNX_PREPARE_MS = 120000;
+    const OFFLINE_ONNX_PREPARE_MS = 15000;
 
+    function formatOfflineAnalysis(result) {
+        return {
+            ...result,
+            feeling: result.feeling || result.emotionLabel,
+            moodScoringOffline: result.moodScoringOffline === true,
+        };
+    }
+
+    /**
+     * Offline emotion analysis: use cached ONNX only if already loaded.
+     * Never blocks on a multi‑minute Hub download while offline.
+     */
     async function analyzeForOffline(text) {
+        if (global.DiariEmotionOnnx?.isReady?.()) {
+            try {
+                const result = await global.DiariEmotionOnnx.analyze(text);
+                if (result && result.emotionLabel) {
+                    return formatOfflineAnalysis(result);
+                }
+            } catch (err) {
+                console.warn(
+                    '[DiariOffline] Cached ONNX analyze failed, using heuristic:',
+                    err && err.message ? err.message : err
+                );
+            }
+            return analyzeTextLocally(text);
+        }
+
+        if (!isOnline()) {
+            if (global.DiariEmotionOnnx) {
+                console.info(
+                    '[DiariOffline] Offline without cached ONNX — fast local estimate (sync when online for full model)'
+                );
+            }
+            return analyzeTextLocally(text);
+        }
+
         if (global.DiariEmotionOnnx && global.DiariEmotionPipeline) {
             try {
+                const cached = await global.DiariEmotionOnnx.isModelCached();
+                if (!cached) {
+                    return analyzeTextLocally(text);
+                }
                 await Promise.race([
                     global.DiariEmotionOnnx.prepare(),
                     new Promise((_, reject) => {
@@ -179,11 +219,7 @@
                 ]);
                 const result = await global.DiariEmotionOnnx.analyze(text);
                 if (result && result.emotionLabel) {
-                    return {
-                        ...result,
-                        feeling: result.feeling || result.emotionLabel,
-                        moodScoringOffline: result.moodScoringOffline === true,
-                    };
+                    return formatOfflineAnalysis(result);
                 }
             } catch (err) {
                 console.warn(
@@ -193,6 +229,36 @@
             }
         }
         return analyzeTextLocally(text);
+    }
+
+    /** Sync payload when async analysis must not block UI recovery. */
+    function buildOfflineEntryPayloadSync({ userId, title, entryDateTimeLocal, text, tags, images }) {
+        const analysis = analyzeTextLocally(text);
+        const now = new Date().toISOString();
+        const localId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        return {
+            queueRecord: {
+                id: `offline_entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                userId,
+                title: title || '',
+                entryDateTimeLocal: entryDateTimeLocal || '',
+                text: text || '',
+                tags: tags || [],
+                images: (images || []).map((im) => ({ url: im.url || '', dataUrl: im.dataUrl || '' })),
+                createdAt: now,
+            },
+            entry: {
+                id: localId,
+                title: title || '',
+                text: text || '',
+                tags: tags || [],
+                imageUrls: (images || []).map((im) => im.url || im.dataUrl).filter(Boolean),
+                date: entryDateTimeLocal ? new Date(entryDateTimeLocal).toISOString() : now,
+                createdAt: now,
+                characterCount: String(text || '').length,
+                ...analysis,
+            },
+        };
     }
 
     function analyzeTextLocally(text) {
@@ -538,6 +604,7 @@
         syncAll,
         analyzeTextLocally,
         analyzeForOffline,
+        buildOfflineEntryPayloadSync,
         buildOfflineEntryPayload,
         queuePendingEntry,
         flushPendingEntryCreates,

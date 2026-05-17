@@ -166,6 +166,35 @@
     /**
      * Lightweight local emotion estimate when the API is unreachable.
      */
+    const OFFLINE_ONNX_PREPARE_MS = 120000;
+
+    async function analyzeForOffline(text) {
+        if (global.DiariEmotionOnnx && global.DiariEmotionPipeline) {
+            try {
+                await Promise.race([
+                    global.DiariEmotionOnnx.prepare(),
+                    new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('ONNX prepare timeout')), OFFLINE_ONNX_PREPARE_MS);
+                    }),
+                ]);
+                const result = await global.DiariEmotionOnnx.analyze(text);
+                if (result && result.emotionLabel) {
+                    return {
+                        ...result,
+                        feeling: result.feeling || result.emotionLabel,
+                        moodScoringOffline: result.moodScoringOffline === true,
+                    };
+                }
+            } catch (err) {
+                console.warn(
+                    '[DiariOffline] Browser ONNX analyze unavailable, using heuristic:',
+                    err && err.message ? err.message : err
+                );
+            }
+        }
+        return analyzeTextLocally(text);
+    }
+
     function analyzeTextLocally(text) {
         const t = String(text || '').toLowerCase();
         const scores = { happy: 0.15, sad: 0.15, angry: 0.12, anxious: 0.12, neutral: 0.46 };
@@ -205,8 +234,8 @@
         };
     }
 
-    function buildOfflineEntryPayload({ userId, title, entryDateTimeLocal, text, tags, images }) {
-        const analysis = analyzeTextLocally(text);
+    async function buildOfflineEntryPayload({ userId, title, entryDateTimeLocal, text, tags, images }) {
+        const analysis = await analyzeForOffline(text);
         const now = new Date().toISOString();
         const localId = `offline_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         return {
@@ -508,6 +537,7 @@
         syncEntriesFromApi,
         syncAll,
         analyzeTextLocally,
+        analyzeForOffline,
         buildOfflineEntryPayload,
         queuePendingEntry,
         flushPendingEntryCreates,

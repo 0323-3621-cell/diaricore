@@ -255,7 +255,7 @@ def _content_security_policy() -> str:
         "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:; "
         "img-src 'self' data: blob:; "
         "connect-src 'self' https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co; "
-        "worker-src 'self' blob:; "
+        "worker-src 'self' blob: https://cdn.jsdelivr.net; "
         "media-src 'self' blob:; "
         "object-src 'none'; "
         "base-uri 'self'; "

@@ -1847,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         window.DiariMoodAnalysis.showAnalysisLoading(analysisOverlay);
 
         const finishOfflineSave = async () => {
-            const payload = window.DiariOffline.buildOfflineEntryPayload({
+            const payload = await window.DiariOffline.buildOfflineEntryPayload({
                 userId,
                 title: entryTitle,
                 entryDateTimeLocal,
@@ -1873,7 +1873,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                     const t = journalText.value.trim();
                     if (!t) throw new Error('empty');
                     if (window.DiariOffline && !isOnlineNow()) {
-                        return { entry: window.DiariOffline.analyzeTextLocally(t), isFallback: true };
+                        const entry = await window.DiariOffline.analyzeForOffline(t);
+                        return {
+                            entry,
+                            isFallback: entry.moodScoringOffline === true || entry.engine === 'fallback',
+                        };
                     }
                     const res = await fetch('/api/entries/analyze-text', {
                         method: 'POST',
@@ -1897,7 +1901,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                 },
             };
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
-            window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, true, moodOpts);
+            const offlineFallback =
+                savedEntry.moodScoringOffline === true ||
+                savedEntry.engine === 'fallback' ||
+                !savedEntry.engine;
+            window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, offlineFallback, moodOpts);
             try {
                 localStorage.removeItem('diariCoreDraft');
             } catch (_) {}

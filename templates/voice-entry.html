@@ -176,33 +176,54 @@
         </div>
     </div>
 
-    <div class="write-flow-modal voice-entry-notice-modal" id="voiceEntryNoticeModal" hidden role="dialog" aria-modal="true" aria-labelledby="voiceEntryNoticeTitle">
-        <div class="write-flow-modal__backdrop" data-voice-notice-dismiss="1"></div>
-        <div class="write-flow-modal__panel voice-entry-notice-modal__panel">
-            <div class="write-flow-modal__section write-flow-modal__section--header">
-                <div class="write-flow-modal__header-row">
-                    <div class="write-flow-modal__icon-badge voice-entry-notice-modal__icon" aria-hidden="true">
-                        <i class="bi bi-mic"></i>
-                    </div>
-                    <div class="write-flow-modal__header-text">
-                        <h2 id="voiceEntryNoticeTitle" class="write-flow-modal__title">Voice journaling</h2>
-                        <p class="write-flow-modal__desc">
-                            Voice entry is working, but it is still not perfect. Transcription may miss words or take a moment after you stop, especially in Filipino / Taglish or on some browsers.
-                        </p>
-                        <p class="write-flow-modal__desc voice-entry-notice-modal__thanks">
-                            Thank you for your patience and understanding. You can always edit the transcript before saving.
-                        </p>
-                    </div>
+    <div class="voice-entry-notice-modal" id="voiceEntryNoticeModal" hidden role="dialog" aria-modal="true" aria-labelledby="voiceEntryNoticeTitle">
+        <div class="voice-entry-notice-modal__backdrop" data-voice-notice-dismiss="1"></div>
+        <div class="voice-entry-notice-modal__panel">
+            <header class="voice-entry-notice-modal__header">
+                <div class="voice-entry-notice-modal__icon" aria-hidden="true">
+                    <i class="bi bi-mic-fill"></i>
                 </div>
-            </div>
-            <div class="write-flow-modal__divider" aria-hidden="true"></div>
-            <div class="write-flow-modal__section write-flow-modal__section--actions">
-                <div class="write-flow-modal__actions">
-                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="voiceEntryNoticeOkBtn">
-                        Got it
-                    </button>
+                <div class="voice-entry-notice-modal__title-block">
+                    <h2 id="voiceEntryNoticeTitle" class="voice-entry-notice-modal__title">Voice Journaling</h2>
+                    <span class="voice-entry-notice-modal__badge">
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        Beta Feature
+                    </span>
                 </div>
+            </header>
+
+            <div class="voice-entry-notice-modal__callout" role="note">
+                <i class="bi bi-info-circle voice-entry-notice-modal__callout-icon" aria-hidden="true"></i>
+                <p class="voice-entry-notice-modal__callout-text">
+                    This feature is <strong>still being improved.</strong> Transcription accuracy is not perfect yet and will receive further optimization in future updates. We appreciate your patience!
+                </p>
             </div>
+
+            <ul class="voice-entry-notice-modal__points">
+                <li>
+                    <span class="voice-entry-notice-modal__point-icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span>
+                    <span>Words may be <strong>missed, misheard, or delayed</strong> — especially in <strong>Filipino / Taglish</strong> or on certain browsers.</span>
+                </li>
+                <li>
+                    <span class="voice-entry-notice-modal__point-icon" aria-hidden="true"><i class="bi bi-pencil"></i></span>
+                    <span>Always <strong>review and edit</strong> the transcript before saving — treat it as a rough draft.</span>
+                </li>
+                <li>
+                    <span class="voice-entry-notice-modal__point-icon" aria-hidden="true"><i class="bi bi-arrow-repeat"></i></span>
+                    <span>Improvements are <strong>coming in future updates.</strong> Thank you for helping us build a better DiariCore.</span>
+                </li>
+            </ul>
+
+            <footer class="voice-entry-notice-modal__footer">
+                <label class="voice-entry-notice-modal__dont-show">
+                    <input type="checkbox" id="voiceEntryNoticeDontShow" />
+                    <span>Don't show again</span>
+                </label>
+                <button type="button" class="voice-entry-notice-modal__ok" id="voiceEntryNoticeOkBtn">
+                    <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>
+                    Got it
+                </button>
+            </footer>
         </div>
     </div>
 

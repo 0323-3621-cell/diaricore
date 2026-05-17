@@ -2235,7 +2235,7 @@ def api_voice_transcribe():
 def streak_book_lottie():
     """Streak widget Lottie (path aliases for case-sensitive hosts)."""
     img_base = os.path.join(STATIC_DIR, "img")
-    for rel in ("noto-emoji/book.json", "BOOK.json"):
+    for rel in ("BOOK.json", "noto-emoji/book.json"):
         full = os.path.join(img_base, rel.replace("/", os.sep))
         if os.path.abspath(full).startswith(os.path.abspath(img_base)) and os.path.isfile(full):
             folder, name = os.path.split(rel)

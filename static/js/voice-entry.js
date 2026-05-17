@@ -56,19 +56,22 @@
         return 'webm';
     }
 
-    const VOICE_NOTICE_STORAGE_KEY = 'diariVoiceEntryNoticeSeen';
+    const VOICE_NOTICE_STORAGE_KEY = 'diariVoiceEntryNoticeDismissed';
 
     function initVoiceEntryNoticeModal() {
         const modal = document.getElementById('voiceEntryNoticeModal');
         const okBtn = document.getElementById('voiceEntryNoticeOkBtn');
+        const dontShowCheckbox = document.getElementById('voiceEntryNoticeDontShow');
         if (!modal || !okBtn) return;
 
         function closeNotice() {
             modal.hidden = true;
             document.body.style.overflow = '';
-            try {
-                sessionStorage.setItem(VOICE_NOTICE_STORAGE_KEY, '1');
-            } catch (_) {}
+            if (dontShowCheckbox && dontShowCheckbox.checked) {
+                try {
+                    localStorage.setItem(VOICE_NOTICE_STORAGE_KEY, '1');
+                } catch (_) {}
+            }
         }
 
         function openNotice() {
@@ -85,11 +88,11 @@
             if (ev.key === 'Escape') closeNotice();
         });
 
-        let seen = false;
+        let dismissed = false;
         try {
-            seen = sessionStorage.getItem(VOICE_NOTICE_STORAGE_KEY) === '1';
+            dismissed = localStorage.getItem(VOICE_NOTICE_STORAGE_KEY) === '1';
         } catch (_) {}
-        if (!seen) {
+        if (!dismissed) {
             openNotice();
         }
     }

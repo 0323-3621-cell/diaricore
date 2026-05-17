@@ -843,6 +843,15 @@ html.entries-restore-detail #entriesDetailShell .entries-detail-loading-overlay 
         display: block;
     }
 
+    .entries-content--empty-results .entries-empty-state__icon--search {
+        display: none !important;
+    }
+
+    .entries-content--empty-results .entries-empty-state__icon--journal {
+        display: block !important;
+        margin-bottom: 0.65rem;
+    }
+
     .entries-content--no-journal-entries .entries-empty-state__icon--search {
         display: none !important;
     }

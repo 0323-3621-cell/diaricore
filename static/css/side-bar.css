@@ -422,10 +422,23 @@
         width: 2rem !important;
         height: 2rem !important;
         border-radius: 10px !important;
-        background: rgba(111, 143, 127, 0.12) !important;
+        background: transparent !important;
         color: var(--primary-color) !important;
         font-size: 1.05rem !important;
         line-height: 1 !important;
+        overflow: hidden !important;
+        flex-shrink: 0 !important;
+    }
+
+    .mobile-app-topbar__brand-logo {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    .mobile-app-topbar__btn--ai {
+        display: none !important;
     }
     
     .mobile-app-topbar__brand-name {
@@ -797,8 +810,8 @@
         margin: 0 auto;
         flex-shrink: 0;
         border-radius: 50%;
-        background: linear-gradient(145deg, #8aab9a, #6f8f7f);
-        box-shadow: 0 4px 14px rgba(111, 143, 127, 0.45), 0 0 0 3px #fff;
+        background: linear-gradient(145deg, var(--primary-light), var(--primary-color));
+        box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.45), 0 0 0 3px var(--card-background, #fff);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
@@ -831,11 +844,11 @@
     }
     
     .mobile-bottom-nav-link--write-fab.active .mobile-write-fab__trigger-surface {
-        box-shadow: 0 4px 16px rgba(111, 143, 127, 0.55), 0 0 0 3px rgba(111, 143, 127, 0.25);
+        box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.55), 0 0 0 3px rgba(var(--primary-rgb), 0.25);
     }
     
     .mobile-bottom-nav-link--write-fab.is-open .mobile-write-fab__trigger-surface {
-        box-shadow: 0 6px 20px rgba(111, 143, 127, 0.5), 0 0 0 3px #fff;
+        box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.5), 0 0 0 3px var(--card-background, #fff);
         animation: mobile-write-fab-trigger-pop 0.38s cubic-bezier(0.22, 1, 0.36, 1);
     }
     
@@ -872,8 +885,8 @@
         color: #fff !important;
         text-decoration: none !important;
         font-size: 1.05rem;
-        background: linear-gradient(145deg, #4d6359, #2f3e36);
-        box-shadow: 0 6px 18px rgba(47, 62, 54, 0.38);
+        background: linear-gradient(145deg, var(--primary-color), var(--primary-hover));
+        box-shadow: 0 6px 18px rgba(var(--primary-rgb), 0.38);
         transform: translateY(20px) scale(0.4);
         opacity: 0;
         transition: transform 0.38s cubic-bezier(0.22, 1, 0.45, 1), opacity 0.3s ease, box-shadow 0.2s ease;

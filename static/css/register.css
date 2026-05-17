@@ -23,6 +23,26 @@
     opacity: 1 !important;
 }
 
+@media (max-width: 768px) {
+    .signup-section .form-row--pair-mobile {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+    }
+
+    .signup-section .form-row--pair-mobile .form-group {
+        min-width: 0;
+    }
+
+    .signup-section .form-row--pair-mobile .form-input,
+    .signup-section .form-row--pair-mobile .form-select-input {
+        font-size: 0.92rem;
+    }
+
+    .signup-section .form-row--pair-mobile .floating-label {
+        font-size: 0.72rem;
+    }
+}
+
 /* Space before primary button after full-width password checklist row */
 .signup-section .form-group.form-group--pwd-full {
     margin-bottom: 0.5rem;

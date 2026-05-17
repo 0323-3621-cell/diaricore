@@ -2120,6 +2120,16 @@ html.theme-dark .ins-highlight-chip {
         display: none !important;
     }
 
+    @keyframes insights-mobile-tab-fab-float {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-7px);
+        }
+    }
+
     .insights-mobile-tab-fab {
         display: flex;
         flex-direction: column;
@@ -2127,7 +2137,7 @@ html.theme-dark .ins-highlight-chip {
         gap: 0.5rem;
         position: fixed;
         right: max(0.85rem, env(safe-area-inset-right, 0px));
-        bottom: calc(5.85rem + env(safe-area-inset-bottom, 0px));
+        bottom: calc(7.35rem + env(safe-area-inset-bottom, 0px));
         z-index: 1040;
     }
 
@@ -2139,8 +2149,8 @@ html.theme-dark .ins-highlight-chip {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 2.75rem;
-        height: 2.75rem;
+        width: 3.35rem;
+        height: 3.35rem;
         border-radius: 999px;
         border: 1px solid var(--border-color);
         background: var(--card-background);
@@ -2148,6 +2158,13 @@ html.theme-dark .ins-highlight-chip {
         box-shadow: 0 4px 14px rgba(47, 62, 54, 0.18);
         cursor: pointer;
         font-size: 1.15rem;
+        animation: insights-mobile-tab-fab-float 2.8s ease-in-out infinite;
+    }
+
+    .insights-mobile-tab-fab__swap-icon {
+        display: block;
+        width: 1.35rem;
+        height: 1.35rem;
     }
 
     .insights-mobile-tab-fab__trigger:focus-visible {

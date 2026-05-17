@@ -32,7 +32,7 @@
             <div class="mobile-app-topbar__default">
                 <a href="dashboard.html" class="mobile-app-topbar__brand">
                     <span class="mobile-app-topbar__brand-icon" aria-hidden="true">
-                        <i class="bi bi-images"></i>
+                        <img src="diariclogo.png?v=20260516" alt="" class="mobile-app-topbar__brand-logo" width="32" height="32" decoding="async">
                     </span>
                     <span class="mobile-app-topbar__brand-name">DIARICORE</span>
                 </a>
@@ -66,7 +66,10 @@
     </header>
     <div class="insights-mobile-tab-fab" id="insightsMobileTabFab" hidden>
         <button type="button" class="insights-mobile-tab-fab__trigger" id="insightsMobileTabFabTrigger" aria-expanded="false" aria-controls="insightsMobileTabFabMenu" aria-label="Switch Emotions or Consistency">
-            <i class="bi bi-sliders2" aria-hidden="true"></i>
+            <svg class="insights-mobile-tab-fab__swap-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 8h12M14 5l3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 16H8M10 19l-3-3 3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
         </button>
         <div class="insights-mobile-tab-fab__menu" id="insightsMobileTabFabMenu" role="tablist" aria-label="Insights view" hidden>
             <button type="button" class="insights-pill insights-mobile-tab-fab__pill" data-insights-mobile-tab="emotions" role="tab" aria-selected="true">Emotions</button>

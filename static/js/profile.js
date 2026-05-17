@@ -178,10 +178,19 @@ function toDateInputValue(raw) {
 
 function normalizeGenderForSelect(g) {
     const s = String(g || '').trim().toLowerCase();
-    if (s === 'male' || s === 'm') return 'male';
-    if (s === 'female' || s === 'f') return 'female';
-    if (s === 'other' || s === 'non-binary' || s === 'nonbinary') return 'other';
-    return '';
+    if (s === 'male' || s === 'm') return 'Male';
+    if (s === 'female' || s === 'f') return 'Female';
+    if (
+        s === 'prefer not to say' ||
+        s === 'other' ||
+        s === 'non-binary' ||
+        s === 'nonbinary' ||
+        !s
+    ) {
+        return 'Prefer not to say';
+    }
+    if (g === 'Male' || g === 'Female' || g === 'Prefer not to say') return g;
+    return 'Prefer not to say';
 }
 
 function profileDisplayNameFromUser(user) {

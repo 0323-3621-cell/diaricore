@@ -88,7 +88,6 @@
             const mobileSaveBtn = document.getElementById('saveEntryBtn');
             const mobileRetryBtn = document.getElementById('mobileRetryBtn');
             const transcriptHint = document.getElementById('voiceTranscriptHint');
-            const liveCaptionPreview = document.getElementById('liveCaptionPreview');
             const voiceLangSelect = document.getElementById('voiceLangSelect');
             const waveBarEls = voiceRoot
                 ? Array.from(voiceRoot.querySelectorAll('.voice-wave-bar'))
@@ -99,56 +98,6 @@
             let serverTranscribeConfigured = null;
             /** Retries after `audio-capture` (often race: speech engine vs mic permission). */
             let speechCaptureRetries = 0;
-            let speechLangCandidates = ['en-US'];
-            let speechLangIndex = 0;
-            let liveCaptionsActive = false;
-            let liveCaptionsEverReceived = false;
-            let liveCaptionScrollDone = false;
-
-            function isLikelyBrave() {
-                return Boolean(globalThis.navigator && navigator.brave);
-            }
-
-            function refreshSpeechLangCandidates() {
-                if (window.DiariVoiceLocale && typeof DiariVoiceLocale.speechRecognitionLangCandidates === 'function') {
-                    speechLangCandidates = DiariVoiceLocale.speechRecognitionLangCandidates(
-                        DiariVoiceLocale.getVoiceLang()
-                    );
-                } else {
-                    speechLangCandidates = [pickRecognitionLang(), 'en-US'];
-                }
-                speechLangIndex = 0;
-            }
-
-            function setRecordingStatus(message) {
-                if (!statusText) return;
-                statusText.style.display = 'block';
-                statusText.textContent = String(message || '');
-            }
-
-            function syncLiveCaptionPreview(text) {
-                const t = String(text || '').trim();
-                if (liveCaptionPreview) {
-                    if (t) {
-                        liveCaptionPreview.textContent = t;
-                        liveCaptionPreview.hidden = false;
-                    } else if (!isRecording) {
-                        liveCaptionPreview.textContent = '';
-                        liveCaptionPreview.hidden = true;
-                    }
-                }
-                if (finalTranscript && isRecording) {
-                    finalTranscript.classList.toggle('voice-transcript-field--live', liveCaptionsActive);
-                }
-            }
-
-            function scrollTranscriptIntoView() {
-                const target = finalTranscript || liveCaptionPreview;
-                if (!target) return;
-                try {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } catch (_) {}
-            }
 
             if (speechSupported && window.isSecureContext === false && statusText) {
                 statusText.textContent =
@@ -217,12 +166,6 @@
                 postRecordingContainer.hidden = !visible;
             }
 
-            function setRecordingLayoutActive(active) {
-                if (document.body) {
-                    document.body.classList.toggle('voice-recording-active', Boolean(active));
-                }
-            }
-
             function setTranscriptHint(message) {
                 if (!transcriptHint) return;
                 const s = String(message || '').trim();
@@ -278,11 +221,6 @@
 
             function stopSpeechRecognition() {
                 wantRecognitionRunning = false;
-                liveCaptionsActive = false;
-                syncLiveCaptionPreview('');
-                if (finalTranscript) {
-                    finalTranscript.classList.remove('voice-transcript-field--live');
-                }
                 if (!recognition) return;
                 const rec = recognition;
                 recognition = null;
@@ -313,16 +251,13 @@
                 recognition = new Ctor();
                 recognition.continuous = true;
                 recognition.interimResults = true;
-                recognition.lang = speechLangCandidates[speechLangIndex] || 'en-US';
+                recognition.lang = pickRecognitionLang();
                 if ('maxAlternatives' in recognition) {
                     recognition.maxAlternatives = 1;
                 }
 
                 recognition.onstart = function () {
-                    liveCaptionsActive = true;
-                    setRecordingStatus('Listening… words appear as you speak');
-                    setTranscriptHint('Live captions on — speak clearly. Text updates below while you talk.');
-                    scrollTranscriptIntoView();
+                    setTranscriptHint('Listening… speak clearly. Text will appear below as you talk.');
                 };
 
                 recognition.onresult = function (event) {
@@ -338,35 +273,15 @@
                         }
                     }
                     if (finalTranscript) {
-                        const combined = (speechFinalText + interim).replace(/\s+/g, ' ').trim();
-                        if (combined) {
-                            const firstWords = !liveCaptionsEverReceived;
-                            liveCaptionsEverReceived = true;
-                            finalTranscript.value = combined;
-                            updateWordCountFromTranscript();
-                            syncLiveCaptionPreview(combined);
-                            if (firstWords || (!liveCaptionScrollDone && combined.length < 120)) {
-                                liveCaptionScrollDone = true;
-                                scrollTranscriptIntoView();
-                            }
-                        }
+                        const combined = speechFinalText + interim;
+                        finalTranscript.value = combined.replace(/\s+/g, ' ').trim();
+                        updateWordCountFromTranscript();
                     }
                 };
 
                 recognition.onerror = function (ev) {
                     const err = ev && ev.error ? ev.error : '';
                     if (err === 'no-speech' || err === 'aborted') return;
-                    if (err === 'language-not-supported' || err === 'language-not-available') {
-                        if (speechLangIndex < speechLangCandidates.length - 1) {
-                            speechLangIndex += 1;
-                            setTranscriptHint('Trying live captions with another language setting…');
-                            try {
-                                recognition.lang = speechLangCandidates[speechLangIndex];
-                                recognition.start();
-                            } catch (_) {}
-                            return;
-                        }
-                    }
                     if (err === 'audio-capture') {
                         if (mediaStream && wantRecognitionRunning && speechCaptureRetries < 2) {
                             speechCaptureRetries += 1;
@@ -415,22 +330,14 @@
                     }
                     if (err === 'network' || err === 'service-not-allowed') {
                         wantRecognitionRunning = false;
-                        liveCaptionsActive = false;
-                        syncLiveCaptionPreview('');
-                        setRecordingStatus('Live captions blocked — text after you stop');
                         setTranscriptHint(
-                            isLikelyBrave()
-                                ? 'Brave often blocks live captions. Lower Shields for this site, or use Chrome/Edge. We will transcribe the recording after you stop.'
-                                : 'Live captions are blocked. We will transcribe the recording on your device after you stop.'
+                            'Browser live captions are blocked (often Brave Shields). Keep talking, then tap stop — we will transcribe the recording on your device if the box is still empty. You can also type below.'
                         );
                         return;
                     }
                     wantRecognitionRunning = false;
-                    liveCaptionsActive = false;
-                    syncLiveCaptionPreview('');
-                    setRecordingStatus('Live captions stopped — text after you stop');
                     setTranscriptHint(
-                        'Speech recognition stopped (' + err + '). Words will appear after you stop, or type in the box.'
+                        'Speech recognition stopped (' + err + '). You can type your entry in the box above.'
                     );
                 };
 
@@ -582,8 +489,6 @@
                 if (!finalTranscript) return;
                 if (finalTranscript.value.trim()) return;
 
-                setTranscriptHint('Transcribing your recording on this device — this can take a moment…');
-
                 try {
                     const deviceText = await transcribeOnDevice(blob);
                     if (deviceText && finalTranscript) {
@@ -669,35 +574,21 @@
                      * continuation where user activation is still available in Chrome.
                      */
                     speechCaptureRetries = 0;
-                    liveCaptionsEverReceived = false;
-                    liveCaptionScrollDone = false;
-                    setRecordingLayoutActive(true);
-                    refreshSpeechLangCandidates();
                     if (speechSupported) {
-                        if (isLikelyBrave()) {
-                            setTranscriptHint(
-                                'Brave may block live captions. For words while you speak, try Chrome or Edge. Otherwise text appears after you stop.'
-                            );
-                        }
                         attachSpeechRecognition();
                         wantRecognitionRunning = true;
                         try {
                             recognition.start();
-                            setRecordingStatus('Starting live captions…');
-                            setTranscriptHint('Connecting live captions… speak to see words appear.');
+                            setTranscriptHint(
+                                'Listening… speak clearly. Text will appear below as you talk.'
+                            );
                         } catch (postMicErr) {
                             console.error('SpeechRecognition.start failed:', postMicErr);
                             stopSpeechRecognition();
-                            setRecordingStatus('Recording — text after you stop');
                             setTranscriptHint(
-                                'Could not start live captions. Text will appear after you stop, or type below. Try Chrome / Edge.'
+                                'Could not start live captions. Type below, or try Chrome / Edge with microphone allowed.'
                             );
                         }
-                    } else {
-                        setRecordingStatus('Recording — text after you stop');
-                        setTranscriptHint(
-                            'Live captions are not supported here. Text will appear after you stop (on-device). Try Chrome or Edge.'
-                        );
                     }
 
                     const AC = window.AudioContext || window.webkitAudioContext;
@@ -722,15 +613,17 @@
                     if (micIcon) micIcon.className = 'bi bi-stop-fill';
                     if (voiceCircle) voiceCircle.classList.add('recording');
                     if (recordingState) recordingState.style.display = 'block';
+                    if (statusText) statusText.style.display = 'none';
                     if (isMobile && mobileRetryBtn) {
                         mobileRetryBtn.style.display = 'none';
                     }
 
-                    if (!speechSupported) {
-                        setRecordingStatus('Recording — text after you stop');
+                    if (!speechSupported && statusText) {
+                        statusText.style.display = 'block';
+                        statusText.textContent =
+                            'Recording… Add text below, or use Chrome / Edge for live captions.';
                     }
 
-                    scrollTranscriptIntoView();
                     startRecordingUiLoop();
                 } catch (error) {
                     console.error('Error accessing microphone:', error);
@@ -739,7 +632,6 @@
                     stopMediaStream();
                     isRecording = false;
                     startTime = null;
-                    setRecordingLayoutActive(false);
                     if (statusText) {
                         statusText.style.display = 'block';
                         statusText.textContent = 'Microphone access denied or unavailable.';
@@ -758,13 +650,11 @@
 
                 const elapsed = startTime ? Date.now() - startTime : 0;
                 flushSpeechToTranscript();
-                syncLiveCaptionPreview('');
 
                 function applyStoppedUi(blob, recorderMime) {
                     stopSpeechRecognition();
                     teardownAudioGraph();
                     stopMediaStream();
-                    setRecordingLayoutActive(false);
 
                     isRecording = false;
                     if (micIcon) micIcon.className = 'bi bi-mic';
@@ -796,11 +686,8 @@
 
                     setPostPanelVisible(true);
 
-                    if (blob && blob.size > 200 && !finalTranscript.value.trim()) {
-                        setTranscriptHint('Transcribing your recording on this device — this can take a moment…');
+                    if (blob && blob.size > 200) {
                         void transcribeRecordingBlobIfNeeded(blob, recorderMime);
-                    } else if (liveCaptionsEverReceived && finalTranscript.value.trim()) {
-                        setTranscriptHint('Used live captions from your browser. Edit if needed, then save.');
                     } else if (!finalTranscript.value.trim()) {
                         setTranscriptHint(
                             'No audio was captured. Hold the mic a little longer, allow microphone access, or type your entry below.'
@@ -847,11 +734,9 @@
                 }
                 teardownAudioGraph();
                 stopMediaStream();
-                setRecordingLayoutActive(false);
                 isRecording = false;
                 startTime = null;
                 speechFinalText = '';
-                syncLiveCaptionPreview('');
 
                 setPostPanelVisible(false);
                 setTranscriptHint('');

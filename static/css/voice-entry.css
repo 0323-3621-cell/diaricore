@@ -308,60 +308,6 @@ html.theme-dark .voice-wave-bar {
     margin: 0;
 }
 
-.voice-live-caption-preview {
-    display: block;
-    max-width: 36rem;
-    margin: 0.75rem auto 0;
-    padding: 0.65rem 0.9rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    text-align: left;
-    color: var(--text-dark);
-    background: var(--background-soft);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.voice-live-caption-preview:not([hidden]) {
-    animation: voice-live-caption-in 0.25s ease-out;
-}
-
-@keyframes voice-live-caption-in {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.voice-transcript-field--live {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 1px rgba(111, 143, 127, 0.25);
-}
-
-/* While recording, show the transcript box above the mic so live text is visible without scrolling. */
-body.page-voice-entry .main-content.diari-shell-main {
-    display: flex;
-    flex-direction: column;
-}
-
-body.page-voice-entry.voice-recording-active .post-recording-container:not([hidden]) {
-    order: 1;
-}
-
-body.page-voice-entry.voice-recording-active .voice-entry-container {
-    order: 2;
-}
-
-body.page-voice-entry.voice-recording-active .tips-container {
-    order: 3;
-}
-
 /* Post-Recording Container Styles */
 .post-recording-container {
     background-color: var(--card-background);
@@ -827,20 +773,7 @@ body.page-voice-entry.voice-recording-active .tips-container {
         padding: 1.5rem;
         margin: 1.5rem 0;
     }
-
-    body.page-voice-entry.voice-recording-active .voice-recording-container {
-        margin: 1rem 0;
-    }
-
-    body.page-voice-entry.voice-recording-active .post-recording-container:not([hidden]) {
-        margin-top: 0.5rem;
-    }
-
-    .voice-live-caption-preview {
-        font-size: 0.95rem;
-        max-width: 100%;
-    }
-
+    
     .recording-text h3 {
         font-size: 1.3rem;
     }

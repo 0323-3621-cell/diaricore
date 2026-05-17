@@ -1048,9 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.DiariSecurity && loginPayload && loginPayload.csrfToken) {
             window.DiariSecurity.setCsrfToken(loginPayload.csrfToken);
         }
-        if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
-            window.DiariTheme.applyFromUser(sessionUser);
-        }
+        /* Theme/palette apply on the destination app page — not on login (avoids flash before redirect). */
         if (u.isAdmin) {
             showNotification('Admin login successful! Redirecting...', 'success');
             setTimeout(function () {
@@ -1563,9 +1561,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         isLoggedIn: true,
                         loginTime: new Date().toISOString()
                     }));
-                    if (window.DiariTheme && typeof window.DiariTheme.applyFromUser === 'function') {
-                        window.DiariTheme.applyFromUser(Object.assign({}, u, { isLoggedIn: true }));
-                    }
                     showNotification('Account verified successfully! Redirecting...', 'success');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';

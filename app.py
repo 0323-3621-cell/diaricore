@@ -2230,6 +2230,19 @@ def api_voice_transcribe():
     return jsonify({"success": False, "error": err or "Transcription failed."}), status
 
 
+@app.route("/BOOK.json")
+@app.route("/noto-emoji/book.json")
+def streak_book_lottie():
+    """Streak widget Lottie (path aliases for case-sensitive hosts)."""
+    img_base = os.path.join(STATIC_DIR, "img")
+    for rel in ("noto-emoji/book.json", "BOOK.json"):
+        full = os.path.join(img_base, rel.replace("/", os.sep))
+        if os.path.abspath(full).startswith(os.path.abspath(img_base)) and os.path.isfile(full):
+            folder, name = os.path.split(rel)
+            return send_from_directory(os.path.join(img_base, folder) if folder else img_base, name)
+    abort(404)
+
+
 @app.route("/uploads/<path:filename>")
 def uploaded_images(filename):
     safe = os.path.normpath(filename)

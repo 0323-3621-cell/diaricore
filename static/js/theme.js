@@ -209,6 +209,7 @@
 
     function applyFromUserObject(u) {
         if (!u || typeof u !== 'object') return;
+        if (isAuthPage()) return;
         const opts = { skipServerSync: true };
         if (u.uiTheme === 'light' || u.uiTheme === 'dark') {
             setTheme(u.uiTheme, opts);

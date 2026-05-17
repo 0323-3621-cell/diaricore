@@ -1,4 +1,4 @@
-/* Ambient chart motion — desktop & mobile; disabled when user prefers reduced motion */
+/* Container shimmer + chart-element motion — desktop & mobile */
 
 @media (prefers-reduced-motion: no-preference) {
     .chart-container--flow {
@@ -38,10 +38,6 @@
         position: relative;
     }
 
-    .weekly-sparkline-line--flow {
-        stroke-dasharray: 11 8;
-    }
-
     .weekly-sparkline-area--flow {
         animation: diari-sparkline-area-breath 3.8s ease-in-out infinite;
     }
@@ -55,10 +51,31 @@
             opacity: 0.72;
         }
     }
+
+    .weekly-sparkline-line {
+        filter: drop-shadow(0 0 3px rgba(var(--primary-rgb), 0.25));
+    }
+
+    .weekly-sparkline-line-glow {
+        filter: drop-shadow(0 0 6px rgba(var(--primary-rgb), 0.35));
+    }
+
+    .weekly-sparkline-dot-core {
+        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .chart-container--flow::after {
+        display: none;
+    }
+
+    .weekly-sparkline-area--flow {
+        animation: none !important;
+    }
+
+    .weekly-sparkline-line-glow,
+    .weekly-sparkline-line-shine {
         display: none;
     }
 }

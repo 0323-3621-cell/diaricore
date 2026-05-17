@@ -1051,7 +1051,12 @@ function renderWeeklyChart(entries) {
             ${dots}
         </svg>`;
     if (window.DiariChartFlow) {
-        sparklineSvg = DiariChartFlow.enhanceSparklineSvg(sparklineSvg, Boolean(lineD));
+        sparklineSvg = DiariChartFlow.enhanceSparklineSvg(
+            sparklineSvg,
+            Boolean(lineD),
+            lineColor,
+            chartTheme
+        );
         DiariChartFlow.markSparklineWrap(sparklineEl);
     }
     sparklineEl.innerHTML = sparklineSvg;

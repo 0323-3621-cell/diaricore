@@ -14,7 +14,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     window.DiariMoodAnalysis.primeMoodAnalysisBookLottie();
 
     function normalizeTag(tag) {
-        return String(tag || '').trim().replace(/\s+/g, ' ');
+        let t = String(tag || '').trim().replace(/\s+/g, ' ');
+        if (window.DiariSecurity && typeof window.DiariSecurity.stripAngleBrackets === 'function') {
+            t = window.DiariSecurity.stripAngleBrackets(t);
+        } else {
+            t = t.replace(/</g, '').replace(/>/g, '');
+        }
+        return t;
     }
 
     function getCurrentUserId() {
@@ -1403,13 +1409,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (ok) {
                 closeCustomTagModal();
                 showWriteEntryNotification('Added the Tag Successfully...');
-            } else {
+                } else {
                 customTagNameInput.focus();
                 customTagNameInput.select();
-            }
-        });
-    }
-
+                }
+            });
+        }
+        
     window.addEventListener('resize', () => {
         if (customTagModal && !customTagModal.hidden) {
             renderCustomTagIconPage();
@@ -1621,6 +1627,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     });
     journalTitleInput?.addEventListener('input', () => autoAdjustJournalTextarea());
+
+    if (window.DiariSecurity && typeof window.DiariSecurity.bindAngleBracketInput === 'function') {
+        window.DiariSecurity.bindAngleBracketInput(journalText);
+        window.DiariSecurity.bindAngleBracketInput(journalTitleInput);
+        window.DiariSecurity.bindAngleBracketInput(document.getElementById('customTagNameInput'));
+    }
 
     const toLocalInputValue = (dateObj) => {
         const d = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
@@ -1904,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, analysisEngine === 'fallback', moodOpts);
             try {
-                localStorage.removeItem('diariCoreDraft');
+            localStorage.removeItem('diariCoreDraft');
             } catch (_) {}
             attachedImages = [];
             renderImageGallery();
@@ -1969,7 +1981,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
             window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, fallbackEntry, true, moodOpts);
             try {
-                localStorage.removeItem('diariCoreDraft');
+            localStorage.removeItem('diariCoreDraft');
             } catch (_) {}
         } finally {
             setSavingState(false);
@@ -2018,7 +2030,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 t.closest('#customTagModal') ||
                 t.closest('#writeRemovePhotoModal')
             )
-                return;
+        return;
             const lb = document.getElementById('photoLightbox');
             if (lb && !lb.hidden && lb.contains(t)) return;
 

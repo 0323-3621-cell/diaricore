@@ -1,6 +1,5 @@
 /**
  * Shared XSS-safe helpers and same-origin API fetch (session cookie + CSRF).
- * Does not modify text before save or mood analysis.
  */
 (function (global) {
     'use strict';
@@ -14,6 +13,54 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    }
+
+    function stripAngleBrackets(text) {
+        return String(text ?? '').replace(/</g, '').replace(/>/g, '');
+    }
+
+    function containsAngleBrackets(text) {
+        const s = String(text ?? '');
+        return s.indexOf('<') !== -1 || s.indexOf('>') !== -1;
+    }
+
+    function angleBracketFieldMessage(fieldLabel) {
+        return `${fieldLabel} cannot contain < or >.`;
+    }
+
+    /** Remove < and > as the user types or pastes (journal/title/tag fields). */
+    function bindAngleBracketInput(el) {
+        if (!el || el.dataset.diariAngleBracketBound === '1') return;
+        el.dataset.diariAngleBracketBound = '1';
+
+        function applyStrip() {
+            const raw = el.value;
+            const cleaned = stripAngleBrackets(raw);
+            if (raw === cleaned) return;
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            el.value = cleaned;
+            const removedBefore =
+                (String(raw.slice(0, start)).match(/[<>]/g) || []).length;
+            const next = Math.max(0, (start ?? cleaned.length) - removedBefore);
+            try {
+                el.setSelectionRange(next, next);
+            } catch (_) {
+                /* ignore for unsupported input types */
+            }
+        }
+
+        el.addEventListener('input', applyStrip);
+        el.addEventListener('paste', () => {
+            global.setTimeout(applyStrip, 0);
+        });
+    }
+
+    function validateNoAngleBrackets(value, fieldLabel) {
+        if (containsAngleBrackets(value)) {
+            return { ok: false, message: angleBracketFieldMessage(fieldLabel) };
+        }
+        return { ok: true, message: null };
     }
 
     function setToastMessage(notificationEl, message) {
@@ -98,6 +145,11 @@
 
     global.DiariSecurity = {
         escapeHtml,
+        stripAngleBrackets,
+        containsAngleBrackets,
+        angleBracketFieldMessage,
+        bindAngleBracketInput,
+        validateNoAngleBrackets,
         setToastMessage,
         getCsrfToken,
         setCsrfToken,

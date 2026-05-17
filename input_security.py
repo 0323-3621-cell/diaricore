@@ -1,9 +1,8 @@
 """
 Lightweight input validation for DiariCore APIs.
 
-Journal entry body text is only normalized (strip + null-byte removal) so mood
-analysis receives the user's real words. HTML stripping is not applied to entries.
-XSS is handled in the browser via escapeHtml when rendering user content.
+Journal entry body text is normalized (strip, null-byte removal, no angle brackets)
+so mood analysis is not fed HTML-like markup. Display still uses escapeHtml in the browser.
 """
 
 from __future__ import annotations
@@ -32,8 +31,9 @@ def strip_null_bytes(value: str) -> str:
 
 
 def normalize_entry_text(text: str) -> str:
-    """Prepare diary text for storage and mood analysis — do not strip HTML/tags."""
-    return strip_null_bytes((text or "").strip())
+    """Prepare diary text for storage and mood analysis — strip < > (XSS-safe plain text)."""
+    t = strip_null_bytes((text or "").strip())
+    return t.replace("<", "").replace(">", "")
 
 
 def _reject_angle_brackets(value: str, field_label: str) -> Optional[str]:
@@ -107,6 +107,9 @@ def validate_title(title: str) -> Tuple[bool, str, Optional[str]]:
     t = strip_null_bytes((title or "").strip())
     if len(t) > TITLE_MAX_LEN:
         return False, "", f"Title must be {TITLE_MAX_LEN} characters or fewer."
+    err = _reject_angle_brackets(t, "Title")
+    if err:
+        return False, "", err
     return True, t, None
 
 

@@ -1037,19 +1037,19 @@ function createEntryCard(data) {
     card.innerHTML = `
         <div class="entry-header">
             <div class="entry-date">
-                <span class="date-day">${data.day}</span>
-                <span class="date-month">${data.month}</span>
+                <span class="date-day">${escapeHtml(String(data.day ?? ''))}</span>
+                <span class="date-month">${escapeHtml(String(data.month ?? ''))}</span>
             </div>
             <div class="entry-mood">
-                <span class="mood-emoji">${data.emotion.emoji}</span>
-                <span class="mood-label">${data.emotion.label}</span>
+                <span class="mood-emoji">${escapeHtml(String(data.emotion.emoji ?? ''))}</span>
+                <span class="mood-label">${escapeHtml(String(data.emotion.label ?? ''))}</span>
             </div>
         </div>
         <div class="entry-content">
-            <h3 class="entry-title">${data.title}</h3>
-            <p class="entry-excerpt">${data.excerpt}</p>
+            <h3 class="entry-title">${escapeHtml(String(data.title ?? ''))}</h3>
+            <p class="entry-excerpt">${escapeHtml(String(data.excerpt ?? ''))}</p>
             <div class="entry-tags">
-                ${data.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                ${data.tags.map((tag) => `<span class="tag">${escapeHtml(String(tag ?? ''))}</span>`).join('')}
             </div>
         </div>
         <div class="entry-footer">

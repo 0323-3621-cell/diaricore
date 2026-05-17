@@ -431,12 +431,25 @@ function scheduleProfilePersonalAvailabilityCheck(fieldInputId, value) {
     }, 300);
 }
 
+function profileRejectAngleBrackets(field, value, label) {
+    if (!window.DiariSecurity || typeof window.DiariSecurity.validateNoAngleBrackets !== 'function') {
+        return true;
+    }
+    const check = window.DiariSecurity.validateNoAngleBrackets(value, label);
+    if (!check.ok) {
+        profilePersonalShowError(field, check.message);
+        return false;
+    }
+    return true;
+}
+
 function validateProfilePersonalField(fieldId) {
     const field = document.getElementById(fieldId);
     if (!field) return true;
     const value = (field.value || '').trim();
 
     if (fieldId === 'profileFieldFirstName') {
+        if (!profileRejectAngleBrackets(field, value, 'First name')) return false;
         if (!value) {
             profilePersonalShowError(field, 'First name is required.');
             return false;
@@ -445,6 +458,7 @@ function validateProfilePersonalField(fieldId) {
         return true;
     }
     if (fieldId === 'profileFieldLastName') {
+        if (!profileRejectAngleBrackets(field, value, 'Last name')) return false;
         if (!value) {
             profilePersonalShowError(field, 'Last name is required.');
             return false;
@@ -453,6 +467,7 @@ function validateProfilePersonalField(fieldId) {
         return true;
     }
     if (fieldId === 'profileFieldNickname') {
+        if (!profileRejectAngleBrackets(field, value, 'Username')) return false;
         if (!value) {
             resetProfilePersonalAvailabilityField('profileFieldNickname');
             profilePersonalShowError(field, 'Username is required.');
@@ -476,6 +491,7 @@ function validateProfilePersonalField(fieldId) {
         return true;
     }
     if (fieldId === 'profileFieldEmail') {
+        if (!profileRejectAngleBrackets(field, value, 'Email')) return false;
         if (!value) {
             resetProfilePersonalAvailabilityField('profileFieldEmail');
             profilePersonalShowError(field, 'Email is required.');
@@ -549,6 +565,13 @@ function wireProfilePersonalLiveValidation() {
     ].forEach(function (fid) {
         var el = document.getElementById(fid);
         if (!el) return;
+        if (
+            window.DiariSecurity &&
+            typeof window.DiariSecurity.bindAngleBracketInput === 'function' &&
+            ['profileFieldFirstName', 'profileFieldLastName', 'profileFieldNickname', 'profileFieldEmail'].indexOf(fid) !== -1
+        ) {
+            window.DiariSecurity.bindAngleBracketInput(el);
+        }
         var run = function () {
             validateProfilePersonalField(fid);
             refreshProfilePersonalSaveButton();

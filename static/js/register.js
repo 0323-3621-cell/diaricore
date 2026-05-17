@@ -152,11 +152,24 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
+    function rejectAngleBrackets(field, value, label) {
+        if (!window.DiariSecurity || typeof window.DiariSecurity.validateNoAngleBrackets !== 'function') {
+            return true;
+        }
+        const check = window.DiariSecurity.validateNoAngleBrackets(value, label);
+        if (!check.ok) {
+            showError(field, check.message);
+            return false;
+        }
+        return true;
+    }
+
     function validateSignUpField(fieldId) {
         const field = document.getElementById(fieldId);
         if (!field) return true;
         const value = field.value.trim();
         if (fieldId === 'nickname') {
+            if (!rejectAngleBrackets(field, value, 'Username')) return false;
             if (!value) {
                 resetAvailability('nickname');
                 showError(field, 'Username is required.');
@@ -180,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return true;
         }
         if (fieldId === 'signUpEmail') {
+            if (!rejectAngleBrackets(field, value, 'Email')) return false;
             if (!value) {
                 resetAvailability('signUpEmail');
                 showError(field, 'Email is required.');
@@ -202,8 +216,18 @@ document.addEventListener('DOMContentLoaded', function () {
             scheduleAvailabilityCheck('signUpEmail', value);
             return true;
         }
-        if (fieldId === 'firstName') { if (!value) { showError(field, 'First name is required.'); return false; } showSuccess(field); return true; }
-        if (fieldId === 'lastName') { if (!value) { showError(field, 'Last name is required.'); return false; } showSuccess(field); return true; }
+        if (fieldId === 'firstName') {
+            if (!rejectAngleBrackets(field, value, 'First name')) return false;
+            if (!value) { showError(field, 'First name is required.'); return false; }
+            showSuccess(field);
+            return true;
+        }
+        if (fieldId === 'lastName') {
+            if (!rejectAngleBrackets(field, value, 'Last name')) return false;
+            if (!value) { showError(field, 'Last name is required.'); return false; }
+            showSuccess(field);
+            return true;
+        }
         if (fieldId === 'gender') { if (!value) { showError(field, 'Gender is required.'); return false; } showSuccess(field); return true; }
         if (fieldId === 'birthday') { if (!value) { showError(field, 'Date of birth is required.'); return false; } showSuccess(field); return true; }
         if (fieldId === 'signUpPassword') {
@@ -235,6 +259,13 @@ document.addEventListener('DOMContentLoaded', function () {
     signUpFieldIds.forEach((fieldId) => {
         const field = document.getElementById(fieldId);
         if (!field) return;
+        if (
+            window.DiariSecurity &&
+            typeof window.DiariSecurity.bindAngleBracketInput === 'function' &&
+            ['nickname', 'signUpEmail', 'firstName', 'lastName'].indexOf(fieldId) !== -1
+        ) {
+            window.DiariSecurity.bindAngleBracketInput(field);
+        }
         field.addEventListener('blur', () => validateSignUpField(fieldId));
         field.addEventListener('input', () => validateSignUpField(fieldId));
         field.addEventListener('change', () => validateSignUpField(fieldId));

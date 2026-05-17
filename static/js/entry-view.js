@@ -76,7 +76,13 @@
     }
 
     function normalizeTag(tag) {
-        return String(tag || '').trim().replace(/\s+/g, ' ');
+        let t = String(tag || '').trim().replace(/\s+/g, ' ');
+        if (window.DiariSecurity && typeof window.DiariSecurity.stripAngleBrackets === 'function') {
+            t = window.DiariSecurity.stripAngleBrackets(t);
+        } else {
+            t = t.replace(/</g, '').replace(/>/g, '');
+        }
+        return t;
     }
 
     const DEFAULT_TAG_NAMES = ['School', 'Home', 'Friends', 'Work', 'Family', 'Health', 'Money', 'Bills'];
@@ -586,9 +592,11 @@
         const imageStripAddBtn = document.getElementById('entryViewImageStripAddBtn');
         const imageFileInput = document.getElementById('entryViewImageFileInput');
 
-        function setBothDateLines(innerHtml) {
-            if (dateLine) dateLine.innerHTML = innerHtml;
-            if (dateLineRead) dateLineRead.innerHTML = innerHtml;
+        function setBothDateLines(dateText) {
+            const safe = escapeHtml(dateText);
+            const markup = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${safe}</span>`;
+            if (dateLine) dateLine.innerHTML = markup;
+            if (dateLineRead) dateLineRead.innerHTML = markup;
         }
 
         function toTitleCaseEmotion(raw) {
@@ -1410,8 +1418,11 @@
                 if (!raw) return;
                 const d = JSON.parse(raw);
                 if (!d || typeof d !== 'object') return;
-                if (d.title != null) titleEl.value = String(d.title);
-                if (d.text != null) bodyEl.value = String(d.text);
+                const stripBr = window.DiariSecurity && window.DiariSecurity.stripAngleBrackets
+                    ? window.DiariSecurity.stripAngleBrackets.bind(window.DiariSecurity)
+                    : (s) => String(s ?? '').replace(/</g, '').replace(/>/g, '');
+                if (d.title != null) titleEl.value = stripBr(String(d.title));
+                if (d.text != null) bodyEl.value = stripBr(String(d.text));
                 if (Array.isArray(d.tags)) tags = new Set(d.tags.map(normalizeTag).filter(Boolean));
                 if (Array.isArray(d.images) && d.images.length) {
                     editorImages = imageItemsFromUrls(d.images);
@@ -1428,12 +1439,14 @@
         } catch (_) {}
 
         if (!hadDraft) {
-            titleEl.value = entry.title || '';
-            bodyEl.value = entry.text || '';
+            const strip = window.DiariSecurity && window.DiariSecurity.stripAngleBrackets
+                ? window.DiariSecurity.stripAngleBrackets.bind(window.DiariSecurity)
+                : (s) => String(s ?? '').replace(/</g, '').replace(/>/g, '');
+            titleEl.value = strip(entry.title || '');
+            bodyEl.value = strip(entry.text || '');
         }
 
-        const dateMarkup = `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`;
-        setBothDateLines(dateMarkup);
+        setBothDateLines(formatEntryDateLine(entryDateTimeIsoForDisplay(entry)));
 
         autoResizeTextarea(bodyEl);
 
@@ -1444,9 +1457,7 @@
             try {
                 p = JSON.parse(baseline);
             } catch (_) {}
-            setBothDateLines(
-                `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`
-            );
+            setBothDateLines(formatEntryDateLine(entryDateTimeIsoForDisplay(entry)));
             if (editedPill) editedPill.hidden = !isEntryEdited(entry);
             tagsRead.innerHTML = '';
             const tagArr = Array.isArray(p.tags) ? p.tags : [];
@@ -1686,11 +1697,12 @@
                         return;
                     }
                     entry = incoming;
-                    titleEl.value = entry.title || '';
-                    bodyEl.value = entry.text || '';
-                    setBothDateLines(
-                        `<i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEntryDateLine(entryDateTimeIsoForDisplay(entry))}</span>`
-                    );
+                    const stripBr = window.DiariSecurity && window.DiariSecurity.stripAngleBrackets
+                        ? window.DiariSecurity.stripAngleBrackets.bind(window.DiariSecurity)
+                        : (s) => String(s ?? '').replace(/</g, '').replace(/>/g, '');
+                    titleEl.value = stripBr(entry.title || '');
+                    bodyEl.value = stripBr(entry.text || '');
+                    setBothDateLines(formatEntryDateLine(entryDateTimeIsoForDisplay(entry)));
                     tags = new Set((Array.isArray(entry.tags) ? entry.tags : []).map(normalizeTag).filter(Boolean));
                     editorImages = imageItemsFromUrls(entry.imageUrls || []);
                     seedTagChoicesSync();
@@ -1703,6 +1715,11 @@
                     });
                 } catch (_) {}
             })();
+        }
+
+        if (window.DiariSecurity && typeof window.DiariSecurity.bindAngleBracketInput === 'function') {
+            window.DiariSecurity.bindAngleBracketInput(bodyEl);
+            window.DiariSecurity.bindAngleBracketInput(titleEl);
         }
 
         bodyEl.addEventListener(

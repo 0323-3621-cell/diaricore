@@ -1869,6 +1869,11 @@ body {
         margin-bottom: 1.25rem !important;
     }
 
+    /* Empty weekly chart message — larger on small screens (desktop keeps SVG font-size 14) */
+    .weekly-sparkline-wrap .weekly-sparkline-empty {
+        font-size: 18px !important;
+    }
+
     /* Remove decorative green quote mark on mobile; tighten + lift quote for bottom-nav clearance */
     .wellness-quote-mark {
         display: none !important;

@@ -56,8 +56,47 @@
         return 'webm';
     }
 
+    const VOICE_NOTICE_STORAGE_KEY = 'diariVoiceEntryNoticeSeen';
+
+    function initVoiceEntryNoticeModal() {
+        const modal = document.getElementById('voiceEntryNoticeModal');
+        const okBtn = document.getElementById('voiceEntryNoticeOkBtn');
+        if (!modal || !okBtn) return;
+
+        function closeNotice() {
+            modal.hidden = true;
+            document.body.style.overflow = '';
+            try {
+                sessionStorage.setItem(VOICE_NOTICE_STORAGE_KEY, '1');
+            } catch (_) {}
+        }
+
+        function openNotice() {
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+            okBtn.focus();
+        }
+
+        okBtn.addEventListener('click', closeNotice);
+        modal.querySelectorAll('[data-voice-notice-dismiss]').forEach(function (el) {
+            el.addEventListener('click', closeNotice);
+        });
+        modal.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape') closeNotice();
+        });
+
+        let seen = false;
+        try {
+            seen = sessionStorage.getItem(VOICE_NOTICE_STORAGE_KEY) === '1';
+        } catch (_) {}
+        if (!seen) {
+            openNotice();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         try {
+            initVoiceEntryNoticeModal();
             let isRecording = false;
             let mediaRecorder = null;
             let audioChunks = [];

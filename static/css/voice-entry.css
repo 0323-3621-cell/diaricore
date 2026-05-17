@@ -715,6 +715,21 @@ html.theme-dark .voice-wave-bar {
     width: 100%;
 }
 
+.voice-entry-notice-modal__panel {
+    max-width: min(440px, calc(100vw - 2rem));
+}
+
+.voice-entry-notice-modal__thanks {
+    margin-top: 0.75rem;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.voice-entry-notice-modal__icon {
+    background: color-mix(in srgb, var(--primary-color) 16%, var(--card-background));
+    color: var(--primary-color);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .mobile-header {
@@ -755,6 +770,10 @@ html.theme-dark .voice-wave-bar {
     
     .voice-status p {
         font-size: 1rem;
+    }
+
+    .voice-entry-notice-modal__panel {
+        max-width: min(420px, calc(100vw - 1.5rem));
     }
     
     .tips-container {

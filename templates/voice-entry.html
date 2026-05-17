@@ -11,6 +11,7 @@
     <link href="side-bar.css" rel="stylesheet">
     <link href="dashboard.css" rel="stylesheet">
     <link href="voice-entry.css" rel="stylesheet">
+    <link href="write-entry.css" rel="stylesheet">
     <link href="theme.css" rel="stylesheet">
     <link href="mobile-global.css" rel="stylesheet">
     <script src="theme.js"></script>
@@ -171,6 +172,36 @@
                     <li>Speak at a steady pace, close to the mic, in a quiet room. Pauses between phrases help.</li>
                     <li>You can always edit the transcript, then use <strong>Save Entry</strong> for tags and mood analysis.</li>
                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="write-flow-modal voice-entry-notice-modal" id="voiceEntryNoticeModal" hidden role="dialog" aria-modal="true" aria-labelledby="voiceEntryNoticeTitle">
+        <div class="write-flow-modal__backdrop" data-voice-notice-dismiss="1"></div>
+        <div class="write-flow-modal__panel voice-entry-notice-modal__panel">
+            <div class="write-flow-modal__section write-flow-modal__section--header">
+                <div class="write-flow-modal__header-row">
+                    <div class="write-flow-modal__icon-badge voice-entry-notice-modal__icon" aria-hidden="true">
+                        <i class="bi bi-mic"></i>
+                    </div>
+                    <div class="write-flow-modal__header-text">
+                        <h2 id="voiceEntryNoticeTitle" class="write-flow-modal__title">Voice journaling</h2>
+                        <p class="write-flow-modal__desc">
+                            Voice entry is working, but it is still not perfect. Transcription may miss words or take a moment after you stop, especially in Filipino / Taglish or on some browsers.
+                        </p>
+                        <p class="write-flow-modal__desc voice-entry-notice-modal__thanks">
+                            Thank you for your patience and understanding. You can always edit the transcript before saving.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="write-flow-modal__divider" aria-hidden="true"></div>
+            <div class="write-flow-modal__section write-flow-modal__section--actions">
+                <div class="write-flow-modal__actions">
+                    <button type="button" class="write-flow-modal__btn write-flow-modal__btn--primary" id="voiceEntryNoticeOkBtn">
+                        Got it
+                    </button>
+                </div>
             </div>
         </div>
     </div>

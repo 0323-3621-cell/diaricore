@@ -234,13 +234,6 @@ body {
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12)) contrast(1.05);
 }
 
-.floating-streak-book__fallback {
-    font-size: 1.45rem;
-    line-height: 1;
-    color: var(--primary-color);
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12));
-}
-
 .floating-streak-panel {
     width: max-content;
     min-width: 0;

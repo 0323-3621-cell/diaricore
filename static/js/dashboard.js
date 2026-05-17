@@ -353,42 +353,7 @@ function initializeStreakBook() {
     const panel = document.getElementById('floatingStreakPanel');
     const player = document.getElementById('floatingStreakBookLottie');
     if (!toggleBtn || !panel || !root || !player || toggleBtn.dataset.bound === '1') return;
-
-    const bindStreakInteractions = () => {
-        if (toggleBtn.dataset.bound === '1') return;
-        toggleBtn.dataset.bound = '1';
-        wireStreakBookInteractions(root, toggleBtn, panel, player);
-    };
-
-    const startWhenReady = () => {
-        if (customElements && typeof customElements.whenDefined === 'function') {
-            customElements.whenDefined('lottie-player').then(bindStreakInteractions).catch(bindStreakInteractions);
-        } else {
-            bindStreakInteractions();
-        }
-    };
-
-    if (!player.getAttribute('src')) {
-        player.setAttribute('src', '/noto-emoji/book.json');
-    }
-    player.addEventListener(
-        'error',
-        function onLottieError() {
-            player.removeEventListener('error', onLottieError);
-            if (!toggleBtn.querySelector('.floating-streak-book__fallback')) {
-                const fallback = document.createElement('i');
-                fallback.className = 'bi bi-journal-bookmark-fill floating-streak-book__fallback';
-                fallback.setAttribute('aria-hidden', 'true');
-                toggleBtn.querySelector('.floating-streak-book__motion')?.appendChild(fallback);
-            }
-            bindStreakInteractions();
-        },
-        { once: true }
-    );
-    startWhenReady();
-}
-
-function wireStreakBookInteractions(root, toggleBtn, panel, player) {
+    toggleBtn.dataset.bound = '1';
 
     let revealTimer = null;
     let completeHandler = null;

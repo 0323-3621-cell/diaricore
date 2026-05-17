@@ -2234,15 +2234,23 @@ def api_voice_transcribe():
 
 
 @app.route("/BOOK.json")
-@app.route("/noto-emoji/book.json")
 def streak_book_lottie():
-    """Streak widget Lottie (path aliases for case-sensitive hosts)."""
+    """Dashboard streak widget — baked static/img/BOOK.json."""
     img_base = os.path.join(STATIC_DIR, "img")
-    for rel in ("BOOK.json", "noto-emoji/book.json"):
-        full = os.path.join(img_base, rel.replace("/", os.sep))
-        if os.path.abspath(full).startswith(os.path.abspath(img_base)) and os.path.isfile(full):
-            folder, name = os.path.split(rel)
-            return send_from_directory(os.path.join(img_base, folder) if folder else img_base, name)
+    full = os.path.join(img_base, "BOOK.json")
+    if os.path.abspath(full).startswith(os.path.abspath(img_base)) and os.path.isfile(full):
+        return send_from_directory(img_base, "BOOK.json")
+    abort(404)
+
+
+@app.route("/noto-emoji/book.json")
+def mood_analysis_book_lottie():
+    """Mood-analysis overlay — static/img/noto-emoji/book.json (not BOOK.json)."""
+    img_base = os.path.join(STATIC_DIR, "img")
+    folder = os.path.join(img_base, "noto-emoji")
+    full = os.path.join(folder, "book.json")
+    if os.path.abspath(full).startswith(os.path.abspath(img_base)) and os.path.isfile(full):
+        return send_from_directory(folder, "book.json")
     abort(404)
 
 

@@ -510,8 +510,27 @@ function initializeStreakBook() {
         if (streakBookAnim) return streakBookAnim;
         if (typeof window.lottie === 'undefined' || typeof window.lottie.loadAnimation !== 'function') {
             console.warn('Streak book: lottie-web not loaded');
+            mount.classList.add('floating-streak-book__lottie--error');
             return null;
         }
+
+        const markReady = () => {
+            if (streakBookReady) return;
+            streakBookReady = true;
+            mount.classList.remove('floating-streak-book__lottie--loading');
+            mount.classList.remove('floating-streak-book__lottie--error');
+            freezeClosed();
+        };
+
+        const onLottieFail = (e) => {
+            console.warn('Streak book Lottie failed:', e);
+            mount.classList.remove('floating-streak-book__lottie--loading');
+            mount.classList.add('floating-streak-book__lottie--error');
+        };
+
+        mount.classList.add('floating-streak-book__lottie--loading');
+        let streakBookReady = false;
+
         try {
             const res = await fetch(STREAK_BOOK_LOTTIE_SRC, { credentials: 'same-origin' });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -522,15 +541,19 @@ function initializeStreakBook() {
                 loop: false,
                 autoplay: false,
                 animationData: data,
+                rendererSettings: {
+                    preserveAspectRatio: 'xMidYMid meet',
+                    progressiveLoad: false,
+                },
             });
-            streakBookAnim.addEventListener('DOMLoaded', () => {
-                freezeClosed();
-            });
-            freezeClosed();
+            streakBookAnim.addEventListener('DOMLoaded', markReady);
+            streakBookAnim.addEventListener('data_ready', markReady);
+            streakBookAnim.addEventListener('data_failed', onLottieFail);
+            streakBookAnim.addEventListener('error', onLottieFail);
+            setTimeout(markReady, 1200);
             return streakBookAnim;
         } catch (e) {
-            console.warn('Streak book Lottie failed:', e);
-            mount.classList.add('floating-streak-book__lottie--error');
+            onLottieFail(e);
             return null;
         }
     };

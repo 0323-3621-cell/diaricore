@@ -360,6 +360,7 @@ function initializeStreakBook() {
     let streakBookAnim = null;
     let revealTimer = null;
     let completeHandler = null;
+    let frameHandler = null;
 
     const getAnim = () => streakBookAnim;
 
@@ -373,6 +374,10 @@ function initializeStreakBook() {
             anim.removeEventListener('complete', completeHandler);
             completeHandler = null;
         }
+        if (frameHandler && anim) {
+            anim.removeEventListener('enterFrame', frameHandler);
+            frameHandler = null;
+        }
     };
 
     const hidePanel = () => {
@@ -385,6 +390,12 @@ function initializeStreakBook() {
         panel.hidden = false;
         toggleBtn.setAttribute('aria-expanded', 'true');
         toggleBtn.setAttribute('aria-label', 'Close streak book');
+    };
+
+    const bookEndFrame = () => {
+        const anim = getAnim();
+        if (!anim) return 45;
+        return Math.max(1, Math.floor(anim.totalFrames || 46) - 1);
     };
 
     const freezeClosed = () => {
@@ -404,20 +415,11 @@ function initializeStreakBook() {
         if (!anim) return;
         try {
             anim.loop = false;
-            const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
-            anim.goToAndStop(end, true);
+            anim.goToAndStop(bookEndFrame(), true);
             anim.pause();
         } catch (e) {
             /* ignore */
         }
-    };
-
-    const bookDurationMs = () => {
-        const anim = getAnim();
-        if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
-            return (anim.totalFrames / anim.frameRate) * 1000;
-        }
-        return (46 / 60) * 1000;
     };
 
     const streakRevealOk = () => root.dataset.inside === '1' || root.dataset.clickOpen === '1';
@@ -431,32 +433,57 @@ function initializeStreakBook() {
     const beginOpenSequence = () => {
         const anim = getAnim();
         if (!anim) return;
+        root.classList.add('floating-streak--opening');
         clearRevealSchedule();
         hidePanel();
-        freezeClosed();
+
+        const endFrame = bookEndFrame();
+
         try {
             anim.loop = false;
-            anim.play();
+            anim.stop();
+            anim.goToAndStop(0, true);
+            if (typeof anim.playSegments === 'function') {
+                anim.playSegments([[0, endFrame]], true);
+            } else {
+                anim.play();
+            }
         } catch (e) {
             /* ignore */
         }
 
-        const duration = bookDurationMs();
-        const minDelay = 420;
-        const revealAfter = Math.max(minDelay, duration * 0.92);
-        revealTimer = setTimeout(revealPanelIfActive, revealAfter);
-
-        completeHandler = () => {
+        const finishOpen = () => {
             if (!streakRevealOk()) return;
+            clearRevealSchedule();
             freezeOpenHold();
+            revealPanelIfActive();
         };
+
+        completeHandler = finishOpen;
         anim.addEventListener('complete', completeHandler);
+
+        frameHandler = () => {
+            if (!streakRevealOk()) return;
+            if (anim.currentFrame >= endFrame - 0.5) finishOpen();
+        };
+        anim.addEventListener('enterFrame', frameHandler);
+
+        revealTimer = setTimeout(finishOpen, 1600);
     };
 
     const endOpenSequence = () => {
+        root.classList.remove('floating-streak--opening');
         root.dataset.clickOpen = '0';
         clearRevealSchedule();
         hidePanel();
+        const anim = getAnim();
+        if (anim) {
+            try {
+                anim.stop();
+            } catch (e) {
+                /* ignore */
+            }
+        }
         freezeClosed();
     };
 
@@ -465,8 +492,11 @@ function initializeStreakBook() {
             root.dataset.inside = '1';
             beginOpenSequence();
         });
-        root.addEventListener('mouseleave', () => {
+        root.addEventListener('mouseleave', (event) => {
+            const next = event.relatedTarget;
+            if (next && root.contains(next)) return;
             root.dataset.inside = '0';
+            root.dataset.clickOpen = '0';
             endOpenSequence();
         });
 
@@ -519,7 +549,9 @@ function initializeStreakBook() {
             streakBookReady = true;
             mount.classList.remove('floating-streak-book__lottie--loading');
             mount.classList.remove('floating-streak-book__lottie--error');
-            freezeClosed();
+            requestAnimationFrame(() => {
+                freezeClosed();
+            });
         };
 
         const onLottieFail = (e) => {

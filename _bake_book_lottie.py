@@ -99,9 +99,13 @@ def bake_root_layers(d):
 
 
 def add_open_opacity_keyframes(d):
-    """Idle: morph (closed). Play: morph opens; last frames crossfade to hover (fully open)."""
+    """
+    AE uses hover for the closed book (frames 0–25), morph for the opening (26+),
+    hover again for fully open at the end. loop-1 stays hidden.
+    """
     op = int(d.get("op", 46))
-    hover_on = max(2, op - 3)
+    morph_on = 26
+    open_hold = max(morph_on + 1, op - 3)
 
     for layer in d.get("layers", []):
         nm = (layer.get("nm") or "").lower()
@@ -111,9 +115,11 @@ def add_open_opacity_keyframes(d):
             layer.setdefault("ks", {})["o"] = {
                 "a": 1,
                 "k": [
-                    {"t": 0, "s": [100]},
-                    {"t": hover_on, "s": [100]},
-                    {"t": hover_on + 1, "s": [0]},
+                    {"t": 0, "s": [0]},
+                    {"t": morph_on - 1, "s": [0]},
+                    {"t": morph_on, "s": [100]},
+                    {"t": open_hold, "s": [100]},
+                    {"t": open_hold + 1, "s": [0]},
                     {"t": op, "s": [0]},
                 ],
                 "ix": 11,
@@ -122,9 +128,11 @@ def add_open_opacity_keyframes(d):
             layer.setdefault("ks", {})["o"] = {
                 "a": 1,
                 "k": [
-                    {"t": 0, "s": [0]},
-                    {"t": hover_on, "s": [0]},
-                    {"t": hover_on + 1, "s": [100]},
+                    {"t": 0, "s": [100]},
+                    {"t": morph_on - 1, "s": [100]},
+                    {"t": morph_on, "s": [0]},
+                    {"t": open_hold, "s": [0]},
+                    {"t": open_hold + 1, "s": [100]},
                     {"t": op, "s": [100]},
                 ],
                 "ix": 11,

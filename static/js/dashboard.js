@@ -347,36 +347,25 @@ function updateStreakPanelUI(entries) {
     }).join('');
 }
 
-const STREAK_BOOK_LOTTIE_SRC = '/BOOK.json';
-
 function initializeStreakBook() {
     const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
     const panel = document.getElementById('floatingStreakPanel');
-    const mount = document.getElementById('floatingStreakBookMount');
-    if (!toggleBtn || !panel || !root || !mount || toggleBtn.dataset.bound === '1') return;
+    const player = document.getElementById('floatingStreakBookLottie');
+    if (!toggleBtn || !panel || !root || !player || toggleBtn.dataset.bound === '1') return;
     toggleBtn.dataset.bound = '1';
 
-    let streakBookAnim = null;
     let revealTimer = null;
     let completeHandler = null;
-    let frameHandler = null;
-
-    const getAnim = () => streakBookAnim;
 
     const clearRevealSchedule = () => {
         if (revealTimer) {
             clearTimeout(revealTimer);
             revealTimer = null;
         }
-        const anim = getAnim();
-        if (completeHandler && anim) {
-            anim.removeEventListener('complete', completeHandler);
+        if (completeHandler) {
+            player.removeEventListener('complete', completeHandler);
             completeHandler = null;
-        }
-        if (frameHandler && anim) {
-            anim.removeEventListener('enterFrame', frameHandler);
-            frameHandler = null;
         }
     };
 
@@ -392,34 +381,45 @@ function initializeStreakBook() {
         toggleBtn.setAttribute('aria-label', 'Close streak book');
     };
 
-    const bookEndFrame = () => {
-        const anim = getAnim();
-        if (!anim) return 45;
-        return Math.max(1, Math.floor(anim.totalFrames || 46) - 1);
-    };
+    const getLottie = () => (typeof player.getLottie === 'function' ? player.getLottie() : null);
 
     const freezeClosed = () => {
-        const anim = getAnim();
-        if (!anim) return;
         try {
-            anim.loop = false;
-            anim.goToAndStop(0, true);
-            anim.pause();
+            player.loop = false;
+            player.pause();
+            if (typeof player.seek === 'function') player.seek(0);
+            else if (typeof player.stop === 'function') player.stop();
+            const anim = getLottie();
+            if (anim && typeof anim.goToAndStop === 'function') anim.goToAndStop(0, true);
         } catch (e) {
             /* ignore */
         }
     };
 
     const freezeOpenHold = () => {
-        const anim = getAnim();
-        if (!anim) return;
         try {
-            anim.loop = false;
-            anim.goToAndStop(bookEndFrame(), true);
-            anim.pause();
+            player.loop = false;
+            player.pause();
+            const anim = getLottie();
+            if (anim && typeof anim.goToAndStop === 'function') {
+                const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
+                anim.goToAndStop(end, true);
+            }
         } catch (e) {
             /* ignore */
         }
+    };
+
+    const bookDurationMs = () => {
+        try {
+            const anim = getLottie();
+            if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
+                return (anim.totalFrames / anim.frameRate) * 1000;
+            }
+        } catch (e) {
+            /* ignore */
+        }
+        return (46 / 60) * 1000;
     };
 
     const streakRevealOk = () => root.dataset.inside === '1' || root.dataset.clickOpen === '1';
@@ -431,167 +431,92 @@ function initializeStreakBook() {
     };
 
     const beginOpenSequence = () => {
-        const anim = getAnim();
-        if (!anim) return;
-        root.classList.add('floating-streak--opening');
         clearRevealSchedule();
         hidePanel();
-
-        const endFrame = bookEndFrame();
-
+        freezeClosed();
         try {
-            anim.loop = false;
-            anim.stop();
-            anim.goToAndStop(0, true);
-            if (typeof anim.playSegments === 'function') {
-                anim.playSegments([[0, endFrame]], true);
-            } else {
-                anim.play();
-            }
+            player.loop = false;
+            player.play();
         } catch (e) {
             /* ignore */
         }
 
-        const finishOpen = () => {
+        const duration = bookDurationMs();
+        revealTimer = setTimeout(revealPanelIfActive, Math.max(500, duration + 60));
+
+        completeHandler = () => {
             if (!streakRevealOk()) return;
             clearRevealSchedule();
-            freezeOpenHold();
             revealPanelIfActive();
         };
-
-        completeHandler = finishOpen;
-        anim.addEventListener('complete', completeHandler);
-
-        frameHandler = () => {
-            if (!streakRevealOk()) return;
-            if (anim.currentFrame >= endFrame - 0.5) finishOpen();
-        };
-        anim.addEventListener('enterFrame', frameHandler);
-
-        revealTimer = setTimeout(finishOpen, 1600);
+        player.addEventListener('complete', completeHandler);
     };
 
     const endOpenSequence = () => {
-        root.classList.remove('floating-streak--opening');
         root.dataset.clickOpen = '0';
         clearRevealSchedule();
         hidePanel();
-        const anim = getAnim();
-        if (anim) {
-            try {
-                anim.stop();
-            } catch (e) {
-                /* ignore */
-            }
-        }
         freezeClosed();
     };
 
-    const bindStreakInteractions = () => {
-        root.addEventListener('mouseenter', () => {
-            root.dataset.inside = '1';
-            beginOpenSequence();
-        });
-        root.addEventListener('mouseleave', (event) => {
-            const next = event.relatedTarget;
-            if (next && root.contains(next)) return;
-            root.dataset.inside = '0';
-            root.dataset.clickOpen = '0';
-            endOpenSequence();
-        });
+    let streakLottieFramed = false;
+    const onPlayerReady = () => {
+        if (streakLottieFramed) return;
+        streakLottieFramed = true;
+        freezeClosed();
+    };
+    player.addEventListener('ready', onPlayerReady, { once: true });
+    player.addEventListener('load', onPlayerReady, { once: true });
+    setTimeout(() => {
+        if (!streakLottieFramed) onPlayerReady();
+    }, 600);
 
-        root.addEventListener(
-            'touchstart',
-            () => {
-                if (root.dataset.inside === '1') return;
-                root.dataset.clickOpen = '1';
-                beginOpenSequence();
-            },
-            { passive: true }
-        );
+    root.addEventListener('mouseenter', () => {
+        root.dataset.inside = '1';
+        beginOpenSequence();
+    });
+    root.addEventListener('mouseleave', (event) => {
+        const next = event.relatedTarget;
+        if (next && root.contains(next)) return;
+        root.dataset.inside = '0';
+        root.dataset.clickOpen = '0';
+        endOpenSequence();
+    });
 
-        toggleBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            if (!panel.hidden) {
-                root.dataset.inside = '0';
-                endOpenSequence();
-                return;
-            }
+    root.addEventListener(
+        'touchstart',
+        () => {
             if (root.dataset.inside === '1') return;
             root.dataset.clickOpen = '1';
             beginOpenSequence();
-        });
+        },
+        { passive: true }
+    );
 
-        document.addEventListener('click', (event) => {
-            if (panel.hidden) return;
-            if (root.contains(event.target)) return;
+    toggleBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!panel.hidden) {
             root.dataset.inside = '0';
             endOpenSequence();
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape' || panel.hidden) return;
-            root.dataset.inside = '0';
-            endOpenSequence();
-        });
-    };
-
-    const loadStreakBookLottie = async () => {
-        if (streakBookAnim) return streakBookAnim;
-        if (typeof window.lottie === 'undefined' || typeof window.lottie.loadAnimation !== 'function') {
-            console.warn('Streak book: lottie-web not loaded');
-            mount.classList.add('floating-streak-book__lottie--error');
-            return null;
+            return;
         }
+        if (root.dataset.inside === '1') return;
+        root.dataset.clickOpen = '1';
+        beginOpenSequence();
+    });
 
-        const markReady = () => {
-            if (streakBookReady) return;
-            streakBookReady = true;
-            mount.classList.remove('floating-streak-book__lottie--loading');
-            mount.classList.remove('floating-streak-book__lottie--error');
-            requestAnimationFrame(() => {
-                freezeClosed();
-            });
-        };
+    document.addEventListener('click', (event) => {
+        if (panel.hidden) return;
+        if (root.contains(event.target)) return;
+        root.dataset.inside = '0';
+        endOpenSequence();
+    });
 
-        const onLottieFail = (e) => {
-            console.warn('Streak book Lottie failed:', e);
-            mount.classList.remove('floating-streak-book__lottie--loading');
-            mount.classList.add('floating-streak-book__lottie--error');
-        };
-
-        mount.classList.add('floating-streak-book__lottie--loading');
-        let streakBookReady = false;
-
-        try {
-            const res = await fetch(STREAK_BOOK_LOTTIE_SRC, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            streakBookAnim = window.lottie.loadAnimation({
-                container: mount,
-                renderer: 'svg',
-                loop: false,
-                autoplay: false,
-                animationData: data,
-                rendererSettings: {
-                    preserveAspectRatio: 'xMidYMid meet',
-                    progressiveLoad: false,
-                },
-            });
-            streakBookAnim.addEventListener('DOMLoaded', markReady);
-            streakBookAnim.addEventListener('data_ready', markReady);
-            streakBookAnim.addEventListener('data_failed', onLottieFail);
-            streakBookAnim.addEventListener('error', onLottieFail);
-            setTimeout(markReady, 1200);
-            return streakBookAnim;
-        } catch (e) {
-            onLottieFail(e);
-            return null;
-        }
-    };
-
-    bindStreakInteractions();
-    loadStreakBookLottie();
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || panel.hidden) return;
+        root.dataset.inside = '0';
+        endOpenSequence();
+    });
 }
 
 function initializeGreetingClock() {

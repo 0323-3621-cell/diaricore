@@ -347,24 +347,31 @@ function updateStreakPanelUI(entries) {
     }).join('');
 }
 
+const STREAK_BOOK_LOTTIE_SRC = '/BOOK.json';
+
 function initializeStreakBook() {
     const root = document.getElementById('floatingStreakRoot');
     const toggleBtn = document.getElementById('floatingStreakToggle');
     const panel = document.getElementById('floatingStreakPanel');
-    const player = document.getElementById('floatingStreakBookLottie');
-    if (!toggleBtn || !panel || !root || !player || toggleBtn.dataset.bound === '1') return;
+    const mount = document.getElementById('floatingStreakBookMount');
+    if (!toggleBtn || !panel || !root || !mount || toggleBtn.dataset.bound === '1') return;
     toggleBtn.dataset.bound = '1';
 
+    let streakAnim = null;
     let revealTimer = null;
     let completeHandler = null;
+    let bookReady = false;
+
+    const getAnim = () => streakAnim;
 
     const clearRevealSchedule = () => {
         if (revealTimer) {
             clearTimeout(revealTimer);
             revealTimer = null;
         }
-        if (completeHandler) {
-            player.removeEventListener('complete', completeHandler);
+        const anim = getAnim();
+        if (completeHandler && anim) {
+            anim.removeEventListener('complete', completeHandler);
             completeHandler = null;
         }
     };
@@ -381,45 +388,34 @@ function initializeStreakBook() {
         toggleBtn.setAttribute('aria-label', 'Close streak book');
     };
 
-    const getLottie = () => (typeof player.getLottie === 'function' ? player.getLottie() : null);
+    const endFrame = () => {
+        const anim = getAnim();
+        if (!anim) return 45;
+        return Math.max(1, Math.floor(anim.totalFrames || 46) - 1);
+    };
 
     const freezeClosed = () => {
+        const anim = getAnim();
+        if (!anim) return;
         try {
-            player.loop = false;
-            player.pause();
-            if (typeof player.seek === 'function') player.seek(0);
-            else if (typeof player.stop === 'function') player.stop();
-            const anim = getLottie();
-            if (anim && typeof anim.goToAndStop === 'function') anim.goToAndStop(0, true);
+            anim.loop = false;
+            anim.goToAndStop(0, true);
+            anim.pause();
         } catch (e) {
             /* ignore */
         }
     };
 
     const freezeOpenHold = () => {
+        const anim = getAnim();
+        if (!anim) return;
         try {
-            player.loop = false;
-            player.pause();
-            const anim = getLottie();
-            if (anim && typeof anim.goToAndStop === 'function') {
-                const end = Math.max(0, Math.floor(anim.totalFrames || 1) - 1);
-                anim.goToAndStop(end, true);
-            }
+            anim.loop = false;
+            anim.goToAndStop(endFrame(), true);
+            anim.pause();
         } catch (e) {
             /* ignore */
         }
-    };
-
-    const bookDurationMs = () => {
-        try {
-            const anim = getLottie();
-            if (anim && typeof anim.totalFrames === 'number' && anim.frameRate) {
-                return (anim.totalFrames / anim.frameRate) * 1000;
-            }
-        } catch (e) {
-            /* ignore */
-        }
-        return (46 / 60) * 1000;
     };
 
     const streakRevealOk = () => root.dataset.inside === '1' || root.dataset.clickOpen === '1';
@@ -431,25 +427,28 @@ function initializeStreakBook() {
     };
 
     const beginOpenSequence = () => {
+        const anim = getAnim();
+        if (!anim || !bookReady) return;
         clearRevealSchedule();
         hidePanel();
-        freezeClosed();
         try {
-            player.loop = false;
-            player.play();
+            anim.loop = false;
+            anim.stop();
+            anim.goToAndStop(0, true);
+            anim.play();
         } catch (e) {
             /* ignore */
         }
 
-        const duration = bookDurationMs();
-        revealTimer = setTimeout(revealPanelIfActive, Math.max(500, duration + 60));
-
-        completeHandler = () => {
+        const finishOpen = () => {
             if (!streakRevealOk()) return;
             clearRevealSchedule();
             revealPanelIfActive();
         };
-        player.addEventListener('complete', completeHandler);
+
+        completeHandler = finishOpen;
+        anim.addEventListener('complete', completeHandler);
+        revealTimer = setTimeout(finishOpen, 1200);
     };
 
     const endOpenSequence = () => {
@@ -459,64 +458,99 @@ function initializeStreakBook() {
         freezeClosed();
     };
 
-    let streakLottieFramed = false;
-    const onPlayerReady = () => {
-        if (streakLottieFramed) return;
-        streakLottieFramed = true;
-        freezeClosed();
-    };
-    player.addEventListener('ready', onPlayerReady, { once: true });
-    player.addEventListener('load', onPlayerReady, { once: true });
-    setTimeout(() => {
-        if (!streakLottieFramed) onPlayerReady();
-    }, 600);
+    const bindStreakInteractions = () => {
+        root.addEventListener('mouseenter', () => {
+            root.dataset.inside = '1';
+            beginOpenSequence();
+        });
+        root.addEventListener('mouseleave', (event) => {
+            const next = event.relatedTarget;
+            if (next && root.contains(next)) return;
+            root.dataset.inside = '0';
+            root.dataset.clickOpen = '0';
+            endOpenSequence();
+        });
 
-    root.addEventListener('mouseenter', () => {
-        root.dataset.inside = '1';
-        beginOpenSequence();
-    });
-    root.addEventListener('mouseleave', (event) => {
-        const next = event.relatedTarget;
-        if (next && root.contains(next)) return;
-        root.dataset.inside = '0';
-        root.dataset.clickOpen = '0';
-        endOpenSequence();
-    });
+        root.addEventListener(
+            'touchstart',
+            () => {
+                if (root.dataset.inside === '1') return;
+                root.dataset.clickOpen = '1';
+                beginOpenSequence();
+            },
+            { passive: true }
+        );
 
-    root.addEventListener(
-        'touchstart',
-        () => {
+        toggleBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (!panel.hidden) {
+                root.dataset.inside = '0';
+                endOpenSequence();
+                return;
+            }
             if (root.dataset.inside === '1') return;
             root.dataset.clickOpen = '1';
             beginOpenSequence();
-        },
-        { passive: true }
-    );
+        });
 
-    toggleBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        if (!panel.hidden) {
+        document.addEventListener('click', (event) => {
+            if (panel.hidden) return;
+            if (root.contains(event.target)) return;
             root.dataset.inside = '0';
             endOpenSequence();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || panel.hidden) return;
+            root.dataset.inside = '0';
+            endOpenSequence();
+        });
+    };
+
+    const markBookReady = () => {
+        if (bookReady) return;
+        bookReady = true;
+        mount.classList.remove('floating-streak-book__lottie--loading');
+        mount.classList.remove('floating-streak-book__lottie--error');
+        freezeClosed();
+    };
+
+    const loadStreakBook = async () => {
+        if (typeof window.lottie === 'undefined' || typeof window.lottie.loadAnimation !== 'function') {
+            mount.classList.add('floating-streak-book__lottie--error');
             return;
         }
-        if (root.dataset.inside === '1') return;
-        root.dataset.clickOpen = '1';
-        beginOpenSequence();
-    });
+        mount.classList.add('floating-streak-book__lottie--loading');
+        try {
+            const res = await fetch(STREAK_BOOK_LOTTIE_SRC, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            streakAnim = window.lottie.loadAnimation({
+                container: mount,
+                renderer: 'svg',
+                loop: false,
+                autoplay: false,
+                animationData: data,
+                rendererSettings: {
+                    preserveAspectRatio: 'xMidYMid meet',
+                    progressiveLoad: false,
+                },
+            });
+            streakAnim.addEventListener('DOMLoaded', markBookReady);
+            streakAnim.addEventListener('data_ready', markBookReady);
+            streakAnim.addEventListener('data_failed', () => {
+                mount.classList.add('floating-streak-book__lottie--error');
+            });
+            setTimeout(markBookReady, 800);
+        } catch (e) {
+            console.warn('Streak book failed to load:', e);
+            mount.classList.remove('floating-streak-book__lottie--loading');
+            mount.classList.add('floating-streak-book__lottie--error');
+        }
+    };
 
-    document.addEventListener('click', (event) => {
-        if (panel.hidden) return;
-        if (root.contains(event.target)) return;
-        root.dataset.inside = '0';
-        endOpenSequence();
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || panel.hidden) return;
-        root.dataset.inside = '0';
-        endOpenSequence();
-    });
+    bindStreakInteractions();
+    loadStreakBook();
 }
 
 function initializeGreetingClock() {

@@ -49,6 +49,7 @@
                 'diariCoreEntriesOwnerId',
                 'diariCoreDraft',
                 'diariCoreFocusEntryId',
+                'diariVoiceEntryNoticeDismissed',
             ].forEach((key) => localStorage.removeItem(key));
         } catch (_) {
             /* ignore */

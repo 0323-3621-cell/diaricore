@@ -99,46 +99,15 @@ def bake_root_layers(d):
 
 
 def add_open_opacity_keyframes(d):
-    """
-    AE uses hover for the closed book (frames 0–25), morph for the opening (26+),
-    hover again for fully open at the end. loop-1 stays hidden.
-    """
-    op = int(d.get("op", 46))
-    morph_on = 26
-    open_hold = max(morph_on + 1, op - 3)
-
+    """morph + hover visible for full timeline; loop hidden (lottie-web cannot run AE sliders)."""
     for layer in d.get("layers", []):
         nm = (layer.get("nm") or "").lower()
         if layer.get("ty") != 0:
             continue
-        if "morph" in nm:
-            layer.setdefault("ks", {})["o"] = {
-                "a": 1,
-                "k": [
-                    {"t": 0, "s": [0]},
-                    {"t": morph_on - 1, "s": [0]},
-                    {"t": morph_on, "s": [100]},
-                    {"t": open_hold, "s": [100]},
-                    {"t": open_hold + 1, "s": [0]},
-                    {"t": op, "s": [0]},
-                ],
-                "ix": 11,
-            }
-        elif "hover" in nm:
-            layer.setdefault("ks", {})["o"] = {
-                "a": 1,
-                "k": [
-                    {"t": 0, "s": [100]},
-                    {"t": morph_on - 1, "s": [100]},
-                    {"t": morph_on, "s": [0]},
-                    {"t": open_hold, "s": [0]},
-                    {"t": open_hold + 1, "s": [100]},
-                    {"t": op, "s": [100]},
-                ],
-                "ix": 11,
-            }
-        elif "loop" in nm:
+        if "loop" in nm:
             set_layer_opacity(layer, 0)
+        elif "morph" in nm or "hover" in nm:
+            set_layer_opacity(layer, 100)
 
 
 def main():

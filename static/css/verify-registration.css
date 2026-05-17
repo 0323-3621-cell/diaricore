@@ -78,6 +78,27 @@ body {
     min-height: 560px;
 }
 
+.verify-side-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.verify-side-text h2 {
+    margin: 0 0 12px;
+    font-size: 42px;
+    line-height: 1.1;
+}
+
+.verify-side-text p {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    max-width: 340px;
+    opacity: 0.95;
+}
+
 .verify-logo {
     width: 160px;
     height: 160px;
@@ -87,12 +108,14 @@ body {
     animation: logoFloat 3.2s ease-in-out infinite;
 }
 
+.verify-side-brand .verify-side-text h2,
 .verify-side h2 {
     margin: 0 0 12px;
     font-size: 42px;
     line-height: 1.1;
 }
 
+.verify-side-brand .verify-side-text p,
 .verify-side p {
     margin: 0;
     font-size: 14px;
@@ -362,12 +385,41 @@ body {
         min-height: 0;
         padding: 22px;
         border-radius: 18px 18px 0 0;
+        align-items: stretch;
+    }
+
+    .verify-side-brand {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 1rem;
+        width: 100%;
+        text-align: left;
     }
 
     .verify-logo {
         width: 120px;
         height: 120px;
         margin-bottom: 10px;
+    }
+
+    .verify-side-brand .verify-logo {
+        width: 88px;
+        height: 88px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .verify-side-brand .verify-side-text {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .verify-side-brand .verify-side-text h2,
+    .verify-side-brand .verify-side-text p {
+        text-align: left;
+        max-width: none;
     }
 
     .verify-side h2 {

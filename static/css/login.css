@@ -574,6 +574,15 @@ body {
     opacity: 0.5;
 }
 
+.auth-welcome-brand {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
 .logo-section {
     position: relative;
     z-index: 1;
@@ -819,6 +828,34 @@ body {
         width: 60px;
         height: 60px;
     }
+
+    .auth-welcome-brand {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 1rem;
+    }
+
+    .auth-welcome-brand .logo-section {
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .auth-welcome-brand .login-logo {
+        width: 88px;
+        height: 88px;
+    }
+
+    .auth-welcome-brand .welcome-content {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .auth-welcome-brand .welcome-title,
+    .auth-welcome-brand .welcome-text {
+        text-align: left;
+    }
     
     .welcome-title {
         font-size: 42px;
@@ -1030,6 +1067,11 @@ body {
     .login-logo {
         width: 50px;
         height: 50px;
+    }
+
+    .auth-welcome-brand .login-logo {
+        width: 80px;
+        height: 80px;
     }
     
     .welcome-title {

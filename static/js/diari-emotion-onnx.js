@@ -11,6 +11,8 @@
     const ML_CACHE = 'diaricore-ml-v1';
     const WORKER_URL = '/diari-emotion-onnx-worker.js';
     const MAX_LEN = 256;
+    /** Hub file size hint when Content-Length is missing (~279 MB). */
+    const MODEL_BYTES_HINT = 279 * 1024 * 1024;
 
     let ready = false;
     let preparing = null;
@@ -18,8 +20,38 @@
     let worker = null;
     let runId = 0;
 
+    let downloadProgress = {
+        phase: 'idle',
+        loaded: 0,
+        total: MODEL_BYTES_HINT,
+        percent: 0,
+        message: '',
+    };
+
     function isOnline() {
         return global.navigator.onLine !== false;
+    }
+
+    function setDownloadProgress(patch) {
+        const next = { ...downloadProgress, ...patch };
+        if (next.total > 0 && next.phase !== 'ready' && next.phase !== 'error') {
+            next.percent = Math.min(100, Math.round((next.loaded / next.total) * 100));
+        }
+        if (next.phase === 'ready') {
+            next.percent = 100;
+        }
+        downloadProgress = next;
+        try {
+            global.dispatchEvent(
+                new CustomEvent('diari-emotion-download', { detail: { ...downloadProgress } })
+            );
+        } catch (_) {
+            /* ignore */
+        }
+    }
+
+    function getDownloadStatus() {
+        return { ...downloadProgress };
     }
 
     function tensorToIntArray(tensor) {
@@ -44,21 +76,119 @@
         }
     }
 
+    async function readCachedModelSize() {
+        try {
+            const cache = await caches.open(ML_CACHE);
+            const hit = await cache.match(MODEL_URL);
+            if (!hit) return 0;
+            const blob = await hit.blob();
+            return blob.size || 0;
+        } catch {
+            return 0;
+        }
+    }
+
     async function fetchModelBuffer() {
         const cache = await caches.open(ML_CACHE);
         let res = await cache.match(MODEL_URL);
-        if (!res && isOnline()) {
-            const net = await fetch(MODEL_URL, { mode: 'cors', credentials: 'omit' });
-            if (!net.ok) {
-                throw new Error('Model download failed: ' + net.status);
-            }
-            await cache.put(MODEL_URL, net.clone());
-            res = net;
+
+        if (res) {
+            const blob = await res.blob();
+            const size = blob.size || MODEL_BYTES_HINT;
+            setDownloadProgress({
+                phase: 'ready',
+                loaded: size,
+                total: size,
+                percent: 100,
+                message: 'Offline emotion model ready',
+            });
+            return blob.arrayBuffer();
         }
-        if (!res) {
+
+        if (!isOnline()) {
+            setDownloadProgress({
+                phase: 'unavailable',
+                loaded: 0,
+                total: MODEL_BYTES_HINT,
+                percent: 0,
+                message: 'Connect online once to download the offline model',
+            });
             throw new Error('Emotion model not cached; connect once while online to download it.');
         }
-        return res.arrayBuffer();
+
+        setDownloadProgress({
+            phase: 'downloading',
+            loaded: 0,
+            total: MODEL_BYTES_HINT,
+            percent: 0,
+            message: 'Downloading offline emotion model…',
+        });
+
+        const response = await fetch(MODEL_URL, { mode: 'cors', credentials: 'omit' });
+        if (!response.ok) {
+            setDownloadProgress({
+                phase: 'error',
+                message: 'Model download failed (' + response.status + ')',
+            });
+            throw new Error('Model download failed: ' + response.status);
+        }
+
+        const total =
+            Number(response.headers.get('content-length')) || MODEL_BYTES_HINT;
+        setDownloadProgress({
+            phase: 'downloading',
+            loaded: 0,
+            total,
+            percent: 0,
+            message: 'Downloading offline emotion model…',
+        });
+
+        if (!response.body || typeof response.body.getReader !== 'function') {
+            const buf = await response.arrayBuffer();
+            await cache.put(MODEL_URL, new Response(buf));
+            setDownloadProgress({
+                phase: 'ready',
+                loaded: buf.byteLength,
+                total: buf.byteLength || total,
+                percent: 100,
+                message: 'Offline emotion model ready',
+            });
+            return buf;
+        }
+
+        const reader = response.body.getReader();
+        const chunks = [];
+        let loaded = 0;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            loaded += value.byteLength;
+            setDownloadProgress({
+                phase: 'downloading',
+                loaded,
+                total,
+                message: 'Downloading offline emotion model…',
+            });
+        }
+
+        const merged = new Uint8Array(loaded);
+        let offset = 0;
+        for (const chunk of chunks) {
+            merged.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+
+        await cache.put(MODEL_URL, new Response(merged.buffer));
+        setDownloadProgress({
+            phase: 'ready',
+            loaded,
+            total: loaded || total,
+            percent: 100,
+            message: 'Offline emotion model ready',
+        });
+        return merged.buffer;
     }
 
     function createWorker() {
@@ -85,6 +215,11 @@
                 reject(e.error || new Error('Worker failed'));
             };
 
+            setDownloadProgress({
+                phase: 'initializing',
+                message: 'Starting offline analysis engine…',
+            });
+
             fetchModelBuffer()
                 .then((buf) => {
                     w.postMessage({ type: 'init', model: buf }, [buf]);
@@ -97,6 +232,14 @@
     }
 
     async function loadTokenizer() {
+        setDownloadProgress({
+            phase: 'tokenizer',
+            loaded: 0,
+            total: 22 * 1024 * 1024,
+            percent: 0,
+            message: 'Downloading tokenizer files…',
+        });
+
         const mod = await import(
             /* webpackIgnore: true */ 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm'
         );
@@ -106,11 +249,67 @@
         if (env.backends && env.backends.onnx && env.backends.onnx.wasm) {
             env.backends.onnx.wasm.numThreads = 1;
         }
-        return AutoTokenizer.from_pretrained(HF_MODEL_ID, { progress_callback: null });
+
+        return AutoTokenizer.from_pretrained(HF_MODEL_ID, {
+            progress_callback: (data) => {
+                if (!data || data.status !== 'progress') return;
+                const loaded = Number(data.loaded || 0);
+                const total = Number(data.total || 22 * 1024 * 1024);
+                setDownloadProgress({
+                    phase: 'tokenizer',
+                    loaded,
+                    total,
+                    message: 'Downloading tokenizer files…',
+                });
+            },
+        });
+    }
+
+    async function refreshCachedReadyState() {
+        if (ready) {
+            setDownloadProgress({
+                phase: 'ready',
+                loaded: downloadProgress.total || MODEL_BYTES_HINT,
+                total: downloadProgress.total || MODEL_BYTES_HINT,
+                percent: 100,
+                message: 'Offline emotion model ready',
+            });
+            return;
+        }
+        const cached = await isModelCached();
+        if (cached) {
+            const size = await readCachedModelSize();
+            setDownloadProgress({
+                phase: 'ready',
+                loaded: size || MODEL_BYTES_HINT,
+                total: size || MODEL_BYTES_HINT,
+                percent: 100,
+                message: 'Offline emotion model ready',
+            });
+        } else if (!isOnline()) {
+            setDownloadProgress({
+                phase: 'unavailable',
+                loaded: 0,
+                total: MODEL_BYTES_HINT,
+                percent: 0,
+                message: 'Connect online once to download the offline model',
+            });
+        } else if (!preparing) {
+            setDownloadProgress({
+                phase: 'idle',
+                loaded: 0,
+                total: MODEL_BYTES_HINT,
+                percent: 0,
+                message: 'Offline model will download in the background',
+            });
+        }
     }
 
     async function prepare() {
-        if (ready) return true;
+        if (ready) {
+            await refreshCachedReadyState();
+            return true;
+        }
         if (preparing) return preparing;
 
         preparing = (async () => {
@@ -121,6 +320,14 @@
             tokenizer = tok;
             worker = w;
             ready = true;
+            const size = await readCachedModelSize();
+            setDownloadProgress({
+                phase: 'ready',
+                loaded: size || MODEL_BYTES_HINT,
+                total: size || MODEL_BYTES_HINT,
+                percent: 100,
+                message: 'Offline emotion model ready',
+            });
             return true;
         })();
 
@@ -128,6 +335,12 @@
             return await preparing;
         } catch (e) {
             preparing = null;
+            if (downloadProgress.phase !== 'unavailable') {
+                setDownloadProgress({
+                    phase: 'error',
+                    message: (e && e.message) || 'Offline model setup failed',
+                });
+            }
             throw e;
         }
     }
@@ -195,7 +408,12 @@
         isReady: () => ready,
         isPreparing: () => Boolean(preparing),
         isModelCached,
+        getDownloadStatus,
+        refreshCachedReadyState,
         prepareInBackground,
         MODEL_URL,
+        MODEL_BYTES_HINT,
     };
+
+    void refreshCachedReadyState();
 })(typeof window !== 'undefined' ? window : self);

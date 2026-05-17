@@ -4175,3 +4175,96 @@ html.theme-dark .profile-pwd-change-success-redirect__label {
 html.theme-dark .profile-pwd-change-success-login-now {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
+
+/* PWA installed app only — offline emotion model download (hidden in browser) */
+.pwa-offline-model-status {
+    display: none !important;
+}
+
+html.diari-pwa-standalone .pwa-offline-model-status:not([hidden]) {
+    display: block !important;
+    margin: 0 0 1.25rem;
+}
+
+html.diari-pwa-standalone #profileOverviewShell .pwa-offline-model-status:not([hidden]) {
+    order: 4;
+}
+
+.pwa-offline-model-status__inner {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--box-shadow);
+    padding: 1rem 1.1rem 1.05rem;
+}
+
+.pwa-offline-model-status__title {
+    margin: 0 0 0.65rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.pwa-offline-model-status__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(111, 143, 127, 0.18);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.pwa-offline-model-status__bar-fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary-light), var(--primary-color));
+    transition: width 0.2s ease;
+}
+
+.pwa-offline-model-status.is-ready .pwa-offline-model-status__bar-fill {
+    background: linear-gradient(90deg, #6f9b7a, var(--primary-color));
+}
+
+.pwa-offline-model-status.is-error .pwa-offline-model-status__bar-fill {
+    background: #c9a227;
+}
+
+.pwa-offline-model-status__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.35rem;
+}
+
+.pwa-offline-model-status__size {
+    font-weight: 500;
+    color: var(--text-muted, #6b7c8a);
+    text-align: right;
+}
+
+.pwa-offline-model-status__hint {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--text-muted, #6b7c8a);
+}
+
+html.theme-dark .pwa-offline-model-status__bar {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    html.diari-pwa-standalone body.page-profile #profileOverviewShell .pwa-offline-model-status:not([hidden]) {
+        margin: 0 0 1rem;
+        padding: 0 0.15rem;
+    }
+
+    html.diari-pwa-standalone body.page-profile .pwa-offline-model-status__inner {
+        border-radius: 16px;
+    }
+}

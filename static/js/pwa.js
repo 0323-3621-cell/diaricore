@@ -222,6 +222,10 @@
         }
     }
 
+    if (isStandalone()) {
+        document.documentElement.classList.add('diari-pwa-standalone');
+    }
+
     injectPwaHead();
     registerServiceWorker();
     bindInstallPrompt();

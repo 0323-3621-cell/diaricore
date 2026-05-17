@@ -609,26 +609,19 @@ function getLoggedInUserId() {
 }
 
 async function syncEntriesFromApi() {
+    if (window.DiariOffline?.syncEntriesFromApi) {
+        await window.DiariOffline.syncEntriesFromApi();
+        return;
+    }
     const userId = getLoggedInUserId();
     if (!userId) {
         localStorage.setItem('diariCoreEntries', '[]');
         localStorage.removeItem('diariCoreEntriesOwnerId');
         return;
     }
-
-    const cacheOwner = localStorage.getItem('diariCoreEntriesOwnerId');
-    if (cacheOwner && cacheOwner !== String(userId)) {
-        localStorage.setItem('diariCoreEntries', '[]');
-    }
-
     try {
         const response = await fetch('/api/entries', { credentials: 'same-origin' });
         const result = await response.json();
-        if (response.status === 401) {
-            localStorage.setItem('diariCoreEntries', '[]');
-            localStorage.removeItem('diariCoreEntriesOwnerId');
-            return;
-        }
         if (!response.ok || !result.success || !Array.isArray(result.entries)) return;
         localStorage.setItem('diariCoreEntries', JSON.stringify(result.entries));
         localStorage.setItem('diariCoreEntriesOwnerId', String(userId));

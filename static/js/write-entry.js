@@ -1096,6 +1096,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         flushTagSyncQueue();
         syncUserTagsIntoUI();
         flushOfflineEntryQueue();
+        if (window.DiariOffline?.syncAll) void window.DiariOffline.syncAll();
+    });
+    window.addEventListener('diari-offline-sync', () => {
+        flushTagSyncQueue();
+        flushOfflineEntryQueue();
     });
     
     const customTagModal = document.getElementById('customTagModal');
@@ -1841,6 +1846,77 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
         window.DiariMoodAnalysis.showAnalysisLoading(analysisOverlay);
 
+        const finishOfflineSave = async () => {
+            const payload = window.DiariOffline.buildOfflineEntryPayload({
+                userId,
+                title: entryTitle,
+                entryDateTimeLocal,
+                text: entryText,
+                tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
+                images: attachedImages.map((img) => ({ url: img.url || '', dataUrl: img.dataUrl || '' })),
+            });
+            try {
+                await window.DiariOffline.queuePendingEntry(payload.queueRecord);
+            } catch (queueError) {
+                console.warn('Could not queue offline entry:', queueError);
+            }
+            const savedEntry = payload.entry;
+            const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
+            entries.push(savedEntry);
+            localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
+            const moodOpts = {
+                onSaveExit() {
+                    analysisOverlay.hidden = true;
+                    window.location.href = 'dashboard.html';
+                },
+                fetchRerunAnalysis: async () => {
+                    const t = journalText.value.trim();
+                    if (!t) throw new Error('empty');
+                    if (window.DiariOffline && !isOnlineNow()) {
+                        return { entry: window.DiariOffline.analyzeTextLocally(t), isFallback: true };
+                    }
+                    const res = await fetch('/api/entries/analyze-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, text: t }),
+                    });
+                    const result = await res.json();
+                    if (!res.ok || !result.success) throw new Error(result.error || 'analyze failed');
+                    const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
+                    return {
+                        entry: {
+                            emotionLabel: result.emotionLabel,
+                            emotionScore: result.emotionScore,
+                            sentimentLabel: result.sentimentLabel,
+                            sentimentScore: result.sentimentScore,
+                            all_probs: result.all_probs || {},
+                            feeling: result.emotionLabel,
+                        },
+                        isFallback: fb,
+                    };
+                },
+            };
+            await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
+            window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, savedEntry, true, moodOpts);
+            try {
+                localStorage.removeItem('diariCoreDraft');
+            } catch (_) {}
+            attachedImages = [];
+            renderImageGallery();
+            if (window.DiariToast) {
+                window.DiariToast.show('Saved offline. We will sync when you are back online.', 'info', 4000);
+            }
+        };
+
+        if (!isOnlineNow() && window.DiariOffline) {
+            try {
+                await finishOfflineSave();
+            } finally {
+                setSavingState(false);
+            }
+            return;
+        }
+
         try {
             let imageUrls = attachedImages.map((img) => img.url).filter(Boolean);
             if (isOnlineNow() && userId) {
@@ -1922,67 +1998,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             renderImageGallery();
         } catch (error) {
             console.error('Failed to save entry via API:', error);
-            const fallbackEntry = {
-                title: entryTitle,
-                feeling: 'unspecified',
-                tags: Array.from(selectedTags),
-                text: entryText,
-                imageUrls: attachedImages.map((img) => img.url || img.dataUrl).filter(Boolean),
-                date: new Date().toISOString(),
-                characterCount: entryText.length,
-                moodScoringOffline: true,
-            };
-            try {
-                await idbPut({
-                    id: `offline_entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-                    userId,
-                    title: entryTitle,
-                    entryDateTimeLocal,
-                    text: entryText,
-                    tags: Array.from(selectedTags).map(normalizeTag).filter(Boolean),
-                    images: attachedImages.map((img) => ({ url: img.url || '', dataUrl: img.dataUrl || '' })),
-                    createdAt: new Date().toISOString(),
-                });
-            } catch (queueError) {
-                console.warn('Could not queue offline entry:', queueError);
+            if (window.DiariOffline) {
+                await finishOfflineSave();
+            } else {
+                alert('Could not save your entry. Check your connection and try again.');
             }
-            const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
-            entries.push(fallbackEntry);
-            localStorage.setItem('diariCoreEntries', JSON.stringify(entries));
-            const moodOpts = {
-                onSaveExit() {
-                    analysisOverlay.hidden = true;
-                    window.location.href = 'dashboard.html';
-                },
-                fetchRerunAnalysis: async () => {
-                    const t = journalText.value.trim();
-                    if (!t) throw new Error('empty');
-                    const res = await fetch('/api/entries/analyze-text', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId, text: t }),
-                    });
-                    const result = await res.json();
-                    if (!res.ok || !result.success) throw new Error(result.error || 'analyze failed');
-                    const fb = (result.analysisEngine || '').toString().toLowerCase() === 'fallback';
-                    return {
-                        entry: {
-                            emotionLabel: result.emotionLabel,
-                            emotionScore: result.emotionScore,
-                            sentimentLabel: result.sentimentLabel,
-                            sentimentScore: result.sentimentScore,
-                            all_probs: result.all_probs || {},
-                            feeling: result.emotionLabel,
-                        },
-                        isFallback: fb,
-                    };
-                },
-            };
-            await window.DiariMoodAnalysis.delayUntilMoodAnalysisGate();
-            window.DiariMoodAnalysis.showAnalysisResult(analysisOverlay, fallbackEntry, true, moodOpts);
-            try {
-            localStorage.removeItem('diariCoreDraft');
-            } catch (_) {}
         } finally {
             setSavingState(false);
         }

@@ -2118,6 +2118,13 @@
         };
         window.addEventListener('online', onOnline, { signal });
         window.addEventListener(
+            'diari-offline-sync',
+            () => {
+                void flushEditQueue();
+            },
+            { signal }
+        );
+        window.addEventListener(
             'resize',
             () => {
                 updateStripFade();

@@ -341,6 +341,8 @@ class SidebarComponent {
         window.addEventListener('online', () => this.refreshSyncStatusBadge());
         window.addEventListener('offline', () => this.refreshSyncStatusBadge());
         window.addEventListener('storage', () => this.refreshSyncStatusBadge());
+        window.addEventListener('diari-offline-sync', () => this.refreshSyncStatusBadge());
+        window.addEventListener('diari-offline-sync-complete', () => this.refreshSyncStatusBadge());
     }
 
     initSyncStatusBadge() {

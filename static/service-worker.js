@@ -1,8 +1,8 @@
 /**
- * DiariCore PWA service worker — enables install + faster repeat visits.
- * API requests are always network-only (session cookies).
+ * DiariCore PWA service worker — offline app shell + cached static assets.
+ * API routes are never cached (session/auth stay fresh).
  */
-const CACHE_NAME = 'diaricore-pwa-v1';
+const CACHE_NAME = 'diaricore-pwa-v2';
 
 const PRECACHE_URLS = [
     '/login.html',
@@ -10,13 +10,28 @@ const PRECACHE_URLS = [
     '/entries.html',
     '/write-entry.html',
     '/insights.html',
+    '/profile.html',
+    '/suggestions.html',
+    '/voice-entry.html',
+    '/entry-view.html',
     '/diariclogo.png',
     '/theme.css',
     '/mobile-global.css',
     '/diari-shell-pending.css',
+    '/side-bar.css',
+    '/dashboard.css',
+    '/entries.css',
+    '/insights.css',
+    '/write-entry.css',
+    '/chart-flow.css',
+    '/pwa.css',
     '/theme.js',
     '/pwa.js',
-    '/pwa.css',
+    '/diari-offline.js',
+    '/diari-security.js',
+    '/diari-shell.js',
+    '/mood-scoring.js',
+    '/side-bar.js',
 ];
 
 function isApiRequest(url) {
@@ -25,8 +40,17 @@ function isApiRequest(url) {
 
 function isStaticAsset(url) {
     const p = url.pathname;
-    if (p.endsWith('.css') || p.endsWith('.js') || p.endsWith('.png') || p.endsWith('.jpg') ||
-        p.endsWith('.webp') || p.endsWith('.svg') || p.endsWith('.ico') || p.endsWith('.woff2')) {
+    if (
+        p.endsWith('.css') ||
+        p.endsWith('.js') ||
+        p.endsWith('.png') ||
+        p.endsWith('.jpg') ||
+        p.endsWith('.webp') ||
+        p.endsWith('.svg') ||
+        p.endsWith('.ico') ||
+        p.endsWith('.woff2') ||
+        p.endsWith('.json')
+    ) {
         return true;
     }
     return p.endsWith('.html');
@@ -66,9 +90,14 @@ self.addEventListener('fetch', (event) => {
                     }
                     return res;
                 })
-                .catch(() =>
-                    caches.match(request).then((cached) => cached || caches.match('/login.html'))
-                )
+                .catch(async () => {
+                    const cached = await caches.match(request);
+                    if (cached) return cached;
+                    const fallback =
+                        (await caches.match('/dashboard.html')) ||
+                        (await caches.match('/login.html'));
+                    return fallback || Response.error();
+                })
         );
         return;
     }

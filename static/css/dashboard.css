@@ -1871,7 +1871,7 @@ body {
 
     /* Empty weekly chart message — larger on small screens (desktop keeps SVG font-size 14) */
     .weekly-sparkline-wrap .weekly-sparkline-empty {
-        font-size: 18px !important;
+        font-size: 22px !important;
     }
 
     /* Remove decorative green quote mark on mobile; tighten + lift quote for bottom-nav clearance */

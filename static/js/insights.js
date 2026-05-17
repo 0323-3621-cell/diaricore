@@ -12,6 +12,20 @@ function insightsIsMobileChartUi() {
     return Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
 }
 
+function chartFlowLoadAnimation() {
+    return window.DiariChartFlow?.getLoadAnimation?.() ?? false;
+}
+
+function bindInsightsChartFlow(chart, weekly, moodColors) {
+    if (!chart || !window.DiariChartFlow) return;
+    if (weekly && moodColors) {
+        chart._diariMoodPointColors = weekly.dominantMoods.map((m, i) =>
+            weekly.data[i] == null ? null : moodColorForKey(m, moodColors)
+        );
+    }
+    DiariChartFlow.bindChart(chart);
+}
+
 function insightsMobileTooltipPluginOpts() {
     if (!insightsIsMobileChartUi()) return {};
     return {
@@ -284,6 +298,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         initializeWeeklyMoodChart();
         initializeWeeklyMoodChartDesktop();
     });
+
+    if (window.DiariChartFlow) DiariChartFlow.decorateChartContainers(document);
     } finally {
         if (window.DiariShell && typeof window.DiariShell.release === 'function') {
             window.DiariShell.release();
@@ -630,6 +646,7 @@ function populateInsightsConsistencyMonthSelect(sel) {
 
 function destroyInsightsConsistencyChart() {
     if (INSIGHTS_CONSISTENCY_CHART) {
+        if (window.DiariChartFlow) DiariChartFlow.stopChartFlow(INSIGHTS_CONSISTENCY_CHART);
         INSIGHTS_CONSISTENCY_CHART.destroy();
         INSIGHTS_CONSISTENCY_CHART = null;
     }
@@ -680,6 +697,7 @@ function updateConsistencyMonthBarChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             layout: { padding: { top: 8, bottom: 4, left: 4, right: 4 } },
             plugins: {
                 legend: { display: false },
@@ -730,6 +748,7 @@ function updateConsistencyMonthBarChart() {
             interaction: { intersect: false, mode: 'index' },
         },
     });
+    bindInsightsChartFlow(INSIGHTS_CONSISTENCY_CHART);
     bindInsightsMobileChartTapToggle(INSIGHTS_CONSISTENCY_CHART);
 }
 
@@ -1153,6 +1172,7 @@ function initializeWeeklyMoodChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             plugins: {
                 legend: {
                     display: false,
@@ -1225,8 +1245,12 @@ function initializeWeeklyMoodChart() {
         },
     };
     
-    if (WEEKLY_MOBILE_CHART) WEEKLY_MOBILE_CHART.destroy();
+    if (WEEKLY_MOBILE_CHART) {
+        if (window.DiariChartFlow) DiariChartFlow.stopChartFlow(WEEKLY_MOBILE_CHART);
+        WEEKLY_MOBILE_CHART.destroy();
+    }
     WEEKLY_MOBILE_CHART = new Chart(ctx, config);
+    bindInsightsChartFlow(WEEKLY_MOBILE_CHART, weekly, moodColors);
 }
 
 // Initialize Desktop Weekly Mood Chart (Mon–Sun calendar week; richer than dashboard glance)
@@ -1295,6 +1319,7 @@ function initializeWeeklyMoodChartDesktop() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             plugins: {
                 legend: {
                     display: false,
@@ -1367,8 +1392,12 @@ function initializeWeeklyMoodChartDesktop() {
         },
     };
 
-    if (WEEKLY_DESKTOP_CHART) WEEKLY_DESKTOP_CHART.destroy();
+    if (WEEKLY_DESKTOP_CHART) {
+        if (window.DiariChartFlow) DiariChartFlow.stopChartFlow(WEEKLY_DESKTOP_CHART);
+        WEEKLY_DESKTOP_CHART.destroy();
+    }
     WEEKLY_DESKTOP_CHART = new Chart(ctx, config);
+    bindInsightsChartFlow(WEEKLY_DESKTOP_CHART, weekly, moodColors);
 
     const avgEl = document.getElementById('weeklyStatAvg');
     const trendEl = document.getElementById('weeklyStatTrend');
@@ -1424,6 +1453,7 @@ function initializeEmotionPieChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             plugins: {
                 legend: {
                     display: false
@@ -1451,7 +1481,8 @@ function initializeEmotionPieChart() {
         }
     };
     
-    new Chart(ctx, config);
+    const emotionDesktopChart = new Chart(ctx, config);
+    bindInsightsChartFlow(emotionDesktopChart);
 
     // Custom desktop legend (clearer than default legend + avoids icons inside chart)
     const legendEl = document.getElementById('emotionLegendDesktop');
@@ -1511,6 +1542,7 @@ function initializeEmotionPieChartMobile() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             plugins: {
                 legend: {
                     display: false
@@ -1533,7 +1565,8 @@ function initializeEmotionPieChartMobile() {
         }
     };
     
-    new Chart(ctx, config);
+    const emotionMobileChart = new Chart(ctx, config);
+    bindInsightsChartFlow(emotionMobileChart);
 
     if (HAS_INSIGHTS_DATA) {
         const legendItems = document.querySelectorAll('.emotion-legend-item');
@@ -1647,6 +1680,7 @@ function initializeMoodByTagChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: chartFlowLoadAnimation(),
             layout: {
                 // Inset chart + legend from canvas edge so the top legend (Happy…) clears the Y-axis “100%”.
                 padding: { top: 6, bottom: 2, left: 28, right: 10 },
@@ -1759,10 +1793,12 @@ function initializeMoodByTagChart() {
     };
     
     if (MOOD_BY_TAG_CHART) {
+        if (window.DiariChartFlow) DiariChartFlow.stopChartFlow(MOOD_BY_TAG_CHART);
         MOOD_BY_TAG_CHART.destroy();
         MOOD_BY_TAG_CHART = null;
     }
     MOOD_BY_TAG_CHART = new Chart(ctx, config);
+    bindInsightsChartFlow(MOOD_BY_TAG_CHART);
     bindInsightsMobileChartTapToggle(MOOD_BY_TAG_CHART);
 }
 

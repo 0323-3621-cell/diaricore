@@ -163,6 +163,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const entries = JSON.parse(localStorage.getItem('diariCoreEntries') || '[]');
         renderWeeklyChart(entries);
     });
+
+    if (window.DiariChartFlow) DiariChartFlow.decorateChartContainers(document);
     } finally {
         if (window.DiariShell && typeof window.DiariShell.release === 'function') {
             window.DiariShell.release();
@@ -1036,7 +1038,7 @@ function renderWeeklyChart(entries) {
         )
         .join('');
 
-    sparklineEl.innerHTML = `
+    let sparklineSvg = `
         <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-label="Weekly mood sparkline">
             <defs>
                 <linearGradient id="dashMoodFill" x1="0" y1="0" x2="0" y2="1">
@@ -1048,6 +1050,11 @@ function renderWeeklyChart(entries) {
             ${lineD ? `<path d="${lineD}" fill="none" stroke="${lineColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
             ${dots}
         </svg>`;
+    if (window.DiariChartFlow) {
+        sparklineSvg = DiariChartFlow.enhanceSparklineSvg(sparklineSvg, Boolean(lineD));
+        DiariChartFlow.markSparklineWrap(sparklineEl);
+    }
+    sparklineEl.innerHTML = sparklineSvg;
 }
 
 // Mobile menu toggle (for responsive design)

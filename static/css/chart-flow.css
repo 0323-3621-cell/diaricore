@@ -1,0 +1,64 @@
+/* Ambient chart motion — desktop & mobile; disabled when user prefers reduced motion */
+
+@media (prefers-reduced-motion: no-preference) {
+    .chart-container--flow {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chart-container--flow::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        background: linear-gradient(
+            105deg,
+            transparent 0%,
+            rgba(var(--primary-rgb), 0.04) 42%,
+            rgba(var(--primary-rgb), 0.1) 50%,
+            rgba(var(--primary-rgb), 0.04) 58%,
+            transparent 100%
+        );
+        background-size: 220% 100%;
+        animation: diari-chart-shimmer 5.5s ease-in-out infinite;
+        opacity: 0.85;
+    }
+
+    @keyframes diari-chart-shimmer {
+        0% {
+            background-position: 120% 0;
+        }
+        100% {
+            background-position: -120% 0;
+        }
+    }
+
+    .weekly-sparkline-wrap--flow {
+        position: relative;
+    }
+
+    .weekly-sparkline-line--flow {
+        stroke-dasharray: 11 8;
+    }
+
+    .weekly-sparkline-area--flow {
+        animation: diari-sparkline-area-breath 3.8s ease-in-out infinite;
+    }
+
+    @keyframes diari-sparkline-area-breath {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.72;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chart-container--flow::after {
+        display: none;
+    }
+}

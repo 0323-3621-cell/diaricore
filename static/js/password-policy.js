@@ -155,6 +155,60 @@
         return true;
     }
 
+    /** Human-readable reason when isPasswordSubmitReady is false (for sign-up / reset). */
+    function getPasswordBlockMessage(password, confirm, personal) {
+        var p = String(password || '');
+        var c = String(confirm || '');
+        if (!p.trim()) {
+            return 'Enter a password to continue.';
+        }
+        if (p.length > MAX_LEN) {
+            return 'Password must be ' + MAX_LEN + ' characters or fewer.';
+        }
+        if (isCommonPassword(p)) {
+            return 'This password is too common. Choose a less predictable password.';
+        }
+        var state = getChecklistState(p, personal);
+        if (!state.len12) {
+            return 'Password must be at least ' + MIN_LEN + ' characters.';
+        }
+        if (!state.upper) {
+            return 'Password must include at least one uppercase letter (A–Z).';
+        }
+        if (!state.lower) {
+            return 'Password must include at least one lowercase letter (a–z).';
+        }
+        if (!state.digit) {
+            return 'Password must include at least one number.';
+        }
+        if (!state.special) {
+            return 'Password must include at least one special character (!@#$…).';
+        }
+        if (!state.noSpace) {
+            return 'Password must not contain spaces.';
+        }
+        if (!state.noPersonal) {
+            var per = personal || {};
+            var hits = [];
+            if (containsPersonal(pl, per.nickname)) hits.push('username');
+            if (containsPersonal(pl, per.firstName)) hits.push('first name');
+            if (containsPersonal(pl, per.lastName)) hits.push('last name');
+            if (containsPersonal(pl, per.email)) hits.push('email');
+            var hint =
+                hits.length > 0
+                    ? ' (matched your ' + hits.join(', ') + ')'
+                    : '';
+            return (
+                'Password must not contain your username, first name, last name, or email' + hint + '. ' +
+                'Use a different password that does not include those words.'
+            );
+        }
+        if (!passwordsMatch(p, c)) {
+            return 'Passwords do not match. Check confirm password.';
+        }
+        return '';
+    }
+
     global.DiariPasswordPolicy = {
         COMMON_PASSWORDS: COMMON_PASSWORDS,
         MIN_LEN: MIN_LEN,
@@ -169,6 +223,7 @@
         passwordsMatch: passwordsMatch,
         allChecklistPassed: allChecklistPassed,
         isPasswordSubmitReady: isPasswordSubmitReady,
+        getPasswordBlockMessage: getPasswordBlockMessage,
     };
 
     var RULE_ROWS = [
@@ -197,6 +252,7 @@
         var commonErrorEl = opts.commonErrorEl || null;
         var formRoot = opts.formRoot || null;
         var strengthMeterIgnoresPersonal = !!opts.strengthMeterIgnoresPersonal;
+        var disableSubmitWhenNotReady = opts.disableSubmitWhenNotReady !== false;
         var strengthScoreMax = strengthMeterIgnoresPersonal ? 7 : 8;
 
         var rows = {};
@@ -291,7 +347,23 @@
             updateStrength(score);
             var ready = P.isPasswordSubmitReady(p, c, personal);
             if (liveWrap) liveWrap.hidden = p.length === 0;
-            opts.submitBtn.disabled = !ready;
+            if (disableSubmitWhenNotReady) {
+                opts.submitBtn.disabled = !ready;
+                opts.submitBtn.removeAttribute('aria-disabled');
+            } else {
+                opts.submitBtn.disabled = false;
+                opts.submitBtn.setAttribute('aria-disabled', ready ? 'false' : 'true');
+                opts.submitBtn.classList.toggle('btn-signin--blocked', !ready && p.length > 0);
+            }
+            if (commonErrorEl && p.length > 0 && !ready && !P.isCommonPassword(p)) {
+                var blockMsg = P.getPasswordBlockMessage(p, c, personal);
+                if (blockMsg) {
+                    commonErrorEl.textContent = blockMsg;
+                    commonErrorEl.classList.add('show');
+                }
+            } else if (commonErrorEl && ready) {
+                commonErrorEl.classList.remove('show');
+            }
             return { state: state, score: score, ready: ready };
         }
 
@@ -324,7 +396,9 @@
         }
         confirmEl.addEventListener('input', onInput);
 
-        opts.submitBtn.disabled = true;
+        if (disableSubmitWhenNotReady) {
+            opts.submitBtn.disabled = true;
+        }
         refresh();
 
         return {

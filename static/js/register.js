@@ -273,7 +273,8 @@ document.addEventListener('DOMContentLoaded', function () {
             commonErrorEl: signUpPwCommonErr,
             formRoot: signUpForm,
             getPersonal: getSignUpPersonal,
-            strengthMeterIgnoresPersonal: true,
+            strengthMeterIgnoresPersonal: false,
+            disableSubmitWhenNotReady: false,
         });
         ['nickname', 'signUpEmail', 'firstName', 'lastName'].forEach((fid) => {
             const el = document.getElementById(fid);
@@ -321,7 +322,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.DiariPasswordPolicy &&
                 !window.DiariPasswordPolicy.isPasswordSubmitReady(password, confirmPassword, personal)
             ) {
-                showNotification('Please meet all password requirements before signing up.', 'warning');
+                const blockMsg =
+                    window.DiariPasswordPolicy.getPasswordBlockMessage(
+                        password,
+                        confirmPassword,
+                        personal
+                    ) || 'Please meet all password requirements before signing up.';
+                if (signUpPwCommonErr) {
+                    signUpPwCommonErr.textContent = blockMsg;
+                    signUpPwCommonErr.classList.add('show');
+                }
+                if (signUpPwLive) {
+                    signUpPwLive.hidden = false;
+                    try {
+                        signUpPwLive.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } catch (_) {}
+                }
+                if (signUpPasswordInput) signUpPasswordInput.focus();
+                showNotification(blockMsg, 'warning');
+                if (signUpPwLiveInst) signUpPwLiveInst.refresh();
                 return;
             }
 
